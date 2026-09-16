@@ -1,0 +1,43 @@
+{
+  "name": "background-creator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backgrounds animados em loop com Remotion Studio",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "tsx scripts/render.ts",
+    "render:mp4": "tsx scripts/render.ts --format mp4",
+    "render:webm": "tsx scripts/render.ts --format webm",
+    "render:gif": "tsx scripts/render.ts --format gif",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "tsx --test tests/*.test.ts",
+    "validate:exports": "tsx scripts/validate-exports.ts"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.525",
+    "@remotion/cli": "4.0.525",
+    "@remotion/renderer": "4.0.525",
+    "@remotion/zod-types": "4.0.525",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.525",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/node": "22.19.1",
+    "@types/pngjs": "6.0.5",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.1",
+    "pngjs": "7.0.0",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.48.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

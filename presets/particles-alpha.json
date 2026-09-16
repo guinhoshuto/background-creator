@@ -1,0 +1,11 @@
+{
+  "durationSeconds": 12,
+  "seed": 2026,
+  "transparent": true,
+  "backgroundColor": "#0B0F19",
+  "colors": ["#E0F2FE", "#67E8F9", "#C4B5FD"],
+  "outputFormat": "webm",
+  "count": 150,
+  "size": 2.8,
+  "distribution": "uniform"
+}

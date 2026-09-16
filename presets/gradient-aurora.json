@@ -1,0 +1,10 @@
+{
+  "durationSeconds": 10,
+  "seed": 42,
+  "transparent": false,
+  "backgroundColor": "#0B0F19",
+  "colors": ["#67E8F9", "#A78BFA", "#F9A8D4"],
+  "outputFormat": "webm",
+  "scale": 1.2,
+  "intensity": 0.9
+}
