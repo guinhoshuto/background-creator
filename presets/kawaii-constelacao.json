@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 12,
+  "seed": 7,
+  "transparent": false,
+  "backgroundColor": "#FFF7F4",
+  "colors": ["#F7C8D8", "#FFE6BC", "#BFE3DC"],
+  "outputFormat": "webm",
+  "familyCount": 5,
+  "familyScale": 1,
+  "centerClearance": 0.5,
+  "drift": 0.55,
+  "sparkleTrail": 2
+}

@@ -1,9 +1,37 @@
 import {GeometricLoop, geometricLoopSchema} from './backgrounds/GeometricLoop';
 import {GradientLoop, gradientLoopSchema} from './backgrounds/GradientLoop';
 import {ParticleLoop, particleLoopSchema} from './backgrounds/ParticleLoop';
+import {HalloweenLoop, halloweenLoopSchema} from './backgrounds/HalloweenLoop';
+import {KawaiiLoop, kawaiiLoopSchema} from './backgrounds/KawaiiLoop';
+import {CobwebLoop, cobwebLoopSchema} from './backgrounds/CobwebLoop';
+import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
 
 /** One registry shared by the Studio, renderer, validation, and documentation. */
 export const backgroundCatalog = {
+  KawaiiLoop: {
+    id: 'KawaiiLoop',
+    component: KawaiiLoop,
+    schema: kawaiiLoopSchema,
+    defaultProps: kawaiiLoopSchema.parse({}),
+  },
+  HalloweenLoop: {
+    id: 'HalloweenLoop',
+    component: HalloweenLoop,
+    schema: halloweenLoopSchema,
+    defaultProps: halloweenLoopSchema.parse({}),
+  },
+  CobwebLoop: {
+    id: 'CobwebLoop',
+    component: CobwebLoop,
+    schema: cobwebLoopSchema,
+    defaultProps: cobwebLoopSchema.parse({}),
+  },
+  SunburstLoop: {
+    id: 'SunburstLoop',
+    component: SunburstLoop,
+    schema: sunburstLoopSchema,
+    defaultProps: sunburstLoopSchema.parse({}),
+  },
   GradientLoop: {
     id: 'GradientLoop',
     component: GradientLoop,

@@ -5,6 +5,10 @@ import {getCompositionMetadata, getExportPreset, type BaseBackgroundProps} from 
 const gradient = backgroundCatalog.GradientLoop;
 const particles = backgroundCatalog.ParticleLoop;
 const geometry = backgroundCatalog.GeometricLoop;
+const halloween = backgroundCatalog.HalloweenLoop;
+const kawaii = backgroundCatalog.KawaiiLoop;
+const cobweb = backgroundCatalog.CobwebLoop;
+const sunburst = backgroundCatalog.SunburstLoop;
 
 const metadataFor = <Props extends BaseBackgroundProps>(id: string, props: Props) => {
   const preset = getExportPreset(props);
@@ -20,6 +24,54 @@ const metadataFor = <Props extends BaseBackgroundProps>(id: string, props: Props
 
 export const RemotionRoot = () => (
   <>
+    <Composition
+      id="KawaiiLoop"
+      component={kawaii.component}
+      schema={kawaii.schema}
+      defaultProps={{
+        durationSeconds: 12, seed: 7, transparent: false, backgroundColor: '#FFF7F4',
+        colors: ['#F7C8D8', '#FFE6BC', '#BFE3DC'], outputFormat: 'webm',
+        familyCount: 5, familyScale: 1, centerClearance: 0.5, drift: 0.55, sparkleTrail: 2,
+      }}
+      {...getCompositionMetadata(kawaii.defaultProps)}
+      calculateMetadata={({props}: {props: typeof kawaii.defaultProps}) => metadataFor(kawaii.id, kawaii.schema.parse(props))}
+    />
+    <Composition
+      id="HalloweenLoop"
+      component={halloween.component}
+      schema={halloween.schema}
+      defaultProps={{
+        durationSeconds: 12, seed: 31, transparent: false, backgroundColor: '#120E20',
+        colors: ['#9B85C9', '#F7DCA6', '#ED792D'], outputFormat: 'webm',
+        batCount: 7, emberCount: 36, fogIntensity: 0.6, moonScale: 1,
+      }}
+      {...getCompositionMetadata(halloween.defaultProps)}
+      calculateMetadata={({props}: {props: typeof halloween.defaultProps}) => metadataFor(halloween.id, halloween.schema.parse(props))}
+    />
+    <Composition
+      id="CobwebLoop"
+      component={cobweb.component}
+      schema={cobweb.schema}
+      defaultProps={{
+        durationSeconds: 12, seed: 47, transparent: false, backgroundColor: '#100B1B',
+        colors: ['#CFC6E4', '#F6EFD8', '#E8963C'], outputFormat: 'webm' as const,
+        webCount: 4, strandCount: 12, moteCount: 40, spiderCount: 1, dewIntensity: 0.7, mistIntensity: 0.5,
+      }}
+      {...getCompositionMetadata(cobweb.defaultProps)}
+      calculateMetadata={({props}: {props: typeof cobweb.defaultProps}) => metadataFor(cobweb.id, cobweb.schema.parse(props))}
+    />
+    <Composition
+      id="SunburstLoop"
+      component={sunburst.component}
+      schema={sunburst.schema}
+      defaultProps={{
+        durationSeconds: 10, seed: 23, transparent: false, backgroundColor: '#5A0F18',
+        colors: ['#9E1A26', '#C42A36'], outputFormat: 'webm' as const,
+        rayCount: 20, rayWidth: 0.5, swirl: 0.5, spin: 3, coreFade: 0.7, coreShade: 0.6,
+      }}
+      {...getCompositionMetadata(sunburst.defaultProps)}
+      calculateMetadata={({props}: {props: typeof sunburst.defaultProps}) => metadataFor(sunburst.id, sunburst.schema.parse(props))}
+    />
     <Composition
       id="GradientLoop"
       component={gradient.component}

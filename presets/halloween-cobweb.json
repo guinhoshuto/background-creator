@@ -1,0 +1,14 @@
+{
+  "durationSeconds": 12,
+  "seed": 47,
+  "transparent": false,
+  "backgroundColor": "#100B1B",
+  "colors": ["#CFC6E4", "#F6EFD8", "#E8963C"],
+  "outputFormat": "webm",
+  "webCount": 4,
+  "strandCount": 12,
+  "moteCount": 40,
+  "spiderCount": 1,
+  "dewIntensity": 0.7,
+  "mistIntensity": 0.5
+}
