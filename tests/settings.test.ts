@@ -90,3 +90,10 @@ test('shared schema rejects malformed user input', () => {
     assert.equal(baseBackgroundSchema.safeParse(input).success, false, JSON.stringify(input));
   }
 });
+
+test('shared schema reports invalid input in Portuguese', () => {
+  const result = baseBackgroundSchema.safeParse({seed: Number.NaN});
+  assert(!result.success);
+  assert.deepEqual(result.error.issues[0]?.path, ['seed']);
+  assert.equal(result.error.issues[0]?.message, 'Entrada inválida: esperava um número, recebeu um valor "NaN"');
+});

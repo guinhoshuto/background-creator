@@ -1,6 +1,8 @@
 import {zColor} from '@remotion/zod-types';
 import {z} from 'zod';
 
+z.config(z.locales.ptBR());
+
 export const outputFormatSchema = z.enum(['mp4', 'webm', 'gif']);
 export type OutputFormat = z.infer<typeof outputFormatSchema>;
 

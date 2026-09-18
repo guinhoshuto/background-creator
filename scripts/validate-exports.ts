@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
-import {renderStill} from '@remotion/renderer';
+import {renderStill, selectComposition} from '@remotion/renderer';
 import {PNG} from 'pngjs';
 import {backgroundCatalog} from '../src/catalog';
 import {hasTransparentBackground, type OutputFormat} from '../src/settings';
-import {createBundle, exportBackground, projectRoot} from './export';
+import {createBundle, exportBackground, projectRoot, resolveExport} from './export';
+import {compositedRgbError} from './image-comparison';
 import {ffmpegPath, ffprobePath, runProcess} from './process';
 
 type Probe = {
@@ -14,19 +16,11 @@ type Probe = {
   format: {duration: string};
 };
 
-const rgbError = (actual: Uint8Array, expected: Uint8Array) => {
-  let total = 0;
-  let count = 0;
-  for (let i = 0; i < actual.length; i += 4) {
-    // RGB under fully transparent pixels has no visible meaning.
-    if (expected[i + 3] < 20) continue;
-    for (let c = 0; c < 3; c++) {total += Math.abs(actual[i + c] - expected[i + c]); count++;}
-  }
-  return total / Math.max(1, count);
-};
-
 const main = async () => {
-  const {values} = parseArgs({options: {duration: {type: 'string', default: '0.4'}}});
+  const {values} = parseArgs({options: {
+    duration: {type: 'string', default: '0.4'},
+    'reuse-existing': {type: 'boolean', default: false},
+  }});
   const durationSeconds = Number(values.duration);
   assert(Number.isFinite(durationSeconds) && durationSeconds >= 0.1, 'Use --duration >= 0.1.');
   await runProcess(ffmpegPath(), ['-version']);
@@ -35,20 +29,34 @@ const main = async () => {
   await mkdir(destination, {recursive: true});
   const serveUrl = await createBundle();
   const report: Record<string, unknown>[] = [];
+  const reportPath = path.join(destination, 'report.json');
+  await writeFile(reportPath, JSON.stringify(report));
   const profiles: {format: OutputFormat; transparent: boolean; label: string}[] = [
     {format: 'mp4', transparent: true, label: 'flattened'},
     {format: 'webm', transparent: false, label: 'opaque'},
     {format: 'webm', transparent: true, label: 'alpha'},
     {format: 'gif', transparent: true, label: 'flattened'},
   ];
-  for (const compositionId of Object.keys(backgroundCatalog)) {
+  for (const [compositionId, background] of Object.entries(backgroundCatalog)) {
     for (const profile of profiles) {
       const stem = `${compositionId}-${profile.label}`;
-      const result = await exportBackground({
+      const options = {
         compositionId, format: profile.format, serveUrl, overwrite: true,
-        props: {durationSeconds, seed: 17, transparent: profile.transparent, backgroundColor: '#18304C'},
+        // Fixed fixtures keep validation independent of a user's saved Studio edits.
+        props: {...background.defaultProps, durationSeconds, seed: 17, transparent: profile.transparent, backgroundColor: '#18304C'},
         output: path.join(destination, `${stem}.${profile.format}`),
-      });
+      };
+      const result = values['reuse-existing'] && existsSync(options.output)
+        ? await (async () => {
+          console.log(`Verificando arquivo existente: ${path.basename(options.output)}`);
+          const resolved = resolveExport(options);
+          const composition = await selectComposition({
+            serveUrl, id: compositionId, inputProps: resolved.inputProps,
+            browserExecutable: process.env.REMOTION_BROWSER_EXECUTABLE,
+          });
+          return {composition, output: resolved.output, props: background.schema.parse(composition.props)};
+        })()
+        : await exportBackground(options);
       const {composition, output, props} = result;
       const probe = JSON.parse((await runProcess(ffprobePath(), [
         '-v', 'error', '-count_frames', '-show_streams', '-show_format', '-of', 'json', output,
@@ -105,17 +113,19 @@ const main = async () => {
       } else {
         assert.equal(minAlpha, 255, 'Uma saída opaca contém transparência.');
       }
-      const meanRgbError = rgbError(actual, expected.data);
-      assert(meanRgbError < (profile.format === 'gif' ? 12 : 5), `A saída diverge do preview: erro RGB médio ${meanRgbError}.`);
+      const rgbErrorOnLight = compositedRgbError(actual, expected.data, [255, 255, 255]);
+      const rgbErrorOnDark = compositedRgbError(actual, expected.data, [11, 15, 25]);
+      const meanRgbError = Math.max(rgbErrorOnLight, rgbErrorOnDark);
+      assert(meanRgbError < (profile.format === 'gif' ? 12 : 5), `A saída composta diverge do preview: erro RGB médio ${meanRgbError}.`);
       // Keep the decoded image for inspection alongside the original PNG.
       const decoded = new PNG({width: 1920, height: 1080});
       decoded.data = actual;
       await writeFile(path.join(destination, `${stem}-${profile.format}-decoded.png`), PNG.sync.write(decoded));
-      report.push({file: output, width: stream.width, height: stream.height, fps: composition.fps, frames: composition.durationInFrames, codec: stream.codec_name, minAlpha, maxAlpha, meanRgbError});
+      report.push({file: output, width: stream.width, height: stream.height, fps: composition.fps, frames: composition.durationInFrames, codec: stream.codec_name, minAlpha, maxAlpha, meanAlphaError: alphaError / (1920 * 1080), rgbErrorOnLight, rgbErrorOnDark});
+      await writeFile(reportPath, JSON.stringify(report, null, 2));
       console.log(`OK: ${path.basename(output)}; erro RGB médio ${meanRgbError.toFixed(3)}`);
     }
   }
-  await writeFile(path.join(destination, 'report.json'), JSON.stringify(report, null, 2));
   console.log(`Validação concluída: ${report.length} exports. Relatório em out/validation/report.json.`);
 };
 
