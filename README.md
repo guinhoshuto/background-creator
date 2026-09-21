@@ -18,6 +18,8 @@ Escolha uma composição no Studio e edite as propriedades no painel lateral. O 
 | Composição | Movimento | Controles específicos |
 | --- | --- | --- |
 | `HalloweenLoop` | Noite ilustrada com lua, morcegos, névoa e abóboras iluminadas | `batCount` (0–18), `emberCount` (0–120), `fogIntensity` (0–1), `moonScale` (0,5–1,5) |
+| `HauntedMansionLoop` | Mansão vitoriana à direita, luar frio, janelas âmbar e névoa baixa | `batCount` (0–12), `moteCount` (0–100), `fogIntensity` (0–1), `windowIntensity` (0–1), `moonScale` (0,6–1,4) |
+| `HauntedInteriorLoop` | Salão gótico decadente, janelas laterais, velas e lustre oscilante, com centro escuro | `dustCount` (0–100), `fogIntensity` (0–1), `candleIntensity` (0–1), `moonlightIntensity` (0–1), `hauntingIntensity` (0–1), `chandelierSway` (0–1) |
 | `CobwebLoop` | Teias de aranha nos cantos, com orvalho, fios de seda e aranha pendurada | `webCount` (0–4), `strandCount` (0–24), `moteCount` (0–120), `spiderCount` (0–3), `dewIntensity` (0–1), `mistIntensity` (0–1) |
 | `KawaiiLoop` | Nuvens, corações e estrelas pastel em grupos, com o miolo livre | `familyCount` (2–6), `familyScale` (0,7–1,4), `centerClearance` (0–1), `drift` (0–1), `sparkleTrail` (0–4) |
 | `SunburstLoop` | Leque de raios que partem do centro, com gradiente do miolo para fora | `rayCount` (6–48), `rayWidth` (0,15–0,8), `swirl` (0–1), `spin` (−24–24, inteiro), `coreFade` (0–1), `coreShade` (0–1) |
@@ -27,7 +29,7 @@ Escolha uma composição no Studio e edite as propriedades no painel lateral. O 
 
 ## Parâmetros e presets
 
-Todas as composições compartilham estes parâmetros. `HalloweenLoop`, `CobwebLoop` e `KawaiiLoop` começam com 12 segundos e `SunburstLoop` com 10; as quatro têm paleta e cor de fundo próprias, e `CobwebLoop`, `KawaiiLoop` e `SunburstLoop` também trazem a própria seed. As composições de gradiente, partículas e geometria usam os padrões abaixo:
+Todas as composições compartilham estes parâmetros. `HalloweenLoop`, `CobwebLoop` e `KawaiiLoop` começam com 12 segundos, `HauntedMansionLoop` e `HauntedInteriorLoop` com 16 e `SunburstLoop` com 10; essas seis composições têm paleta e cor de fundo próprias. `CobwebLoop`, `KawaiiLoop`, `HauntedMansionLoop`, `HauntedInteriorLoop` e `SunburstLoop` também trazem a própria seed no schema. As composições de gradiente, partículas e geometria usam os padrões abaixo:
 
 | Parâmetro | Padrão | Uso |
 | --- | --- | --- |
@@ -41,6 +43,8 @@ Todas as composições compartilham estes parâmetros. `HalloweenLoop`, `CobwebL
 Um arquivo de parâmetros pode conter somente as opções que você quer alterar; as demais recebem seus valores iniciais. Os exemplos em `presets/` oferecem estas direções visuais:
 
 - `halloween-midnight.json`: noite em violeta escuro, lua cremosa, abóboras âmbar e centro livre para conteúdo.
+- `halloween-haunted-mansion.json`: mansão vitoriana em azul-noite, luar pálido, janelas âmbar e área central esquerda escura para overlay.
+- `halloween-haunted-interior.json`: interior gótico decadente, cortinas vinho, luar esverdeado e velas âmbar nas bordas, com centro escuro para overlay.
 - `halloween-cobweb.json`: teias enluaradas em seda prateada, orvalho brilhante e um calor âmbar no rodapé.
 - `kawaii-constelacao.json`: nuvens, corações e estrelas em grupos, sobre leite morno, em ritmo lento.
 - `sunburst-crimson.json`: leque de vermelho sobre vermelho escuro, o contraste mais baixo da série.
@@ -67,6 +71,8 @@ Use os comandos oficiais para aplicar os presets de qualidade:
 
 ```sh
 npm run render:mp4 -- HalloweenLoop --props presets/halloween-midnight.json
+npm run render:mp4 -- HauntedMansionLoop --props presets/halloween-haunted-mansion.json
+npm run render:mp4 -- HauntedInteriorLoop --props presets/halloween-haunted-interior.json
 npm run render:webm -- CobwebLoop --props presets/halloween-cobweb.json
 npm run render:webm -- KawaiiLoop --props presets/kawaii-constelacao.json
 npm run render:mp4 -- SunburstLoop --props presets/sunburst-crimson.json
@@ -108,6 +114,26 @@ A lua tem halo e crateras sutis; os morcegos descrevem trajetórias fechadas com
 `colors[0]` controla névoa e atmosfera, `colors[1]` o luar e as luzes, e `colors[2]` as abóboras. Se usar apenas duas cores, as abóboras adotam a primeira. `batCount: 0` e `emberCount: 0` ocultam essas camadas; `fogIntensity: 0` remove a névoa. `moonScale` altera o tamanho da lua e de seu halo.
 
 Com `transparent: true` e `outputFormat: "webm"`, o céu de fundo desaparece, preservando lua, estrelas, cenário, abóboras e névoa com alpha. Em MP4/GIF, todos os elementos continuam compostos sobre `backgroundColor`.
+
+## Halloween: mansão assombrada
+
+Selecione `HauntedMansionLoop` no Studio. O preset `presets/halloween-haunted-mansion.json` cria um ciclo de **16 segundos, 1920×1080 e 60 fps** em MP4/WebM. A mansão vitoriana ocupa o lado direito; árvores secas e grades enquadram as bordas, deixando o centro e a região central esquerda escuros para conteúdo da stream. Os valores iniciais são `seed: 81`, `backgroundColor: #0E1520` e uma paleta de névoa fria, luar pálido e âmbar. A cena é desenhada em SVG, sem texto, imagens externas, fontes adicionais ou áudio.
+
+A arquitetura permanece fixa enquanto a iluminação das janelas varia lentamente, a névoa baixa deriva, a poeira flutua e os morcegos percorrem trajetórias fechadas com batidas de asas. O movimento depende do frame, da duração e da seed, mantendo a continuidade do ciclo.
+
+`colors[0]` controla névoa e atmosfera, `colors[1]` a lua e a poeira, e `colors[2]` as janelas e os lampiões. Com apenas duas cores, janelas e lampiões adotam a primeira. `batCount: 0` e `moteCount: 0` ocultam essas camadas; `fogIntensity: 0` remove a névoa, `windowIntensity` ajusta a intensidade da iluminação quente e `moonScale` altera o tamanho da lua. Esses controles também podem ser salvos no Studio com **Save default props**.
+
+Com `transparent: true` e `outputFormat: "webm"`, o céu e a vinheta atmosférica desaparecem, preservando o cenário e a névoa com alpha. Em MP4/GIF, todos os elementos são compostos sobre `backgroundColor`. Use `npm run render:webm -- HauntedMansionLoop --props presets/halloween-haunted-mansion.json` para o WebM ou troque por `render:mp4` / `render:gif` para os formatos opacos, sempre com os perfis oficiais descritos acima.
+
+## Halloween: interior da mansão
+
+Selecione `HauntedInteriorLoop` no Studio. O preset `presets/halloween-haunted-interior.json` cria um ciclo de **16 segundos, 1920×1080 e 60 fps** em MP4/WebM. O salão gótico tem arquitetura decadente, janelas laterais, cortinas vinho, retratos e um lustre no alto. O centro permanece escuro, com contraste baixo e sem grandes objetos móveis, para acomodar o conteúdo da stream. Os valores iniciais são `seed: 113`, `backgroundColor: #080D10` e uma paleta de verde acinzentado, luar pálido e âmbar. A cena é desenhada em SVG, sem texto, imagens externas, fontes adicionais ou áudio.
+
+O lustre oscila suavemente, as chamas e a luz das velas variam, a névoa se move junto ao piso e a poeira flutua nas bordas. Os movimentos e a iluminação dependem exclusivamente do frame, dos parâmetros e da seed, com continuidade de posição e velocidade na emenda do ciclo.
+
+`colors[0]` controla névoa e atmosfera, `colors[1]` o luar e a poeira, e `colors[2]` as velas. Com apenas duas cores, as velas adotam a primeira. `dustCount: 0` remove a poeira; `fogIntensity: 0` remove a névoa. `candleIntensity` ajusta a luz das velas, `moonlightIntensity` a força dos feixes de luar, `hauntingIntensity` a aparição dos olhos nos retratos e `chandelierSway` a amplitude da oscilação do lustre. As intensidades e a oscilação variam de 0 a 1; `dustCount` aceita inteiros de 0 a 100. Os controles podem ser salvos no Studio com **Save default props**.
+
+Com `transparent: true` e `outputFormat: "webm"`, os planos centrais de parede e piso e a vinheta desaparecem, preservando a moldura arquitetônica, as janelas laterais, o lustre, as velas e os efeitos com alpha. Em MP4/GIF, a cena é composta sobre `backgroundColor`. Para exportar o preset em MP4, use `npm run render:mp4 -- HauntedInteriorLoop --props presets/halloween-haunted-interior.json`; troque por `render:webm` ou `render:gif` para os outros formatos, mantendo os perfis oficiais descritos acima.
 
 ## Halloween: teias de aranha
 

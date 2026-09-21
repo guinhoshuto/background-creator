@@ -5,6 +5,8 @@ import {getCobwebScene, cobwebLoopSchema} from '../src/backgrounds/CobwebLoop';
 import {getGeometricScene, geometricLoopSchema} from '../src/backgrounds/GeometricLoop';
 import {getGradientScene, gradientLoopSchema} from '../src/backgrounds/GradientLoop';
 import {getHalloweenScene, halloweenLoopSchema} from '../src/backgrounds/HalloweenLoop';
+import {getHauntedInteriorScene, hauntedInteriorLoopSchema} from '../src/backgrounds/HauntedInteriorLoop';
+import {getHauntedMansionScene, hauntedMansionLoopSchema} from '../src/backgrounds/HauntedMansionLoop';
 import {getKawaiiScene, kawaiiLoopSchema} from '../src/backgrounds/KawaiiLoop';
 import {getParticleScene, particleLoopSchema} from '../src/backgrounds/ParticleLoop';
 import {getSunburstScene, sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
@@ -36,6 +38,16 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'HalloweenLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getHalloweenScene(halloweenLoopSchema.parse(input), frame, length),
+  },
+  {
+    id: 'HauntedInteriorLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getHauntedInteriorScene(hauntedInteriorLoopSchema.parse(input), frame, length),
+  },
+  {
+    id: 'HauntedMansionLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getHauntedMansionScene(hauntedMansionLoopSchema.parse(input), frame, length),
   },
   {
     id: 'CobwebLoop',
@@ -193,6 +205,8 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['ParticleLoop', 'particles-alpha.json'],
     ['GeometricLoop', 'geometric-orbit.json'],
     ['HalloweenLoop', 'halloween-midnight.json'],
+    ['HauntedInteriorLoop', 'halloween-haunted-interior.json'],
+    ['HauntedMansionLoop', 'halloween-haunted-mansion.json'],
     ['KawaiiLoop', 'kawaii-constelacao.json'],
     ['CobwebLoop', 'halloween-cobweb.json'],
     ['SunburstLoop', 'sunburst-crimson.json'],

@@ -1,0 +1,14 @@
+{
+  "durationSeconds": 16,
+  "seed": 113,
+  "transparent": false,
+  "backgroundColor": "#080D10",
+  "colors": ["#536C68", "#A8BDB0", "#CA8A48"],
+  "outputFormat": "webm",
+  "dustCount": 36,
+  "fogIntensity": 0.55,
+  "candleIntensity": 0.8,
+  "moonlightIntensity": 0.65,
+  "hauntingIntensity": 0.45,
+  "chandelierSway": 0.6
+}

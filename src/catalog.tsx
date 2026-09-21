@@ -2,6 +2,8 @@ import {GeometricLoop, geometricLoopSchema} from './backgrounds/GeometricLoop';
 import {GradientLoop, gradientLoopSchema} from './backgrounds/GradientLoop';
 import {ParticleLoop, particleLoopSchema} from './backgrounds/ParticleLoop';
 import {HalloweenLoop, halloweenLoopSchema} from './backgrounds/HalloweenLoop';
+import {HauntedMansionLoop, hauntedMansionLoopSchema} from './backgrounds/HauntedMansionLoop';
+import {HauntedInteriorLoop, hauntedInteriorLoopSchema} from './backgrounds/HauntedInteriorLoop';
 import {KawaiiLoop, kawaiiLoopSchema} from './backgrounds/KawaiiLoop';
 import {CobwebLoop, cobwebLoopSchema} from './backgrounds/CobwebLoop';
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
@@ -19,6 +21,18 @@ export const backgroundCatalog = {
     component: HalloweenLoop,
     schema: halloweenLoopSchema,
     defaultProps: halloweenLoopSchema.parse({}),
+  },
+  HauntedMansionLoop: {
+    id: 'HauntedMansionLoop',
+    component: HauntedMansionLoop,
+    schema: hauntedMansionLoopSchema,
+    defaultProps: hauntedMansionLoopSchema.parse({}),
+  },
+  HauntedInteriorLoop: {
+    id: 'HauntedInteriorLoop',
+    component: HauntedInteriorLoop,
+    schema: hauntedInteriorLoopSchema,
+    defaultProps: hauntedInteriorLoopSchema.parse({}),
   },
   CobwebLoop: {
     id: 'CobwebLoop',

@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 16,
+  "seed": 81,
+  "transparent": false,
+  "backgroundColor": "#0E1520",
+  "colors": ["#688789", "#D6DDC7", "#E8AF62"],
+  "outputFormat": "webm",
+  "batCount": 4,
+  "moteCount": 28,
+  "fogIntensity": 0.55,
+  "windowIntensity": 0.7,
+  "moonScale": 1
+}

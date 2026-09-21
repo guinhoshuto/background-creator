@@ -6,6 +6,8 @@ const gradient = backgroundCatalog.GradientLoop;
 const particles = backgroundCatalog.ParticleLoop;
 const geometry = backgroundCatalog.GeometricLoop;
 const halloween = backgroundCatalog.HalloweenLoop;
+const hauntedMansion = backgroundCatalog.HauntedMansionLoop;
+const hauntedInterior = backgroundCatalog.HauntedInteriorLoop;
 const kawaii = backgroundCatalog.KawaiiLoop;
 const cobweb = backgroundCatalog.CobwebLoop;
 const sunburst = backgroundCatalog.SunburstLoop;
@@ -47,6 +49,31 @@ export const RemotionRoot = () => (
       }}
       {...getCompositionMetadata(halloween.defaultProps)}
       calculateMetadata={({props}: {props: typeof halloween.defaultProps}) => metadataFor(halloween.id, halloween.schema.parse(props))}
+    />
+    <Composition
+      id="HauntedMansionLoop"
+      component={hauntedMansion.component}
+      schema={hauntedMansion.schema}
+      defaultProps={{
+        durationSeconds: 16, seed: 81, transparent: false, backgroundColor: '#0E1520',
+        colors: ['#688789', '#D6DDC7', '#E8AF62'], outputFormat: 'webm',
+        batCount: 4, moteCount: 28, fogIntensity: 0.55, windowIntensity: 0.7, moonScale: 1,
+      }}
+      {...getCompositionMetadata(hauntedMansion.defaultProps)}
+      calculateMetadata={({props}: {props: typeof hauntedMansion.defaultProps}) => metadataFor(hauntedMansion.id, hauntedMansion.schema.parse(props))}
+    />
+    <Composition
+      id="HauntedInteriorLoop"
+      component={hauntedInterior.component}
+      schema={hauntedInterior.schema}
+      defaultProps={{
+        durationSeconds: 16, seed: 113, transparent: false, backgroundColor: '#080D10',
+        colors: ['#536C68', '#A8BDB0', '#CA8A48'], outputFormat: 'webm',
+        dustCount: 36, fogIntensity: 0.55, candleIntensity: 0.8, moonlightIntensity: 0.65,
+        hauntingIntensity: 0.45, chandelierSway: 0.6,
+      }}
+      {...getCompositionMetadata(hauntedInterior.defaultProps)}
+      calculateMetadata={({props}: {props: typeof hauntedInterior.defaultProps}) => metadataFor(hauntedInterior.id, hauntedInterior.schema.parse(props))}
     />
     <Composition
       id="CobwebLoop"
