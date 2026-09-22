@@ -23,13 +23,14 @@ Escolha uma composição no Studio e edite as propriedades no painel lateral. O 
 | `CobwebLoop` | Teias de aranha nos cantos, com orvalho, fios de seda e aranha pendurada | `webCount` (0–4), `strandCount` (0–24), `moteCount` (0–120), `spiderCount` (0–3), `dewIntensity` (0–1), `mistIntensity` (0–1) |
 | `KawaiiLoop` | Nuvens, corações e estrelas pastel em grupos, com o miolo livre | `familyCount` (2–6), `familyScale` (0,7–1,4), `centerClearance` (0–1), `drift` (0–1), `sparkleTrail` (0–4) |
 | `SunburstLoop` | Leque de raios que partem do centro, com gradiente do miolo para fora | `rayCount` (6–48), `rayWidth` (0,15–0,8), `swirl` (0–1), `spin` (−24–24, inteiro), `coreFade` (0–1), `coreShade` (0–1) |
+| `VaporwaveLoop` | Horizonte neon com sol fatiado, grade rosa e ciano em perspectiva, montanhas aramadas, palmeiras e sólidos flutuando, com o miolo livre | `speed` (0–12, inteiro), `sunPosition` (0,1–0,9), `neonGlow` (0–1), `starCount` (0–200), `shootingStars` (0–3), `palmCount` (0–3), `shapeCount` (0–4), `centerShade` (0–1) |
 | `GradientLoop` | Manchas de gradiente com movimento orgânico | `scale` (0,25–3), `intensity` (0–2) |
 | `ParticleLoop` | Partículas em trajetórias periódicas | `count` (1–600), `size` (0,5–24), `distribution` (`uniform` ou `center`) |
 | `GeometricLoop` | Formas geométricas com rotação e deslocamento | `count` (1–100), `scale` (0,15–3) |
 
 ## Parâmetros e presets
 
-Todas as composições compartilham estes parâmetros. `HalloweenLoop`, `CobwebLoop` e `KawaiiLoop` começam com 12 segundos, `HauntedMansionLoop` e `HauntedInteriorLoop` com 16 e `SunburstLoop` com 10; essas seis composições têm paleta e cor de fundo próprias. `CobwebLoop`, `KawaiiLoop`, `HauntedMansionLoop`, `HauntedInteriorLoop` e `SunburstLoop` também trazem a própria seed no schema. As composições de gradiente, partículas e geometria usam os padrões abaixo:
+Todas as composições compartilham estes parâmetros. `HalloweenLoop`, `CobwebLoop` e `KawaiiLoop` começam com 12 segundos, `HauntedMansionLoop`, `HauntedInteriorLoop` e `VaporwaveLoop` com 16 e `SunburstLoop` com 10; essas sete composições têm paleta e cor de fundo próprias. `CobwebLoop`, `KawaiiLoop`, `HauntedMansionLoop`, `HauntedInteriorLoop`, `SunburstLoop` e `VaporwaveLoop` também trazem a própria seed no schema. As composições de gradiente, partículas e geometria usam os padrões abaixo:
 
 | Parâmetro | Padrão | Uso |
 | --- | --- | --- |
@@ -51,6 +52,9 @@ Um arquivo de parâmetros pode conter somente as opções que você quer alterar
 - `sunburst-sand.json`: raios largos de areia sobre creme, em ritmo mais lento.
 - `sunburst-ocean.json`: raios finos de azul sobre azul-noite, com o miolo mais fechado.
 - `sunburst-moss.json`: verde musgo sobre verde escuro, no ciclo mais longo.
+- `vaporwave-horizonte.json`: horizonte neon para stream, com o sol na borda direita atrás das palmeiras e o centro escuro para títulos, câmera e jogo.
+- `vaporwave-classico.json`: o cartão-postal vaporwave, com o sol meio posto no centro do horizonte, três palmeiras por lado, quatro sólidos e uma placa mais forte atrás do conteúdo.
+- `vaporwave-alpha.json`: WebM transparente para sobrepor ao jogo, com uma palmeira por lado e nenhum sólido, para deixar os cantos livres para o HUD, montanhas translúcidas, a grade dissolvendo antes do horizonte e perto da borda de baixo, e o miolo limpo.
 - `gradient-aurora.json`: luzes suaves em ciano, violeta e rosa.
 - `particles-alpha.json`: partículas sutis com alpha para composição sobre outros vídeos.
 - `geometric-orbit.json`: formas geométricas em tons quentes sobre azul escuro.
@@ -78,6 +82,9 @@ npm run render:webm -- KawaiiLoop --props presets/kawaii-constelacao.json
 npm run render:mp4 -- SunburstLoop --props presets/sunburst-crimson.json
 npm run render:mp4 -- SunburstLoop --props presets/sunburst-sand.json
 npm run render:webm -- SunburstLoop --props presets/sunburst-ocean.json
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-horizonte.json
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-classico.json
+npm run render:webm -- VaporwaveLoop --props presets/vaporwave-alpha.json
 npm run render:mp4 -- GradientLoop --props presets/gradient-aurora.json
 npm run render:webm -- ParticleLoop --props presets/particles-alpha.json
 npm run render:gif -- GeometricLoop --props presets/geometric-orbit.json
@@ -119,9 +126,9 @@ Com `transparent: true` e `outputFormat: "webm"`, o céu de fundo desaparece, pr
 
 Selecione `HauntedMansionLoop` no Studio. O preset `presets/halloween-haunted-mansion.json` cria um ciclo de **16 segundos, 1920×1080 e 60 fps** em MP4/WebM. A mansão vitoriana ocupa o lado direito; árvores secas e grades enquadram as bordas, deixando o centro e a região central esquerda escuros para conteúdo da stream. Os valores iniciais são `seed: 81`, `backgroundColor: #0E1520` e uma paleta de névoa fria, luar pálido e âmbar. A cena é desenhada em SVG, sem texto, imagens externas, fontes adicionais ou áudio.
 
-A arquitetura permanece fixa enquanto a iluminação das janelas varia lentamente, a névoa baixa deriva, a poeira flutua e os morcegos percorrem trajetórias fechadas com batidas de asas. O movimento depende do frame, da duração e da seed, mantendo a continuidade do ciclo.
+A arquitetura permanece fixa enquanto a iluminação das janelas varia lentamente, bancos de neblina baixa atravessam a frente da mansão e das grades em camadas, a poeira flutua e os morcegos percorrem trajetórias fechadas com batidas de asas. A neblina se concentra na base do cenário, preservando a área central para conteúdo da stream. O movimento depende do frame, da duração e da seed, mantendo a continuidade do ciclo.
 
-`colors[0]` controla névoa e atmosfera, `colors[1]` a lua e a poeira, e `colors[2]` as janelas e os lampiões. Com apenas duas cores, janelas e lampiões adotam a primeira. `batCount: 0` e `moteCount: 0` ocultam essas camadas; `fogIntensity: 0` remove a névoa, `windowIntensity` ajusta a intensidade da iluminação quente e `moonScale` altera o tamanho da lua. Esses controles também podem ser salvos no Studio com **Save default props**.
+`colors[0]` controla névoa e atmosfera, `colors[1]` a lua e a poeira, e `colors[2]` as janelas e os lampiões. Com apenas duas cores, janelas e lampiões adotam a primeira. `batCount: 0` e `moteCount: 0` ocultam essas camadas; `fogIntensity` começa em `0.75` e controla os bancos baixos de neblina — em `0`, eles desaparecem, mas as nuvens altas permanecem. `windowIntensity` ajusta a intensidade da iluminação quente e `moonScale` altera o tamanho da lua. Esses controles também podem ser salvos no Studio com **Save default props**.
 
 Com `transparent: true` e `outputFormat: "webm"`, o céu e a vinheta atmosférica desaparecem, preservando o cenário e a névoa com alpha. Em MP4/GIF, todos os elementos são compostos sobre `backgroundColor`. Use `npm run render:webm -- HauntedMansionLoop --props presets/halloween-haunted-mansion.json` para o WebM ou troque por `render:mp4` / `render:gif` para os formatos opacos, sempre com os perfis oficiais descritos acima.
 
@@ -165,6 +172,43 @@ A diferença em relação a um campo de peças espalhadas é que **o arranjo é 
 `familyCount` escolhe quantos grupos entram, sempre na ordem da tabela, e aumentar a contagem não reorganiza os grupos que já estavam. `familyScale` muda o tamanho geral. `drift` é a amplitude da flutuação: em `0` as peças ficam paradas no lugar, mas a respiração, o giro e o brilho continuam, então a cena nunca congela. `sparkleTrail` acrescenta de zero a quatro cintilos acompanhando o eixo de cada grupo, em cadência de razão áurea.
 
 Com `transparent: true` e `outputFormat: "webm"`, o céu e o halo desaparecem, preservando nuvens, corações e estrelas com alpha. Os corpos são preenchidos com cor sólida e o brilho é pintado por cima, e o cintilo leva um núcleo branco, para que a cena continue legível tanto sobre vídeo claro quanto sobre vídeo escuro. Em MP4/GIF, todos os elementos são compostos sobre `backgroundColor`, que pode receber um tom escuro para uma versão noturna da mesma cena.
+
+## Vaporwave: horizonte neon
+
+Selecione `VaporwaveLoop` no Studio. O preset `presets/vaporwave-horizonte.json` cria um ciclo de **16 segundos, 1920×1080 e 60 fps** em MP4/WebM, pensado como fundo de overlay de stream. Os valores iniciais próprios da composição são `seed: 88`, `backgroundColor: #120C2E` e a paleta vaporwave clássica de rosa, ciano, amarelo-claro e lilás. A cena é desenhada em SVG, sem texto, imagens externas, fontes adicionais ou áudio.
+
+Na tela há um céu noturno índigo, com brilho lilás no alto, estrelas e alguns cintilos de quatro pontas; um grande sol retrô fatiado, do amarelo-claro ao rosa e ao lilás, com halo e reflexo no chão; cordilheiras aramadas em ciano, com uma segunda cordilheira mais pálida atrás e uma silhueta distante no horizonte; um chão em grade neon em perspectiva, com linhas rosa e colunas ciano; palmeiras escuras nas laterais, com um fio de luz neon só no lado voltado para o sol; e sólidos aramados translúcidos (octaedro, icosaedro e pirâmide) flutuando nos cantos. A malha das montanhas segue curvas de nível — crista, duas cotas intermediárias e o pé — ligadas por meridianos e diagonais alternadas, e as faces voltadas para o sol recebem mais luz. Nenhum pico encosta na borda do sol: um pico que ficaria a menos de 40 px dela é empurrado para fora do disco, ou mais para dentro dele. Nenhum pico fica a menos de 120 px da copa das palmeiras pequenas do horizonte, então elas nunca parecem pousadas num pico. As cristas se apagam logo acima do horizonte, então a linha rosa do horizonte segue contínua, sem trechos em ciano. As fatias do sol mostram o céu noturno através do disco, e o halo para no horizonte: abaixo dele, o chão recebe só o reflexo achatado do sol.
+
+A área de conteúdo é o retângulo de **1100×620 pixels** centrado no quadro (x de 410 a 1510, y de 230 a 850). Palmeiras, sólidos, cintilos e estrelas cadentes nunca entram nela, em nenhuma fase do ciclo e com qualquer seed: a conta usa a geometria desenhada, incluindo o balanço das folhas, a flutuação dos sólidos e o brilho em volta deles, e é conferida pelos testes.
+
+A grade avança em direção à câmera. Cada linha nasce transparente numa névoa de profundidade e sai pela borda de baixo, então a faixa perto do horizonte fica calma, sem uma pilha de linhas finas. Os cortes do sol descem devagar, duas faixas por ciclo, e abrem a partir de zero. As folhas das palmeiras balançam poucos graus, os sólidos dão uma volta inteira por ciclo e flutuam alguns pixels, as estrelas e os cintilos piscam devagar, e o neon do horizonte e das montanhas respira. As estrelas cadentes cruzam só a faixa de cima, sempre voando para o lado oposto ao do sol (com o sol no centro, passam bem acima dele), e ficam invisíveis na emenda do ciclo; como todo o resto, repetem o mesmo trajeto a cada ciclo. As montanhas não se movem: a geometria delas depende apenas da seed e da posição do sol.
+
+`colors[0]` é o rosa neon das linhas do chão, do horizonte e da névoa sobre ele, do meio do sol, do halo e do reflexo do sol, do fio de luz das palmeiras, da cordilheira de trás e do sólido do canto superior direito; `colors[1]` é o ciano das colunas do chão, das montanhas da frente, dos outros sólidos, do brilho do alto do céu e do halo das estrelas e das estrelas cadentes; `colors[2]` é o topo do sol e metade dos cintilos (a outra metade é branca); `colors[3]` é o lilás da névoa do céu, da base do sol, dos anéis dos troncos e das faces das montanhas e dos sólidos. A terceira e a quarta cores são opcionais: sem `colors[2]`, o topo do sol fica branco; sem `colors[3]`, a névoa usa `colors[0]`. Cores além da quarta são ignoradas. Qualquer cor aceita pelo Studio funciona, como `red`, `#abc` ou `rgba(255, 0, 128, 0.5)`; `backgroundColor` continua no formato `#RRGGBB` e também dá o tom das silhuetas das palmeiras.
+
+- `speed` (0–12, inteiro, padrão `4`): linhas da grade que passam por ciclo. Mais linhas deixam o chão mais rápido; `0` deixa o chão parado. A velocidade é constante, inclusive na emenda: com 16 segundos e o padrão, uma linha nova chega a cada 4 segundos. Todo o movimento acompanha o ciclo, então ao aumentar `durationSeconds` aumente `speed` na mesma proporção para manter o ritmo do chão (32 s → `8`, 48 s → `12`); acima de 48 s o chão fica mais lento que o padrão. O balanço das palmeiras, o giro dos sólidos, os cortes do sol e o piscar das estrelas também se alongam com o ciclo. Para lives longas, `durationSeconds: 32` com `speed: 8` mantém o chão no ritmo do padrão e espaça a estrela cadente para uma passagem a cada 32 segundos.
+- `sunPosition` (0,1–0,9, padrão `0.9`): posição horizontal do sol. Em `0.9` o disco ocupa x de 1580 a 1980, atrás das palmeiras: fica 70 px à direita da área de conteúdo, e a borda do quadro corta 60 px dele de propósito, em vez de quase encostar nela; `0.1` é o espelho à esquerda. Perto do centro o sol desce: entre `0.35` e `0.65` ele fica meio posto, com o centro sobre o horizonte e o topo em y 544, de modo que só toca os últimos 16 px da faixa do título; entre `0.2` e `0.35` (e entre `0.65` e `0.8`) ele desce aos poucos. Os cortes acompanham a parte visível do disco. As montanhas abrem um vale embaixo do sol, e as estrelas cadentes voam para o lado oposto. O lado do sol é o mais claro do quadro: deixe chat e alertas do lado oposto, ou use `0.1` para levar o sol para a esquerda.
+- `neonGlow` (0–1, padrão `0.7`): brilho do neon na grade, no horizonte, nas montanhas, no halo do sol e no fio de luz das palmeiras.
+- `starCount` (0–200, padrão `90`): estrelas no céu. A cada dez estrelas o céu ganha também um cintilo de quatro pontas maior, até 12; em `0`, o céu fica sem estrelas e sem cintilos. Os cintilos ficam no céu aberto acima de y 230, fora da área de conteúdo e longe das copas das palmeiras, então nenhum se esconde atrás do sol, das montanhas ou das palmeiras.
+- `shootingStars` (0–3, padrão `1`): estrelas cadentes por ciclo, sempre acima da área de conteúdo. Elas repetem o mesmo trajeto a cada ciclo — com o padrão, a mesma estrela cruza o alto do quadro a cada 16 segundos —, então em lives longas use `0`, ou a receita de 32 segundos descrita em `speed`.
+- `palmCount` (0–3, padrão `2`): palmeiras em cada lateral. Com `1`, fica só a palmeira que se inclina para fora do quadro, a de menor presença sobre os cantos do jogo; `2` soma a palmeira grande, perto da câmera, que nasce da mesma touceira e forma um V com a primeira; `3` soma uma palmeira pequena, de pé no horizonte.
+- `shapeCount` (0–4, padrão `2`): sólidos aramados. Os dois primeiros ficam nos cantos de cima, entre as palmeiras e a área de conteúdo; os outros dois, nos cantos de baixo.
+- `centerShade` (0–1, padrão `0.6`): placa suave atrás da área de conteúdo, no formato de um quadro 16:9. Ela tem força total num retângulo 16:9 de 980×552 px no centro e se desfaz ao longo de 150 px, com cantos arredondados; nas quinas da área de conteúdo ainda passa da metade da força, então as quinas de uma câmera não ficam descobertas.
+
+Alterar a quantidade de uma camada não reorganiza as outras: cada camada usa a própria sequência da seed. Aumentar estrelas, palmeiras ou sólidos mantém os que já estavam; as estrelas cadentes se redistribuem ao longo do ciclo.
+
+Em MP4/GIF e no WebM opaco, `centerShade` escurece com `backgroundColor` o céu e as estrelas atrás do conteúdo e, com força menor, o chão abaixo do horizonte. As montanhas e o sol ficam por cima da placa. Com o sol no centro, meio posto abaixo do título, o disco perde no máximo 10% da opacidade e 20% do topo amarelo, mantendo o degradê de amarelo-claro a rosa; o halo, que chega à faixa do título, é atenuado em até 25%. Com os valores iniciais, um título branco na faixa central (x de 610 a 1310, y de 470 a 560) tem contraste mediano de cerca de 17,9:1, e o pior pixel fica acima de 12:1. No preset clássico, a mediana fica entre 15,3:1 e 15,9:1 ao longo do ciclo, e 95% dos pixels da faixa ficam acima de 8,8:1; só o topo do sol, nos últimos 16 px da faixa, fica claro. No WebM transparente não há o que escurecer; `centerShade` então apaga parcialmente o sol, as estrelas, os cintilos, as colinas distantes e o meio da linha do horizonte atrás do conteúdo. Em `1`, a linha do horizonte fica abaixo de 10% da opacidade entre x 800 e 1120, e as pontas continuam acesas.
+
+Com `transparent: true` e `outputFormat: "webm"`, o céu, o brilho do alto, o chão, a placa e as faixas de névoa e de brilho que cruzam o horizonte inteiro desaparecem; do brilho do horizonte ficam só as poças nas laterais. Sol, estrelas, montanhas, grade, palmeiras e sólidos continuam com alpha suave. As montanhas são desenhadas juntas, com 45% de opacidade, para o jogo aparecer através delas: as cordilheiras não se somam onde se sobrepõem, e o sol, as estrelas e a cordilheira de trás não aparecem através das da frente. Só as cristas da frente são redesenhadas com o neon inteiro. A grade se dissolve mais cedo em direção ao horizonte, cobrindo só a parte de baixo do quadro. Perto da borda de baixo, onde o jogo costuma mostrar vida e munição, as linhas da grade que passam abaixo de y 976 ficam com no máximo 40% da opacidade e só recuperam o brilho aos poucos até y 912, as colunas ficam abaixo de metade da opacidade e os troncos das palmeiras se desfazem entre y 860 e 950. Em MP4/GIF, todos os elementos são compostos sobre `backgroundColor`.
+
+Para exportar os presets com os perfis oficiais descritos acima:
+
+```sh
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-horizonte.json
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-classico.json
+npm run render:webm -- VaporwaveLoop --props presets/vaporwave-alpha.json
+```
+
+Troque `render:mp4` por `render:webm` ou `render:gif` para os outros formatos.
 
 ## Como o loop funciona
 

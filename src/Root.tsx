@@ -11,6 +11,7 @@ const hauntedInterior = backgroundCatalog.HauntedInteriorLoop;
 const kawaii = backgroundCatalog.KawaiiLoop;
 const cobweb = backgroundCatalog.CobwebLoop;
 const sunburst = backgroundCatalog.SunburstLoop;
+const vaporwave = backgroundCatalog.VaporwaveLoop;
 
 const metadataFor = <Props extends BaseBackgroundProps>(id: string, props: Props) => {
   const preset = getExportPreset(props);
@@ -57,7 +58,7 @@ export const RemotionRoot = () => (
       defaultProps={{
         durationSeconds: 16, seed: 81, transparent: false, backgroundColor: '#0E1520',
         colors: ['#688789', '#D6DDC7', '#E8AF62'], outputFormat: 'webm',
-        batCount: 4, moteCount: 28, fogIntensity: 0.55, windowIntensity: 0.7, moonScale: 1,
+        batCount: 4, moteCount: 28, fogIntensity: 0.75, windowIntensity: 0.7, moonScale: 1,
       }}
       {...getCompositionMetadata(hauntedMansion.defaultProps)}
       calculateMetadata={({props}: {props: typeof hauntedMansion.defaultProps}) => metadataFor(hauntedMansion.id, hauntedMansion.schema.parse(props))}
@@ -98,6 +99,19 @@ export const RemotionRoot = () => (
       }}
       {...getCompositionMetadata(sunburst.defaultProps)}
       calculateMetadata={({props}: {props: typeof sunburst.defaultProps}) => metadataFor(sunburst.id, sunburst.schema.parse(props))}
+    />
+    <Composition
+      id="VaporwaveLoop"
+      component={vaporwave.component}
+      schema={vaporwave.schema}
+      defaultProps={{
+        durationSeconds: 16, seed: 88, transparent: false, backgroundColor: '#120C2E',
+        colors: ['#FF71CE', '#01CDFE', '#FFFB96', '#B967FF'], outputFormat: 'webm' as const,
+        speed: 4, sunPosition: 0.9, neonGlow: 0.7, starCount: 90, shootingStars: 1,
+        palmCount: 2, shapeCount: 2, centerShade: 0.6,
+      }}
+      {...getCompositionMetadata(vaporwave.defaultProps)}
+      calculateMetadata={({props}: {props: typeof vaporwave.defaultProps}) => metadataFor(vaporwave.id, vaporwave.schema.parse(props))}
     />
     <Composition
       id="GradientLoop"

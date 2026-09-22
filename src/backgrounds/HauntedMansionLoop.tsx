@@ -14,7 +14,7 @@ export const hauntedMansionLoopSchema = baseBackgroundSchema.extend({
     .describe('Paleta: atmosfera, luar e janelas; a terceira cor é opcional'),
   batCount: z.number().int().min(0).max(12).default(4).describe('Quantidade de morcegos sobre a mansão'),
   moteCount: z.number().int().min(0).max(100).default(28).describe('Quantidade de luzes na névoa'),
-  fogIntensity: z.number().finite().min(0).max(1).default(0.55).describe('Intensidade da névoa baixa'),
+  fogIntensity: z.number().finite().min(0).max(1).default(0.75).describe('Intensidade dos bancos de neblina'),
   windowIntensity: z.number().finite().min(0).max(1).default(0.7).describe('Intensidade das janelas e dos lampiões'),
   moonScale: z.number().finite().min(0.6).max(1.4).default(1).describe('Tamanho da lua atrás da mansão'),
 });
@@ -83,10 +83,13 @@ export const getHauntedMansionScene = (
   const fog = Array.from({length: 5}, (_, index) => {
     const offset = index * TAU / 5;
     return element('fog', {
-      x: -170 + index * 535 + Math.sin(phase + offset) * 115,
-      y: 897 + index % 2 * 90 + Math.cos(phase + offset) * 17,
-      scale: 1 + Math.sin(phase + offset) * 0.04,
-      opacity: props.fogIntensity * (0.2 + Math.sin(phase + offset) * 0.04),
+      x: -170 + index * 535 + Math.sin(phase + offset) * 170,
+      y: 867 + index % 2 * 82 + Math.cos(phase + offset) * 22,
+      scale: 1 + Math.sin(phase + offset) * 0.06,
+      opacity: props.fogIntensity * (0.48 + Math.sin(phase + offset) * 0.06),
+      rotation: Math.sin(phase + offset) * 0.6,
+      glow: 0.74 + Math.sin(phase * 2 + offset) * 0.16,
+      flap: 1 + Math.sin(phase * 2 + offset) * 0.15,
     });
   });
   const clouds = Array.from({length: 3}, (_, index) => element('cloud', {
@@ -150,6 +153,24 @@ const IronFence = ({x, y, width, mirror = false}: {x: number; y: number; width: 
   </g>
 );
 
+/** Bancos sobrepostos, com bordas difusas e ondulação calculada na cena periódica. */
+const FogBank = ({x, y, scale, rotation, opacity, glow, flap}: HauntedMansionElement) => {
+  const wave = (flap - 1) * 160;
+  return (
+    <g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${scale} 1)`} opacity={opacity}>
+      <g filter="url(#mansion-fog-softness)">
+        <path d={`M-650 96 C-545 35-475 78-382 33 C-295-12-244 ${44 + wave}-158 11 C-50 ${-56 + wave} 47-2 130-12 C250-56 290 ${35 - wave} 405 19 C511 6 559 65 665 69 L695 183 H-695Z`}
+          fill="url(#mansion-fog-bank)" />
+        <path d={`M-580 89 C-420 ${27 - wave}-350 131-210 73 S20 ${11 + wave} 178 67 S388 ${15 - wave} 592 97`}
+          stroke="url(#mansion-fog-wisp)" strokeWidth="22" fill="none" opacity={glow} />
+      </g>
+      <path d={`M-550 119 C-359 ${67 + wave}-245 142-99 99 S150 ${72 - wave} 338 107 S465 83 582 113`}
+        stroke="url(#mansion-fog-wisp)" strokeWidth="7" fill="none" opacity={glow * 0.42}
+        filter="url(#mansion-fog-softness)" />
+    </g>
+  );
+};
+
 export const HauntedMansionLoop = (props: HauntedMansionLoopProps) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
@@ -183,6 +204,21 @@ export const HauntedMansionLoop = (props: HauntedMansionLoopProps) => {
             <stop offset="0.48" stopColor={atmosphere} stopOpacity="0.32" />
             <stop offset="1" stopColor={atmosphere} stopOpacity="0" />
           </radialGradient>
+          <radialGradient id="mansion-fog-bank" cx="50%" cy="46%" r="58%">
+            <stop stopColor={moonlight} stopOpacity="0.68" />
+            <stop offset="0.4" stopColor={atmosphere} stopOpacity="0.58" />
+            <stop offset="0.76" stopColor={atmosphere} stopOpacity="0.2" />
+            <stop offset="1" stopColor={atmosphere} stopOpacity="0" />
+          </radialGradient>
+          <linearGradient id="mansion-fog-wisp">
+            <stop stopColor={moonlight} stopOpacity="0" />
+            <stop offset="0.32" stopColor={moonlight} stopOpacity="0.4" />
+            <stop offset="0.62" stopColor={moonlight} stopOpacity="0.55" />
+            <stop offset="1" stopColor={moonlight} stopOpacity="0" />
+          </linearGradient>
+          <filter id="mansion-fog-softness" x="-12%" y="-70%" width="124%" height="240%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur stdDeviation="12" />
+          </filter>
           <radialGradient id="mansion-warm-glow">
             <stop stopColor={candle} stopOpacity="0.7" />
             <stop offset="0.23" stopColor={candle} stopOpacity="0.16" />
@@ -231,15 +267,13 @@ export const HauntedMansionLoop = (props: HauntedMansionLoopProps) => {
         <path d="M0 1020 Q180 952 370 998 Q630 1060 987 984 Q1280 908 1440 923 Q1700 912 1920 977 V1080 H0Z" fill="url(#mansion-ground)" />
         <path d="M1514 927 Q1470 965 1390 987 Q1278 1019 1282 1080 H1030 Q1140 1019 1300 992 Q1454 968 1488 927Z" fill={atmosphere} opacity="0.13" />
         <path d="M1515 928 Q1470 969 1374 997" stroke={moonlight} strokeOpacity="0.065" strokeWidth="2" fill="none" />
-        {ofKind('fog').slice(0, 2).map((fog, index) => <ellipse key={index} cx={fog.x + 540} cy={fog.y - 40} rx={570 * fog.scale} ry="67" fill="url(#mansion-fog)" opacity={fog.opacity * 0.7} />)}
+        {ofKind('fog').slice(0, 2).map((fog, index) => <ellipse key={index} cx={fog.x + 540} cy={fog.y - 40} rx={570 * fog.scale} ry="67" fill="url(#mansion-fog)" opacity={fog.opacity * 0.45} />)}
 
         {ofKind('tree').map((tree, index) => <BareTree key={index} {...tree} mirror={index === 1} color="#0A111A" />)}
         <IronFence x={-30} y={937} width={442} />
         <IronFence x={1950} y={990} width={255} mirror />
         {ofKind('lantern').map((lantern, index) => <Lantern key={index} {...lantern} color={candle} />)}
-        {ofKind('fog').map((fog, index) => (
-          <ellipse key={index} cx={fog.x} cy={fog.y} rx={650 * fog.scale} ry={64 * fog.scale} fill="url(#mansion-fog)" opacity={fog.opacity} />
-        ))}
+        {ofKind('fog').map((fog, index) => <FogBank key={index} {...fog} />)}
         {[9, 79, 345, 398, 1618, 1680, 1877].map((x, index) => (
           <path key={x} transform={`translate(${x} ${1076 - index % 3 * 8})`} d="M0 20 Q-3-23-22-42 M0 20 Q-3-24 13-54 M0 20 Q12-12 29-22" stroke="#090F17" strokeWidth="3" fill="none" />
         ))}

@@ -7,6 +7,7 @@ import {HauntedInteriorLoop, hauntedInteriorLoopSchema} from './backgrounds/Haun
 import {KawaiiLoop, kawaiiLoopSchema} from './backgrounds/KawaiiLoop';
 import {CobwebLoop, cobwebLoopSchema} from './backgrounds/CobwebLoop';
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
+import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 
 /** One registry shared by the Studio, renderer, validation, and documentation. */
 export const backgroundCatalog = {
@@ -45,6 +46,12 @@ export const backgroundCatalog = {
     component: SunburstLoop,
     schema: sunburstLoopSchema,
     defaultProps: sunburstLoopSchema.parse({}),
+  },
+  VaporwaveLoop: {
+    id: 'VaporwaveLoop',
+    component: VaporwaveLoop,
+    schema: vaporwaveLoopSchema,
+    defaultProps: vaporwaveLoopSchema.parse({}),
   },
   GradientLoop: {
     id: 'GradientLoop',

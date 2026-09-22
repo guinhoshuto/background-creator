@@ -1,0 +1,16 @@
+{
+  "durationSeconds": 16,
+  "seed": 88,
+  "transparent": false,
+  "backgroundColor": "#140B30",
+  "colors": ["#FF71CE", "#01CDFE", "#FFFB96", "#B967FF"],
+  "outputFormat": "webm",
+  "speed": 3,
+  "sunPosition": 0.5,
+  "neonGlow": 0.8,
+  "starCount": 110,
+  "shootingStars": 1,
+  "palmCount": 3,
+  "shapeCount": 4,
+  "centerShade": 0.85
+}

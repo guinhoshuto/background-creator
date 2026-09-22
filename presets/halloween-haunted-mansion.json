@@ -7,7 +7,7 @@
   "outputFormat": "webm",
   "batCount": 4,
   "moteCount": 28,
-  "fogIntensity": 0.55,
+  "fogIntensity": 0.75,
   "windowIntensity": 0.7,
   "moonScale": 1
 }

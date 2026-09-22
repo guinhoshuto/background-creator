@@ -20,7 +20,7 @@ test('Mansão: Studio, catálogo, schema e preset abrem a mesma noite de dezesse
   assert.deepEqual(defaults, {
     durationSeconds: 16, seed: 81, transparent: false, backgroundColor: '#0E1520',
     colors: ['#688789', '#D6DDC7', '#E8AF62'], outputFormat: 'webm',
-    batCount: 4, moteCount: 28, fogIntensity: 0.55, windowIntensity: 0.7, moonScale: 1,
+    batCount: 4, moteCount: 28, fogIntensity: 0.75, windowIntensity: 0.7, moonScale: 1,
   });
   const metadata = getCompositionMetadata(defaults);
   assert.deepEqual(metadata, {width: 1920, height: 1080, fps: 60, durationInFrames: 960});
@@ -70,7 +70,7 @@ test('Mansão: os controles rejeitam valores inválidos e aceitam seus extremos'
 test('Mansão: a cena mantém contagens e valores válidos durante o ciclo inclusive nos extremos', () => {
   for (const controls of [
     {batCount: 0, moteCount: 0, fogIntensity: 0, windowIntensity: 0, moonScale: 0.6},
-    {batCount: 4, moteCount: 28, fogIntensity: 0.55, windowIntensity: 0.7, moonScale: 1},
+    {batCount: 4, moteCount: 28, fogIntensity: 0.75, windowIntensity: 0.7, moonScale: 1},
     {batCount: 12, moteCount: 100, fogIntensity: 1, windowIntensity: 1, moonScale: 1.4},
   ]) {
     const props = hauntedMansionLoopSchema.parse(controls);

@@ -10,6 +10,7 @@ import {getHauntedMansionScene, hauntedMansionLoopSchema} from '../src/backgroun
 import {getKawaiiScene, kawaiiLoopSchema} from '../src/backgrounds/KawaiiLoop';
 import {getParticleScene, particleLoopSchema} from '../src/backgrounds/ParticleLoop';
 import {getSunburstScene, sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
+import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/VaporwaveLoop';
 import {backgroundCatalog, getBackground} from '../src/catalog';
 import {loopPhase} from '../src/loop';
 import {getCompositionMetadata} from '../src/settings';
@@ -73,6 +74,24 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'KawaiiLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getKawaiiScene(kawaiiLoopSchema.parse(input), frame, length),
+  },
+  {
+    // The floor and the sun cuts scroll, but they are listed by place, not by line: every
+    // field of the scene keeps the scan, with no exemption.
+    id: 'VaporwaveLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getVaporwaveScene(vaporwaveLoopSchema.parse(input), frame, length),
+  },
+  {
+    // Every layer at its maximum, the sun centred (sunk, with its own cut band) and the alpha
+    // path on: the WebM seam scan covers what the defaults leave out, and the periodicity scan,
+    // which sets mp4 and gif, still covers the opaque path.
+    id: 'VaporwaveLoop (máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getVaporwaveScene(vaporwaveLoopSchema.parse({
+        speed: 12, starCount: 200, shootingStars: 3, palmCount: 3, shapeCount: 4, centerShade: 1, sunPosition: 0.5,
+        transparent: true, ...(input as object),
+      }), frame, length),
   },
 ];
 
@@ -171,6 +190,16 @@ test('composition schemas reject invalid custom controls and accept documented b
   ]) {
     assert.equal(sunburstLoopSchema.safeParse(input).success, false, JSON.stringify(input));
   }
+  for (const input of [
+    {speed: -1}, {speed: 13}, {speed: 2.5}, {speed: '4'},
+    {sunPosition: 0.09}, {sunPosition: 0.91}, {sunPosition: Number.NaN},
+    {neonGlow: -0.01}, {neonGlow: 1.01}, {starCount: -1}, {starCount: 201}, {starCount: 1.5},
+    {shootingStars: -1}, {shootingStars: 4}, {shootingStars: 0.5},
+    {palmCount: -1}, {palmCount: 4}, {palmCount: 1.5}, {shapeCount: -1}, {shapeCount: 5}, {shapeCount: 2.5},
+    {centerShade: -0.01}, {centerShade: 1.01}, {centerShade: Number.POSITIVE_INFINITY},
+  ]) {
+    assert.equal(vaporwaveLoopSchema.safeParse(input).success, false, JSON.stringify(input));
+  }
   assert.equal(gradientLoopSchema.safeParse({scale: 0.25, intensity: 2}).success, true);
   assert.equal(particleLoopSchema.safeParse({count: 600, size: 24, distribution: 'center'}).success, true);
   assert.equal(geometricLoopSchema.safeParse({count: 100, scale: 0.15}).success, true);
@@ -185,6 +214,12 @@ test('composition schemas reject invalid custom controls and accept documented b
     {rayCount: 48, rayWidth: 0.8, swirl: 1, spin: 24, coreFade: 1, coreShade: 1},
   ]) {
     assert.equal(sunburstLoopSchema.safeParse(input).success, true);
+  }
+  for (const input of [
+    {speed: 0, sunPosition: 0.1, neonGlow: 0, starCount: 0, shootingStars: 0, palmCount: 0, shapeCount: 0, centerShade: 0},
+    {speed: 12, sunPosition: 0.9, neonGlow: 1, starCount: 200, shootingStars: 3, palmCount: 3, shapeCount: 4, centerShade: 1},
+  ]) {
+    assert.equal(vaporwaveLoopSchema.safeParse(input).success, true);
   }
 });
 
@@ -213,6 +248,9 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['SunburstLoop', 'sunburst-sand.json'],
     ['SunburstLoop', 'sunburst-ocean.json'],
     ['SunburstLoop', 'sunburst-moss.json'],
+    ['VaporwaveLoop', 'vaporwave-horizonte.json'],
+    ['VaporwaveLoop', 'vaporwave-classico.json'],
+    ['VaporwaveLoop', 'vaporwave-alpha.json'],
   ];
   for (const entry of Object.values(backgroundCatalog)) {
     assert.deepEqual(entry.schema.parse(entry.defaultProps), entry.defaultProps);
