@@ -1,0 +1,82 @@
+{
+  "name": "halloween-noite",
+  "title": "Pack Halloween — Noite de lua",
+  "items": [
+    {
+      "composition": "HalloweenLoop",
+      "preset": "halloween-midnight",
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-halloween-noite",
+      "sizes": ["chat-compacto", "chat-padrao", "chat-alto", "chat-coluna", "chat-vertical"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-halloween-noite",
+      "sizes": ["etiqueta-p", "etiqueta", "faixa", "titulo", "cartao", "quadrado", "lista", "circulo-p", "circulo", "circulo-g"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-halloween-noite",
+      "sizes": ["painel-twitch"],
+      "props": {"paddingX": 48, "paddingY": 36},
+      "formats": ["gif", "png"]
+    },
+    {
+      "composition": "BordaLoop",
+      "preset": "borda-halloween-noite",
+      "sizes": ["webcam-16x9", "webcam-4x3", "webcam-quadrada", "webcam-redonda-p", "webcam-redonda", "webcam-redonda-g", "webcam-vertical"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BordaLoop",
+      "preset": "borda-halloween-noite",
+      "sizes": ["webcam-16x9-g"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 72, "ornamentScale": 1.5}
+    },
+    {
+      "composition": "BordaLoop",
+      "preset": "borda-halloween-noite",
+      "sizes": ["jogo"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 96, "ornamentScale": 2}
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-halloween-noite",
+      "sizes": ["chat-compacto", "chat-padrao", "chat-alto", "chat-coluna", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "nenhum"},
+      "variant": "sem-enfeites"
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-halloween-noite",
+      "sizes": ["etiqueta-p", "etiqueta", "faixa", "titulo", "cartao", "quadrado", "lista", "circulo-p", "circulo", "circulo-g"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "nenhum"},
+      "variant": "sem-enfeites"
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-halloween-noite",
+      "sizes": ["painel-twitch"],
+      "formats": ["gif", "png"],
+      "props": {"ornaments": "nenhum"},
+      "variant": "sem-enfeites"
+    },
+    {
+      "composition": "BordaLoop",
+      "preset": "borda-halloween-noite",
+      "sizes": ["webcam-16x9", "webcam-16x9-g", "webcam-4x3", "webcam-quadrada", "webcam-redonda-p", "webcam-redonda", "webcam-redonda-g", "webcam-vertical", "jogo", "tela-cheia", "tela-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "nenhum"},
+      "variant": "sem-enfeites"
+    }
+  ]
+}

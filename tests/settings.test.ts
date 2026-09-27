@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {
+  ALPHA_FORMATS,
   baseBackgroundSchema,
+  evenPx,
   getCompositionMetadata,
   getExportPreset,
+  hasAlpha,
   hasTransparentBackground,
   outputFormatSchema,
 } from '../src/settings';
@@ -42,12 +45,16 @@ test('invalid or unrepresentable duration is rejected before rendering', () => {
   }
 });
 
-test('only transparent WebM preserves alpha; every other choice is flattened', () => {
+test('a regra de alpha vale para os cinco formatos: WebM, MOV e PNG preservam; MP4 e GIF compõem', () => {
+  const expected = {webm: true, mov: true, png: true, mp4: false, gif: false} as const;
+  assert.deepEqual([...outputFormatSchema.options].sort(), Object.keys(expected).sort());
   for (const outputFormat of outputFormatSchema.options) {
     for (const transparent of [true, false]) {
-      assert.equal(hasTransparentBackground({outputFormat, transparent}), transparent && outputFormat === 'webm');
+      assert.equal(hasAlpha({outputFormat, transparent}), transparent && expected[outputFormat], `${outputFormat} ${transparent}`);
+      assert.equal(hasTransparentBackground({outputFormat, transparent}), hasAlpha({outputFormat, transparent}));
     }
   }
+  assert.deepEqual([...ALPHA_FORMATS].sort(), ['mov', 'png', 'webm']);
 });
 
 test('official encoding presets preserve full-quality settings and PNG intermediates', () => {
@@ -73,6 +80,42 @@ test('official encoding presets preserve full-quality settings and PNG intermedi
   });
 });
 
+test('MOV é ProRes 4444 com alpha de 10 bits só quando transparente; PNG é um still sem codec de vídeo', () => {
+  for (const transparent of [false, true]) {
+    assert.deepEqual(getExportPreset({outputFormat: 'mov', transparent}), {
+      codec: 'prores',
+      imageFormat: 'png',
+      proResProfile: '4444',
+      pixelFormat: transparent ? 'yuva444p10le' : 'yuv444p10le',
+    });
+    assert.deepEqual(getExportPreset({outputFormat: 'png', transparent}), {codec: null, imageFormat: 'png'});
+  }
+});
+
+test('MOV e PNG seguem a cadência de 60 fps; o tamanho padrão continua 1920×1080', () => {
+  for (const outputFormat of ['mov', 'png'] as const) {
+    assert.deepEqual(getCompositionMetadata({durationSeconds: 8, outputFormat}), {
+      width: 1920, height: 1080, fps: 60, durationInFrames: 480,
+    });
+  }
+});
+
+test('um tamanho explícito muda só largura e altura dos metadados', () => {
+  const props = {durationSeconds: 1.234, outputFormat: 'gif'} as const;
+  assert.deepEqual(getCompositionMetadata(props, {width: 464, height: 664}), {
+    ...getCompositionMetadata(props), width: 464, height: 664,
+  });
+});
+
+test('evenPx recusa ímpares com a mensagem do H.264 e aceita pares no intervalo', () => {
+  const schema = evenPx('width', {min: 16, max: 3840});
+  for (const value of [16, 18, 640, 3840]) assert.equal(schema.safeParse(value).success, true, String(value));
+  for (const value of [14, 3842, 1.5, Number.NaN, '640']) assert.equal(schema.safeParse(value).success, false, String(value));
+  const odd = schema.safeParse(641);
+  assert(!odd.success);
+  assert.equal(odd.error.issues[0]?.message, 'width precisa ser par: o H.264 corta 1 px de dimensões ímpares sem avisar.');
+});
+
 test('shared schema rejects malformed user input', () => {
   const invalidInputs = [
     {durationSeconds: 0},
@@ -84,7 +127,8 @@ test('shared schema rejects malformed user input', () => {
     {colors: ['#FFFFFF']},
     {colors: Array<string>(7).fill('#FFFFFF')},
     {colors: [12, 34]},
-    {outputFormat: 'mov'},
+    {outputFormat: 'avi'},
+    {outputFormat: 'MOV'},
   ];
   for (const input of invalidInputs) {
     assert.equal(baseBackgroundSchema.safeParse(input).success, false, JSON.stringify(input));

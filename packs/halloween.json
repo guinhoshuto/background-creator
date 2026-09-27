@@ -1,0 +1,45 @@
+{
+  "name": "halloween",
+  "title": "Pack Halloween",
+  "items": [
+    {
+      "composition": "HalloweenLoop",
+      "preset": "halloween-midnight",
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "HauntedMansionLoop",
+      "preset": "halloween-haunted-mansion",
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "CobwebLoop",
+      "preset": "halloween-cobweb",
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-halloween",
+      "sizes": ["chat-compacto", "chat-padrao", "chat-alto", "chat-coluna", "chat-vertical"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-halloween",
+      "sizes": ["etiqueta-p", "etiqueta", "faixa", "titulo", "cartao", "quadrado", "lista", "circulo-p", "circulo", "circulo-g"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-halloween",
+      "sizes": ["painel-twitch"],
+      "formats": ["gif", "png"]
+    },
+    {
+      "composition": "BordaLoop",
+      "preset": "borda-halloween",
+      "sizes": ["webcam-16x9", "webcam-16x9-g", "webcam-4x3", "webcam-quadrada", "webcam-redonda-p", "webcam-redonda", "webcam-redonda-g", "webcam-vertical", "jogo", "tela-cheia", "tela-vertical"],
+      "formats": ["webm", "png"]
+    }
+  ]
+}

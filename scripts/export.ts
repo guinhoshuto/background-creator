@@ -1,10 +1,15 @@
 import {bundle} from '@remotion/bundler';
-import {renderFrames, renderMedia, selectComposition} from '@remotion/renderer';
-import {access, link, mkdir, mkdtemp, readdir, rename, rm} from 'node:fs/promises';
+import {renderFrames, renderMedia, renderStill, selectComposition} from '@remotion/renderer';
+import {rmSync} from 'node:fs';
+import {access, link, mkdir, mkdtemp, readdir, rename, rm, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {getBackground} from '../src/catalog';
-import {getExportPreset, type OutputFormat} from '../src/settings';
+import {getAsset, getLayoutOf, getMotionOf, getOpenGlRenderer, type CatalogEntry} from '../src/catalog';
+import {kindPolicies} from '../src/kinds';
+import type {AssetLayout} from '../src/overlays/shared/box';
+import type {AssetMotion} from '../src/overlays/shared/motion';
+import {getCompositionMetadata, getExportPreset, hasAlpha, type OutputFormat} from '../src/settings';
+import {assetFileName, sizeTag} from '../src/sizes';
 import {ffmpegPath, runProcess} from './process';
 
 export const projectRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -13,6 +18,60 @@ export const createBundle = () => bundle({
   outDir: path.join(projectRoot, '.cache/bundle'),
 });
 
+/** Prefix of the per-export scratch directory; cleanup only ever removes a directory with it. */
+export const SCRATCH_PREFIX = '.asset-render-';
+
+/** Every scratch directory under `root`, at any depth: an interrupted export's partial files, never valid output. */
+export const findScratchDirectories = async (root: string): Promise<string[]> => {
+  let entries;
+  try {
+    entries = await readdir(root, {withFileTypes: true});
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return [];
+    throw error;
+  }
+  const found: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const full = path.join(root, entry.name);
+    if (entry.name.startsWith(SCRATCH_PREFIX)) found.push(full);
+    else found.push(...await findScratchDirectories(full));
+  }
+  return found;
+};
+
+/** Removes the scratch directories interrupted exports left under each root; returns what it removed. */
+export const removeScratchDirectories = async (roots: readonly string[]) => {
+  const found = (await Promise.all(roots.map(findScratchDirectories))).flat();
+  for (const directory of found) await rm(directory, {recursive: true, force: true});
+  return found;
+};
+
+type ExitTarget = {
+  on: (event: 'exit' | 'SIGINT' | 'SIGTERM', listener: () => void) => unknown;
+  off: (event: 'exit' | 'SIGINT' | 'SIGTERM', listener: () => void) => unknown;
+  exit: (code: number) => void;
+};
+
+/**
+ * Ctrl+C exits without unwinding (Remotion's SIGINT handler calls process.exit mid-render; Node's
+ * default does the same elsewhere), so a `finally` never runs: remove the scratch directory
+ * synchronously on exit instead, and turn SIGINT/SIGTERM into a normal exit. Returns the undo.
+ */
+export const guardScratch = (scratch: string, target: ExitTarget = process) => {
+  const cleanup = () => rmSync(scratch, {recursive: true, force: true});
+  const onInterrupt = () => target.exit(130);
+  const onTerminate = () => target.exit(143);
+  target.on('exit', cleanup);
+  target.on('SIGINT', onInterrupt);
+  target.on('SIGTERM', onTerminate);
+  return () => {
+    target.off('exit', cleanup);
+    target.off('SIGINT', onInterrupt);
+    target.off('SIGTERM', onTerminate);
+  };
+};
+
 export type ExportOptions = {
   compositionId: string;
   format: OutputFormat;
@@ -20,57 +79,193 @@ export type ExportOptions = {
   output?: string;
   overwrite?: boolean;
   serveUrl?: string;
+  /** PNG only: which frame of the loop becomes the still (default 0). */
+  frame?: number;
+  /**
+   * Where the scratch directory is made (default: next to the output). Packs keep it out of the
+   * folder that is sold; it must be on the output's filesystem, since the result is linked or renamed.
+   */
+  scratchDirectory?: string;
   onProgress?: (message: string) => void;
 };
 
+/** Guides are a Studio aid; a sold file must never carry them. */
+export const assertExportable = (props: Record<string, unknown>) => {
+  if (props.guides === true) throw new Error('Desligue guides para exportar.');
+};
+
+/** The still's frame: only PNG takes one, and it must exist inside the loop (0…N−1). */
+export const resolveFrame = (format: OutputFormat, frame: number | undefined, durationInFrames: number) => {
+  if (format !== 'png') {
+    if (frame !== undefined) throw new Error('Use --frame somente com --format png.');
+    return null;
+  }
+  const still = frame ?? 0;
+  if (!Number.isInteger(still) || still < 0 || still >= durationInFrames) {
+    throw new Error(`O frame precisa ser um inteiro entre 0 e ${durationInFrames - 1}.`);
+  }
+  return still;
+};
+
+const defaultOutput = (asset: CatalogEntry, props: Record<string, unknown>, format: OutputFormat) =>
+  path.join(projectRoot, 'out', assetFileName({id: asset.id, kind: asset.kind, props, format}));
+
+/** The sidecar lives next to the file and names it, so each format gets its own. */
+export const sidecarPath = (output: string) => `${output}.json`;
+
+/** Placement data for tools and pack manifests (keys in English/CSS style). */
+export const buildSidecar = ({output, asset, props, layout, fps, durationInFrames, format, frame}: {
+  output: string; asset: CatalogEntry; props: Record<string, unknown> & {transparent: boolean; outputFormat: OutputFormat};
+  layout: AssetLayout; fps: number; durationInFrames: number; format: OutputFormat; frame: number | null;
+}) => {
+  const motion = getMotionOf(asset)?.(props) ?? null;
+  return {
+    file: path.basename(output),
+    kind: asset.kind,
+    size: sizeTag(asset.kind, props),
+    canvas: layout.canvas,
+    box: layout.box,
+    content: layout.content,
+    hole: layout.hole ?? null,
+    // Only kinds with a title area report one, so the other sidecars keep their exact shape.
+    ...(layout.header ? {header: layout.header} : {}),
+    bleed: typeof props.bleed === 'number' ? props.bleed : 0,
+    fps,
+    frames: format === 'png' ? 1 : durationInFrames,
+    ...(frame === null ? {} : {frame}),
+    format,
+    alpha: hasAlpha(props),
+    // The speeds the file shows, rounded to whole periods per cycle: they can differ from the props.
+    ...(motion ? {motion} : {}),
+    // No `mask` here: a single export never renders the OBS mask. The pack plans each mask and links it in its manifest.
+    props,
+  };
+};
+
+/** pt-BR: the speeds actually shown, since whole periods per cycle round the requested ones. */
+export const motionText = ({strokeSpeed, fillSpeed}: AssetMotion) =>
+  `Velocidade real: contorno ${strokeSpeed} px/s, preenchimento ${fillSpeed} px/s (arredondadas para períodos inteiros por ciclo).`;
+
 export const resolveExport = (options: ExportOptions) => {
-  const background = getBackground(options.compositionId);
-  if (!background) throw new Error(`Composição desconhecida: ${options.compositionId}. Use --list.`);
+  const asset = getAsset(options.compositionId);
   const requestedProps = {...options.props, outputFormat: options.format};
-  const props = background.schema.strict().parse(requestedProps);
+  const props = asset.schema.strict().parse(requestedProps);
+  assertExportable(props);
+  const frame = resolveFrame(options.format, options.frame, getCompositionMetadata(props).durationInFrames);
   // Keep defaults out of inputProps so saved Studio defaults can take effect.
   const inputProps = Object.fromEntries(Object.entries(props).filter(([key]) => key in requestedProps));
-  const output = path.resolve(options.output ?? path.join(projectRoot, 'out', `${background.id}.${options.format}`));
+  const output = path.resolve(options.output ?? defaultOutput(asset, props, options.format));
   if (path.extname(output).toLowerCase() !== `.${options.format}`) {
     throw new Error(`O destino precisa ter a extensão .${options.format}.`);
   }
-  return {background, props, inputProps, output, preset: getExportPreset(props)};
+  const chromiumOptions = {gl: getOpenGlRenderer(asset)};
+  const sidecar = getLayoutOf(asset) ? sidecarPath(output) : null;
+  return {asset, props, inputProps, output, sidecar, frame, preset: getExportPreset(props), chromiumOptions};
 };
 
-export const exportBackground = async (options: ExportOptions) => {
-  const {background, inputProps, output} = resolveExport(options);
-  const log = options.onProgress ?? console.log;
-  if (!options.overwrite) {
-    try {
-      await access(output);
-      throw new Error(`O arquivo já existe: ${output}. Use --overwrite para substituí-lo.`);
-    } catch (error) {
-      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+/**
+ * Publishes each [from, to] pair in order and removes the ones already published if a later one
+ * fails. Callers put the video last: its presence is what resumable builds take as "done", so an
+ * existing video always has its sidecar next to it.
+ */
+export const publishInOrder = async (
+  pairs: readonly (readonly [string, string])[],
+  publish: (from: string, to: string) => Promise<void>,
+  remove: (file: string) => Promise<void> = (file) => rm(file, {force: true}),
+) => {
+  const published: string[] = [];
+  try {
+    for (const [from, to] of pairs) {
+      await publish(from, to);
+      published.push(to);
     }
+  } catch (error) {
+    for (const file of published.reverse()) await remove(file).catch(() => undefined);
+    throw error;
+  }
+};
+
+const assertMissing = async (file: string) => {
+  try {
+    await access(file);
+    throw new Error(`O arquivo já existe: ${file}. Use --overwrite para substituí-lo.`);
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+  }
+};
+
+export const exportAsset = async (options: ExportOptions) => {
+  const resolved = resolveExport(options);
+  const {asset, inputProps, chromiumOptions} = resolved;
+  const log = options.onProgress ?? console.log;
+  // Sized names depend on props the saved Studio defaults may still change: check those after selectComposition.
+  const nameIsFinal = options.output !== undefined || kindPolicies[asset.kind].fixedSize !== null;
+  if (!options.overwrite && nameIsFinal) {
+    await assertMissing(resolved.output);
+    if (resolved.sidecar) await assertMissing(resolved.sidecar);
   }
   // Detect missing GIF encoder before spending time rendering hundreds of PNGs.
   if (options.format === 'gif') await runProcess(ffmpegPath(), ['-version']);
   const serveUrl = options.serveUrl ?? await createBundle();
   const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
-  const composition = await selectComposition({serveUrl, id: background.id, inputProps, browserExecutable});
-  const props = background.schema.strict().parse(composition.props);
+  const composition = await selectComposition({serveUrl, id: asset.id, inputProps, browserExecutable, chromiumOptions});
+  const props = asset.schema.strict().parse(composition.props);
+  // Saved Studio defaults take part only now: check them like the requested props.
+  assertExportable(props);
+  const frame = resolveFrame(options.format, options.frame, composition.durationInFrames);
   const preset = getExportPreset(props);
-  log(`${background.id}: ${composition.width}×${composition.height}, ${composition.fps} fps, ${composition.durationInFrames} frames (${(composition.durationInFrames / composition.fps).toFixed(3)} s).`);
-  if (props.transparent && options.format !== 'webm') log(`Transparência composta sobre ${props.backgroundColor}.`);
+  // A saved Studio size can differ from the schema default the early name was based on.
+  const output = options.output ? resolved.output : path.resolve(defaultOutput(asset, props, options.format));
+  const layout = getLayoutOf(asset)?.(props) ?? null;
+  const sidecar = layout ? sidecarPath(output) : null;
+  if (layout && (layout.canvas.width !== composition.width || layout.canvas.height !== composition.height)) {
+    throw new Error(`O layout descreve ${layout.canvas.width}×${layout.canvas.height}, mas a composição tem ${composition.width}×${composition.height}.`);
+  }
+  if (!options.overwrite && !nameIsFinal) {
+    await assertMissing(output);
+    if (sidecar) await assertMissing(sidecar);
+  }
+  log(`${asset.id}: ${composition.width}×${composition.height}, ${composition.fps} fps, ${composition.durationInFrames} frames (${(composition.durationInFrames / composition.fps).toFixed(3)} s).`);
+  if (props.transparent && !hasAlpha(props)) log(`Transparência composta sobre ${props.backgroundColor}.`);
+  const motion = getMotionOf(asset)?.(props) ?? null;
+  if (motion) log(motionText(motion));
   await mkdir(path.dirname(output), {recursive: true});
-  // This isolated directory lives beside the final output; partial exports are never published.
-  const scratch = await mkdtemp(path.join(path.dirname(output), '.background-render-'));
+  // An isolated directory (beside the output unless told otherwise); partial exports are never published.
+  const scratchParent = options.scratchDirectory ? path.resolve(options.scratchDirectory) : path.dirname(output);
+  await mkdir(scratchParent, {recursive: true});
+  const scratch = await mkdtemp(path.join(scratchParent, SCRATCH_PREFIX));
+  const releaseScratch = guardScratch(scratch);
   const temporaryOutput = path.join(scratch, `render.${options.format}`);
   let lastProgress = -1;
   const progress = (fraction: number) => {
     const percent = Math.min(100, Math.floor(fraction * 10) * 10);
     if (percent > lastProgress) {lastProgress = percent; log(`Render: ${percent}%`);}
   };
+  const publish = async (from: string, to: string) => {
+    if (options.overwrite) await rename(from, to);
+    else await link(from, to);
+  };
   try {
-    if (preset.codec === 'gif') {
+    // Everything the sidecar needs is known now; writing it first means a full disk fails before rendering.
+    const temporarySidecar = path.join(scratch, 'render.json');
+    if (layout) {
+      const data = buildSidecar({
+        output, asset, props, layout, fps: composition.fps, durationInFrames: composition.durationInFrames,
+        format: options.format, frame,
+      });
+      await writeFile(temporarySidecar, `${JSON.stringify(data, null, 2)}\n`);
+    }
+    if (frame !== null) {
+      // The still keeps alpha exactly when the shared rule says so: Canvas paints no backdrop then.
+      await renderStill({
+        serveUrl, composition, inputProps: props, browserExecutable, chromiumOptions,
+        frame, imageFormat: 'png', output: temporaryOutput, logLevel: 'error',
+      });
+      progress(1);
+    } else if (preset.codec === 'gif') {
       const framesDirectory = path.join(scratch, 'frames');
       await renderFrames({
-        serveUrl, composition, inputProps: props, browserExecutable,
+        serveUrl, composition, inputProps: props, browserExecutable, chromiumOptions,
         outputDir: framesDirectory, imageFormat: 'png', muted: true,
         concurrency: 2, logLevel: 'error',
         onStart: () => undefined,
@@ -94,24 +289,28 @@ export const exportBackground = async (options: ExportOptions) => {
         '-lavfi', 'paletteuse=dither=sierra2_4a', '-an', '-loop', '0',
         '-frames:v', String(composition.durationInFrames), temporaryOutput,
       ]);
-    } else {
+    } else if (preset.codec !== null) {
       await renderMedia({
-        serveUrl, composition, inputProps: props, browserExecutable,
+        serveUrl, composition, inputProps: props, browserExecutable, chromiumOptions,
         ...preset, outputLocation: temporaryOutput, muted: true,
+        // Also required for ProRes: the VideoToolbox encoder cannot write yuva444p10le.
         hardwareAcceleration: 'disable', concurrency: 2,
         // One encoding pass also avoids alpha differences across independently encoded chunks.
         disallowParallelEncoding: true, logLevel: 'error',
         onProgress: ({progress: fraction}) => progress(fraction),
       });
     }
-    if (options.overwrite) await rename(temporaryOutput, output);
-    else await link(temporaryOutput, output);
+    await publishInOrder([
+      ...(sidecar ? [[temporarySidecar, sidecar] as const] : []),
+      [temporaryOutput, output] as const,
+    ], publish);
     log(`Exportado: ${output}`);
-    return {output, props, composition};
+    return {output, sidecar, props, composition};
   } finally {
+    releaseScratch();
     // Only remove the exact mkdtemp directory created by this invocation.
-    const relative = path.relative(path.dirname(output), scratch);
-    if (relative.startsWith('.background-render-') && !relative.includes(path.sep)) {
+    const relative = path.relative(scratchParent, scratch);
+    if (relative.startsWith(SCRATCH_PREFIX) && !relative.includes(path.sep)) {
       await rm(scratch, {recursive: true, force: true});
     }
   }

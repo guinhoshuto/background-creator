@@ -1,0 +1,35 @@
+{
+  "name": "neon",
+  "title": "Pack Neon",
+  "items": [
+    {
+      "composition": "VaporwaveLoop",
+      "preset": "vaporwave-classico",
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-neon",
+      "sizes": ["chat-compacto", "chat-padrao", "chat-alto", "chat-coluna", "chat-vertical"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-neon",
+      "sizes": ["etiqueta-p", "etiqueta", "faixa", "titulo", "cartao", "quadrado", "lista", "circulo-p", "circulo", "circulo-g"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlocoLoop",
+      "preset": "bloco-neon",
+      "sizes": ["painel-twitch"],
+      "formats": ["gif", "png"]
+    },
+    {
+      "composition": "BordaLoop",
+      "preset": "borda-neon",
+      "sizes": ["webcam-16x9", "webcam-16x9-g", "webcam-4x3", "webcam-quadrada", "webcam-redonda-p", "webcam-redonda", "webcam-redonda-g", "webcam-vertical", "jogo", "tela-cheia", "tela-vertical"],
+      "formats": ["webm", "png"]
+    }
+  ]
+}
