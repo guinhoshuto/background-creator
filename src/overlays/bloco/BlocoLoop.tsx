@@ -60,12 +60,13 @@ const fillOptions = (layout: PanelLayout): FillOptions => ({corner: layout.shape
 const blocoFields = z.object({
   ...overlayBaseFields(DEFAULT_SIZE),
   shape: shapeField('Forma do bloco: retangulo (cantos com radius) ou circulo (a caixa precisa ser quadrada: use --size circulo-p, circulo ou circulo-g); no círculo o texto vai no quadrado centralizado dentro dele'),
-  radius: radiusField(16)
-    .describe('Raio dos cantos, em px; limitado a metade do menor lado (vira pílula); com shape circulo é ignorado, o raio é metade do lado'),
-  paddingX: z.number().finite().min(0).max(512).default(24)
-    .describe('Espaço horizontal entre o contorno (ou a barra de destaque) e o conteúdo, em px; no círculo vale o maior entre paddingX e paddingY, em toda a volta'),
-  paddingY: z.number().finite().min(0).max(512).default(16)
-    .describe('Espaço vertical entre o contorno (ou a barra de destaque) e o conteúdo, em px; no círculo vale o maior entre paddingX e paddingY, em toda a volta'),
+  radius: radiusField(16, 'Raio dos cantos, em px; limitado a metade do menor lado (vira pílula); com shape circulo é ignorado, o raio é metade do lado'),
+  paddingX: z.number().finite().min(0).max(512)
+    .describe('Espaço horizontal entre o contorno (ou a barra de destaque) e o conteúdo, em px; no círculo vale o maior entre paddingX e paddingY, em toda a volta')
+    .default(24),
+  paddingY: z.number().finite().min(0).max(512)
+    .describe('Espaço vertical entre o contorno (ou a barra de destaque) e o conteúdo, em px; no círculo vale o maior entre paddingX e paddingY, em toda a volta')
+    .default(16),
   ...fillFields({
     fill: 'gradiente', fillColors: ['#120A38', '#26105C', '#0A1C4E'], fillOpacity: 0.9, fillAngle: 60, fillLight: 0.05,
   }),
@@ -77,13 +78,16 @@ const blocoFields = z.object({
   ...glowFields({glow: 20, glowPulses: 2, glowStrength: 3}),
   ...haloFields({halo: 20, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
-  accent: z.enum(BLOCO_ACCENTS).default('nenhum')
-    .describe('Barra de destaque dentro do contorno: nenhum, esquerda ou topo; o conteúdo começa depois dela. No círculo é um arco de 120° colado ao contorno, centrado à esquerda ou no topo'),
-  accentColor: zColor().default('#E879F9').describe('Cor da barra de destaque'),
-  accentSize: z.number().finite().min(2).max(64).default(6)
-    .describe('Espessura da barra de destaque, em px'),
-  accentSheen: z.number().int().min(0).max(4).default(0)
-    .describe('Quantas vezes um reflexo percorre a barra de destaque por ciclo; 0 desliga'),
+  accent: z.enum(BLOCO_ACCENTS)
+    .describe('Barra de destaque dentro do contorno: nenhum, esquerda ou topo; o conteúdo começa depois dela. No círculo é um arco de 120° colado ao contorno, centrado à esquerda ou no topo')
+    .default('nenhum'),
+  accentColor: zColor().default('#E879F9'),
+  accentSize: z.number().finite().min(2).max(64)
+    .describe('Espessura da barra de destaque, em px')
+    .default(6),
+  accentSheen: z.number().int().min(0).max(4)
+    .describe('Quantas vezes um reflexo percorre a barra de destaque por ciclo; 0 desliga')
+    .default(0),
   ...ornamentFields(),
 });
 

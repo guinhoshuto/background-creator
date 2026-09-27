@@ -25,12 +25,15 @@ export type BoxDefaults = {width: number; height: number; bleed: number};
 
 /** Width/height/bleed fields shared by every sized kind; defaults come from the kind's default size. */
 export const overlayBoxFields = (defaults: BoxDefaults) => ({
-  width: evenPx('width', {min: MIN_BOX_SIDE, max: MAX_SIDE}).default(defaults.width)
-    .describe('Largura da caixa, em px (par)'),
-  height: evenPx('height', {min: MIN_BOX_SIDE, max: MAX_SIDE}).default(defaults.height)
-    .describe('Altura da caixa, em px (par)'),
-  bleed: evenPx('bleed', {min: 0, max: MAX_BLEED}).default(defaults.bleed)
-    .describe('Margem transparente em volta da caixa para brilho, em px (par)'),
+  width: evenPx('width', {min: MIN_BOX_SIDE, max: MAX_SIDE})
+    .describe('Largura da caixa, em px (par)')
+    .default(defaults.width),
+  height: evenPx('height', {min: MIN_BOX_SIDE, max: MAX_SIDE})
+    .describe('Altura da caixa, em px (par)')
+    .default(defaults.height),
+  bleed: evenPx('bleed', {min: 0, max: MAX_BLEED})
+    .describe('Margem transparente em volta da caixa para brilho, em px (par)')
+    .default(defaults.bleed),
 });
 
 type BoxProps = {width: number; height: number; bleed: number};

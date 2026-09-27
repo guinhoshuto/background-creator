@@ -33,14 +33,17 @@ const bordaFields = z.object({
   ...overlayBaseFields({width: SIZE.width, height: SIZE.height, bleed: SIZE.bleed}),
   // MP4 and GIF composite over this colour, the window included: a dark violet suits the neon look.
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#0B0620'),
-  fit: z.enum(FRAME_FITS).default('janela')
-    .describe('janela: a caixa é a janela transparente e a moldura vai para fora, no bleed; tela: a caixa é o arquivo inteiro (use bleed 0) e a moldura é desenhada para dentro'),
+  fit: z.enum(FRAME_FITS)
+    .describe('janela: a caixa é a janela transparente e a moldura vai para fora, no bleed; tela: a caixa é o arquivo inteiro (use bleed 0) e a moldura é desenhada para dentro')
+    .default('janela'),
   shape: shapeField('Forma da janela: retangulo (cantos com radius) ou circulo, para câmera redonda (a caixa precisa ser quadrada: use --size webcam-redonda-p, webcam-redonda ou webcam-redonda-g; só com fit janela)'),
-  mascara: z.boolean().default(false)
-    .describe('Exporta só a máscara da janela (PNG branco) para o filtro Máscara de Imagem do OBS'),
-  radius: radiusField(16).describe('Raio dos cantos da janela, em px; limitado a metade do menor lado; com shape circulo é ignorado, o raio é metade do lado'),
-  thickness: z.number().finite().min(2).max(256).default(10)
-    .describe('Espessura da faixa da moldura, em px; o contorno corre no meio dela'),
+  mascara: z.boolean()
+    .describe('Exporta só a máscara da janela (PNG branco) para o filtro Máscara de Imagem do OBS')
+    .default(false),
+  radius: radiusField(16, 'Raio dos cantos da janela, em px; limitado a metade do menor lado; com shape circulo é ignorado, o raio é metade do lado'),
+  thickness: z.number().finite().min(2).max(256)
+    .describe('Espessura da faixa da moldura, em px; o contorno corre no meio dela')
+    .default(10),
   ...fillFields({
     fill: 'solido', fillColors: ['#120A38'], fillOpacity: 0.9, fillScale: 12, fillSpeed: 24, fillAngle: 45,
   }),
@@ -52,22 +55,30 @@ const bordaFields = z.object({
   ...glowFields({glow: 16, glowPulses: 0, glowStrength: 2.6}),
   ...haloFields({halo: 0, haloColor: '#A78BFA'}),
   rimLight: rimLightField(0),
-  lines: z.number().int().min(1).max(2).default(2)
-    .describe('1: só a faixa; 2: mais uma linha fina por fora dela, separada por lineGap (em formigas e cometas ela fica parada)'),
-  lineGap: z.number().finite().min(1).max(64).default(4)
-    .describe('Espaço entre a faixa e a segunda linha, em px'),
-  outerLineWidth: z.number().finite().min(1).max(32).default(2)
-    .describe('Espessura da segunda linha, em px; 2 ou mais evita perda de cor no WebM'),
-  corners: z.enum(CORNER_STYLES).default('colchetes')
-    .describe('Enfeite dos cantos: nenhum, colchetes (cantoneiras em volta da moldura) ou joias (losangos sobre a faixa)'),
-  cornerSize: z.number().finite().min(4).max(512).default(28)
-    .describe('colchetes: comprimento de cada braço depois da curva do canto, em px; no círculo, cada colchete é um arco de 4×cornerSize px'),
-  cornerGap: z.number().finite().min(0).max(128).default(6)
-    .describe('colchetes: distância da borda externa da moldura, em px; em tela eles ficam para dentro, a partir da borda do arquivo'),
-  gemSize: z.number().finite().min(4).max(128).default(14)
-    .describe('joias: largura de cada losango, em px'),
-  cornerPulses: z.number().int().min(0).max(16).default(1)
-    .describe('Quantas vezes os cantos pulsam por ciclo, acendendo um depois do outro; 0 deixa constante'),
+  lines: z.number().int().min(1).max(2)
+    .describe('1: só a faixa; 2: mais uma linha fina por fora dela, separada por lineGap (em formigas e cometas ela fica parada)')
+    .default(2),
+  lineGap: z.number().finite().min(1).max(64)
+    .describe('Espaço entre a faixa e a segunda linha, em px')
+    .default(4),
+  outerLineWidth: z.number().finite().min(1).max(32)
+    .describe('Espessura da segunda linha, em px; 2 ou mais evita perda de cor no WebM')
+    .default(2),
+  corners: z.enum(CORNER_STYLES)
+    .describe('Enfeite dos cantos: nenhum, colchetes (cantoneiras em volta da moldura) ou joias (losangos sobre a faixa)')
+    .default('colchetes'),
+  cornerSize: z.number().finite().min(4).max(512)
+    .describe('colchetes: comprimento de cada braço depois da curva do canto, em px; no círculo, cada colchete é um arco de 4×cornerSize px')
+    .default(28),
+  cornerGap: z.number().finite().min(0).max(128)
+    .describe('colchetes: distância da borda externa da moldura, em px; em tela eles ficam para dentro, a partir da borda do arquivo')
+    .default(6),
+  gemSize: z.number().finite().min(4).max(128)
+    .describe('joias: largura de cada losango, em px')
+    .default(14),
+  cornerPulses: z.number().int().min(0).max(16)
+    .describe('Quantas vezes os cantos pulsam por ciclo, acendendo um depois do outro; 0 deixa constante')
+    .default(1),
   ...ornamentFields(),
 });
 

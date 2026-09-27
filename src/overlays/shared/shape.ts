@@ -9,7 +9,7 @@ import {z} from 'zod';
 export const PANEL_SHAPES = ['retangulo', 'circulo'] as const;
 export type PanelShape = (typeof PANEL_SHAPES)[number];
 
-export const shapeField = (describe: string) => z.enum(PANEL_SHAPES).default('retangulo').describe(describe);
+export const shapeField = (describe: string) => z.enum(PANEL_SHAPES).describe(describe).default('retangulo');
 
 type ShapeProps = {shape: PanelShape; radius: number; width: number; height: number};
 

@@ -12,16 +12,18 @@ export const CHECKER_DIRECTIONS = [
 // The board has two tones: the squares and the background between them, so the shared
 // palette would be a dead control. The WebM alpha keeps only the squares.
 const checkerboardFields = baseBackgroundSchema.omit({colors: true}).extend({
-  backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#141A33')
-    .describe('Cor das casas entre os quadrados'),
-  direction: z.enum(CHECKER_DIRECTIONS).default('down-right')
-    .describe('Direção do movimento, ao longo das fileiras, colunas ou diagonais do tabuleiro'),
-  angle: z.number().finite().min(-45).max(45).default(0)
-    .describe('Inclinação do tabuleiro, em graus, no sentido horário; o movimento gira junto'),
-  squareColor: zColor().default('#222C57').describe('Cor dos quadrados'),
-  squareSize: z.number().finite().min(16).max(480).default(80).describe('Lado de cada casa, em pixels'),
-  speed: z.number().finite().min(0).max(960).default(40)
-    .describe('Velocidade em pixels por segundo, arredondada para um número inteiro de passos do padrão por ciclo (no mínimo um); 0 deixa o tabuleiro parado'),
+  backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#141A33'),
+  direction: z.enum(CHECKER_DIRECTIONS)
+    .describe('Direção do movimento, ao longo das fileiras, colunas ou diagonais do tabuleiro')
+    .default('down-right'),
+  angle: z.number().finite().min(-45).max(45)
+    .describe('Inclinação do tabuleiro, em graus, no sentido horário; o movimento gira junto')
+    .default(0),
+  squareColor: zColor().default('#222C57'),
+  squareSize: z.number().finite().min(16).max(480).describe('Lado de cada casa, em pixels').default(80),
+  speed: z.number().finite().min(0).max(960)
+    .describe('Velocidade em pixels por segundo, arredondada para um número inteiro de passos do padrão por ciclo (no mínimo um); 0 deixa o tabuleiro parado')
+    .default(40),
 });
 
 export type CheckerboardLoopProps = z.infer<typeof checkerboardFields>;

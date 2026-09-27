@@ -12,14 +12,15 @@ export const cobwebLoopSchema = baseBackgroundSchema.extend({
   // Schema, Root literal and preset carry the same seed, so an omitted key never surprises.
   seed: baseBackgroundSchema.shape.seed.default(47),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#100B1B'),
-  colors: baseBackgroundSchema.shape.colors.default(['#CFC6E4', '#F6EFD8', '#E8963C'])
-    .describe('Paleta: seda, luar e destaque âmbar; a terceira cor é opcional'),
-  webCount: z.number().int().min(0).max(4).default(4).describe('Teias ancoradas nos cantos'),
-  strandCount: z.number().int().min(0).max(24).default(12).describe('Fios de seda soltos'),
-  moteCount: z.number().int().min(0).max(120).default(40).describe('Partículas de poeira'),
-  spiderCount: z.number().int().min(0).max(3).default(1).describe('Aranhas penduradas'),
-  dewIntensity: z.number().finite().min(0).max(1).default(0.7).describe('Brilho das gotas de orvalho'),
-  mistIntensity: z.number().finite().min(0).max(1).default(0.5).describe('Intensidade da névoa'),
+  colors: baseBackgroundSchema.shape.colors.unwrap()
+    .describe('Paleta: seda, luar e destaque âmbar; a terceira cor é opcional')
+    .default(['#CFC6E4', '#F6EFD8', '#E8963C']),
+  webCount: z.number().int().min(0).max(4).describe('Teias ancoradas nos cantos').default(4),
+  strandCount: z.number().int().min(0).max(24).describe('Fios de seda soltos').default(12),
+  moteCount: z.number().int().min(0).max(120).describe('Partículas de poeira').default(40),
+  spiderCount: z.number().int().min(0).max(3).describe('Aranhas penduradas').default(1),
+  dewIntensity: z.number().finite().min(0).max(1).describe('Brilho das gotas de orvalho').default(0.7),
+  mistIntensity: z.number().finite().min(0).max(1).describe('Intensidade da névoa').default(0.5),
 });
 
 export type CobwebLoopProps = z.infer<typeof cobwebLoopSchema>;

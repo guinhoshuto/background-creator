@@ -27,24 +27,33 @@ export const vaporwaveLoopSchema = baseBackgroundSchema.extend({
   // Schema, Root literal and presets carry the same seed, so an omitted key never surprises.
   seed: baseBackgroundSchema.shape.seed.default(88),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#120C2E'),
-  colors: baseBackgroundSchema.shape.colors.default(['#FF71CE', '#01CDFE', '#FFFB96', '#B967FF'])
-    .describe('Paleta: rosa neon das linhas do chão, do horizonte, do sol, da cordilheira de trás e de um sólido; ciano das colunas do chão, das montanhas da frente e dos outros sólidos; amarelo-claro do topo do sol; lilás da névoa. A terceira e a quarta cores são opcionais e as demais são ignoradas'),
-  speed: z.number().int().min(0).max(12).default(4)
-    .describe('Linhas da grade que passam por ciclo (inteiro); mais linhas deixam o chão mais rápido e 0 o deixa parado. Todo o movimento acompanha o ciclo: ao aumentar durationSeconds, aumente speed na mesma proporção (32 s → 8, 48 s → 12)'),
-  sunPosition: z.number().finite().min(0.1).max(0.9).default(0.9)
-    .describe('Posição horizontal do sol: 0,1 na borda esquerda, 0,5 no centro e 0,9 na borda direita; perto do centro ele desce e fica meio posto no horizonte, abaixo da faixa do título. O lado do sol é o mais claro do quadro: deixe chat e alertas do lado oposto'),
-  neonGlow: z.number().finite().min(0).max(1).default(0.7)
-    .describe('Brilho neon da grade, do horizonte, das montanhas, do sol e dos contornos'),
-  starCount: z.number().int().min(0).max(200).default(90)
-    .describe('Estrelas no céu; a cada dez, um cintilo de quatro pontas maior (até 12)'),
-  shootingStars: z.number().int().min(0).max(3).default(1)
-    .describe('Estrelas cadentes por ciclo, sempre na faixa de cima; repetem o mesmo trajeto a cada ciclo — em lives longas, use 0'),
-  palmCount: z.number().int().min(0).max(3).default(2)
-    .describe('Palmeiras em cada lateral: 1 deixa só a que se inclina para fora do quadro; 2 soma a grande, perto da câmera; 3 soma a pequena no horizonte'),
-  shapeCount: z.number().int().min(0).max(4).default(2)
-    .describe('Sólidos aramados flutuando: os dois primeiros nos cantos de cima, os outros nos de baixo'),
-  centerShade: z.number().finite().min(0).max(1).default(0.6)
-    .describe('Placa suave 16:9 atrás da área de conteúdo; no WebM transparente, apaga o sol, as estrelas, os cintilos, as colinas distantes e o meio da linha do horizonte atrás dela'),
+  colors: baseBackgroundSchema.shape.colors.unwrap()
+    .describe('Paleta: rosa neon das linhas do chão, do horizonte, do sol, da cordilheira de trás e de um sólido; ciano das colunas do chão, das montanhas da frente e dos outros sólidos; amarelo-claro do topo do sol; lilás da névoa. A terceira e a quarta cores são opcionais e as demais são ignoradas')
+    .default(['#FF71CE', '#01CDFE', '#FFFB96', '#B967FF']),
+  speed: z.number().int().min(0).max(12)
+    .describe('Linhas da grade que passam por ciclo (inteiro); mais linhas deixam o chão mais rápido e 0 o deixa parado. Todo o movimento acompanha o ciclo: ao aumentar durationSeconds, aumente speed na mesma proporção (32 s → 8, 48 s → 12)')
+    .default(4),
+  sunPosition: z.number().finite().min(0.1).max(0.9)
+    .describe('Posição horizontal do sol: 0,1 na borda esquerda, 0,5 no centro e 0,9 na borda direita; perto do centro ele desce e fica meio posto no horizonte, abaixo da faixa do título. O lado do sol é o mais claro do quadro: deixe chat e alertas do lado oposto')
+    .default(0.9),
+  neonGlow: z.number().finite().min(0).max(1)
+    .describe('Brilho neon da grade, do horizonte, das montanhas, do sol e dos contornos')
+    .default(0.7),
+  starCount: z.number().int().min(0).max(200)
+    .describe('Estrelas no céu; a cada dez, um cintilo de quatro pontas maior (até 12)')
+    .default(90),
+  shootingStars: z.number().int().min(0).max(3)
+    .describe('Estrelas cadentes por ciclo, sempre na faixa de cima; repetem o mesmo trajeto a cada ciclo — em lives longas, use 0')
+    .default(1),
+  palmCount: z.number().int().min(0).max(3)
+    .describe('Palmeiras em cada lateral: 1 deixa só a que se inclina para fora do quadro; 2 soma a grande, perto da câmera; 3 soma a pequena no horizonte')
+    .default(2),
+  shapeCount: z.number().int().min(0).max(4)
+    .describe('Sólidos aramados flutuando: os dois primeiros nos cantos de cima, os outros nos de baixo')
+    .default(2),
+  centerShade: z.number().finite().min(0).max(1)
+    .describe('Placa suave 16:9 atrás da área de conteúdo; no WebM transparente, apaga o sol, as estrelas, os cintilos, as colinas distantes e o meio da linha do horizonte atrás dela')
+    .default(0.6),
 });
 
 export type VaporwaveLoopProps = z.infer<typeof vaporwaveLoopSchema>;

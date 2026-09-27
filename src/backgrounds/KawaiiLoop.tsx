@@ -9,13 +9,14 @@ export const kawaiiLoopSchema = baseBackgroundSchema.extend({
   durationSeconds: baseBackgroundSchema.shape.durationSeconds.default(12),
   seed: baseBackgroundSchema.shape.seed.default(7),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#FFF7F4'),
-  colors: baseBackgroundSchema.shape.colors.default(['#F7C8D8', '#FFE6BC', '#BFE3DC'])
-    .describe('Paleta: morango, baunilha e matchá; a terceira cor é opcional'),
-  familyCount: z.number().int().min(2).max(6).default(5).describe('Quantos grupos compõem o quadro'),
-  familyScale: z.number().finite().min(0.7).max(1.4).default(1).describe('Tamanho geral da composição'),
-  centerClearance: z.number().finite().min(0).max(1).default(0.5).describe('Tamanho do vazio central reservado ao conteúdo'),
-  drift: z.number().finite().min(0).max(1).default(0.55).describe('Amplitude da flutuação'),
-  sparkleTrail: z.number().int().min(0).max(4).default(2).describe('Cintilos que acompanham cada grupo'),
+  colors: baseBackgroundSchema.shape.colors.unwrap()
+    .describe('Paleta: morango, baunilha e matchá; a terceira cor é opcional')
+    .default(['#F7C8D8', '#FFE6BC', '#BFE3DC']),
+  familyCount: z.number().int().min(2).max(6).describe('Quantos grupos compõem o quadro').default(5),
+  familyScale: z.number().finite().min(0.7).max(1.4).describe('Tamanho geral da composição').default(1),
+  centerClearance: z.number().finite().min(0).max(1).describe('Tamanho do vazio central reservado ao conteúdo').default(0.5),
+  drift: z.number().finite().min(0).max(1).describe('Amplitude da flutuação').default(0.55),
+  sparkleTrail: z.number().int().min(0).max(4).describe('Cintilos que acompanham cada grupo').default(2),
 });
 
 export type KawaiiLoopProps = z.infer<typeof kawaiiLoopSchema>;

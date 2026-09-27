@@ -52,13 +52,16 @@ const chatFields = z.object({
   ...glowFields({glow: 20, glowPulses: 1, glowStrength: 3}),
   ...haloFields({halo: 24, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
-  headerHeight: z.number().int().min(0).max(512).default(48)
-    .describe('Altura do cabeçalho no topo do painel (onde vai o título, ex.: "CHAT"), em px; 0 = sem cabeçalho'),
-  headerColor: zColor().default('#E879F9').describe('Cor da faixa do cabeçalho'),
-  headerOpacity: z.number().finite().min(0).max(1).default(0.1)
-    .describe('Opacidade da faixa do cabeçalho, de 0 a 1; 0 deixa só a linha'),
-  headerLineWidth: z.number().finite().min(0).max(16).default(2)
-    .describe('Espessura da linha entre o cabeçalho e as mensagens, em px, nas cores do contorno; 0 = sem linha'),
+  headerHeight: z.number().int().min(0).max(512)
+    .describe('Altura do cabeçalho no topo do painel (onde vai o título, ex.: "CHAT"), em px; 0 = sem cabeçalho')
+    .default(48),
+  headerColor: zColor().default('#E879F9'),
+  headerOpacity: z.number().finite().min(0).max(1)
+    .describe('Opacidade da faixa do cabeçalho, de 0 a 1; 0 deixa só a linha')
+    .default(0.1),
+  headerLineWidth: z.number().finite().min(0).max(16)
+    .describe('Espessura da linha entre o cabeçalho e as mensagens, em px, nas cores do contorno; 0 = sem linha')
+    .default(2),
   ...ornamentFields(),
 });
 

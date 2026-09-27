@@ -60,8 +60,8 @@ test('Forma: bloco e borda começam retangulares; circulo é uma opção do sche
     assert.equal(schema.safeParse({shape: 'oval'}).success, false);
   }
   for (const schema of [blocoLoopSchema, bordaLoopSchema]) {
-    assert.match(schema.shape.shape.description ?? '', /circulo.*quadrada/);
-    assert.match(schema.shape.radius.description ?? '', /com shape circulo é ignorado, o raio é metade do lado/);
+    assert.match(schema.shape.shape.unwrap().description ?? '', /circulo.*quadrada/);
+    assert.match(schema.shape.radius.unwrap().description ?? '', /com shape circulo é ignorado, o raio é metade do lado/);
   }
 });
 

@@ -14,16 +14,20 @@ export const DOT_LAYOUTS = ['aligned', 'alternating'] as const;
 // The dots take a single colour of their own, so the shared palette would be a dead control.
 const dotGridFields = baseBackgroundSchema.omit({colors: true}).extend({
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#10162B'),
-  direction: z.enum(DOT_DIRECTIONS).default('down-right')
-    .describe('Direção do movimento: horizontal, vertical ou diagonal'),
-  layout: z.enum(DOT_LAYOUTS).default('aligned')
-    .describe('aligned: pontos enfileirados em grade; alternating: fileiras alternadas, deslocadas meio passo'),
-  dotColor: zColor().default('#7C8CFF').describe('Cor dos pontos'),
-  dotSize: z.number().finite().min(1).max(96).default(10).describe('Diâmetro dos pontos, em pixels'),
-  spacing: z.number().finite().min(16).max(240).default(48)
-    .describe('Distância entre os centros de pontos vizinhos na fileira e entre fileiras, em pixels'),
-  speed: z.number().finite().min(0).max(480).default(24)
-    .describe('Velocidade em pixels por segundo, arredondada para um número inteiro de passos do padrão por ciclo (no mínimo um); 0 deixa o padrão parado'),
+  direction: z.enum(DOT_DIRECTIONS)
+    .describe('Direção do movimento: horizontal, vertical ou diagonal')
+    .default('down-right'),
+  layout: z.enum(DOT_LAYOUTS)
+    .describe('aligned: pontos enfileirados em grade; alternating: fileiras alternadas, deslocadas meio passo')
+    .default('aligned'),
+  dotColor: zColor().default('#7C8CFF'),
+  dotSize: z.number().finite().min(1).max(96).describe('Diâmetro dos pontos, em pixels').default(10),
+  spacing: z.number().finite().min(16).max(240)
+    .describe('Distância entre os centros de pontos vizinhos na fileira e entre fileiras, em pixels')
+    .default(48),
+  speed: z.number().finite().min(0).max(480)
+    .describe('Velocidade em pixels por segundo, arredondada para um número inteiro de passos do padrão por ciclo (no mínimo um); 0 deixa o padrão parado')
+    .default(24),
 });
 
 export type DotGridLoopProps = z.infer<typeof dotGridFields>;

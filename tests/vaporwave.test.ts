@@ -121,7 +121,7 @@ test('Vaporwave: Studio, catálogo, schema e preset abrem o mesmo horizonte de d
   for (const key of [
     'colors', 'speed', 'sunPosition', 'neonGlow', 'starCount', 'shootingStars', 'palmCount', 'shapeCount', 'centerShade',
   ] as const) {
-    assert.ok(vaporwaveLoopSchema.shape[key].description, `${key}: o Studio precisa de uma descrição`);
+    assert.ok(vaporwaveLoopSchema.shape[key].unwrap().description, `${key}: o Studio precisa de uma descrição`);
   }
 });
 

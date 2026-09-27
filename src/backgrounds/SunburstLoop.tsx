@@ -9,14 +9,15 @@ export const sunburstLoopSchema = baseBackgroundSchema.extend({
   // Schema, Root literal and presets carry the same seed, so an omitted key never surprises.
   seed: baseBackgroundSchema.shape.seed.default(23),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#5A0F18'),
-  colors: baseBackgroundSchema.shape.colors.default(['#9E1A26', '#C42A36'])
-    .describe('Paleta dos raios, alternada na ordem; cada raio termina na cor seguinte'),
-  rayCount: z.number().int().min(6).max(48).default(20).describe('Quantidade de raios'),
-  rayWidth: z.number().finite().min(0.15).max(0.8).default(0.5).describe('Espessura do raio dentro do passo'),
-  swirl: z.number().finite().min(0).max(1).default(0.5).describe('Onda que percorre o leque'),
-  spin: z.number().int().min(-24).max(24).default(3).describe('Passos que o leque gira por ciclo; negativo inverte o lado'),
-  coreFade: z.number().finite().min(0).max(1).default(0.7).describe('Gradiente que dissolve os raios no centro'),
-  coreShade: z.number().finite().min(0).max(1).default(0.6).describe('Sombra que escurece o miolo'),
+  colors: baseBackgroundSchema.shape.colors.unwrap()
+    .describe('Paleta dos raios, alternada na ordem; cada raio termina na cor seguinte')
+    .default(['#9E1A26', '#C42A36']),
+  rayCount: z.number().int().min(6).max(48).describe('Quantidade de raios').default(20),
+  rayWidth: z.number().finite().min(0.15).max(0.8).describe('Espessura do raio dentro do passo').default(0.5),
+  swirl: z.number().finite().min(0).max(1).describe('Onda que percorre o leque').default(0.5),
+  spin: z.number().int().min(-24).max(24).describe('Passos que o leque gira por ciclo; negativo inverte o lado').default(3),
+  coreFade: z.number().finite().min(0).max(1).describe('Gradiente que dissolve os raios no centro').default(0.7),
+  coreShade: z.number().finite().min(0).max(1).describe('Sombra que escurece o miolo').default(0.6),
 });
 
 export type SunburstLoopProps = z.infer<typeof sunburstLoopSchema>;
