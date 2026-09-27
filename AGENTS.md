@@ -29,3 +29,4 @@ Overlays: medidas decorativas em px fixos (não escalam com a caixa; exceções:
 - Schema: `.describe()` antes de `.default()`, senão a descrição some no Studio. Cor (`zColor()`) fica sem `.describe()`: a descrição dela guarda a marca do seletor de cor.
 - Workflow com agentes: seguir `~/obsidian/AI/Harness/Workflows.md`.
 - Alarme de disco em background é parado ao terminar.
+- Render de verificação (revisor, cético, teste) vai para `out/.scratch/<sessão>/` e é apagado no fim; `out/` guarda só `packs/` e o que você pediu para manter.
