@@ -1,0 +1,154 @@
+import type {z} from 'zod';
+import {getLightningStrikes, getWindowFlash, LIGHTNING, LIGHTNING_COLOR} from '../../../backgrounds/halloween/lightning';
+import {clampRadius} from '../geometry';
+import {scaleOrnamentFrame} from './frame';
+import {ornamentOutset} from './place';
+import {interiorSet} from './sets/interior';
+import {mansaoSet} from './sets/mansao';
+import {noiteSet} from './sets/noite';
+import {teiaSet} from './sets/teia';
+import type {
+  FlashElement, OrnamentElement, OrnamentFrame, OrnamentLayout, OrnamentPlacement, OrnamentSet, OrnamentSetId, OrnamentStyle,
+} from './types';
+
+/** Every set by name. Sets never import this file (nor render.tsx or index.ts): no import cycles. */
+export const ORNAMENT_REGISTRY: Record<OrnamentSetId, OrnamentSet> = {
+  noite: noiteSet,
+  mansao: mansaoSet,
+  interior: interiorSet,
+  teia: teiaSet,
+};
+
+/** The set a style names, or null for 'nenhum'. */
+export const ornamentSetOf = (style: Pick<OrnamentStyle, 'ornaments'>): OrnamentSet | null =>
+  (style.ornaments === 'nenhum' ? null : ORNAMENT_REGISTRY[style.ornaments]);
+
+/** Layouts run several times per frame (schema, layers, component, motion): placements are memoised. */
+const PLACEMENT_CACHE_LIMIT = 256;
+const placementCache = new Map<string, readonly OrnamentPlacement[]>();
+
+const NONE: readonly OrnamentPlacement[] = Object.freeze([]);
+
+/**
+ * Where the style's set puts its motifs on this frame: a pure function of the frame, the set and
+ * ornamentSize (no seed, no frame index), memoised. [] for 'nenhum' and when the hero fits nowhere.
+ */
+export const placeOrnaments = (
+  frame: OrnamentFrame, style: Pick<OrnamentStyle, 'ornaments' | 'ornamentSize'>,
+): readonly OrnamentPlacement[] => {
+  const set = ornamentSetOf(style);
+  if (!set) return NONE;
+  const key = `${set.name}|${style.ornamentSize}|${JSON.stringify(frame)}`;
+  const cached = placementCache.get(key);
+  if (cached) return cached;
+  const placements = Object.freeze(set.place(frame, {ornamentSize: style.ornamentSize}).map((placement) => Object.freeze({...placement})));
+  if (placementCache.size >= PLACEMENT_CACHE_LIMIT) placementCache.delete(placementCache.keys().next().value!);
+  placementCache.set(key, placements);
+  return placements;
+};
+
+/**
+ * The kind's ornament layout: the style's set placed on its frame. With an ornamentScale s other
+ * than 1 the set is placed on the frame shrunk by 1/s and the layout stays in that space (see
+ * OrnamentLayout), so the room of every slot, the caps and the strokes all grow by s together.
+ */
+export const layoutOrnaments = (
+  frame: OrnamentFrame, style: Pick<OrnamentStyle, 'ornaments' | 'ornamentSize' | 'ornamentScale'>,
+): OrnamentLayout => {
+  const scale = style.ornamentScale;
+  if (scale === 1 || style.ornaments === 'nenhum') return {frame, placements: placeOrnaments(frame, style)};
+  const scaled = scaleOrnamentFrame(frame, 1 / scale);
+  return {frame: scaled, placements: placeOrnaments(scaled, style), scale};
+};
+
+/** How far the layout's motifs reach beyond the box, in the kind's px. */
+export const layoutOutset = (layout: OrnamentLayout) => ornamentOutset(layout.frame, layout.placements) * (layout.scale ?? 1);
+
+/** The ornament elements of one frame, split by layer, each in placement order. Empty for 'nenhum'. */
+export const buildOrnamentScene = (
+  layout: OrnamentLayout, style: OrnamentStyle, frameIndex: number, durationInFrames: number,
+): {back: OrnamentElement[]; front: OrnamentElement[]} => {
+  const set = ornamentSetOf(style);
+  if (!set || layout.placements.length === 0) return {back: [], front: []};
+  const elements = set.build(layout.frame, layout.placements, style, frameIndex, durationInFrames);
+  return {
+    back: elements.filter((element) => element.layer === 'back'),
+    front: elements.filter((element) => element.layer === 'front'),
+  };
+};
+
+/** The cold white of the flash (the interior's lightning). */
+export const FLASH_COLOR = LIGHTNING_COLOR;
+
+/**
+ * The lightning flash of one frame: none at lightning 0; otherwise exactly one element whose left
+ * and right levels are the interior background's two windows (getWindowFlash, same seed and
+ * duration), so an overlay flashes with the background when both start together.
+ */
+export const buildFlashScene = (
+  style: Pick<OrnamentStyle, 'lightning' | 'seed' | 'durationSeconds'>, frameIndex: number, durationInFrames: number,
+): FlashElement[] => {
+  if (!(style.lightning > 0)) return [];
+  const [left, right] = getWindowFlash(style, frameIndex, durationInFrames);
+  return [{type: 'flash', left, right, color: FLASH_COLOR, opacity: style.lightning}];
+};
+
+/**
+ * The ways out of a refusal, per frame: what gives the corners more room there (measured with
+ * roomAt on the chat defaults, a 320×120 block, a 320×180 janela and a 640×360 tela).
+ *   - Panels: a larger bleed, padding or radius (a rounder corner sits further in and pushes the
+ *     text inward; a smaller radius never gains room).
+ *   - Border around a window ('janela'): no padding; a larger bleed or a rounder window. The band's
+ *     thickness and the glow do not help: the window and the canvas stay put.
+ *   - Screen frame ('tela'): no bleed (always 0); a thicker band, more glow or a larger radius moves
+ *     the window's corner inward, away from the box's.
+ * A radius already at its maximum (a circle, a pill, a round screen frame) is never offered: every
+ * outline is the clamped shape (janela/tela: the window offset by the band, maxed exactly when the
+ * window is), so a larger radius prop changes nothing there.
+ */
+export const ornamentWayOut = (frame: Pick<OrnamentFrame, 'kind' | 'fit' | 'circle' | 'outline'>): string => {
+  const {outline} = frame;
+  const rounder = !frame.circle
+    && clampRadius(outline.radius, outline.width, outline.height) < Math.min(outline.width, outline.height) / 2 - 1e-9;
+  if (frame.kind === 'chat') return rounder ? 'aumente bleed, padding ou radius ou use ornaments nenhum.' : 'aumente bleed ou padding ou use ornaments nenhum.';
+  if (frame.kind === 'bloco') {
+    return rounder
+      ? 'aumente bleed, paddingX, paddingY ou radius ou use ornaments nenhum.'
+      : 'aumente bleed, paddingX ou paddingY ou use ornaments nenhum.';
+  }
+  if (frame.fit === 'tela') return rounder ? 'aumente thickness, glow ou radius ou use ornaments nenhum.' : 'aumente thickness ou glow ou use ornaments nenhum.';
+  return rounder ? 'aumente bleed ou radius ou use ornaments nenhum.' : 'aumente bleed ou use ornaments nenhum.';
+};
+
+/**
+ * Refuses a set whose hero fits nowhere (the placement is then empty), naming the way out for the
+ * kind (ornamentWayOut), then runs the set's own refusals. Nothing for 'nenhum'.
+ */
+export const refineOrnaments = (layout: OrnamentLayout, style: OrnamentStyle, context: z.RefinementCtx) => {
+  const set = ornamentSetOf(style);
+  if (!set) return;
+  if (layout.placements.length === 0) {
+    context.addIssue({
+      code: 'custom',
+      path: ['ornaments'],
+      message: `Os enfeites "${set.name}" não cabem neste tamanho: ${ornamentWayOut(layout.frame)}`,
+    });
+    return;
+  }
+  set.refine?.(layout.frame, layout.placements, style, context);
+};
+
+/**
+ * Refuses a lightning a cycle too short to hold a strike (under LIGHTNING.oneFrom s the interior's
+ * lightning has none, so the flash would never light), naming the way out. Independent of the
+ * ornaments: the kinds call it next to refineOrnaments.
+ */
+export const refineLightning = (style: Pick<OrnamentStyle, 'lightning' | 'seed' | 'durationSeconds'>, context: z.RefinementCtx) => {
+  if (!(style.lightning > 0) || getLightningStrikes(style).length > 0) return;
+  const least = String(LIGHTNING.oneFrom).replace('.', ',');
+  context.addIssue({
+    code: 'custom',
+    path: ['lightning'],
+    message: `Com durationSeconds abaixo de ${least} s não há relâmpagos: use durationSeconds ≥ ${least} ou lightning 0.`,
+  });
+};
