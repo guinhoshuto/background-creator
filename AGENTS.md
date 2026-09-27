@@ -1,32 +1,34 @@
 # Background Creator
 
-Projeto local Remotion, React e TypeScript para backgrounds animados em loop (1920×1080) e overlays de live (chat, blocos de texto, bordas) com transparência, vendidos em packs.
+Local Remotion, React and TypeScript project for looping animated backgrounds (1920×1080) and stream overlays (chat, text blocks, borders) with transparency, sold in packs.
 
-- `src/settings.ts`: parâmetros compartilhados, duração/FPS, regra de alpha e presets de exportação.
-- `src/kinds.ts`: tipos de asset (pasta no Studio, tamanho, alpha padrão); `src/sizes.ts`: tamanhos nomeados.
-- `src/`: catálogo e composições; `src/overlays/`: ChatLoop, BlocoLoop, BordaLoop e o motor comum em `shared/` (enfeites temáticos em `shared/ornaments/`, um conjunto por nome em `sets/` (`<nome>.tsx` e auxiliares `<nome>-*.ts(x)`)).
-- `scripts/`: exportação, validação e o builder de packs (`scripts/pack.ts`); `packs/`: manifestos por tema.
-- `presets/`: parâmetros JSON prontos; `tests/`: testes de determinismo, periodicidade e configuração.
-- Instalação: `npm ci`. Preview: `npm run studio`.
-- Verificação: `npm run typecheck`, `npm run lint`, `npm test` e `npm run validate:exports` (FFmpeg/FFprobe completos).
-- Exportação: `npm run render:webm -- ParticleLoop --props presets/particles-alpha.json` (ou `render:mp4` / `render:gif` / `render:mov` / `render:png`); overlays com `--size <id>` ou `--width/--height/--bleed`.
-- Packs: `npm run render:pack -- <tema> --dry-run` (sem `--dry-run` renderiza; `--only`, `--overwrite`). Itens aceitam `variant` (sufixo do arquivo) e `bleed` próprio acima do tamanho nomeado; os kits de Halloween saem com e sem enfeites.
+- `src/settings.ts`: shared parameters, duration/FPS, alpha rule and export presets.
+- `src/kinds.ts`: asset kinds (Studio folder, size, default alpha); `src/sizes.ts`: named sizes.
+- `src/`: catalog and compositions; `src/overlays/`: ChatLoop, BlocoLoop, BordaLoop and the shared engine in `shared/` (themed ornaments in `shared/ornaments/`, one set per name in `sets/` (`<name>.tsx` plus helpers `<name>-*.ts(x)`)).
+- `scripts/`: export, validation and the pack builder (`scripts/pack.ts`); `packs/`: manifests per theme.
+- `presets/`: ready-made JSON parameters; `tests/`: determinism, periodicity and configuration tests.
+- Install: `npm ci`. Preview: `npm run studio`.
+- Checks: `npm run typecheck`, `npm run lint`, `npm test` and `npm run validate:exports` (full FFmpeg/FFprobe).
+- Export: `npm run render:webm -- ParticleLoop --props presets/particles-alpha.json` (or `render:mp4` / `render:gif` / `render:mov` / `render:png`); overlays take `--size <id>` or `--width/--height/--bleed`.
+- Packs: `npm run render:pack -- <theme> --dry-run` (without `--dry-run` it renders; `--only`, `--overwrite`). Items accept `variant` (file suffix) and their own `bleed` above the named size; the Halloween kits ship with and without ornaments.
 
-Mantenha todos os pacotes Remotion na mesma versão exata e atualize o lockfile junto às dependências. Animações devem depender exclusivamente do frame e dos parâmetros; use seed para aleatoriedade, nunca relógio, `Math.random()`, CSS animation ou transições CSS. O estado em `N` deve coincidir com o frame `0`, mas exporte somente `0…N−1`. Preserve também a velocidade na emenda do loop.
+Keep every Remotion package at the same exact version and update the lockfile together with the dependencies. Animations depend only on the frame and the parameters; use a seed for randomness, never the clock, `Math.random()`, CSS animations or CSS transitions. The state at `N` must match frame `0`, but export only `0…N−1`. Also preserve speed across the loop seam.
 
-Preview e render oficial devem compartilhar schema, duração e regra de alpha. MP4/GIF compõem sobre `backgroundColor`; WebM, MOV (ProRes 4444) e PNG preservam transparência. Largura, altura e bleed são sempre pares. Não reduza resolução, FPS ou qualidade automaticamente; recuse combinações inválidas com mensagem que indique a saída. Documentação e mensagens voltadas ao usuário em português.
+Preview and official render share the schema, duration and alpha rule. MP4/GIF composite over `backgroundColor`; WebM, MOV (ProRes 4444) and PNG keep transparency. Width, height and bleed are always even. Never lower resolution, FPS or quality automatically; refuse invalid combinations with a message that points to the way out.
 
-Overlays: medidas decorativas em px fixos (não escalam com a caixa; exceções: o período do gradiente e a largura do reflexo do vidro acompanham a área, com a velocidade igual em todo tamanho); tudo o que sai da caixa cabe no bleed; a janela da borda fica sempre transparente (exceto a máscara `mascara: true`, que é a própria janela opaca para o OBS); movimento no contorno em voltas inteiras, com período em px. Enfeites (`ornaments`): cada motivo tem tamanho fixo em px (`ornamentSize`), limitado ao espaço livre do seu lugar (bleed, bolsões do padding, faixa), como o `radius` é limitado à metade do lado; o limite não depende do frame nem da seed. `ornamentScale` amplia todos os enfeites juntos (tamanhos, tetos, traços), medindo o espaço livre na mesma escala; em 1 nada muda. Motivo secundário que não cabe no seu mínimo fica de fora; se nem o principal couber, a combinação é recusada com a saída. Enfeites nunca cobrem a área de texto nem a janela, e o que sai da caixa cabe no bleed.
+Language: everything in the repo is in English: code, docs, file names, commit messages, CLI messages and names (presets, packs, backgrounds). Talk to the owner in Portuguese. Existing Portuguese names and messages migrate in a separate, planned renaming round, because pack names reach buyers; do not rename them ad hoc.
 
-## Agentes nesta máquina (render e verificação)
+Overlays: decorative measurements are fixed px (they do not scale with the box; exceptions: the gradient period and the glass reflection width follow the area, with the same speed at every size); everything that leaves the box fits in the bleed; the border window is always transparent (except the mask `mascara: true`, which is the opaque window itself for OBS); movement along the outline runs in whole turns, with its period in px. Ornaments (`ornaments`): each motif has a fixed px size (`ornamentSize`), limited by the free space of its slot (bleed, padding pockets, band), just as `radius` is limited to half the side; the limit depends on neither the frame nor the seed. `ornamentScale` enlarges all ornaments together (sizes, caps, strokes), measuring free space at the same scale; at 1 nothing changes. A secondary motif that does not fit its minimum is left out; if even the main one does not fit, the combination is refused with the way out. Ornaments never cover the text area or the window, and whatever leaves the box fits in the bleed.
 
-- Um render por vez na máquina, contando outras sessões e outros repos (`pgrep -fl` antes). `render:pack` e `validate:exports` nunca em paralelo com outro render.
-- `df -h /` antes de render; não começar com menos de 3 GB livres. O espaço que se regenera é `node_modules/.cache/webpack` (chega a ~5 GB; apagado, volta no próximo render).
-- Stills de verificação: um bundle, um navegador e vários frames num processo só. Nunca um `render:png --frame` por frame, nem em paralelo. A ferramenta de hoje é `.cache/halloween-kits/stills.mts` (fora do git; `npx tsx`).
-- FFmpeg e FFprobe completos em `/opt/homebrew/bin`. Não usar o ffmpeg de `@remotion/compositor-*` (sem `rawvideo`) nem o wrapper de `.cache/webgl-tools/bin` (obsoleto).
-- `validate:exports` amostra 0,4 s com `defaultProps` por tipo: rodar `--kind`/`--only` no que mudou. Ele não valida pack.
-- Script próprio que renderiza WebGL passa `gl: 'angle'`, como `src/catalog.tsx:80`.
-- Schema: `.describe()` antes de `.default()`, senão a descrição some no Studio. Cor (`zColor()`) fica sem `.describe()`: a descrição dela guarda a marca do seletor de cor.
-- Workflow com agentes: seguir `~/obsidian/AI/Harness/Workflows.md`.
-- Alarme de disco em background é parado ao terminar.
-- Render de verificação (revisor, cético, teste) vai para `out/.scratch/<sessão>/` e é apagado no fim; `out/` guarda só `packs/` e o que você pediu para manter.
+## Agents on this machine (render and verification)
+
+- One render at a time on the machine, counting other sessions and other repos (`pgrep -fl` first). `render:pack` and `validate:exports` never run alongside another render.
+- `df -h /` before rendering; do not start with less than 3 GB free. The regenerable space is `node_modules/.cache/webpack` (up to ~5 GB; once deleted, it comes back on the next render).
+- Verification stills: one bundle, one browser and many frames in a single process. Never one `render:png --frame` per frame, nor in parallel. Today's tool is `.cache/halloween-kits/stills.mts` (outside git; `npx tsx`).
+- Full FFmpeg and FFprobe live in `/opt/homebrew/bin`. Do not use the ffmpeg from `@remotion/compositor-*` (no `rawvideo`) nor the wrapper in `.cache/webgl-tools/bin` (obsolete).
+- `validate:exports` samples 0.4 s with `defaultProps` per kind: run `--kind`/`--only` on what changed. It does not validate packs.
+- A custom script that renders WebGL passes `gl: 'angle'`, like `src/catalog.tsx:80`.
+- Schema: `.describe()` before `.default()`, otherwise the description disappears in the Studio. Colors (`zColor()`) take no `.describe()`: their description holds the color picker marker.
+- Workflows with agents: follow `~/obsidian/AI/Harness/Workflows.md`.
+- A background disk alarm is stopped when the work ends.
+- Verification renders (reviewer, skeptic, test) go to `out/.scratch/<session>/` and are deleted at the end; `out/` keeps only `packs/` and what the owner asked to keep.
