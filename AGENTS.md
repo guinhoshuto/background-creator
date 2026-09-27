@@ -17,3 +17,15 @@ Mantenha todos os pacotes Remotion na mesma versão exata e atualize o lockfile 
 Preview e render oficial devem compartilhar schema, duração e regra de alpha. MP4/GIF compõem sobre `backgroundColor`; WebM, MOV (ProRes 4444) e PNG preservam transparência. Largura, altura e bleed são sempre pares. Não reduza resolução, FPS ou qualidade automaticamente; recuse combinações inválidas com mensagem que indique a saída. Documentação e mensagens voltadas ao usuário em português.
 
 Overlays: medidas decorativas em px fixos (não escalam com a caixa; exceções: o período do gradiente e a largura do reflexo do vidro acompanham a área, com a velocidade igual em todo tamanho); tudo o que sai da caixa cabe no bleed; a janela da borda fica sempre transparente (exceto a máscara `mascara: true`, que é a própria janela opaca para o OBS); movimento no contorno em voltas inteiras, com período em px. Enfeites (`ornaments`): cada motivo tem tamanho fixo em px (`ornamentSize`), limitado ao espaço livre do seu lugar (bleed, bolsões do padding, faixa), como o `radius` é limitado à metade do lado; o limite não depende do frame nem da seed. `ornamentScale` amplia todos os enfeites juntos (tamanhos, tetos, traços), medindo o espaço livre na mesma escala; em 1 nada muda. Motivo secundário que não cabe no seu mínimo fica de fora; se nem o principal couber, a combinação é recusada com a saída. Enfeites nunca cobrem a área de texto nem a janela, e o que sai da caixa cabe no bleed.
+
+## Agentes nesta máquina (render e verificação)
+
+- Um render por vez na máquina, contando outras sessões e outros repos (`pgrep -fl` antes). `render:pack` e `validate:exports` nunca em paralelo com outro render.
+- `df -h /` antes de render; não começar com menos de 3 GB livres. O espaço que se regenera é `node_modules/.cache/webpack` (chega a ~5 GB; apagado, volta no próximo render).
+- Stills de verificação: um bundle, um navegador e vários frames num processo só. Nunca um `render:png --frame` por frame, nem em paralelo. A ferramenta de hoje é `.cache/halloween-kits/stills.mts` (fora do git; `npx tsx`).
+- FFmpeg e FFprobe completos em `/opt/homebrew/bin`. Não usar o ffmpeg de `@remotion/compositor-*` (sem `rawvideo`) nem o wrapper de `.cache/webgl-tools/bin` (obsoleto).
+- `validate:exports` amostra 0,4 s com `defaultProps` por tipo: rodar `--kind`/`--only` no que mudou. Ele não valida pack.
+- Script próprio que renderiza WebGL passa `gl: 'angle'`, como `src/catalog.tsx:80`.
+- Schema: `.describe()` antes de `.default()`, senão a descrição some no Studio. Cor (`zColor()`) fica sem `.describe()`: a descrição dela guarda a marca do seletor de cor.
+- Workflow com agentes: seguir `~/obsidian/AI/Harness/Workflows.md`.
+- Alarme de disco em background é parado ao terminar.
