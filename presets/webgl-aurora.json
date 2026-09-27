@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 24,
+  "seed": 11,
+  "transparent": false,
+  "backgroundColor": "#050A12",
+  "colors": ["#4ADE80", "#22D3EE", "#A78BFA", "#F472B6"],
+  "outputFormat": "mp4",
+  "experiment": "aurora",
+  "speed": 0.8,
+  "scale": 1.1,
+  "intensity": 1.15,
+  "centerFade": 0.55
+}

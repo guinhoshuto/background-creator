@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
+import {getCheckerboardScene, checkerboardLoopSchema} from '../src/backgrounds/CheckerboardLoop';
 import {getCobwebScene, cobwebLoopSchema} from '../src/backgrounds/CobwebLoop';
+import {getDotGridScene, dotGridLoopSchema} from '../src/backgrounds/DotGridLoop';
 import {getGeometricScene, geometricLoopSchema} from '../src/backgrounds/GeometricLoop';
 import {getGradientScene, gradientLoopSchema} from '../src/backgrounds/GradientLoop';
 import {getHalloweenScene, halloweenLoopSchema} from '../src/backgrounds/HalloweenLoop';
@@ -11,9 +13,14 @@ import {getKawaiiScene, kawaiiLoopSchema} from '../src/backgrounds/KawaiiLoop';
 import {getParticleScene, particleLoopSchema} from '../src/backgrounds/ParticleLoop';
 import {getSunburstScene, sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
 import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/VaporwaveLoop';
+import {WEBGL_EXPERIMENTS, getWebGLScene, webglLoopSchema} from '../src/backgrounds/WebGLLoop';
 import {backgroundCatalog, getBackground} from '../src/catalog';
+import {blocoLoopSchema, getBlocoScene} from '../src/overlays/bloco';
+import {bordaLoopSchema, getBordaScene} from '../src/overlays/borda';
+import {chatLoopSchema, getChatScene} from '../src/overlays/chat';
 import {loopPhase} from '../src/loop';
 import {getCompositionMetadata} from '../src/settings';
+import {getSize, sizeProps} from '../src/sizes';
 
 type Scene = Record<string, string | number>[];
 /** Fields a scene checks elsewhere, because the element they belong to is not the thing that lasts. */
@@ -93,6 +100,132 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
         transparent: true, ...(input as object),
       }), frame, length),
   },
+  {
+    // The dots scroll, but they are listed by place, like the vaporwave floor: every field of
+    // the scene keeps the scan, with no exemption.
+    id: 'DotGridLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getDotGridScene(dotGridLoopSchema.parse(input), frame, length),
+  },
+  {
+    // The alternating rows need two rows to line up, and a diagonal closes both axes at once.
+    id: 'DotGridLoop (alternados, diagonal)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getDotGridScene(dotGridLoopSchema.parse({
+        layout: 'alternating', direction: 'up-left', speed: 90, dotSize: 20, spacing: 36, ...(input as object),
+      }), frame, length),
+  },
+  {
+    // The squares scroll, but they are listed by place along the board's diagonals, like the
+    // dots: every field of the scene keeps the scan, with no exemption.
+    id: 'CheckerboardLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getCheckerboardScene(checkerboardLoopSchema.parse(input), frame, length),
+  },
+  {
+    // A tilted board sliding along its rows, whose step is two squares, not one diagonal.
+    id: 'CheckerboardLoop (inclinado, fileira)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getCheckerboardScene(checkerboardLoopSchema.parse({
+        angle: -30, direction: 'left', speed: 90, squareSize: 48, ...(input as object),
+      }), frame, length),
+  },
+  // A shader scene holds every moving uniform: the shared scans cover each experiment, at its
+  // defaults and with every control at its maximum on the alpha path.
+  ...WEBGL_EXPERIMENTS.flatMap((experiment) => [
+    {
+      id: `WebGLLoop (${experiment})`,
+      sample: (input: unknown, frame: number, length: number): Scene =>
+        getWebGLScene(webglLoopSchema.parse({experiment, ...(input as object)}), frame, length),
+    },
+    {
+      id: `WebGLLoop (${experiment}, máximos)`,
+      sample: (input: unknown, frame: number, length: number): Scene =>
+        getWebGLScene(webglLoopSchema.parse({
+          experiment, speed: 3, scale: 2, intensity: 2, centerFade: 1, transparent: true, ...(input as object),
+        }), frame, length),
+    },
+  ]),
+  // The sized overlays list every moving piece by place (dots, dashes, comets, sparks) and wrap
+  // their sheens and embers only out of sight, so the scans run with no exemption. Their own
+  // tests cover sizes, themes and the hole; here each runs at its defaults and at its busiest.
+  {
+    id: 'ChatLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getChatScene(chatLoopSchema.parse(input), frame, length),
+  },
+  {
+    // Rising embers over a three-colour base, four colours flowing round the edge, the glow
+    // breathing four times (as strong as the title still allows at that reach) and the halo at
+    // the edge of the bleed.
+    id: 'ChatLoop (máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getChatScene(chatLoopSchema.parse({
+        fill: 'brilhos', fillRise: true, fillColors: ['#150B24', '#F97316', '#FACC15'],
+        strokeMotion: 'gradiente', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA', '#FACC15'], strokeWidth: 3,
+        glow: 24, glowStrength: 2, glowPulses: 4, halo: 32, ...(input as object),
+      }), frame, length),
+  },
+  {
+    id: 'BlocoLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBlocoScene(blocoLoopSchema.parse(input), frame, length),
+  },
+  {
+    // Scrolling stripes, marching ants over the dim track, a left bar with four glints per
+    // cycle, the glow breathing four times and the halo filling the bleed.
+    id: 'BlocoLoop (máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBlocoScene(blocoLoopSchema.parse({
+        fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
+        glowPulses: 4, halo: 32, ...(input as object),
+      }), frame, length),
+  },
+  {
+    id: 'BordaLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBordaScene(bordaLoopSchema.parse(input), frame, length),
+  },
+  {
+    // Scrolling dots in the band, colours flowing along both lines, gems breathing four times
+    // and the glow pulsing: every moving part a border has, around the window.
+    id: 'BordaLoop (máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBordaScene(bordaLoopSchema.parse({
+        fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
+        corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
+      }), frame, length),
+  },
+  {
+    // The round block: its text square, the accent arc and the glint going round the circle.
+    id: 'BlocoLoop (círculo)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBlocoScene(blocoLoopSchema.parse({...sizeProps(getSize('circulo')), ...(input as object)}), frame, length),
+  },
+  {
+    id: 'BlocoLoop (círculo, máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBlocoScene(blocoLoopSchema.parse({
+        ...sizeProps(getSize('circulo')), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
+        glowPulses: 4, halo: 32, ...(input as object),
+      }), frame, length),
+  },
+  {
+    id: 'BordaLoop (círculo)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBordaScene(bordaLoopSchema.parse({...sizeProps(getSize('webcam-redonda')), ...(input as object)}), frame, length),
+  },
+  {
+    id: 'BordaLoop (círculo, máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getBordaScene(bordaLoopSchema.parse({
+        ...sizeProps(getSize('webcam-redonda')), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
+        corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
+      }), frame, length),
+  },
+  // BordaLoop's mask mode (mascara) is left out on purpose: it is one still PNG, so the scans'
+  // "frames differ" and "the seed changes the scene" checks cannot hold. tests/borda.test.ts runs
+  // the same scans on it as a still (moving: false, seeded: false) instead of faking a motion.
 ];
 
 for (const {id, sample, seamExempt} of scenes) {
@@ -200,6 +333,28 @@ test('composition schemas reject invalid custom controls and accept documented b
   ]) {
     assert.equal(vaporwaveLoopSchema.safeParse(input).success, false, JSON.stringify(input));
   }
+  for (const input of [
+    {direction: 'diagonal'}, {direction: 45}, {layout: 'hex'}, {layout: true},
+    {dotSize: 0.99}, {dotSize: 96.01}, {dotSize: Number.NaN}, {dotSize: '10'},
+    {spacing: 15.99}, {spacing: 240.01}, {spacing: Number.POSITIVE_INFINITY},
+    {speed: -0.01}, {speed: 480.01}, {speed: Number.NaN}, {speed: '24'},
+    {dotColor: 12}, {colors: ['#FFFFFF', '#000000']},
+    {spacing: 16, speed: 480, direction: 'right'}, {spacing: 16, speed: 480, direction: 'down-left', outputFormat: 'gif'},
+    {durationSeconds: 0.03, direction: 'left'},
+  ]) {
+    assert.equal(dotGridLoopSchema.strict().safeParse(input).success, false, JSON.stringify(input));
+  }
+  for (const input of [
+    {direction: 'diagonal'}, {direction: 45},
+    {angle: -45.01}, {angle: 45.01}, {angle: Number.NaN}, {angle: '15'},
+    {squareSize: 15.99}, {squareSize: 480.01}, {squareSize: Number.POSITIVE_INFINITY}, {squareSize: '80'},
+    {speed: -0.01}, {speed: 960.01}, {speed: Number.NaN}, {speed: '40'},
+    {squareColor: 12}, {colors: ['#FFFFFF', '#000000']}, {backgroundColor: 'rgba(0, 0, 0, 0.5)'},
+    {squareSize: 16, speed: 960, direction: 'right'}, {squareSize: 16, speed: 500, direction: 'down-left', outputFormat: 'gif'},
+    {durationSeconds: 0.03, direction: 'left'},
+  ]) {
+    assert.equal(checkerboardLoopSchema.strict().safeParse(input).success, false, JSON.stringify(input));
+  }
   assert.equal(gradientLoopSchema.safeParse({scale: 0.25, intensity: 2}).success, true);
   assert.equal(particleLoopSchema.safeParse({count: 600, size: 24, distribution: 'center'}).success, true);
   assert.equal(geometricLoopSchema.safeParse({count: 100, scale: 0.15}).success, true);
@@ -214,6 +369,18 @@ test('composition schemas reject invalid custom controls and accept documented b
     {rayCount: 48, rayWidth: 0.8, swirl: 1, spin: 24, coreFade: 1, coreShade: 1},
   ]) {
     assert.equal(sunburstLoopSchema.safeParse(input).success, true);
+  }
+  for (const input of [
+    {direction: 'right', layout: 'aligned', dotColor: 'rgba(255, 255, 255, 0.35)', dotSize: 1, spacing: 16, speed: 0},
+    {direction: 'down-left', layout: 'alternating', dotColor: 'red', dotSize: 96, spacing: 240, speed: 480},
+  ]) {
+    assert.equal(dotGridLoopSchema.strict().safeParse(input).success, true, JSON.stringify(input));
+  }
+  for (const input of [
+    {direction: 'right', angle: -45, squareColor: 'rgba(255, 255, 255, 0.14)', squareSize: 16, speed: 0},
+    {direction: 'down-left', angle: 45, squareColor: 'red', squareSize: 480, speed: 960},
+  ]) {
+    assert.equal(checkerboardLoopSchema.strict().safeParse(input).success, true, JSON.stringify(input));
   }
   for (const input of [
     {speed: 0, sunPosition: 0.1, neonGlow: 0, starCount: 0, shootingStars: 0, palmCount: 0, shapeCount: 0, centerShade: 0},
@@ -251,6 +418,13 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['VaporwaveLoop', 'vaporwave-horizonte.json'],
     ['VaporwaveLoop', 'vaporwave-classico.json'],
     ['VaporwaveLoop', 'vaporwave-alpha.json'],
+    ['DotGridLoop', 'dots-classico.json'],
+    ['DotGridLoop', 'dots-alternados.json'],
+    ['DotGridLoop', 'dots-alpha.json'],
+    ['CheckerboardLoop', 'xadrez-classico.json'],
+    ['CheckerboardLoop', 'xadrez-losangos.json'],
+    ['CheckerboardLoop', 'xadrez-inclinado.json'],
+    ['CheckerboardLoop', 'xadrez-alpha.json'],
   ];
   for (const entry of Object.values(backgroundCatalog)) {
     assert.deepEqual(entry.schema.parse(entry.defaultProps), entry.defaultProps);

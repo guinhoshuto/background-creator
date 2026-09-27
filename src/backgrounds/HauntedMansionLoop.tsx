@@ -126,28 +126,63 @@ const Bat = ({x, y, scale, rotation, flap, opacity}: HauntedMansionElement) => (
   </g>
 );
 
+/**
+ * The lamp-post lantern's drawing, in its own units (origin at the housing's centre; the post
+ * hangs below): exported so the overlay kit (the 'mansao' ornaments) draws the same lantern.
+ */
+export const MANSION_LANTERN = {
+  post: 'M-4 29 H4 V160 H-4Z M-16 158 H16 V165 H-16Z',
+  housing: 'M-21-20 H21 L15 27 H-15Z',
+  glass: 'M-16-16 H16 L11 21 H-11Z',
+  /** The centre mullion, the roof cap and the base, filled and stroked in the cap colour. */
+  cap: 'M0-24 V25 M-22-21 L-15-30 H15 L22-21Z M-12 28 H12 L8 34 H-8Z',
+  hook: 'M-4-32 Q-7-48 3-50 Q13-50 10-39',
+  colors: {post: '#080D14', housing: '#101A21', housingEdge: '#465353', cap: '#0A111A', hook: '#4E5B59'},
+  /** Stroke widths, in the lantern's units. */
+  strokes: {housing: 2, cap: 3, hook: 2},
+} as const;
+
+/**
+ * The lanterns' flicker: base + first·sin(3φ + o) + second·sin(7φ + o), φ one turn per loop, so
+ * 3 and 7 cycles per default 16 s loop (0.1875 and 0.4375 Hz). Exported for the overlay kit.
+ */
+export const MANSION_LANTERN_FLICKER = {base: 0.79, first: 0.12, second: 0.04, harmonics: [3, 7], seconds: 16} as const;
+
+/** The wrought-iron fence's drawing, in its own units (spear tip at y 0): exported for the overlay kit. */
+export const MANSION_FENCE = {
+  pitch: 34,
+  height: 181,
+  picket: 'M0 17 V181',
+  spear: 'M0 0 L6 17 L0 25 L-6 17Z',
+  spearHighlight: 'M-1 5 V15',
+  scroll: 'M0 83 C-26 78-21 39-3 51 M0 83 C26 78 21 39 3 51',
+  rails: [63, 124],
+  colors: {iron: '#080E16', railHighlight: '#486061', spearHighlight: '#70827B', scroll: '#101922'},
+  strokes: {rail: 6, picket: 5, scroll: 3},
+} as const;
+
 const Lantern = ({x, y, glow, color}: HauntedMansionElement & {color: string}) => (
   <g transform={`translate(${x} ${y})`}>
     <ellipse cy="149" rx="108" ry="17" fill="url(#mansion-warm-glow)" opacity={glow * 0.5} />
     <circle r="88" fill="url(#mansion-warm-glow)" opacity={glow * 0.48} />
-    <path d="M-4 29 H4 V160 H-4Z M-16 158 H16 V165 H-16Z" fill="#080D14" />
-    <path d="M-21-20 H21 L15 27 H-15Z" fill="#101A21" stroke="#465353" strokeWidth="2" />
-    <path d="M-16-16 H16 L11 21 H-11Z" fill={color} opacity={glow} />
-    <path d="M0-24 V25 M-22-21 L-15-30 H15 L22-21Z M-12 28 H12 L8 34 H-8Z" fill="#0A111A" stroke="#0A111A" strokeWidth="3" />
-    <path d="M-4-32 Q-7-48 3-50 Q13-50 10-39" fill="none" stroke="#4E5B59" strokeWidth="2" />
+    <path d={MANSION_LANTERN.post} fill={MANSION_LANTERN.colors.post} />
+    <path d={MANSION_LANTERN.housing} fill={MANSION_LANTERN.colors.housing} stroke={MANSION_LANTERN.colors.housingEdge} strokeWidth="2" />
+    <path d={MANSION_LANTERN.glass} fill={color} opacity={glow} />
+    <path d={MANSION_LANTERN.cap} fill={MANSION_LANTERN.colors.cap} stroke={MANSION_LANTERN.colors.cap} strokeWidth="3" />
+    <path d={MANSION_LANTERN.hook} fill="none" stroke={MANSION_LANTERN.colors.hook} strokeWidth="2" />
   </g>
 );
 
 const IronFence = ({x, y, width, mirror = false}: {x: number; y: number; width: number; mirror?: boolean}) => (
   <g transform={`translate(${x} ${y}) scale(${mirror ? -1 : 1} 1)`}>
-    <path d={`M0 63 H${width} M0 124 H${width}`} stroke="#080E16" strokeWidth="6" />
-    <path d={`M0 60 H${width}`} stroke="#486061" strokeOpacity="0.25" strokeWidth="1" />
-    {Array.from({length: Math.floor(width / 34)}, (_, index) => (
-      <g key={index} transform={`translate(${index * 34 + 15} 0)`}>
-        <path d="M0 17 V181" stroke="#080E16" strokeWidth="5" />
-        <path d="M0 0 L6 17 L0 25 L-6 17Z" fill="#080E16" />
-        <path d="M-1 5 V15" stroke="#70827B" strokeOpacity="0.27" />
-        <path d="M0 83 C-26 78-21 39-3 51 M0 83 C26 78 21 39 3 51" stroke="#101922" strokeWidth="3" fill="none" />
+    <path d={`M0 63 H${width} M0 124 H${width}`} stroke={MANSION_FENCE.colors.iron} strokeWidth="6" />
+    <path d={`M0 60 H${width}`} stroke={MANSION_FENCE.colors.railHighlight} strokeOpacity="0.25" strokeWidth="1" />
+    {Array.from({length: Math.floor(width / MANSION_FENCE.pitch)}, (_, index) => (
+      <g key={index} transform={`translate(${index * MANSION_FENCE.pitch + 15} 0)`}>
+        <path d={MANSION_FENCE.picket} stroke={MANSION_FENCE.colors.iron} strokeWidth="5" />
+        <path d={MANSION_FENCE.spear} fill={MANSION_FENCE.colors.iron} />
+        <path d={MANSION_FENCE.spearHighlight} stroke={MANSION_FENCE.colors.spearHighlight} strokeOpacity="0.27" />
+        <path d={MANSION_FENCE.scroll} stroke={MANSION_FENCE.colors.scroll} strokeWidth="3" fill="none" />
       </g>
     ))}
   </g>

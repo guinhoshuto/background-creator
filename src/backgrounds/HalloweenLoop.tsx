@@ -3,7 +3,9 @@ import {z} from 'zod';
 import {createSeededRandom, loopPhase, randomBetween, TAU} from '../loop';
 import {baseBackgroundSchema, hasTransparentBackground} from '../settings';
 import {Canvas} from './Canvas';
-import {BareTree, Pumpkin} from './halloween/HalloweenArtwork';
+import {
+  BareTree, BAT_BODY, BAT_WING_LEFT, BAT_WING_RIGHT, MOON_CRATERS, MOON_GLINT_ARC, MOON_R, Pumpkin,
+} from './halloween/HalloweenArtwork';
 
 export const halloweenLoopSchema = baseBackgroundSchema.extend({
   durationSeconds: baseBackgroundSchema.shape.durationSeconds.default(12),
@@ -111,10 +113,10 @@ export const getHalloweenScene = (
 const Bat = ({x, y, scale, rotation, flap, opacity}: HalloweenElement) => (
   <g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${scale})`} opacity={opacity} fill="#171021">
     <g transform={`scale(1 ${flap})`}>
-      <path d="M-2 1 Q-16-20-40-16 Q-31-7-29 8 Q-20 2-15 13 Q-8 6-2 10Z" />
-      <path d="M2 1 Q16-20 40-16 Q31-7 29 8 Q20 2 15 13 Q8 6 2 10Z" />
+      <path d={BAT_WING_LEFT} />
+      <path d={BAT_WING_RIGHT} />
     </g>
-    <path d="M-5-7-5-15 0-10 5-15 5-7 Q9 7 0 15 Q-9 7-5-7Z" />
+    <path d={BAT_BODY} />
   </g>
 );
 
@@ -177,16 +179,15 @@ export const HalloweenLoop = (props: HalloweenLoopProps) => {
           <circle r="310" fill="url(#halloween-moon-halo)" opacity={moon.glow} />
           <circle r="159" fill="none" stroke={moonColor} strokeWidth="0.6" opacity="0.16" />
           <circle r="145" fill="none" stroke={moonColor} strokeWidth="0.8" opacity="0.12" />
-          <circle r="131" fill="url(#halloween-moon)" />
+          <circle r={MOON_R} fill="url(#halloween-moon)" />
           <g fill={mistColor} opacity="0.12">
-            <ellipse cx="52" cy="-29" rx="32" ry="39" transform="rotate(-25 52 -29)" />
-            <ellipse cx="76" cy="32" rx="18" ry="24" />
-            <ellipse cx="-34" cy="62" rx="28" ry="17" transform="rotate(35 -34 62)" />
-            <circle cx="-72" cy="-28" r="13" />
-            <circle cx="28" cy="86" r="10" />
-            <circle cx="-10" cy="-80" r="20" />
+            {MOON_CRATERS.map(({cx, cy, rx, ry, rotate}, index) => (rx === ry && !rotate
+              ? <circle key={index} cx={cx} cy={cy} r={rx} />
+              : <ellipse key={index} cx={cx} cy={cy} rx={rx} ry={ry} transform={rotate ? `rotate(${rotate} ${cx} ${cy})` : undefined} />))}
           </g>
-          <path d="M-97-70 A120 120 0 0 1 47-111" stroke="#FFF9E7" strokeWidth="2" opacity="0.4" fill="none" />
+          {/* Every glint y is negative, so the numbers join without a separator. */}
+          <path d={`M${MOON_GLINT_ARC.from.x}${MOON_GLINT_ARC.from.y} A${MOON_GLINT_ARC.r} ${MOON_GLINT_ARC.r} 0 0 1 ${MOON_GLINT_ARC.to.x}${MOON_GLINT_ARC.to.y}`}
+            stroke="#FFF9E7" strokeWidth="2" opacity="0.4" fill="none" />
         </g>
         {ofKind('bat').map((bat, index) => <Bat key={index} {...bat} />)}
 

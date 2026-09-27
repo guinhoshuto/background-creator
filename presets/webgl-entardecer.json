@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 20,
+  "seed": 5,
+  "transparent": false,
+  "backgroundColor": "#E884AC",
+  "colors": ["#F0857C", "#FDC98F", "#F083B8", "#B8B7E6", "#B04BA5", "#B98BD2"],
+  "outputFormat": "mp4",
+  "experiment": "haze",
+  "speed": 1,
+  "scale": 1,
+  "intensity": 1,
+  "centerFade": 0.15
+}

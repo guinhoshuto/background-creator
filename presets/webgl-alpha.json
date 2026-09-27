@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 16,
+  "seed": 7,
+  "transparent": true,
+  "backgroundColor": "#070B16",
+  "colors": ["#A5F3FC", "#E0E7FF", "#FFFFFF"],
+  "outputFormat": "webm",
+  "experiment": "contours",
+  "speed": 1,
+  "scale": 1,
+  "intensity": 1.3,
+  "centerFade": 0.9
+}

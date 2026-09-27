@@ -10,5 +10,6 @@
   "candleIntensity": 0.8,
   "moonlightIntensity": 0.65,
   "hauntingIntensity": 0.45,
-  "chandelierSway": 0.6
+  "chandelierSway": 0.6,
+  "lightningIntensity": 0.7
 }

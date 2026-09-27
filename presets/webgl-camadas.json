@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 20,
+  "seed": 5,
+  "transparent": false,
+  "backgroundColor": "#A6CDEF",
+  "colors": ["#432AA3", "#3358D6", "#3E98E8", "#74CFEA", "#C4B9F4"],
+  "outputFormat": "mp4",
+  "experiment": "layers",
+  "speed": 1,
+  "scale": 1,
+  "intensity": 1,
+  "centerFade": 0.15
+}

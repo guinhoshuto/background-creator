@@ -6,6 +6,13 @@ export interface PumpkinProps {
   glow: number;
   color: string;
   id: string;
+  /** The floor glow and contact shadows under the pumpkin (default true); overlays draw their own. */
+  ground?: boolean;
+  /**
+   * The thin coloured line details (vine curl, stem stripe, eye highlights; default true). Small
+   * overlay pumpkins leave them out: below a pixel wide they only smear in 4:2:0 video.
+   */
+  fine?: boolean;
 }
 
 export interface BareTreeProps {
@@ -16,6 +23,31 @@ export interface BareTreeProps {
   rotation: number;
   color: string;
 }
+
+/**
+ * The bat silhouette at scale 1 (80 px wingspan, x ±40, y −20…+15): the wings flap by scaling y
+ * around the shoulder line (y 0); the body with its ears does not scale. Shared with the overlay
+ * ornaments (noite set).
+ */
+export const BAT_WING_LEFT = 'M-2 1 Q-16-20-40-16 Q-31-7-29 8 Q-20 2-15 13 Q-8 6-2 10Z';
+export const BAT_WING_RIGHT = 'M2 1 Q16-20 40-16 Q31-7 29 8 Q20 2 15 13 Q8 6 2 10Z';
+export const BAT_BODY = 'M-5-7-5-15 0-10 5-15 5-7 Q9 7 0 15 Q-9 7-5-7Z';
+
+/**
+ * The moon in its own units (centred on the origin): the disc's radius, its six craters (drawn as
+ * circles when rx = ry with no rotation) and its glint arc. Shared with the overlay ornaments
+ * (noite set), which scale the same numbers to their disc.
+ */
+export const MOON_R = 131;
+export const MOON_CRATERS: readonly {cx: number; cy: number; rx: number; ry: number; rotate: number}[] = [
+  {cx: 52, cy: -29, rx: 32, ry: 39, rotate: -25},
+  {cx: 76, cy: 32, rx: 18, ry: 24, rotate: 0},
+  {cx: -34, cy: 62, rx: 28, ry: 17, rotate: 35},
+  {cx: -72, cy: -28, rx: 13, ry: 13, rotate: 0},
+  {cx: 28, cy: 86, rx: 10, ry: 10, rotate: 0},
+  {cx: -10, cy: -80, rx: 20, ry: 20, rotate: 0},
+];
+export const MOON_GLINT_ARC = {from: {x: -97, y: -70}, r: 120, to: {x: 47, y: -111}} as const;
 
 const pumpkinFace = [
   'M-57-82 Q-46-105-32-109 Q-22-98-17-78 Q-35-83-57-82Z',
@@ -33,6 +65,8 @@ export const Pumpkin = ({
   glow,
   color,
   id,
+  ground = true,
+  fine = true,
 }: PumpkinProps) => {
   const light = Math.max(0, Math.min(1, glow));
   const bodyId = `${id}-body`;
@@ -67,9 +101,9 @@ export const Pumpkin = ({
       </defs>
 
       {/* The ground contact stays horizontal even when the pumpkin leans. */}
-      <ellipse cx="2" cy="2" rx="112" ry="13" fill={`url(#${floorId})`} />
-      <ellipse cx="2" cy="0" rx="85" ry="9" fill="#07060C" opacity="0.45" />
-      <ellipse cx="0" cy="-1" rx="57" ry="5" fill="#06050A" opacity="0.8" />
+      {ground && <ellipse cx="2" cy="2" rx="112" ry="13" fill={`url(#${floorId})`} />}
+      {ground && <ellipse cx="2" cy="0" rx="85" ry="9" fill="#07060C" opacity="0.45" />}
+      {ground && <ellipse cx="0" cy="-1" rx="57" ry="5" fill="#06050A" opacity="0.8" />}
 
       <g transform={`rotate(${rotation})`}>
 
@@ -77,14 +111,16 @@ export const Pumpkin = ({
           d="M-13-137 Q-14-156-5-173 Q-2-181 11-180 L14-169 Q3-164 3-152 L7-137Z"
           fill="#465044"
         />
-        <path d="M-7-145 Q-8-160 3-174" fill="none" stroke="#849267" strokeWidth="3" strokeLinecap="round" />
-        <path
-          d="M2-142 C21-168 35-154 43-157 C56-163 43-174 39-165"
-          fill="none"
-          stroke="#65704b"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
+        {fine && <path d="M-7-145 Q-8-160 3-174" fill="none" stroke="#849267" strokeWidth="3" strokeLinecap="round" />}
+        {fine && (
+          <path
+            d="M2-142 C21-168 35-154 43-157 C56-163 43-174 39-165"
+            fill="none"
+            stroke="#65704b"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+        )}
 
         <path
           d="M-2-139 C-27-150-42-142-50-134 C-80-139-96-111-97-80 C-100-49-85-18-61-12 C-43 2-21-1-4-5 C14 3 42 0 58-11 C84-15 100-46 98-79 C97-111 83-138 53-135 C40-145 18-148-2-139Z"
@@ -116,7 +152,7 @@ export const Pumpkin = ({
           opacity={0.07 + light * 0.13}
         />
         <path d={pumpkinFace} fill={`url(#${faceId})`} opacity={0.65 + light * 0.35} />
-        <path d="M-54-82 Q-37-83-20-79 M22-80 Q41-83 56-80" fill="none" stroke="#fff0b1" strokeWidth="1.5" opacity={0.35 + light * 0.4} />
+        {fine && <path d="M-54-82 Q-37-83-20-79 M22-80 Q41-83 56-80" fill="none" stroke="#fff0b1" strokeWidth="1.5" opacity={0.35 + light * 0.4} />}
         <path d="M-15-136 Q-2-142 12-137" fill="none" stroke="#603c27" strokeWidth="4" strokeLinecap="round" />
       </g>
     </g>

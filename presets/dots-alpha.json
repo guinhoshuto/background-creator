@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 12,
+  "seed": 3,
+  "transparent": true,
+  "backgroundColor": "#0B0F19",
+  "outputFormat": "webm",
+  "direction": "up",
+  "layout": "alternating",
+  "dotColor": "rgba(255, 255, 255, 0.35)",
+  "dotSize": 6,
+  "spacing": 40,
+  "speed": 20
+}

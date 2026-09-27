@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import {Children, isValidElement} from 'react';
+import {isValidElement} from 'react';
 import {resolveExport} from '../scripts/export';
 import {
   getHauntedMansionScene, hauntedMansionLoopSchema, type HauntedMansionElement,
 } from '../src/backgrounds/HauntedMansionLoop';
 import {backgroundCatalog} from '../src/catalog';
 import {RemotionRoot} from '../src/Root';
+import {findComposition} from './helpers/find-composition';
 import {getCompositionMetadata, hasTransparentBackground} from '../src/settings';
 
 const FRAMES = [0, 1, 120, 239, 480, 721, 959];
@@ -34,8 +35,7 @@ test('Mansão: Studio, catálogo, schema e preset abrem a mesma noite de dezesse
     schema: typeof hauntedMansionLoopSchema;
     calculateMetadata: (options: {props: typeof defaults}) => typeof metadata & {props: typeof defaults};
   };
-  const composition = Children.toArray(RemotionRoot().props.children).find((child) =>
-    isValidElement<CompositionProps>(child) && child.props.id === 'HauntedMansionLoop');
+  const composition = findComposition<CompositionProps>(RemotionRoot(), 'HauntedMansionLoop');
   assert.ok(isValidElement<CompositionProps>(composition), 'a mansão precisa estar registrada no Studio');
   assert.equal(composition.props.schema, hauntedMansionLoopSchema);
   assert.deepEqual(composition.props.defaultProps, defaults);

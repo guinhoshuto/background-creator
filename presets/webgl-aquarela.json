@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 20,
+  "seed": 7,
+  "transparent": false,
+  "backgroundColor": "#F7F2E8",
+  "colors": ["#2A4D9B", "#C8456B", "#E9A23B", "#3E8E7E"],
+  "outputFormat": "mp4",
+  "experiment": "watercolor",
+  "speed": 1,
+  "scale": 1,
+  "intensity": 1,
+  "centerFade": 0.3
+}

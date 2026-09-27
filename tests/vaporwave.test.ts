@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import {Children, createElement, isValidElement} from 'react';
+import {createElement, isValidElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {resolveExport} from '../scripts/export';
 import {
@@ -23,6 +23,7 @@ import {getSolidFaces, SOLID_EDGE, SOLID_GLOW, SOLID_REACH} from '../src/backgro
 import {backgroundCatalog} from '../src/catalog';
 import {TAU} from '../src/loop';
 import {RemotionRoot} from '../src/Root';
+import {findComposition} from './helpers/find-composition';
 import {getCompositionMetadata, hasTransparentBackground} from '../src/settings';
 
 const LENGTH = 960;
@@ -105,8 +106,7 @@ test('Vaporwave: Studio, catálogo, schema e preset abrem o mesmo horizonte de d
     schema: typeof vaporwaveLoopSchema;
     calculateMetadata: (options: {props: typeof defaults}) => typeof metadata & {props: typeof defaults};
   };
-  const composition = Children.toArray(RemotionRoot().props.children).find((child) =>
-    isValidElement<CompositionProps>(child) && child.props.id === 'VaporwaveLoop');
+  const composition = findComposition<CompositionProps>(RemotionRoot(), 'VaporwaveLoop');
   assert.ok(isValidElement<CompositionProps>(composition), 'o horizonte neon precisa estar registrado no Studio');
   assert.equal(composition.props.schema, vaporwaveLoopSchema);
   assert.deepEqual(composition.props.defaultProps, defaults);

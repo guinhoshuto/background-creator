@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 20,
+  "seed": 3,
+  "transparent": false,
+  "backgroundColor": "#BFC9E7",
+  "colors": ["#F4F2F9", "#CDD4EE", "#879BDB", "#5471CA", "#C8BAF0", "#9890E4"],
+  "outputFormat": "mp4",
+  "experiment": "eclipse",
+  "speed": 1,
+  "scale": 1,
+  "intensity": 1,
+  "centerFade": 0.15
+}

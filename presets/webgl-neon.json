@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 20,
+  "seed": 7,
+  "transparent": false,
+  "backgroundColor": "#CCA0DA",
+  "colors": ["#EA84C6", "#C0B4EE", "#665DDA", "#473CB9"],
+  "outputFormat": "mp4",
+  "experiment": "neon",
+  "speed": 1,
+  "scale": 1,
+  "intensity": 1,
+  "centerFade": 0.15
+}

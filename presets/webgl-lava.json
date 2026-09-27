@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 24,
+  "seed": 42,
+  "transparent": false,
+  "backgroundColor": "#0B0612",
+  "colors": ["#FFB547", "#FF6A3D", "#E8336D", "#8B3CF0"],
+  "outputFormat": "mp4",
+  "experiment": "lava",
+  "speed": 1,
+  "scale": 1.1,
+  "intensity": 1,
+  "centerFade": 0.5
+}

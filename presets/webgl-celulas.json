@@ -1,0 +1,13 @@
+{
+  "experiment": "cells",
+  "durationSeconds": 20,
+  "seed": 23,
+  "transparent": false,
+  "backgroundColor": "#03121A",
+  "colors": ["#2DD4BF", "#38BDF8", "#818CF8", "#C084FC"],
+  "outputFormat": "webm",
+  "speed": 1,
+  "scale": 1.15,
+  "intensity": 1.2,
+  "centerFade": 0.6
+}

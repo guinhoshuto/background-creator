@@ -5,7 +5,7 @@ import {hasTransparentBackground, type BaseBackgroundProps} from '../settings';
 export const Canvas = ({
   children,
   ...props
-}: BaseBackgroundProps & {children: ReactNode}) => (
+}: Pick<BaseBackgroundProps, 'transparent' | 'outputFormat' | 'backgroundColor'> & {children: ReactNode}) => (
   <AbsoluteFill
     style={{
       backgroundColor: hasTransparentBackground(props) ? 'transparent' : props.backgroundColor,

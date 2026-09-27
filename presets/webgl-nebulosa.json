@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 30,
+  "seed": 23,
+  "transparent": false,
+  "backgroundColor": "#04050D",
+  "colors": ["#1E3A8A", "#7C3AED", "#DB2777", "#FB923C", "#FDE68A"],
+  "outputFormat": "mp4",
+  "experiment": "nebula",
+  "speed": 0.9,
+  "scale": 1.1,
+  "intensity": 1.1,
+  "centerFade": 0.45
+}
