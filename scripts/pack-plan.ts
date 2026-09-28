@@ -8,14 +8,26 @@ import {getKindPolicy, type AssetKind} from '../src/kinds';
 import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
 import {getCompositionMetadata, hasAlpha, outputFormatSchema, type OutputFormat} from '../src/settings';
-import {assetFileName, getSize} from '../src/sizes';
+import {getSize, sizeTag, sizesForKind} from '../src/sizes';
 import {expandSize} from './render-args';
 
 /** Pack builds refuse to start (and to go on) below this much free disk: renders fill it fast. */
 export const MIN_FREE_BYTES = 2 * 1024 ** 3;
 
-/** Names become folder and file names, so they stay ASCII and shell-safe. */
-const slug = /^[a-z0-9-]+$/;
+/**
+ * Names become folder and file names, so they stay ASCII and shell-safe: lowercase words joined by
+ * single hyphens, never a hyphen at either end.
+ */
+const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Segments a variant may not hold: they already mean something in a buyer file name. */
+const RESERVED_VARIANT_SEGMENTS = ['mask', 'background', 'sm', 'lg'] as const;
+
+const variantSchema = z.string()
+  .regex(slug, 'The variant becomes part of the file name: use lowercase letters, digits and single hyphens.')
+  .refine((variant) => !variant.split('-').some((segment) => (RESERVED_VARIANT_SEGMENTS as readonly string[]).includes(segment)), {
+    message: `The variant becomes part of the file name: it cannot hold the segments ${RESERVED_VARIANT_SEGMENTS.join(', ')}.`,
+  });
 
 // Keys, descriptions and messages in English, like the preset props they sit next to and the
 // manifest.json the build writes.
@@ -27,12 +39,12 @@ export const packItemSchema = z.object({
   sizes: z.array(z.string().min(1)).min(1).optional().describe('Catalog sizes (chat, text boxes and borders only)'),
   formats: z.array(outputFormatSchema).min(1).describe('Formats exported for each size'),
   frame: z.number().int().min(0).optional().describe('PNG frame (default 0)'),
-  variant: z.string().regex(slug, 'The variant becomes part of the file name: use lowercase letters, digits and hyphens.').optional()
-    .describe('Suffix of this item\'s files, for example plain: <Id>-<size>-<variant>.<ext>'),
+  variant: variantSchema.optional()
+    .describe('Suffix of this item\'s files, for example plain: <pack>-<size>-<variant>.<ext>'),
 }).strict();
 
 export const packManifestSchema = z.object({
-  name: z.string().regex(slug, 'The pack name becomes a folder: use lowercase letters, digits and hyphens.'),
+  name: z.string().regex(slug, 'The pack name becomes a folder and starts every file name: use lowercase letters, digits and single hyphens.'),
   items: z.array(packItemSchema).min(1).describe('What the pack exports, in order'),
 }).strict();
 
@@ -61,9 +73,14 @@ export type PackDeps = {
 export type PlannedFile = {
   composition: string;
   kind: AssetKind;
-  /** The kind's Studio folder, reused as the kind's folder inside the pack folder. */
+  /**
+   * The folder inside the pack folder: the kind's Studio folder, the size's own (twitch-panels) or
+   * masks for an OBS mask.
+   */
   folder: string;
   size?: string;
+  /** The item's variant (plain, or the look when a pack holds several backgrounds). */
+  variant?: string;
   format: OutputFormat;
   /** The merged request: preset < item props < size < format. */
   props: Record<string, unknown>;
@@ -75,7 +92,7 @@ export type PlannedFile = {
   exportProps: Record<string, unknown>;
   /** The speeds the file actually shows (sized kinds). */
   motion?: AssetMotion;
-  /** Relative to the project root, POSIX separators: out/packs/<name>/<folder>/<file>. */
+  /** Relative to the project root, POSIX separators: out/packs/<name>/<folder>/<deliveryFileName>. */
   output: string;
   canvas: {width: number; height: number};
   fps: number;
@@ -91,12 +108,41 @@ export type PlannedFile = {
 const radiusTag = (radius: number) => String(Math.round(radius * 100) / 100).replace('.', 'p');
 
 /**
+ * The name the buyer sees: `<pack>-<piece>[-<variant>].<ext>`. The piece is `background` for a
+ * background, the size id for a catalog overlay and the `<W>x<H>[-circle]` tag for a free size.
+ * An OBS mask is `<pack>-<size>-mask[-radius-<radius>].png`, the radius only when the pack holds
+ * the same size with several radii. The workshop name (`assetFileName`, out/) never reaches the buyer.
+ */
+export const deliveryFileName = (file: {pack: string; format: OutputFormat} & (
+  | {role?: undefined; piece: string; variant?: string}
+  | {role: 'mask'; size: string; radius?: number}
+)) => (file.role === 'mask'
+  ? `${file.pack}-${file.size}-mask${file.radius === undefined ? '' : `-radius-${radiusTag(file.radius)}`}.${file.format}`
+  : `${file.pack}-${file.piece}${file.variant === undefined ? '' : `-${file.variant}`}.${file.format}`);
+
+/**
+ * A variant must not make the file read as a longer size of the same kind: fullscreen with vertical
+ * would pass for fullscreen-vertical, and webcam-round with sm-plain for webcam-round-sm plain.
+ * Shorter sizes are no risk: label-sm-plain is read as the longest size it starts with, label-sm.
+ */
+const assertVariantKeepsSize = (kind: AssetKind, piece: string, variant: string | undefined) => {
+  if (variant === undefined) return;
+  const tagged = `${piece}-${variant}`;
+  const other = sizesForKind(kind).find((size) => size.id.startsWith(`${piece}-`)
+    && (tagged === size.id || tagged.startsWith(`${size.id}-`)));
+  if (other) throw new Error(`the variant ${variant} turns ${piece} into ${tagged}, which reads as the size ${other.id}: pick another variant.`);
+};
+
+/**
  * One mask the pack needs: its props, the item that first asked for it (`where`), how many planned
  * files come before it (`after`) and every file that uses it.
  */
 type MaskRequest = {
   asset: PackAsset; sizeId: string; radius: number; props: Record<string, unknown>; after: number; users: PlannedFile[]; where: string;
 };
+
+/** OBS masks get a folder of their own in the pack, whatever the border's. */
+const MASK_FOLDER = 'masks';
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -128,12 +174,13 @@ const itemSizePatch = (asset: PackAsset, sizeId: string) => {
  * so a named size always fixes the product and the format always matches the file extension. The
  * one exception is an item's `bleed`, which wins over the size's: the box stays the product, and
  * the wider margin only makes room (bigger ornaments on a large frame). An item's `variant` tags
- * its file names, so one pack can hold the same size twice (with and without ornaments).
+ * its file names, so one pack can hold the same size twice (with and without ornaments). Files are
+ * named for the buyer by `deliveryFileName`, in the kind's folder or the size's own.
  *
  * A window border (a named size with fit 'window') also needs its OBS mask. The mask depends only
  * on the window (box and clamped radius), so the pack plans it once per size and radius, right
- * after the first file that needs it, as `<folder>/mascara-<size>.png`; when one pack holds the
- * same size with several radii, each mask is tagged with its radius: `mascara-<size>-r<radius>.png`.
+ * after the first file that needs it, as `masks/<pack>-<size>-mask.png`; when one pack holds the
+ * same size with several radii, each mask is tagged with its radius: `<pack>-<size>-mask-radius-<radius>.png`.
  */
 export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] => {
   const planned: PlannedFile[] = [];
@@ -176,11 +223,12 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
           throw new Error(`${where}: the frame must be an integer from 0 to ${durationInFrames - 1}.`);
         }
         // A named size is the product tag even when the schema would match another table entry.
-        const tag = item.variant === undefined ? '' : `-${item.variant}`;
-        const file = sizeId === undefined
-          ? assetFileName({id: asset.id, kind: asset.kind, props: parsed, format}).replace(/(\.[a-z0-9]+)$/, `${tag}$1`)
-          : `${asset.id}-${getSize(sizeId).id}${tag}.${format}`;
-        const output = path.posix.join('out', 'packs', manifest.name, policy.folder, file);
+        const piece = asset.kind === 'background' ? 'background'
+          : sizeId === undefined ? withContext(() => sizeTag(asset.kind, parsed)) : getSize(sizeId).id;
+        withContext(() => assertVariantKeepsSize(asset.kind, piece, item.variant));
+        const folder = (sizeId === undefined ? undefined : getSize(sizeId).folder) ?? policy.folder;
+        const file = deliveryFileName({pack: manifest.name, piece, format, ...(item.variant === undefined ? {} : {variant: item.variant})});
+        const output = path.posix.join('out', 'packs', manifest.name, folder, file);
         const previous = seen.get(output);
         if (previous) {
           throw new Error(`${where} repeats the file ${output}, already produced by ${previous}: change the size or the format, or move the item to another pack.`);
@@ -188,8 +236,8 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
         seen.set(output, where);
         const motion = asset.motion?.(parsed) ?? null;
         const entry: PlannedFile = {
-          composition: asset.id, kind: asset.kind, folder: policy.folder,
-          ...(sizeId === undefined ? {} : {size: sizeId}),
+          composition: asset.id, kind: asset.kind, folder,
+          ...(sizeId === undefined ? {} : {size: sizeId}), ...(item.variant === undefined ? {} : {variant: item.variant}),
           format, props, exportProps: parsed, ...(motion ? {motion} : {}),
           output, canvas: {...canvas}, fps, frames: durationInFrames,
           ...(frame === undefined ? {} : {frame}),
@@ -215,7 +263,6 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
   const inserts = new Map<number, PlannedFile[]>();
   for (const request of masks.values()) {
     const {asset, sizeId, radius, where} = request;
-    const policy = getKindPolicy(asset.kind);
     const exportProps = (() => {
       try {
         return asset.parse(request.props);
@@ -226,14 +273,17 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
     })();
     const canvas = asset.layout?.(exportProps).canvas;
     if (!canvas) throw new Error(`${where}: the composition does not report the mask size.`);
-    const tag = radiiBySize.get(sizeId)!.size > 1 ? `-r${radiusTag(radius)}` : '';
-    const output = path.posix.join('out', 'packs', manifest.name, policy.folder, `mascara-${getSize(sizeId).id}${tag}.png`);
+    const file = deliveryFileName({
+      pack: manifest.name, role: 'mask', size: getSize(sizeId).id, format: 'png',
+      ...(radiiBySize.get(sizeId)!.size > 1 ? {radius} : {}),
+    });
+    const output = path.posix.join('out', 'packs', manifest.name, MASK_FOLDER, file);
     const previous = seen.get(output);
     if (previous) throw new Error(`${where}: the mask ${output} repeats a file of ${previous}: rename the item or move it to another pack.`);
     seen.set(output, where);
     const {fps, durationInFrames} = getCompositionMetadata({durationSeconds: exportProps.durationSeconds as number, outputFormat: 'png'});
     const mask: PlannedFile = {
-      composition: asset.id, kind: asset.kind, folder: policy.folder, size: sizeId, format: 'png',
+      composition: asset.id, kind: asset.kind, folder: MASK_FOLDER, size: sizeId, format: 'png',
       props: request.props, exportProps, output, canvas: {...canvas}, fps, frames: durationInFrames, frame: 0, role: 'mask',
     };
     for (const user of request.users) user.mask = output;

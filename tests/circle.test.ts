@@ -526,23 +526,23 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
     const plan = planPack(manifest, realPackDeps);
     const files = plan.map((file) => path.posix.relative(`out/packs/${name}`, file.output));
     for (const id of ROUND_BLOCKS) {
-      for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/BlockLoop-${id}.${format}`), `${name}: ${id}.${format}`);
+      for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/${name}-${id}.${format}`), `${name}: ${id}.${format}`);
     }
     // The Halloween kits also ship every size without ornaments (variant plain).
     const kit = name.startsWith('halloween-');
     for (const id of ROUND_BLOCKS.filter(() => kit)) {
-      for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/BlockLoop-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
+      for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/${name}-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
     }
     for (const id of ROUND_BORDERS) {
-      for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/BorderLoop-${id}.${format}`), `${name}: ${id}.${format}`);
-      if (kit) for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/BorderLoop-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
-      const mask = plan.find((file) => file.output.endsWith(`borders/mascara-${id}.png`))!;
+      for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/${name}-${id}.${format}`), `${name}: ${id}.${format}`);
+      if (kit) for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/${name}-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
+      const mask = plan.find((file) => file.output.endsWith(`masks/${name}-${id}-mask.png`))!;
       assert.ok(mask, `${name}: máscara de ${id}`);
       assert.deepEqual([mask.exportProps.shape, mask.exportProps.radius, mask.canvas.width], ['circle', getSize(id).width / 2, getSize(id).width]);
       for (const file of plan.filter((entry) => entry.size === id && entry.role !== 'mask')) assert.equal(file.mask, mask.output);
     }
     // The square webcam keeps its own (rounded-rect) mask.
-    const square = plan.find((file) => file.output.endsWith('borders/mascara-webcam-square.png'))!;
+    const square = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-square-mask.png`))!;
     assert.equal(square.exportProps.shape, 'rectangle');
     // Kits: the background, 25 sizes with ornaments (no screens) and 27 without, in two formats, plus the nine masks, shared by both.
     assert.equal(plan.length, name === 'halloween' ? 69 : kit ? 2 + 2 * 25 + 2 * 27 + 9 : 65, name);
@@ -551,6 +551,6 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
 
 test('Packs: dois temas com raios diferentes dividem a mesma máscara redonda', () => {
   const border = (preset: string, format: 'webm' | 'png') => ({composition: 'BorderLoop', preset, sizes: ['webcam-round'], formats: [format]});
-  const plan = planPack({name: 'teste', items: [border('border-neon', 'webm'), border('border-pastel', 'png')]}, realPackDeps);
-  assert.deepEqual(plan.filter((file) => file.role === 'mask').map((file) => path.posix.basename(file.output)), ['mascara-webcam-round.png']);
+  const plan = planPack({name: 'test', items: [border('border-neon', 'webm'), border('border-pastel', 'png')]}, realPackDeps);
+  assert.deepEqual(plan.filter((file) => file.role === 'mask').map((file) => path.posix.basename(file.output)), ['test-webcam-round-mask.png']);
 });

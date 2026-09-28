@@ -35,15 +35,15 @@ const sized = (id: string, kind: 'chat' | 'block' | 'border', box: {width: numbe
 });
 
 const fakeAssets: Record<string, PackAsset> = {
-  FundoLoop: {id: 'FundoLoop', kind: 'background', parse: fakeParse({...common, speed: 1}), layout: null},
+  FakeLoop: {id: 'FakeLoop', kind: 'background', parse: fakeParse({...common, speed: 1}), layout: null},
   ChatLoop: sized('ChatLoop', 'chat', {width: 400, height: 600, bleed: 32}),
   BlockLoop: sized('BlockLoop', 'block', {width: 640, height: 360, bleed: 32}),
   BorderLoop: sized('BorderLoop', 'border', {width: 640, height: 360, bleed: 48}),
 };
 
 const fakePresets: Record<string, unknown> = {
-  'fundo-teste': {speed: 3, outputFormat: 'mp4', durationSeconds: 4},
-  'chat-teste': {glow: 20, width: 999, transparent: true},
+  'test-background': {speed: 3, outputFormat: 'mp4', durationSeconds: 4},
+  'chat-test': {glow: 20, width: 999, transparent: true},
   'block-test': {halo: 10},
   'border-test': {fit: 'screen'},
   'quebrado': [1, 2],
@@ -61,7 +61,7 @@ const fakeDeps: PackDeps = {
   },
 };
 
-const manifest = (items: PackManifest['items'], name = 'teste'): PackManifest => ({name, items});
+const manifest = (items: PackManifest['items'], name = 'test'): PackManifest => ({name, items});
 
 test('pack: o manifesto é estrito e recusa campos desconhecidos com mensagem em inglês', () => {
   const valid = {name: 'neon', items: [{composition: 'ChatLoop', formats: ['webm']}]};
@@ -78,20 +78,20 @@ test('pack: o manifesto é estrito e recusa campos desconhecidos com mensagem em
   assert.throws(() => parsePackManifest({...valid, items: []}), /Invalid pack manifest/);
 });
 
-test('pack: o plano segue a ordem do manifesto e nomeia <Id>-<tamanho>.<ext> na pasta do tipo', () => {
+test('pack: o plano segue a ordem do manifesto e nomeia <pack>-<peça>.<ext> na pasta do tipo', () => {
   const plan = planPack(manifest([
-    {composition: 'FundoLoop', preset: 'fundo-teste', formats: ['webm', 'png']},
-    {composition: 'ChatLoop', preset: 'chat-teste', sizes: ['chat-compact', 'chat-column'], formats: ['webm', 'png']},
+    {composition: 'FakeLoop', preset: 'test-background', formats: ['webm', 'png']},
+    {composition: 'ChatLoop', preset: 'chat-test', sizes: ['chat-compact', 'chat-column'], formats: ['webm', 'png']},
     {composition: 'BorderLoop', sizes: ['fullscreen'], formats: ['mov']},
   ]), fakeDeps);
   assert.deepEqual(plan.map((file) => file.output), [
-    'out/packs/teste/backgrounds/FundoLoop.webm',
-    'out/packs/teste/backgrounds/FundoLoop.png',
-    'out/packs/teste/chat/ChatLoop-chat-compact.webm',
-    'out/packs/teste/chat/ChatLoop-chat-compact.png',
-    'out/packs/teste/chat/ChatLoop-chat-column.webm',
-    'out/packs/teste/chat/ChatLoop-chat-column.png',
-    'out/packs/teste/borders/BorderLoop-fullscreen.mov',
+    'out/packs/test/backgrounds/test-background.webm',
+    'out/packs/test/backgrounds/test-background.png',
+    'out/packs/test/chat/test-chat-compact.webm',
+    'out/packs/test/chat/test-chat-compact.png',
+    'out/packs/test/chat/test-chat-column.webm',
+    'out/packs/test/chat/test-chat-column.png',
+    'out/packs/test/borders/test-fullscreen.mov',
   ]);
   assert.deepEqual(plan.map((file) => file.folder), ['backgrounds', 'backgrounds', 'chat', 'chat', 'chat', 'chat', 'borders']);
   assert.deepEqual(plan[0]!.canvas, {width: 1920, height: 1080}, 'fundos usam o tamanho fixo do tipo');
@@ -108,14 +108,14 @@ test('pack: o plano segue a ordem do manifesto e nomeia <Id>-<tamanho>.<ext> na 
 
 test('pack: props mesclam preset < props do item < tamanho < formato', () => {
   const [file] = planPack(manifest([{
-    composition: 'ChatLoop', preset: 'chat-teste', props: {glow: 4, width: 800, seed: 7, outputFormat: 'gif'},
+    composition: 'ChatLoop', preset: 'chat-test', props: {glow: 4, width: 800, seed: 7, outputFormat: 'gif'},
     sizes: ['chat-tall'], formats: ['webm'],
   }]), fakeDeps);
   assert.deepEqual(file!.props, {glow: 4, width: 400, height: 800, bleed: 32, transparent: true, seed: 7, outputFormat: 'webm'});
   // A window size fixes the product even over a full-screen preset.
   const [border] = planPack(manifest([{composition: 'BorderLoop', preset: 'border-test', sizes: ['webcam-4x3'], formats: ['png']}]), fakeDeps);
   assert.equal(border!.props.fit, 'window');
-  assert.equal(border!.output, 'out/packs/teste/borders/BorderLoop-webcam-4x3.png');
+  assert.equal(border!.output, 'out/packs/test/borders/test-webcam-4x3.png');
 });
 
 test('pack: o bleed do item vence o do tamanho (a caixa continua a do tamanho)', () => {
@@ -124,7 +124,7 @@ test('pack: o bleed do item vence o do tamanho (a caixa continua a do tamanho)',
   }]), fakeDeps);
   assert.deepEqual([file!.props.width, file!.props.height, file!.props.bleed], [1440, 810, 96]);
   assert.deepEqual(file!.canvas, {width: 1440 + 2 * 96, height: 810 + 2 * 96});
-  assert.equal(file!.output, 'out/packs/teste/borders/BorderLoop-gameplay.webm', 'o nome segue o tamanho');
+  assert.equal(file!.output, 'out/packs/test/borders/test-gameplay.webm', 'o nome segue o tamanho');
   // Without an item bleed, the size's.
   const [plain] = planPack(manifest([{composition: 'BorderLoop', sizes: ['gameplay'], formats: ['webm']}]), fakeDeps);
   assert.equal(plain!.props.bleed, 48);
@@ -132,20 +132,20 @@ test('pack: o bleed do item vence o do tamanho (a caixa continua a do tamanho)',
 
 test('pack: a variante marca o nome dos arquivos, e o mesmo tamanho cabe duas vezes num pack', () => {
   const plan = planPack(manifest([
-    {composition: 'FundoLoop', formats: ['png']},
-    {composition: 'FundoLoop', props: {speed: 2}, formats: ['png'], variant: 'lento'},
+    {composition: 'FakeLoop', formats: ['png']},
+    {composition: 'FakeLoop', props: {speed: 2}, formats: ['png'], variant: 'slow'},
     {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'png']},
     {composition: 'ChatLoop', props: {glow: 0}, sizes: ['chat-standard'], formats: ['webm', 'png'], variant: 'plain'},
     {composition: 'BlockLoop', props: {width: 700, height: 100, bleed: 16}, formats: ['webm'], variant: 'v2'},
   ]), fakeDeps);
   assert.deepEqual(plan.map((file) => file.output), [
-    'out/packs/teste/backgrounds/FundoLoop.png',
-    'out/packs/teste/backgrounds/FundoLoop-lento.png',
-    'out/packs/teste/chat/ChatLoop-chat-standard.webm',
-    'out/packs/teste/chat/ChatLoop-chat-standard.png',
-    'out/packs/teste/chat/ChatLoop-chat-standard-plain.webm',
-    'out/packs/teste/chat/ChatLoop-chat-standard-plain.png',
-    'out/packs/teste/text-boxes/BlockLoop-700x100-v2.webm',
+    'out/packs/test/backgrounds/test-background.png',
+    'out/packs/test/backgrounds/test-background-slow.png',
+    'out/packs/test/chat/test-chat-standard.webm',
+    'out/packs/test/chat/test-chat-standard.png',
+    'out/packs/test/chat/test-chat-standard-plain.webm',
+    'out/packs/test/chat/test-chat-standard-plain.png',
+    'out/packs/test/text-boxes/test-700x100-v2.webm',
   ]);
   assert.equal(plan[4]!.props.glow, 0);
   // Two variants of one window share its OBS mask, planned once.
@@ -154,15 +154,32 @@ test('pack: a variante marca o nome dos arquivos, e o mesmo tamanho cabe duas ve
     {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['webm'], variant: 'plain'},
   ]), realPackDeps);
   assert.deepEqual(borders.map((file) => path.posix.basename(file.output)), [
-    'BorderLoop-webcam-16x9.webm', 'mascara-webcam-16x9.png', 'BorderLoop-webcam-16x9-plain.webm',
+    'test-webcam-16x9.webm', 'test-webcam-16x9-mask.png', 'test-webcam-16x9-plain.webm',
   ]);
   assert.equal(borders[2]!.mask, borders[1]!.output);
   // The variant becomes part of a file name: a slug only.
   const item = {composition: 'ChatLoop', formats: ['webm']};
-  for (const variant of ['Sem Enfeites', 'sem_enfeites', '', 'a/b']) {
-    assert.throws(() => parsePackManifest({name: 'teste', items: [{...item, variant}]}), /Invalid pack manifest/, variant);
+  for (const variant of ['Plain Look', 'plain_look', '', 'a/b', 'plain--x', '-plain']) {
+    assert.throws(() => parsePackManifest({name: 'test', items: [{...item, variant}]}), /Invalid pack manifest/, variant);
   }
-  assert.throws(() => parsePackManifest({name: 'teste', items: [{...item, variant: 'X'}]}), /lowercase letters/);
+  assert.throws(() => parsePackManifest({name: 'test', items: [{...item, variant: 'X'}]}), /lowercase letters/);
+  for (const name of ['Test', 'test--pack', 'test-', '-test']) {
+    assert.throws(() => parsePackManifest({name, items: [item]}), /single hyphens/, name);
+  }
+  // Segments that already mean something in a buyer file name.
+  for (const variant of ['mask', 'background', 'sm', 'lg', 'sm-plain', 'plain-lg', 'no-mask-x']) {
+    assert.throws(() => parsePackManifest({name: 'test', items: [{...item, variant}]}), /cannot hold the segments mask, background, sm, lg/, variant);
+  }
+  assert.doesNotThrow(() => parsePackManifest({name: 'test', items: [{...item, variant: 'small-mansion'}]}));
+  // A variant never makes a file read as another size of its kind.
+  for (const variant of ['vertical', 'vertical-plain']) {
+    assert.throws(
+      () => planPack(manifest([{composition: 'BorderLoop', sizes: ['fullscreen'], formats: ['png'], variant}]), fakeDeps),
+      /Item 1 \(BorderLoop\): the variant .* reads as the size fullscreen-vertical: pick another variant\./, variant,
+    );
+  }
+  assert.equal(planPack(manifest([{composition: 'BorderLoop', sizes: ['fullscreen-vertical'], formats: ['png'], variant: 'plain'}]), fakeDeps)[0]!.output,
+    'out/packs/test/borders/test-fullscreen-vertical-plain.png');
 });
 
 test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nome', () => {
@@ -171,16 +188,16 @@ test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nom
     {composition: 'BlockLoop', props: {width: 700, height: 100, bleed: 16}, formats: ['webm']},
   ]), fakeDeps);
   assert.deepEqual(plan.map((file) => file.output), [
-    'out/packs/teste/text-boxes/BlockLoop-card.webm',
-    'out/packs/teste/text-boxes/BlockLoop-700x100.webm',
+    'out/packs/test/text-boxes/test-card.webm',
+    'out/packs/test/text-boxes/test-700x100.webm',
   ]);
   assert.deepEqual(plan[1]!.canvas, {width: 732, height: 132});
 });
 
 test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em inglês', () => {
   assert.throws(
-    () => planPack(manifest([{composition: 'FundoLoop', sizes: ['card'], formats: ['webm']}]), fakeDeps),
-    /Item 1 \(FundoLoop\): .*with a fixed size \(1920×1080\): remove "sizes"/,
+    () => planPack(manifest([{composition: 'FakeLoop', sizes: ['card'], formats: ['webm']}]), fakeDeps),
+    /Item 1 \(FakeLoop\): .*with a fixed size \(1920×1080\): remove "sizes"/,
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', formats: ['webm']}, {composition: 'ChatLoop', sizes: ['webcam-16x9'], formats: ['webm']}]), fakeDeps),
@@ -204,9 +221,9 @@ test('pack: nomes de arquivo repetidos são recusados', () => {
   assert.throws(
     () => planPack(manifest([
       {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm']},
-      {composition: 'ChatLoop', preset: 'chat-teste', sizes: ['chat-standard'], formats: ['png', 'webm']},
+      {composition: 'ChatLoop', preset: 'chat-test', sizes: ['chat-standard'], formats: ['png', 'webm']},
     ]), fakeDeps),
-    /Item 2 \(ChatLoop\) repeats the file out\/packs\/teste\/chat\/ChatLoop-chat-standard\.webm, already produced by Item 1/,
+    /Item 2 \(ChatLoop\) repeats the file out\/packs\/test\/chat\/test-chat-standard\.webm, already produced by Item 1/,
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', sizes: ['chat-tall', 'chat-tall'], formats: ['webm']}]), fakeDeps),
@@ -223,7 +240,7 @@ test('pack: frame vale só com PNG e precisa existir no loop', () => {
 });
 
 const samplePlan = () => planPack(manifest([
-  {composition: 'FundoLoop', formats: ['webm']},
+  {composition: 'FakeLoop', formats: ['webm']},
   {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'png']},
   {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['png']},
 ]), fakeDeps);
@@ -238,12 +255,12 @@ test('pack: --only filtra pelo caminho e recusa um filtro vazio', () => {
 
 test('pack: --dry-run lista cada arquivo com o tamanho do arquivo e o total', () => {
   const plan = samplePlan();
-  const text = dryRunText(plan, new Set(['out/packs/teste/chat/ChatLoop-chat-standard.png']));
+  const text = dryRunText(plan, new Set(['out/packs/test/chat/test-chat-standard.png']));
   assert.deepEqual(text.split('\n'), [
-    'out/packs/teste/backgrounds/FundoLoop.webm  1920×1080, 60 fps, 480 frames',
-    'out/packs/teste/chat/ChatLoop-chat-standard.webm  464×664, 60 fps, 480 frames',
-    'out/packs/teste/chat/ChatLoop-chat-standard.png  464×664, frame 0 (already exists)',
-    'out/packs/teste/borders/BorderLoop-webcam-16x9.png  736×456, frame 0',
+    'out/packs/test/backgrounds/test-background.webm  1920×1080, 60 fps, 480 frames',
+    'out/packs/test/chat/test-chat-standard.webm  464×664, 60 fps, 480 frames',
+    'out/packs/test/chat/test-chat-standard.png  464×664, frame 0 (already exists)',
+    'out/packs/test/borders/test-webcam-16x9.png  736×456, frame 0',
     'Total: 4 files.',
   ]);
   assert.match(dryRunText(plan.slice(0, 1)), /Total: 1 file\.$/);
@@ -297,24 +314,24 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
   assert.deepEqual(run.exported, plan.map((file) => file.output));
   assert.deepEqual([result.rendered, result.skipped], [4, 0]);
   assert.equal([...run.disk.keys()].some((file) => file.endsWith('.png.json') || file.endsWith('.webm.json')), false, 'sem sidecars soltos');
-  const data = run.disk.get('out/packs/teste/manifest.json') as {name: string; files: Record<string, unknown>[]};
+  const data = run.disk.get('out/packs/test/manifest.json') as {name: string; files: Record<string, unknown>[]};
   assert.deepEqual(Object.keys(data).sort(), ['files', 'name'], 'the manifest records the name and the files, no title');
-  assert.equal(data.name, 'teste');
+  assert.equal(data.name, 'test');
   assert.deepEqual(data.files.map((entry) => entry.file), [
-    'backgrounds/FundoLoop.webm',
-    'borders/BorderLoop-webcam-16x9.png',
-    'chat/ChatLoop-chat-standard.png',
-    'chat/ChatLoop-chat-standard.webm',
+    'backgrounds/test-background.webm',
+    'borders/test-webcam-16x9.png',
+    'chat/test-chat-standard.png',
+    'chat/test-chat-standard.webm',
   ]);
-  const border = data.files.find((entry) => entry.file === 'borders/BorderLoop-webcam-16x9.png')!;
+  const border = data.files.find((entry) => entry.file === 'borders/test-webcam-16x9.png')!;
   assert.deepEqual(border, {
-    file: 'borders/BorderLoop-webcam-16x9.png', composition: 'BorderLoop', kind: 'border', size: 'webcam-16x9', format: 'png',
+    file: 'borders/test-webcam-16x9.png', composition: 'BorderLoop', kind: 'border', size: 'webcam-16x9', format: 'png',
     canvas: {width: 736, height: 456}, box: {x: 48, y: 48, width: 640, height: 360},
     content: {x: 64, y: 64, width: 608, height: 328}, hole: {x: 48, y: 48, width: 640, height: 360},
     bleed: 48, fps: 60, frames: 1, frame: 0, alpha: true,
     propsHash: packPropsHash(plan.find((file) => file.composition === 'BorderLoop')!),
   });
-  const background = data.files.find((entry) => entry.file === 'backgrounds/FundoLoop.webm')!;
+  const background = data.files.find((entry) => entry.file === 'backgrounds/test-background.webm')!;
   assert.deepEqual(background.canvas, {width: 1920, height: 1080});
   assert.deepEqual(background.box, {x: 0, y: 0, width: 1920, height: 1080});
   assert.equal(background.hole, null);
@@ -331,8 +348,8 @@ test('pack: arquivos prontos são pulados (retomável) e --overwrite os refaz', 
   const result = await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: resumed.effects, diskLabel: 'out'});
   assert.deepEqual(resumed.exported, plan.slice(2).map((file) => file.output));
   assert.deepEqual([result.rendered, result.skipped], [2, 2]);
-  assert.ok(resumed.logs.some((line) => line.includes('FundoLoop.webm: already exists, skipping.')));
-  const files = (resumed.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
+  assert.ok(resumed.logs.some((line) => line.includes('test-background.webm: already exists, skipping.')));
+  const files = (resumed.disk.get('out/packs/test/manifest.json') as {files: {file: string}[]}).files;
   assert.equal(files.length, 4, 'o manifesto mantém os arquivos da execução anterior');
 
   const again = fakeRun(Object.fromEntries(resumed.disk));
@@ -343,10 +360,10 @@ test('pack: arquivos prontos são pulados (retomável) e --overwrite os refaz', 
 test('pack: uma execução com --only preserva no manifesto os arquivos das outras', async () => {
   const plan = samplePlan();
   const run = fakeRun();
-  await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Fundo'), fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  await runPack({manifest: manifest([]), plan: filterPlan(plan, 'backgrounds/'), fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Border'), fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
-  const files = (run.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
-  assert.deepEqual(files.map((entry) => entry.file), ['backgrounds/FundoLoop.webm', 'borders/BorderLoop-webcam-16x9.png']);
+  const files = (run.disk.get('out/packs/test/manifest.json') as {files: {file: string}[]}).files;
+  assert.deepEqual(files.map((entry) => entry.file), ['backgrounds/test-background.webm', 'borders/test-webcam-16x9.png']);
 });
 
 /** Records every manifest the run writes, so a test can see the first save, not only the last. */
@@ -362,18 +379,18 @@ const recordManifests = (run: ReturnType<typeof fakeRun>) => {
 
 test('pack: a manifest entry the whole plan no longer has is pruned before the first save', async () => {
   const plan = samplePlan();
-  const stale = {file: 'borders/BorderLoop-old-size.png', composition: 'BorderLoop', kind: 'border', format: 'png'};
+  const stale = {file: 'borders/test-old-size.png', composition: 'BorderLoop', kind: 'border', format: 'png'};
   // Written before packs lost their title: the next save drops it.
-  const run = fakeRun({'out/packs/teste/manifest.json': {name: 'teste', title: 'Pack de teste', files: [stale]}});
+  const run = fakeRun({'out/packs/test/manifest.json': {name: 'test', title: 'Test pack', files: [stale]}});
   const saved = recordManifests(run);
   await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   assert.ok(saved.length > 0);
   for (const files of saved) assert.equal(files.some((entry) => entry.file === stale.file), false, 'no save keeps the stale entry');
-  const written = run.disk.get('out/packs/teste/manifest.json') as Record<string, unknown>;
+  const written = run.disk.get('out/packs/test/manifest.json') as Record<string, unknown>;
   assert.equal('title' in written, false, 'an old manifest\'s title is not carried over');
   const files = (written as {files: {file: string}[]}).files;
   assert.deepEqual(files.map((entry) => entry.file), [
-    'backgrounds/FundoLoop.webm', 'borders/BorderLoop-webcam-16x9.png', 'chat/ChatLoop-chat-standard.png', 'chat/ChatLoop-chat-standard.webm',
+    'backgrounds/test-background.webm', 'borders/test-webcam-16x9.png', 'chat/test-chat-standard.png', 'chat/test-chat-standard.webm',
   ]);
 });
 
@@ -381,12 +398,12 @@ test('pack: an --only run prunes by the whole plan and keeps the entries of the 
   const plan = samplePlan();
   const first = fakeRun();
   await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
-  const before = first.disk.get('out/packs/teste/manifest.json') as {name: string; files: {file: string}[]};
-  const stale = {file: 'chat/ChatLoop-old-size.webm', composition: 'ChatLoop', kind: 'chat', format: 'webm'};
-  const run = fakeRun({...Object.fromEntries(first.disk), 'out/packs/teste/manifest.json': {...before, files: [...before.files, stale]}});
+  const before = first.disk.get('out/packs/test/manifest.json') as {name: string; files: {file: string}[]};
+  const stale = {file: 'chat/test-old-size.webm', composition: 'ChatLoop', kind: 'chat', format: 'webm'};
+  const run = fakeRun({...Object.fromEntries(first.disk), 'out/packs/test/manifest.json': {...before, files: [...before.files, stale]}});
   await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Border'), fullPlan: plan, overwrite: true, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
-  assert.deepEqual(run.exported, ['out/packs/teste/borders/BorderLoop-webcam-16x9.png']);
-  const after = (run.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
+  assert.deepEqual(run.exported, ['out/packs/test/borders/test-webcam-16x9.png']);
+  const after = (run.disk.get('out/packs/test/manifest.json') as {files: {file: string}[]}).files;
   assert.deepEqual(after.map((entry) => entry.file), before.files.map((entry) => entry.file));
   // The entries this run did not touch are the ones the earlier run wrote, unchanged.
   for (const entry of before.files.filter((file) => !file.file.startsWith('borders/'))) {
@@ -394,7 +411,7 @@ test('pack: an --only run prunes by the whole plan and keeps the entries of the 
   }
 });
 
-const MANIFEST = 'out/packs/teste/manifest.json';
+const MANIFEST = 'out/packs/test/manifest.json';
 const savedFiles = (run: ReturnType<typeof fakeRun>) => (run.disk.get(MANIFEST) as {files: Record<string, unknown>[]}).files;
 
 test('pack: the props hash covers composition, parsed props, format and frame, whatever the key order', () => {
@@ -415,7 +432,7 @@ test('pack: a finished file whose item props changed since its render is planned
   await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
   // One prop of the background (no sidecar) and of the chat item (sidecars) changes; every file name stays the same.
   const changed = planPack(manifest([
-    {composition: 'FundoLoop', formats: ['webm'], props: {speed: 2}},
+    {composition: 'FakeLoop', formats: ['webm'], props: {speed: 2}},
     {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'png'], props: {glow: 20}},
     {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['png']},
   ]), fakeDeps);
@@ -427,7 +444,7 @@ test('pack: a finished file whose item props changed since its render is planned
   assert.deepEqual([result.rendered, result.skipped], [3, 1]);
   for (const file of touched) {
     assert.ok(run.logs.some((line) => line.endsWith(`${file.output}: Warning: its props changed since it was rendered; rendering it again.`)), file.output);
-    const entry = savedFiles(run).find((saved) => `out/packs/teste/${String(saved.file)}` === file.output)!;
+    const entry = savedFiles(run).find((saved) => `out/packs/test/${String(saved.file)}` === file.output)!;
     assert.equal(entry.propsHash, packPropsHash(file));
     assert.notEqual(entry.propsHash, packPropsHash(plan.find((old) => old.output === file.output)!));
   }
@@ -444,13 +461,13 @@ test('pack: a finished file without a recorded props hash is skipped with a warn
   const before = first.disk.get(MANIFEST) as {files: Record<string, unknown>[]};
   const unhashed = before.files.map((entry) => Object.fromEntries(Object.entries(entry).filter(([key]) => key !== 'propsHash')));
   // Two finished files lost their entries: the background has nothing else, the chat PNG left its sidecar behind.
-  const lost = ['backgrounds/FundoLoop.webm', 'chat/ChatLoop-chat-standard.png'];
+  const lost = ['backgrounds/test-background.webm', 'chat/test-chat-standard.png'];
   const png = unhashed.find((entry) => entry.file === lost[1])!;
   const {canvas, box, content, hole, bleed, fps, frames, frame, format, alpha} = png;
   const run = fakeRun({
     ...Object.fromEntries(first.disk),
     [MANIFEST]: {...before, files: unhashed.filter((entry) => !lost.includes(String(entry.file)))},
-    [`out/packs/teste/${lost[1]}.json`]: {canvas, box, content, hole, bleed, fps, frames, frame, format, alpha},
+    [`out/packs/test/${lost[1]}.json`]: {canvas, box, content, hole, bleed, fps, frames, frame, format, alpha},
   });
   const result = await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   assert.deepEqual(run.exported, []);
@@ -462,7 +479,7 @@ test('pack: a finished file without a recorded props hash is skipped with a warn
 });
 
 test('pack: as pastas temporárias de um export interrompido somem antes de tudo, inclusive da pasta vendida', async () => {
-  const leftover = 'out/packs/teste/borders/.asset-render-abc123/render.webm';
+  const leftover = 'out/packs/test/borders/.asset-render-abc123/render.webm';
   const run = fakeRun({[leftover]: 'bytes parciais'});
   await runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   assert.equal(run.disk.has(leftover), false);
@@ -549,7 +566,7 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
       [['webcam-16x9-lg'], {bleed: 72, ornamentScale: 1.5}], [['gameplay'], {bleed: 96, ornamentScale: 2}],
     ] : [], name);
     // Every size of the kit also ships without ornaments: the preset alone, only ornaments off.
-    const plain = pack.items.filter((item) => item.variant !== undefined);
+    const plain = pack.items.filter((item) => item.sizes !== undefined && item.variant !== undefined);
     assert.ok(plain.every((item) => item.variant === 'plain'), name);
     if (kit) {
       for (const kind of ['chat', 'block', 'border'] as const) {
@@ -567,6 +584,9 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     }
     const backgrounds = pack.items.filter((item) => item.sizes === undefined);
     assert.ok(backgrounds.length >= 1, `${name}: o pack traz o fundo do tema`);
+    // With two or more backgrounds, each carries its look as its variant, or they would share a name.
+    assert.deepEqual(backgrounds.map((item) => item.variant),
+      name === 'halloween' ? ['midnight', 'haunted-mansion', 'cobweb'] : backgrounds.map(() => undefined), name);
     for (const item of backgrounds) {
       assert.equal(assetCatalog[item.composition as keyof typeof assetCatalog]?.kind, 'background', item.composition);
       assert.ok(existsSync(path.join(root, 'presets', `${item.preset}.json`)), `${item.preset}.json`);
@@ -592,21 +612,21 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     }
     const twitch = plan.filter((file) => file.size === 'twitch-panel');
     assert.deepEqual(twitch.map((file) => [path.posix.basename(file.output), file.canvas]), [
-      ['BlockLoop-twitch-panel.gif', {width: 320, height: 160}],
-      ['BlockLoop-twitch-panel.png', {width: 320, height: 160}],
+      [`${name}-twitch-panel.gif`, {width: 320, height: 160}],
+      [`${name}-twitch-panel.png`, {width: 320, height: 160}],
       ...(kit ? [
-        ['BlockLoop-twitch-panel-plain.gif', {width: 320, height: 160}],
-        ['BlockLoop-twitch-panel-plain.png', {width: 320, height: 160}],
+        [`${name}-twitch-panel-plain.gif`, {width: 320, height: 160}],
+        [`${name}-twitch-panel-plain.png`, {width: 320, height: 160}],
       ] : []),
     ]);
     if (kit) {
       // The scaled frames keep their box and widen the file by the item's bleed; the twins keep the size's.
       const canvasOf = (file: string) => plan.find((entry) => entry.output === `out/packs/${name}/borders/${file}`)!.canvas;
-      assert.deepEqual(canvasOf('BorderLoop-gameplay.webm'), {width: 1440 + 2 * 96, height: 810 + 2 * 96});
-      assert.deepEqual(canvasOf('BorderLoop-gameplay-plain.webm'), {width: 1440 + 2 * 48, height: 810 + 2 * 48});
-      assert.deepEqual(canvasOf('BorderLoop-webcam-16x9-lg.webm'), {width: 960 + 2 * 72, height: 540 + 2 * 72});
-      assert.deepEqual(canvasOf('BorderLoop-fullscreen-plain.webm'), {width: 1920, height: 1080});
-      assert.ok(!plan.some((file) => file.output.endsWith('BorderLoop-fullscreen.webm')), `${name}: telas só sem enfeites`);
+      assert.deepEqual(canvasOf(`${name}-gameplay.webm`), {width: 1440 + 2 * 96, height: 810 + 2 * 96});
+      assert.deepEqual(canvasOf(`${name}-gameplay-plain.webm`), {width: 1440 + 2 * 48, height: 810 + 2 * 48});
+      assert.deepEqual(canvasOf(`${name}-webcam-16x9-lg.webm`), {width: 960 + 2 * 72, height: 540 + 2 * 72});
+      assert.deepEqual(canvasOf(`${name}-fullscreen-plain.webm`), {width: 1920, height: 1080});
+      assert.ok(!plan.some((file) => file.output.endsWith(`${name}-fullscreen.webm`)), `${name}: telas só sem enfeites`);
     }
   }
 });
@@ -638,7 +658,7 @@ test('packs: o plano, o --dry-run e o manifesto mostram a velocidade real de cad
   }
   // Comets travel whole spacings per cycle: the tall column runs close to the 160 px/s the preset
   // asks for, but not exactly, and the plan says so.
-  const column = plan.find((file) => file.output.endsWith('ChatLoop-chat-column.webm'))!;
+  const column = plan.find((file) => file.output.endsWith('neon-chat-column.webm'))!;
   assert.notEqual(column.motion!.strokeSpeed, 160);
   assert.ok(Math.abs(column.motion!.strokeSpeed / 160 - 1) <= 0.35, String(column.motion!.strokeSpeed));
   assert.match(dryRunText([column]), new RegExp(`, stroke ${column.motion!.strokeSpeed} px/s, fill ${column.motion!.fillSpeed} px/s\n`));
@@ -650,11 +670,11 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
     const masks = plan.filter((file) => file.role === 'mask');
     const windows = sizesForKind('border').filter((size) => size.props?.fit !== 'screen');
     // One mask per window size, shared by the kits' two variants (in the order their sizes first appear).
-    assert.deepEqual(masks.map((file) => file.output).sort(), windows.map((size) => `out/packs/${name}/borders/mascara-${size.id}.png`).sort(), name);
+    assert.deepEqual(masks.map((file) => file.output).sort(), windows.map((size) => `out/packs/${name}/masks/${name}-${size.id}-mask.png`).sort(), name);
     for (const mask of masks) {
       const size = windows.find((entry) => entry.id === mask.size)!;
       assert.deepEqual(mask.canvas, {width: size.width, height: size.height}, 'do tamanho da câmera');
-      assert.deepEqual([mask.format, mask.frame, mask.composition, mask.folder], ['png', 0, 'BorderLoop', 'borders']);
+      assert.deepEqual([mask.format, mask.frame, mask.composition, mask.folder], ['png', 0, 'BorderLoop', 'masks']);
       assert.deepEqual(
         [mask.exportProps.mask, mask.exportProps.bleed, mask.exportProps.outputFormat, mask.exportProps.transparent],
         [true, 0, 'png', true],
@@ -670,16 +690,16 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
     }
     for (const file of plan.filter((entry) => entry.composition === 'BorderLoop' && entry.role !== 'mask')) {
       const isWindow = windows.some((size) => size.id === file.size);
-      assert.equal(file.mask, isWindow ? `out/packs/${name}/borders/mascara-${file.size}.png` : undefined, file.output);
+      assert.equal(file.mask, isWindow ? `out/packs/${name}/masks/${name}-${file.size}-mask.png` : undefined, file.output);
       const entry = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), null);
-      assert.equal(entry.mask, isWindow ? `borders/mascara-${file.size}.png` : undefined, file.output);
+      assert.equal(entry.mask, isWindow ? `masks/${name}-${file.size}-mask.png` : undefined, file.output);
       // Even with a sidecar that names another mask file (older exports did), the pack's own mask wins.
       const sidecar = {...entry, mask: `BorderLoop-${file.size}-mask.png`, hole: entry.hole};
       const fromSidecar = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), sidecar);
       assert.equal(fromSidecar.mask, entry.mask, file.output);
       assert.deepEqual(fromSidecar.motion, entry.motion, file.output);
     }
-    assert.match(dryRunText(plan), new RegExp(`out/packs/${name}/borders/mascara-webcam-16x9\\.png  640×360, frame 0\n`));
+    assert.match(dryRunText(plan), new RegExp(`out/packs/${name}/masks/${name}-webcam-16x9-mask\\.png  640×360, frame 0\n`));
   }
 });
 
@@ -692,21 +712,48 @@ test('packs: a máscara depende só do tamanho e do raio; raios diferentes no me
   const names = (plan: PlannedFile[]) => masksOf(plan).map((file) => path.posix.basename(file.output));
   // Two themes with one radius share each mask, and both point at it.
   const shared = planPack(manifest([border('border-neon', 'webm', {radius: 20}), border('border-pastel', 'png', {radius: 20})]), realPackDeps);
-  assert.deepEqual(names(shared), ['mascara-webcam-16x9.png', 'mascara-webcam-square.png']);
-  assert.deepEqual(shared.filter((file) => file.mask === 'out/packs/teste/borders/mascara-webcam-16x9.png').map((file) => file.output), [
-    'out/packs/teste/borders/BorderLoop-webcam-16x9.webm', 'out/packs/teste/borders/BorderLoop-webcam-16x9.png',
+  assert.deepEqual(names(shared), ['test-webcam-16x9-mask.png', 'test-webcam-square-mask.png']);
+  assert.deepEqual(shared.filter((file) => file.mask === 'out/packs/test/masks/test-webcam-16x9-mask.png').map((file) => file.output), [
+    'out/packs/test/borders/test-webcam-16x9.webm', 'out/packs/test/borders/test-webcam-16x9.png',
   ]);
   // A radius beyond the circle is the circle: 200 and 999 on the square webcam give one mask.
   const circle = planPack(manifest([border('border-neon', 'webm', {radius: 200}), border('border-pastel', 'png', {radius: 999})]), realPackDeps);
   assert.deepEqual(masksOf(circle).map((file) => [path.posix.basename(file.output), file.exportProps.radius]), [
-    ['mascara-webcam-16x9.png', 180], ['mascara-webcam-square.png', 200],
+    ['test-webcam-16x9-mask.png', 180], ['test-webcam-square-mask.png', 200],
   ]);
   // Different radii for one size: each mask carries its radius, and each file points at its own.
   const mixed = planPack(manifest([border('border-neon', 'webm'), border('border-pastel', 'png')]), realPackDeps);
   assert.deepEqual(names(mixed), [
-    'mascara-webcam-16x9-r16.png', 'mascara-webcam-square-r16.png', 'mascara-webcam-16x9-r24.png', 'mascara-webcam-square-r24.png',
+    'test-webcam-16x9-mask-radius-16.png', 'test-webcam-square-mask-radius-16.png', 'test-webcam-16x9-mask-radius-24.png', 'test-webcam-square-mask-radius-24.png',
   ]);
-  const pastel = mixed.find((file) => file.output === 'out/packs/teste/borders/BorderLoop-webcam-16x9.png')!;
-  assert.equal(pastel.mask, 'out/packs/teste/borders/mascara-webcam-16x9-r24.png');
+  const pastel = mixed.find((file) => file.output === 'out/packs/test/borders/test-webcam-16x9.png')!;
+  assert.equal(pastel.mask, 'out/packs/test/masks/test-webcam-16x9-mask-radius-24.png');
   assert.equal(filterPlan(mixed, 'webcam-square').filter((file) => file.role === 'mask').length, 2, '--only leva as máscaras do tamanho');
+});
+
+test('every real pack plans only buyer-rule names', () => {
+  const folders = new Set(['backgrounds', 'chat', 'text-boxes', 'twitch-panels', 'borders', 'masks']);
+  let longest = '';
+  for (const name of PACKS) {
+    const plan = planPack(parsePackManifest(readPack(name)), realPackDeps);
+    const basenames = new Set<string>();
+    for (const file of plan) {
+      const relative = path.posix.relative(`out/packs/${name}`, file.output);
+      const [folder, base, ...rest] = relative.split('/');
+      assert.deepEqual(rest, [], relative);
+      assert.ok(folders.has(folder!), relative);
+      assert.equal(folder, file.folder, relative);
+      assert.match(base!, /^[a-z0-9]+(-[a-z0-9]+)*\.(webm|png|gif|mov|mp4)$/, relative);
+      const variant = file.variant === undefined ? '' : `-${file.variant}`;
+      const expected = file.role === 'mask' ? `${name}-${file.size}-mask.png`
+        : file.kind === 'background' ? `${name}-background${variant}.${file.format}` : `${name}-${file.size}${variant}.${file.format}`;
+      assert.equal(base, expected, relative);
+      assert.equal(folder, file.role === 'mask' ? 'masks' : file.size === 'twitch-panel' ? 'twitch-panels' : file.folder, relative);
+      assert.ok(!basenames.has(base!), `${name}: ${base} twice`);
+      basenames.add(base!);
+      if (base!.length > longest.length) longest = base!;
+    }
+  }
+  assert.equal(longest, 'halloween-haunted-interior-fullscreen-vertical-plain.webm');
+  assert.equal(longest.length, 57);
 });

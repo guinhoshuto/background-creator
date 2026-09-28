@@ -79,6 +79,9 @@ test('qa:kit: the Halloween night pack becomes one job with sheets and mockups',
   assert.ok(names.includes('bg-HalloweenLoop-0'));
   assert.ok(names.includes('chat-standard-309'));
   assert.ok(names.includes('webcam-16x9-lg-0'));
+  // Stems are the buyer name after the pack: the plain twin keeps its variant, the mask never shows up.
+  assert.ok(names.includes('chat-standard-plain-0'));
+  assert.ok(!names.some((still) => still.includes('mask') || still.includes('halloween-midnight')));
   assert.equal(new Set(names).size, names.length);
   assert.ok(job.stills.every((still) => still.props?.outputFormat === undefined));
   assert.deepEqual(job.sheets!.map((sheet) => sheet.out).filter((out) => out.endsWith('-0.png')),
@@ -86,4 +89,8 @@ test('qa:kit: the Halloween night pack becomes one job with sheets and mockups',
   const chatting = job.mockups!.find((mockup) => mockup.out === 'mock-chatting-0.png')!;
   assert.equal(chatting.base, 'bg-HalloweenLoop-0');
   assert.ok(chatting.layers.some((layer) => layer.name === 'chat-standard-0'));
+  // Three backgrounds in one pack: one still each, told apart by their variant.
+  const halloween = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/halloween.json'), 'utf8')));
+  const backgrounds = parseJob(buildKitJob(planPack(halloween, realPackDeps), {frames: [0]})).stills.map((still) => still.name).filter((still) => still.startsWith('bg-'));
+  assert.deepEqual(backgrounds, ['bg-HalloweenLoop-midnight-0', 'bg-HauntedMansionLoop-haunted-mansion-0', 'bg-CobwebLoop-cobweb-0']);
 });

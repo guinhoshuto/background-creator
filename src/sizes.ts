@@ -24,6 +24,8 @@ export type NamedSize = {
   /** Transparent margin around the box for glow and halo; the file is box + 2·bleed. */
   readonly bleed: number;
   readonly props?: SizeProps;
+  /** The buyer's folder for this size when it is not the kind's (a pack only; the Studio keeps the kind's). */
+  readonly folder?: string;
 };
 
 /** The product line: every size is sold, so ids are stable file-name tags. */
@@ -47,7 +49,7 @@ const NAMED_SIZE_TABLE = [
   {id: 'circle', kind: 'block', label: 'Circle', use: 'avatar, logo, counter', width: 320, height: 320, bleed: 32, props: {shape: 'circle'}},
   {id: 'circle-lg', kind: 'block', label: 'Large circle', use: 'highlight, giveaway, goal', width: 480, height: 480, bleed: 32, props: {shape: 'circle'}},
   // No bleed: the panel is the whole file, so nothing may glow outside it.
-  {id: 'twitch-panel', kind: 'block', label: 'Twitch panel', use: 'Twitch profile panels (PNG/GIF, no outer glow)', width: 320, height: 160, bleed: 0, props: {shape: 'rectangle', glow: 0, halo: 0}},
+  {id: 'twitch-panel', kind: 'block', label: 'Twitch panel', use: 'Twitch profile panels (PNG/GIF, no outer glow)', width: 320, height: 160, bleed: 0, props: {shape: 'rectangle', glow: 0, halo: 0}, folder: 'twitch-panels'},
   // border: the box is the transparent window; frame and glow go outward into the bleed.
   // `fit` and `shape` are spelled out so a size id alone fixes the product, whatever a preset says.
   {id: 'webcam-16x9', kind: 'border', label: 'Webcam 16:9', use: 'standard camera', width: 640, height: 360, bleed: 48, props: {fit: 'window', shape: 'rectangle'}},

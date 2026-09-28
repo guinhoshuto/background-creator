@@ -406,7 +406,7 @@ Um pack é o conjunto que se vende de um tema: os fundos que combinam com ele, o
 | `halloween-haunted-interior` | `HauntedInteriorLoop` (`halloween-haunted-interior`) | `gameplay` e `webcam-16x9-lg` ampliados |
 | `halloween-cobweb` | `CobwebLoop` (`halloween-cobweb`) | `gameplay` e `webcam-16x9-lg` ampliados |
 
-Cada kit sai em duas versões. **Com enfeites:** o fundo, o chat nos cinco tamanhos, os blocos nos dez tamanhos e o painel da Twitch à parte, e as bordas das oito câmeras e do `gameplay`; as molduras de tela ficam de fora, porque ali os enfeites só cresceriam engrossando a faixa sobre a tela. **Sem enfeites:** todos os tamanhos de chat, blocos, painel e bordas, as duas telas incluídas, com o preset e `"ornaments": "none"`, nos arquivos `<Id>-<tamanho>-plain.<ext>`. As máscaras das câmeras valem para as duas versões e seguem o `radius` do preset.
+Cada kit sai em duas versões. **Com enfeites:** o fundo, o chat nos cinco tamanhos, os blocos nos dez tamanhos e o painel da Twitch à parte, e as bordas das oito câmeras e do `gameplay`; as molduras de tela ficam de fora, porque ali os enfeites só cresceriam engrossando a faixa sobre a tela. **Sem enfeites:** todos os tamanhos de chat, blocos, painel e bordas, as duas telas incluídas, com o preset e `"ornaments": "none"`, nos arquivos `<pack>-<tamanho>-plain.<ext>`. As máscaras das câmeras valem para as duas versões e seguem o `radius` do preset.
 
 Nas molduras grandes, enfeites em px fixos ficariam miúdos. Por isso o `gameplay` sai com `{"bleed": 96, "ornamentScale": 2}` e a `webcam-16x9-lg` com `{"bleed": 72, "ornamentScale": 1.5}`: os enfeites ficam na mesma proporção da `webcam-16x9`, e o arquivo ganha a margem que eles pedem (1632×1002 e 1104×684; a janela continua 1440×810 e 960×540). Deixe essa margem livre em volta da moldura na cena. No painel da Twitch do `midnight` e do `haunted-mansion`, mais padding faz os enfeites crescerem nos bolsões (no `midnight`, entram um morcego e a abóbora pequena; no `haunted-mansion`, as lanternas passam de 22 para 32 px).
 
@@ -424,12 +424,13 @@ Um manifesto de exemplo, menor que os de `packs/` (que pedem todos os tamanhos):
 }
 ```
 
-`name` vira o nome da pasta (letras minúsculas, números e hífen). Cada item exporta uma composição com um preset de `presets/` (sem a pasta e sem `.json`), `props` opcionais por cima dele, os `sizes` do catálogo (só para chat, blocos e bordas; um fundo com `sizes` é recusado) e os `formats`, na ordem escrita. `frame` escolhe o quadro dos PNGs do item e exige `png` em `formats`. `variant` (letras minúsculas, números e hífen) entra no nome dos arquivos do item, `<Id>-<tamanho>-<variante>.<ext>`, para o mesmo tamanho sair duas vezes no pack (por exemplo, com e sem enfeites). Os parâmetros se juntam nesta ordem: preset, `props` do item, tamanho e formato; só o `bleed` das `props` do item vale acima do tamanho, que continua fixando a caixa. Tudo é validado antes do primeiro render, com a mensagem apontando o item.
+`name` vira o nome da pasta e o começo do nome de cada arquivo (letras minúsculas e números, em palavras ligadas por um hífen só, sem hífen nas pontas). Cada item exporta uma composição com um preset de `presets/` (sem a pasta e sem `.json`), `props` opcionais por cima dele, os `sizes` do catálogo (só para chat, blocos e bordas; um fundo com `sizes` é recusado) e os `formats`, na ordem escrita. `frame` escolhe o quadro dos PNGs do item e exige `png` em `formats`. `variant` (a mesma regra do `name`) entra no nome dos arquivos do item, `<pack>-<tamanho>-<variante>.<ext>`, para o mesmo tamanho sair duas vezes no pack (por exemplo, com e sem enfeites); num pack com dois ou mais fundos, cada fundo leva o seu visual como variante. A variante não pode ter os segmentos `mask`, `background`, `sm` ou `lg`, nem fazer o nome passar por outro tamanho do mesmo tipo (`fullscreen` com `vertical` seria `fullscreen-vertical`). Os parâmetros se juntam nesta ordem: preset, `props` do item, tamanho e formato; só o `bleed` das `props` do item vale acima do tamanho, que continua fixando a caixa. Tudo é validado antes do primeiro render, com a mensagem apontando o item.
 
 ```sh
 npm run render:pack -- neon --dry-run
 npm run render:pack -- neon
 npm run render:pack -- halloween --only borders/
+npm run render:pack -- halloween --only masks/
 npm run render:pack -- pastel --only chat-column --overwrite
 npm run render:pack -- caminho/meu-pack.json --dry-run
 ```
@@ -440,24 +441,27 @@ npm run render:pack -- caminho/meu-pack.json --dry-run
 out/packs/neon/
 ├── manifest.json
 ├── backgrounds/
-│   ├── VaporwaveLoop.webm
-│   └── VaporwaveLoop.png
+│   ├── neon-background.webm
+│   └── neon-background.png
 ├── chat/
-│   ├── ChatLoop-chat-standard.webm
-│   └── ChatLoop-chat-standard.png  …
+│   ├── neon-chat-standard.webm
+│   └── neon-chat-standard.png  …
 ├── text-boxes/
-│   ├── BlockLoop-label.webm  …
-│   └── BlockLoop-twitch-panel.gif
-└── borders/
-    ├── BorderLoop-webcam-16x9.webm
-    ├── BorderLoop-webcam-16x9.png
-    ├── mascara-webcam-16x9.png  …
-    └── BorderLoop-fullscreen.webm
+│   └── neon-label.webm  …
+├── twitch-panels/
+│   ├── neon-twitch-panel.gif
+│   └── neon-twitch-panel.png
+├── borders/
+│   ├── neon-webcam-16x9.webm
+│   ├── neon-webcam-16x9.png  …
+│   └── neon-fullscreen.webm
+└── masks/
+    └── neon-webcam-16x9-mask.png  …
 ```
 
-As pastas repetem as do Studio. `manifest.json` reúne, para cada arquivo, os dados do [JSON de posição](#exportar) (`canvas`, `box`, `content`, `hole`, `header`, `bleed`, FPS, frames, formato, alpha e velocidade real), com as chaves em inglês para ferramentas; os JSONs avulsos de cada arquivo são incorporados a ele e removidos da pasta do pack. Cada borda de janela aponta a sua máscara em `mask`, e as máscaras têm `"role": "mask"`.
+As pastas repetem as do Studio, mais `twitch-panels/` para o painel da Twitch e `masks/` para as máscaras. Cada arquivo se chama `<pack>-<peça>[-<variante>].<ext>`: a peça é `background` no fundo, o id do tamanho num overlay do catálogo e `<L>x<A>[-circle]` num tamanho livre; a variante é a do item (`plain`, ou o visual do fundo no `halloween`, que tem três: `halloween-background-haunted-mansion.webm`). `manifest.json` reúne, para cada arquivo, os dados do [JSON de posição](#exportar) (`canvas`, `box`, `content`, `hole`, `header`, `bleed`, FPS, frames, formato, alpha e velocidade real), com as chaves em inglês para ferramentas; os JSONs avulsos de cada arquivo são incorporados a ele e removidos da pasta do pack. Cada borda de janela aponta a sua máscara em `mask`, e as máscaras têm `"role": "mask"`.
 
-As bordas de janela vêm com uma máscara por tamanho, `borders/mascara-<tamanho>.png`: um PNG do tamanho da janela (640×360 em `webcam-16x9`), com a janela arredondada em branco opaco sobre transparência. A borda arredonda sozinha os cantos de uma câmera retangular até um raio de cerca de 2,4 vezes `thickness`; acima disso, os cantos da câmera aparecem por fora da moldura, e a máscara resolve. Nas câmeras redondas a máscara é obrigatória: `mascara-webcam-round-sm.png`, `mascara-webcam-round.png` e `mascara-webcam-round-lg.png` são discos brancos do tamanho da câmera (280, 400 e 560 px), e é ela que transforma a câmera retangular em redonda; sem ela, os cantos da câmera aparecem fora do anel. No OBS, clique com o botão direito na fonte da câmera, abra **Filtros**, acrescente **Máscara de imagem/mistura**, escolha o tipo **Máscara alfa** (canal alfa ou de cor; a máscara serve para os dois) e aponte o PNG. Posicione a câmera sobre a caixa da borda (o `box` do manifesto, ou seja, `bleed` px para dentro do canto do arquivo) e deixe a borda acima dela. Como a máscara depende só da janela, todos os temas do mesmo tamanho e raio usam a mesma; se um pack tem o mesmo tamanho com raios diferentes, cada máscara leva o raio no nome (`mascara-webcam-square-r200.png`). As molduras de tela não precisam de máscara. Fora do pack, a máscara sai com `mask: true` num JSON e bleed 0, por exemplo `npm run render:png -- BorderLoop --props mask.json --size webcam-square --bleed 0`, com `{"mask": true, "radius": 24}` em `mask.json`, com o mesmo `radius` da borda (24 é o do tema pastel; neon usa 16, glass 20, halloween e halloween-midnight 12, halloween-haunted-mansion 10, halloween-haunted-interior 8 e halloween-cobweb 38); o arquivo se chama `out/BorderLoop-webcam-square-mask.png`. Na câmera redonda o raio não importa: `npm run render:png -- BorderLoop --props mask.json --size webcam-round --bleed 0`, com `{"mask": true}`, gera o disco `out/BorderLoop-webcam-round-mask.png`.
+As bordas de janela vêm com uma máscara por tamanho, `masks/<pack>-<tamanho>-mask.png`: um PNG do tamanho da janela (640×360 em `webcam-16x9`), com a janela arredondada em branco opaco sobre transparência. A borda arredonda sozinha os cantos de uma câmera retangular até um raio de cerca de 2,4 vezes `thickness`; acima disso, os cantos da câmera aparecem por fora da moldura, e a máscara resolve. Nas câmeras redondas a máscara é obrigatória: `<pack>-webcam-round-sm-mask.png`, `<pack>-webcam-round-mask.png` e `<pack>-webcam-round-lg-mask.png` são discos brancos do tamanho da câmera (280, 400 e 560 px), e é ela que transforma a câmera retangular em redonda; sem ela, os cantos da câmera aparecem fora do anel. No OBS, clique com o botão direito na fonte da câmera, abra **Filtros**, acrescente **Máscara de imagem/mistura**, escolha o tipo **Máscara alfa** (canal alfa ou de cor; a máscara serve para os dois) e aponte o PNG. Posicione a câmera sobre a caixa da borda (o `box` do manifesto, ou seja, `bleed` px para dentro do canto do arquivo) e deixe a borda acima dela. Como a máscara depende só da janela, todos os temas do mesmo tamanho e raio usam a mesma; se um pack tem o mesmo tamanho com raios diferentes, cada máscara leva o raio no nome (`<pack>-webcam-square-mask-radius-200.png`). As molduras de tela não precisam de máscara. Fora do pack, a máscara sai com `mask: true` num JSON e bleed 0, por exemplo `npm run render:png -- BorderLoop --props mask.json --size webcam-square --bleed 0`, com `{"mask": true, "radius": 24}` em `mask.json`, com o mesmo `radius` da borda (24 é o do tema pastel; neon usa 16, glass 20, halloween e halloween-midnight 12, halloween-haunted-mansion 10, halloween-haunted-interior 8 e halloween-cobweb 38); o arquivo se chama `out/BorderLoop-webcam-square-mask.png`. Na câmera redonda o raio não importa: `npm run render:png -- BorderLoop --props mask.json --size webcam-round --bleed 0`, com `{"mask": true}`, gera o disco `out/BorderLoop-webcam-round-mask.png`.
 
 O builder usa um único bundle e exporta um arquivo por vez. Arquivos já prontos são pulados (`já existe, pulando.`), e o `manifest.json` é regravado depois de cada arquivo: se o build parar no meio, rode o mesmo comando de novo e ele continua de onde parou. Os renders em andamento do pack ficam em `out/.scratch/packs/<nome>/`, fora da pasta vendida; as sobras de um build interrompido (inclusive pastas `.asset-render-*` dentro do pack, de versões anteriores) são apagadas no começo do build seguinte, e o `--dry-run` avisa quantas há. Antes de começar e antes de cada arquivo, confere o espaço livre em disco e recusa seguir com menos de 2 GB, dizendo quanto há.
 

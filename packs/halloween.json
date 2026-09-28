@@ -4,17 +4,20 @@
     {
       "composition": "HalloweenLoop",
       "preset": "halloween-midnight",
-      "formats": ["webm", "png"]
+      "formats": ["webm", "png"],
+      "variant": "midnight"
     },
     {
       "composition": "HauntedMansionLoop",
       "preset": "halloween-haunted-mansion",
-      "formats": ["webm", "png"]
+      "formats": ["webm", "png"],
+      "variant": "haunted-mansion"
     },
     {
       "composition": "CobwebLoop",
       "preset": "halloween-cobweb",
-      "formats": ["webm", "png"]
+      "formats": ["webm", "png"],
+      "variant": "cobweb"
     },
     {
       "composition": "ChatLoop",

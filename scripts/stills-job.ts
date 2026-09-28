@@ -285,8 +285,12 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
   const files: {stem: string; file: PlannedFile}[] = [];
   for (const file of plan) {
     if (file.role === 'mask') continue;
+    // Buyer names are out/packs/<pack>/<folder>/<pack>-<piece>[-<variant>].<ext>: the stem is what follows the pack.
+    const pack = file.output.split('/')[2]!;
     const base = path.posix.basename(file.output).replace(/\.[a-z0-9]+$/, '');
-    const stem = file.size === undefined ? `bg-${file.composition}` : base.slice(file.composition.length + 1);
+    const stem = file.kind === 'background'
+      ? `bg-${file.composition}${file.variant === undefined ? '' : `-${file.variant}`}`
+      : base.slice(pack.length + 1);
     if (seen.has(stem)) continue;
     seen.add(stem);
     files.push({stem, file});
@@ -306,7 +310,7 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
       void _format;
       stills.push({name: stillName, id: file.composition, props, frame});
       // Mockups use the plain size, not a variant (plain and the like).
-      if (file.size !== undefined && stem === file.size) bySize.set(file.size, stillName);
+      if (file.size !== undefined && file.variant === undefined) bySize.set(file.size, stillName);
     }
     for (const sheet of SHEETS) {
       const names = files.filter(({file}) => file.kind === sheet.kind).map(({stem}) => `${stem}-${frame}`);
