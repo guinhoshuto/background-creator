@@ -127,9 +127,9 @@ test('overlays: o export nomeia pelo tamanho, publica o JSON de posição e recu
   assert.deepEqual(sidecar.header, layout.header);
   assert.ok(layout.header && layout.header.y >= layout.box.y && layout.header.y + layout.header.height <= layout.content.y);
   const border = resolveExport({compositionId: 'BorderLoop', format: 'webm'});
-  const bordaSidecar = buildSidecar({
+  const borderSidecar = buildSidecar({
     output: border.output, asset: border.asset, props: border.props, layout: getLayoutOf(border.asset)!(border.props),
     fps: 60, durationInFrames: 480, format: 'webm', frame: null,
   });
-  assert.equal('header' in bordaSidecar, false);
+  assert.equal('header' in borderSidecar, false);
 });

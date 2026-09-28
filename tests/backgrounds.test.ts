@@ -17,8 +17,8 @@ import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/Vaporwa
 import {WEBGL_EXPERIMENTS, getWebGLScene, webglLoopSchema} from '../src/backgrounds/WebGLLoop';
 import {getWutheringWavesScene, wutheringWavesLoopSchema} from '../src/backgrounds/WutheringWavesLoop';
 import {backgroundCatalog, getBackground} from '../src/catalog';
-import {blocoLoopSchema, getBlocoScene} from '../src/overlays/block';
-import {bordaLoopSchema, getBordaScene} from '../src/overlays/border';
+import {blockLoopSchema, getBlockScene} from '../src/overlays/block';
+import {borderLoopSchema, getBorderScene} from '../src/overlays/border';
 import {chatLoopSchema, getChatScene} from '../src/overlays/chat';
 import {loopPhase} from '../src/loop';
 import {getCompositionMetadata} from '../src/settings';
@@ -198,14 +198,14 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
   {
     id: 'BlockLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBlocoScene(blocoLoopSchema.parse(input), frame, length),
+      getBlockScene(blockLoopSchema.parse(input), frame, length),
   },
   {
     // Scrolling stripes, marching ants over the dim track, a left bar with four glints per
     // cycle, the glow breathing four times and the halo filling the bleed.
     id: 'BlockLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBlocoScene(blocoLoopSchema.parse({
+      getBlockScene(blockLoopSchema.parse({
         fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
         glowPulses: 4, halo: 32, ...(input as object),
       }), frame, length),
@@ -213,14 +213,14 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
   {
     id: 'BorderLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBordaScene(bordaLoopSchema.parse(input), frame, length),
+      getBorderScene(borderLoopSchema.parse(input), frame, length),
   },
   {
     // Scrolling dots in the band, colours flowing along both lines, gems breathing four times
     // and the glow pulsing: every moving part a border has, around the window.
     id: 'BorderLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBordaScene(bordaLoopSchema.parse({
+      getBorderScene(borderLoopSchema.parse({
         fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
         corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
       }), frame, length),
@@ -229,12 +229,12 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     // The round block: its text square, the accent arc and the glint going round the circle.
     id: 'BlockLoop (círculo)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBlocoScene(blocoLoopSchema.parse({...sizeProps(getSize('circulo')), ...(input as object)}), frame, length),
+      getBlockScene(blockLoopSchema.parse({...sizeProps(getSize('circulo')), ...(input as object)}), frame, length),
   },
   {
     id: 'BlockLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBlocoScene(blocoLoopSchema.parse({
+      getBlockScene(blockLoopSchema.parse({
         ...sizeProps(getSize('circulo')), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
         glowPulses: 4, halo: 32, ...(input as object),
       }), frame, length),
@@ -242,12 +242,12 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
   {
     id: 'BorderLoop (círculo)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBordaScene(bordaLoopSchema.parse({...sizeProps(getSize('webcam-redonda')), ...(input as object)}), frame, length),
+      getBorderScene(borderLoopSchema.parse({...sizeProps(getSize('webcam-redonda')), ...(input as object)}), frame, length),
   },
   {
     id: 'BorderLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBordaScene(bordaLoopSchema.parse({
+      getBorderScene(borderLoopSchema.parse({
         ...sizeProps(getSize('webcam-redonda')), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
         corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
       }), frame, length),

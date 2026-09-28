@@ -25,7 +25,7 @@ import {
 import {MAX_CONTENT_OPACITY} from '../shared/legibility';
 import {contentGlowOpacity} from './legibility';
 
-export const BLOCO_ACCENTS = ['nenhum', 'esquerda', 'topo'] as const;
+export const BLOCK_ACCENTS = ['nenhum', 'esquerda', 'topo'] as const;
 
 /** The kind's default named size ('cartao', 640×360 with a 32 px bleed): the schema's defaults. */
 const DEFAULT_SIZE = getSize(kindPolicies.block.defaultSizeId!);
@@ -47,9 +47,9 @@ const ROUND_SIZES = 'circulo-p, circulo or circulo-g';
  * The glass sheen crosses the text: as discreet as the chat's over its messages, so a theme's
  * blocks and chat panels shine alike.
  */
-const BLOCO_SHEEN_OPACITY = 0.2;
+const BLOCK_SHEEN_OPACITY = 0.2;
 
-const fillOptions = (layout: PanelLayout): FillOptions => ({corner: layout.shape.radius, sheenOpacity: BLOCO_SHEEN_OPACITY});
+const fillOptions = (layout: PanelLayout): FillOptions => ({corner: layout.shape.radius, sheenOpacity: BLOCK_SHEEN_OPACITY});
 
 /**
  * The defaults are the neon look at the card size: a deep indigo panel swaying slowly, comets
@@ -57,7 +57,7 @@ const fillOptions = (layout: PanelLayout): FillOptions => ({corner: layout.shape
  * white core, a strong glow breathing twice per cycle and a violet halo.
  * Every length is in fixed px, so a 320×64 label and a 1200×240 title read as one family.
  */
-const blocoFields = z.object({
+const blockFields = z.object({
   ...overlayBaseFields(DEFAULT_SIZE),
   shape: shapeField('Block shape: retangulo (corners with radius) or circulo (the box must be square: use --size circulo-p, circulo or circulo-g); in the circle the text goes in the square centered inside it'),
   radius: radiusField(16, 'Corner radius, in px; capped at half the shorter side (becomes a pill); with shape circulo it is ignored, the radius is half the side'),
@@ -78,7 +78,7 @@ const blocoFields = z.object({
   ...glowFields({glow: 20, glowPulses: 2, glowStrength: 3}),
   ...haloFields({halo: 20, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
-  accent: z.enum(BLOCO_ACCENTS)
+  accent: z.enum(BLOCK_ACCENTS)
     .describe('Accent bar inside the outline: nenhum, esquerda or topo; the content starts after it. In the circle it is a 120° arc against the outline, centered on the left or the top')
     .default('nenhum'),
   accentColor: zColor().default('#E879F9'),
@@ -91,9 +91,9 @@ const blocoFields = z.object({
   ...ornamentFields(),
 });
 
-export type BlocoLoopProps = z.infer<typeof blocoFields>;
+export type BlockLoopProps = z.infer<typeof blockFields>;
 
-type LayoutProps = Pick<BlocoLoopProps,
+type LayoutProps = Pick<BlockLoopProps,
   'width' | 'height' | 'bleed' | 'shape' | 'radius' | 'strokeWidth' | 'paddingX' | 'paddingY' | 'glow' | 'halo' | 'accent' | 'accentSize'
   | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
 
@@ -108,7 +108,7 @@ export type AccentArc = {cx: number; cy: number; outer: number; width: number; n
  * A panel layout plus the accent: a bar (`accent`) on a rectangle, an arc (`accentArc`) on a
  * circle; the other one is null.
  */
-export type BlocoLayout = PanelLayout & {
+export type BlockLayout = PanelLayout & {
   accent: Rect | null;
   accentArc: AccentArc | null;
   /** Where the ornaments go (none with ornaments 'nenhum'); their reach beyond the box is folded into outset. */
@@ -127,21 +127,21 @@ export type BlocoLayout = PanelLayout & {
  * arc of that thickness along the inside of the stroke, centred on the left or the top, so it
  * stays out of the square wherever it sits. The glow and the halo reach into the bleed.
  */
-export const getBlocoLayout = (props: LayoutProps): BlocoLayout => withOrnaments(getPanelLayout(props), props);
+export const getBlockLayout = (props: LayoutProps): BlockLayout => withOrnaments(getPanelLayout(props), props);
 
 /**
  * The ornaments hang on the finished block: they keep clear of its text and never feed back into
  * it; only the outset grows by how far they reach into the bleed (seed- and frame-free). A round
  * block tells them its accent side, whose arc covers two of the corner slots.
  */
-const withOrnaments = (base: Omit<BlocoLayout, 'ornamentLayout'>, props: LayoutProps): BlocoLayout => {
+const withOrnaments = (base: Omit<BlockLayout, 'ornamentLayout'>, props: LayoutProps): BlockLayout => {
   const accent = props.accent === 'nenhum' ? null : props.accent;
   const frame = panelOrnamentFrame({kind: 'block', layout: base, keepOut: [base.content], accent, glow: props.glow});
   const ornamentLayout = layoutOrnaments(frame, props);
   return {...base, outset: Math.max(base.outset, layoutOutset(ornamentLayout)), ornamentLayout};
 };
 
-const getPanelLayout = (props: LayoutProps): Omit<BlocoLayout, 'ornamentLayout'> => {
+const getPanelLayout = (props: LayoutProps): Omit<BlockLayout, 'ornamentLayout'> => {
   const size = props.accent === 'nenhum' ? 0 : props.accentSize;
   const panel = layoutPanel({
     width: props.width,
@@ -184,10 +184,10 @@ const getPanelLayout = (props: LayoutProps): Omit<BlocoLayout, 'ornamentLayout'>
  * Twitch panels, both must be 0), no room left for the content, a motion that would alias, and a
  * glow or a bright rim light over the text.
  */
-export const blocoLoopSchema = blocoFields.superRefine((props, context) => {
+export const blockLoopSchema = blockFields.superRefine((props, context) => {
   refineCanvas(props, context);
   if (!refineShape(props, ROUND_SIZES, context)) return;
-  const layout = getBlocoLayout(props);
+  const layout = getBlockLayout(props);
   refineOutset(props, layout.outset, context);
   refineContent(layout, context);
   refineRim(props.rimLight, layout.inner, [[layout.content, 'text', 'use paddingX and paddingY of 1 px or more']], context);
@@ -205,8 +205,8 @@ export const blocoLoopSchema = blocoFields.superRefine((props, context) => {
   refineOrnaments(layout.ornamentLayout, props, context);
 }, {when: (payload) => payload.issues.length === 0});
 
-/** The layers of one frame, bottom to top; getBlocoScene is their flat concatenation. */
-export type BlocoLayers = {
+/** The layers of one frame, bottom to top; getBlockScene is their flat concatenation. */
+export type BlockLayers = {
   halo: HaloElement[];
   /** Ornaments under the panel (see OrnamentLayer). */
   ornamentBack: OrnamentElement[];
@@ -227,7 +227,7 @@ export type BlocoLayers = {
  * instant off the seam. Across, it is exactly as wide as the bar, so it never reaches the text.
  */
 const buildAccentScene = (
-  props: BlocoLoopProps, layout: BlocoLayout, frame: number, durationInFrames: number,
+  props: BlockLoopProps, layout: BlockLayout, frame: number, durationInFrames: number,
 ): (RectElement | ArcElement | SheenElement)[] => {
   if (layout.accentArc) return buildAccentArcScene(props, layout.accentArc, frame, durationInFrames);
   const bar = layout.accent;
@@ -269,7 +269,7 @@ const accentGlintWidth = (length: number) => Math.min(96, Math.max(24, 0.25 * le
  * start keeps its crossing off the seam. Across, it is exactly the band's thickness.
  */
 const buildAccentArcScene = (
-  props: BlocoLoopProps, arc: AccentArc, frame: number, durationInFrames: number,
+  props: BlockLoopProps, arc: AccentArc, frame: number, durationInFrames: number,
 ): (ArcElement | SheenElement)[] => {
   if (!(arc.width > 0) || !(arc.outer > 0)) return [];
   const band: ArcElement = {type: 'arc', ...arc, color: props.accentColor, opacity: 1};
@@ -296,8 +296,8 @@ const buildAccentArcScene = (
 };
 
 /** The speeds the block actually shows (see AssetMotion), for the export log and the sidecar. */
-export const getBlocoMotion = (props: BlocoLoopProps): AssetMotion => {
-  const layout = getBlocoLayout(props);
+export const getBlockMotion = (props: BlockLoopProps): AssetMotion => {
+  const layout = getBlockLayout(props);
   return {
     strokeSpeed: reportSpeed(getStrokeMotion(props, layout.track).speed),
     fillSpeed: reportSpeed(getFillMotion(props, layout.box, fillOptions(layout)).speed),
@@ -305,8 +305,8 @@ export const getBlocoMotion = (props: BlocoLoopProps): AssetMotion => {
 };
 
 /** Every element of one frame, by layer. Pure: the frame, the props and the seed decide it all. */
-export const getBlocoLayers = (props: BlocoLoopProps, frame: number, durationInFrames: number): BlocoLayers => {
-  const layout = getBlocoLayout(props);
+export const getBlockLayers = (props: BlockLoopProps, frame: number, durationInFrames: number): BlockLayers => {
+  const layout = getBlockLayout(props);
   const ornaments = buildOrnamentScene(layout.ornamentLayout, props, frame, durationInFrames);
   return {
     halo: buildHaloScene(props, frame, durationInFrames),
@@ -326,13 +326,13 @@ export const getBlocoLayers = (props: BlocoLoopProps, frame: number, durationInF
  * The flat scene the shared scans read: every element listed by place, with numbers for all
  * that moves. Nothing in it jumps at the seam, so the kind needs no seamExempt.
  */
-export const getBlocoScene = (props: BlocoLoopProps, frame: number, durationInFrames: number) => {
-  const {halo, ornamentBack, fill, accent, rim, stroke, glow, ornamentFront, flash} = getBlocoLayers(props, frame, durationInFrames);
+export const getBlockScene = (props: BlockLoopProps, frame: number, durationInFrames: number) => {
+  const {halo, ornamentBack, fill, accent, rim, stroke, glow, ornamentFront, flash} = getBlockLayers(props, frame, durationInFrames);
   return [...halo, ...ornamentBack, ...fill, ...accent, ...rim, ...stroke, ...glow, ...ornamentFront, ...flash];
 };
 
 /** The accent's clip: the inside of the stroke for a bar (it follows the round corners), the arc itself on a circle. */
-const accentClip = (layout: BlocoLayout): ClipShape =>
+const accentClip = (layout: BlockLayout): ClipShape =>
   (layout.accentArc ? {path: arcBandPath(layout.accentArc)} : layout.inner);
 
 /**
@@ -341,11 +341,11 @@ const accentClip = (layout: BlocoLayout): ClipShape =>
  * (see accentClip), rim light, stroke with its glow, front ornaments, lightning flash, then the
  * Studio guides.
  */
-export const BlocoFrame = ({props, frame, durationInFrames}: {
-  props: BlocoLoopProps; frame: number; durationInFrames: number;
+export const BlockFrame = ({props, frame, durationInFrames}: {
+  props: BlockLoopProps; frame: number; durationInFrames: number;
 }) => {
-  const layout = getBlocoLayout(props);
-  const layers = getBlocoLayers(props, frame, durationInFrames);
+  const layout = getBlockLayout(props);
+  const layers = getBlockLayers(props, frame, durationInFrames);
   return (
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
       guides={props.guides} idPrefix="block">
@@ -362,19 +362,19 @@ export const BlocoFrame = ({props, frame, durationInFrames}: {
   );
 };
 
-export const BlockLoop = (props: BlocoLoopProps) => {
+export const BlockLoop = (props: BlockLoopProps) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
-  return <BlocoFrame props={props} frame={frame} durationInFrames={durationInFrames} />;
+  return <BlockFrame props={props} frame={frame} durationInFrames={durationInFrames} />;
 };
 
-/** Ready for src/catalog.tsx: `BlockLoop: blocoCatalogEntry`. */
-export const blocoCatalogEntry = {
+/** Ready for src/catalog.tsx: `BlockLoop: blockCatalogEntry`. */
+export const blockCatalogEntry = {
   id: 'BlockLoop',
   kind: 'block',
   component: BlockLoop,
-  schema: blocoLoopSchema,
-  defaultProps: blocoLoopSchema.parse({}),
-  getLayout: getBlocoLayout,
-  getMotion: getBlocoMotion,
+  schema: blockLoopSchema,
+  defaultProps: blockLoopSchema.parse({}),
+  getLayout: getBlockLayout,
+  getMotion: getBlockMotion,
 } as const;

@@ -7,7 +7,7 @@ import {
 } from '../src/backgrounds/HauntedMansionLoop';
 import {HauntedMansionArtwork} from '../src/backgrounds/halloween/HauntedMansionArtwork';
 import {TAU} from '../src/loop';
-import {getBordaGeometry} from '../src/overlays/border';
+import {getBorderGeometry} from '../src/overlays/border';
 import {roundRectSdf} from '../src/overlays/shared/geometry';
 import {
   cornerSlot, MAX_CONTENT_OPACITY, maxExtentAt, meetsKeepOut, rectDistance, roomAt, type OrnamentElement, type OrnamentFrame,
@@ -535,7 +535,7 @@ test('mansao: na tela os enfeites ficam na faixa e no máximo `glow` px sobre a 
   for (const id of ['tela-cheia', 'tela-vertical']) {
     for (const extra of [{}, {glow: 12, thickness: 12, lines: 2, radius: 10}, {glow: 16, ornamentSize: 48}, {radius: 48}, {thickness: 24}, TELA_PROPS]) {
       const {frame, placements, props} = layoutAt(id, extra);
-      const {window} = getBordaGeometry(props as never).layout;
+      const {window} = getBorderGeometry(props as never).layout;
       const where = `${id} ${JSON.stringify(extra)}`;
       let deepest = -Infinity;
       for (const {ink} of inkedElements(frame, placements, props, 0)) {

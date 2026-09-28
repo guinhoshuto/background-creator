@@ -11,7 +11,7 @@ import {
   rectContains, refineContent, refineFill, refineHole, refineOutset, refineStroke, ringPath, roundRectPath, roundRectSdf,
   rimLightField, samplePerimeter, strokeFields, swayShare, tangentAt, type FrameLayout, type RoundRect, type StrokeElement,
 } from '../src/overlays/shared';
-import {blocoLoopSchema, getBlocoLayers, getBlocoLayout} from '../src/overlays/block';
+import {blockLoopSchema, getBlockLayers, getBlockLayout} from '../src/overlays/block';
 import {chatLoopSchema, getChatLayers, getChatLayout} from '../src/overlays/chat';
 import {getCompositionMetadata} from '../src/settings';
 import {NAMED_SIZES, sizeProps, sizesForKind} from '../src/sizes';
@@ -929,9 +929,9 @@ test('Acabamento: o reflexo de 1 px corre por dentro do contorno e nunca chega a
         rim: getChatLayers(props, 0, 480).rim};
     }))),
     ...sizesForKind('block').flatMap((size) => [0, 16, 999].flatMap((radius) => [0, 2, 8].map((strokeWidth) => {
-      const props = blocoLoopSchema.parse({...sizeProps(size), radius, strokeWidth, rimLight: 0.8, glow: 0, halo: 0});
-      const layout = getBlocoLayout(props);
-      return {label: `bloco ${size.id} r${radius} s${strokeWidth}`, layout, areas: [layout.content], rim: getBlocoLayers(props, 0, 480).rim};
+      const props = blockLoopSchema.parse({...sizeProps(size), radius, strokeWidth, rimLight: 0.8, glow: 0, halo: 0});
+      const layout = getBlockLayout(props);
+      return {label: `bloco ${size.id} r${radius} s${strokeWidth}`, layout, areas: [layout.content], rim: getBlockLayers(props, 0, 480).rim};
     }))),
   ];
   for (const {label, layout, areas, rim: [rim, ...rest]} of panels) {
@@ -963,11 +963,11 @@ test('Acabamento: um reflexo forte colado no texto é recusado, e a saída da me
       fixes: [{padding: 1}, {rimLight: 0.2}], areas: [/messages/],
     },
     {
-      label: 'bloco sem padding', schema: blocoLoopSchema, input: {paddingX: 0, paddingY: 0, glow: 0, halo: 0, rimLight: 1},
+      label: 'bloco sem padding', schema: blockLoopSchema, input: {paddingX: 0, paddingY: 0, glow: 0, halo: 0, rimLight: 1},
       fixes: [{paddingX: 1, paddingY: 1}, {rimLight: 0.2}], areas: [/text/],
     },
     {
-      label: 'bloco sem padding dos lados', schema: blocoLoopSchema, input: {paddingX: 0, paddingY: 16, glow: 0, halo: 0, rimLight: 1},
+      label: 'bloco sem padding dos lados', schema: blockLoopSchema, input: {paddingX: 0, paddingY: 16, glow: 0, halo: 0, rimLight: 1},
       fixes: [{paddingX: 1}, {rimLight: 0.2}], areas: [/text/],
     },
   ] as const;
@@ -987,8 +987,8 @@ test('Acabamento: um reflexo forte colado no texto é recusado, e a saída da me
       return {label: `chat ${size.id} p${padding} h${headerHeight}`, inner: layout.inner, areas: [layout.content, layout.header]};
     }))),
     ...sizesForKind('block').flatMap((size) => [1, 1.5, 16].flatMap((paddingX) => [1, 2].map((paddingY) => {
-      const props = blocoLoopSchema.parse({...sizeProps(size), paddingX, paddingY, radius: 999, rimLight: 1, glow: 0, halo: 0});
-      const layout = getBlocoLayout(props);
+      const props = blockLoopSchema.parse({...sizeProps(size), paddingX, paddingY, radius: 999, rimLight: 1, glow: 0, halo: 0});
+      const layout = getBlockLayout(props);
       return {label: `bloco ${size.id} px${paddingX} py${paddingY}`, inner: layout.inner, areas: [layout.content]};
     }))),
   ];

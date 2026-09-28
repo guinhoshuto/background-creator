@@ -4,8 +4,8 @@ import {test} from 'node:test';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {
-  BLOCO_ACCENTS, BlocoFrame, blocoCatalogEntry, blocoLoopSchema, contentGlowOpacity,
-  getBlocoLayers, getBlocoLayout, getBlocoScene, type AccentArc, type BlocoLoopProps,
+  BLOCK_ACCENTS, BlockFrame, blockCatalogEntry, blockLoopSchema, contentGlowOpacity,
+  getBlockLayers, getBlockLayout, getBlockScene, type AccentArc, type BlockLoopProps,
 } from '../src/overlays/block';
 import {MAX_CONTENT_OPACITY, contentClearance, erf, getStrokeMotion, rectContains, roundRectSdf, type Rect} from '../src/overlays/shared';
 import {resolveExport} from '../scripts/export';
@@ -25,8 +25,8 @@ const preset = (theme: string): Record<string, unknown> =>
 /** A named size as props; painel-twitch has no bleed, and its size turns glow and halo off itself. */
 const sized = (id: string): Record<string, unknown> => sizeProps(getSize(id));
 
-const parse = (input: object): BlocoLoopProps => blocoLoopSchema.parse(input);
-const issuesOf = (input: object) => blocoLoopSchema.safeParse(input).error?.issues.map((issue) => issue.message) ?? [];
+const parse = (input: object): BlockLoopProps => blockLoopSchema.parse(input);
+const issuesOf = (input: object) => blockLoopSchema.safeParse(input).error?.issues.map((issue) => issue.message) ?? [];
 
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -39,11 +39,11 @@ const arcClearOf = (arc: AccentArc, area: Rect) =>
 
 test('Bloco: defaults são o neon no tamanho cartão, transparente, em WebM', () => {
   const props = parse({});
-  assert.deepEqual(blocoCatalogEntry.defaultProps, props);
-  assert.deepEqual(blocoLoopSchema.parse(props), props, 'os defaults passam de novo pelo schema sem mudar');
-  assert.equal(blocoCatalogEntry.id, 'BlockLoop');
-  assert.equal(blocoCatalogEntry.kind, 'block');
-  assert.equal(blocoCatalogEntry.getLayout, getBlocoLayout);
+  assert.deepEqual(blockCatalogEntry.defaultProps, props);
+  assert.deepEqual(blockLoopSchema.parse(props), props, 'os defaults passam de novo pelo schema sem mudar');
+  assert.equal(blockCatalogEntry.id, 'BlockLoop');
+  assert.equal(blockCatalogEntry.kind, 'block');
+  assert.equal(blockCatalogEntry.getLayout, getBlockLayout);
   const cartao = getSize('cartao');
   assert.deepEqual([props.width, props.height, props.bleed], [cartao.width, cartao.height, cartao.bleed]);
   assert.equal(props.transparent, true);
@@ -53,17 +53,17 @@ test('Bloco: defaults são o neon no tamanho cartão, transparente, em WebM', ()
   assert.equal(props.fillColors[0], '#120A38');
   assert.equal(props.strokeMotion, 'cometas');
   assert.ok(props.glow > 0 && props.glowPulses > 0, 'neon brilha e pulsa');
-  assert.deepEqual(getBlocoLayout(props).canvas, {width: 704, height: 424});
+  assert.deepEqual(getBlockLayout(props).canvas, {width: 704, height: 424});
 });
 
 test('Bloco: presets dos oito temas passam com strict e nunca fixam o tamanho', () => {
   for (const theme of THEMES) {
     const props = preset(theme);
-    const result = blocoLoopSchema.strict().safeParse(props);
+    const result = blockLoopSchema.strict().safeParse(props);
     assert.equal(result.success, true, `${theme}: ${JSON.stringify(result.error?.issues)}`);
     for (const key of ['width', 'height', 'bleed', 'guides']) assert.ok(!(key in props), `${theme} não fixa ${key}`);
     // Every theme moves: a still first frame repeated for the whole cycle is not a loop.
-    assert.notDeepEqual(getBlocoScene(result.data!, 0, 480), getBlocoScene(result.data!, 200, 480), theme);
+    assert.notDeepEqual(getBlockScene(result.data!, 0, 480), getBlockScene(result.data!, 200, 480), theme);
   }
   // The theme family: the palettes the SPEC names.
   assert.deepEqual(preset('neon').strokeColors, ['#22D3EE', '#E879F9']);
@@ -76,7 +76,7 @@ test('Bloco: presets dos oito temas passam com strict e nunca fixam o tamanho', 
 test('Bloco: presets servem em todos os tamanhos (painel da Twitch sem brilho externo)', () => {
   for (const theme of THEMES) {
     for (const size of sizesForKind('block')) {
-      const result = blocoLoopSchema.safeParse({...preset(theme), ...sized(size.id)});
+      const result = blockLoopSchema.safeParse({...preset(theme), ...sized(size.id)});
       assert.equal(result.success, true, `${theme} em ${size.id}: ${JSON.stringify(result.error?.issues)}`);
     }
   }
@@ -89,7 +89,7 @@ test('Bloco: recusa valores inválidos e aceita os limites documentados', () => 
     {trackOpacity: 1.01}, {trackOpacity: -0.1}, {strokeWidth: -1}, {glow: 129}, {halo: -1},
     {fill: 'xadrez'}, {strokeMotion: 'girando'}, {fillColors: []}, {strokeColors: ['#FFF', '#FFF', '#FFF', '#FFF', '#FFF']},
   ]) {
-    assert.equal(blocoLoopSchema.strict().safeParse(input).success, false, JSON.stringify(input));
+    assert.equal(blockLoopSchema.strict().safeParse(input).success, false, JSON.stringify(input));
   }
   assert.match(issuesOf({width: 641}).join(), /width must be even/);
   for (const input of [
@@ -97,14 +97,14 @@ test('Bloco: recusa valores inválidos e aceita os limites documentados', () => 
     {accent: 'topo', accentSize: 64, paddingY: 0, radius: 0, trackOpacity: 0, glow: 0},
     {radius: 1920, trackOpacity: 1},
   ]) {
-    assert.equal(blocoLoopSchema.strict().safeParse(input).success, true, JSON.stringify(input));
+    assert.equal(blockLoopSchema.strict().safeParse(input).success, true, JSON.stringify(input));
   }
-  for (const accent of BLOCO_ACCENTS) assert.equal(blocoLoopSchema.safeParse({accent}).success, true, accent);
+  for (const accent of BLOCK_ACCENTS) assert.equal(blockLoopSchema.safeParse({accent}).success, true, accent);
 });
 
 test('Bloco: arquivo acima de 4K é recusado com a saída', () => {
   assert.match(issuesOf({width: 3840, height: 2160, bleed: 32}).join(), /above the 3840×2160 limit: reduce width, height or bleed/);
-  assert.equal(blocoLoopSchema.safeParse({width: 3776, height: 2096, bleed: 32}).success, true);
+  assert.equal(blockLoopSchema.safeParse({width: 3776, height: 2096, bleed: 32}).success, true);
 });
 
 // ── Geometry across the named sizes ─────────────────────────────────────────────────────────
@@ -114,10 +114,10 @@ test('Bloco: os 11 tamanhos nomeados, inclusive as proporções extremas e os c�
   assert.deepEqual(sizes.map((size) => size.id).sort(),
     ['cartao', 'circulo', 'circulo-g', 'circulo-p', 'etiqueta', 'etiqueta-p', 'faixa', 'lista', 'painel-twitch', 'quadrado', 'titulo']);
   for (const size of sizes) {
-    for (const accent of BLOCO_ACCENTS) {
+    for (const accent of BLOCK_ACCENTS) {
       for (const radius of [0, 16, 999]) {
         const props = parse({...sized(size.id), accent, radius});
-        const layout = getBlocoLayout(props);
+        const layout = getBlockLayout(props);
         const id = `${size.id} ${accent} r${radius}`;
         assert.deepEqual(layout.canvas, {width: size.width + 2 * size.bleed, height: size.height + 2 * size.bleed}, id);
         assert.deepEqual(layout.box, {x: size.bleed, y: size.bleed, width: size.width, height: size.height}, id);
@@ -153,9 +153,9 @@ test('Bloco: os 11 tamanhos nomeados, inclusive as proporções extremas e os c�
 });
 
 test('Bloco: a barra de destaque desloca o conteúdo pela sua espessura, com o padding depois dela', () => {
-  const plain = getBlocoLayout(parse({radius: 0}));
-  const left = getBlocoLayout(parse({radius: 0, accent: 'esquerda', accentSize: 10}));
-  const top = getBlocoLayout(parse({radius: 0, accent: 'topo', accentSize: 10}));
+  const plain = getBlockLayout(parse({radius: 0}));
+  const left = getBlockLayout(parse({radius: 0, accent: 'esquerda', accentSize: 10}));
+  const top = getBlockLayout(parse({radius: 0, accent: 'topo', accentSize: 10}));
   assert.equal(left.content.x - plain.content.x, 10);
   assert.equal(left.content.x - (left.accent!.x + left.accent!.width), parse({}).paddingX);
   assert.equal(top.content.y - plain.content.y, 10);
@@ -165,22 +165,22 @@ test('Bloco: a barra de destaque desloca o conteúdo pela sua espessura, com o p
 
 test('Bloco: num círculo o conteúdo é o quadrado inscrito, com a folga do padding até a curva', () => {
   const props = parse({...sizeProps(getSize('quadrado')), radius: 999, paddingX: 16, paddingY: 16});
-  const {inner, content} = getBlocoLayout(props);
+  const {inner, content} = getBlockLayout(props);
   const side = (inner.width - 32) / Math.SQRT2;
   assert.ok(Math.abs(content.width - content.height) <= 2, JSON.stringify(content));
   assert.ok(content.width >= side - 2 && content.width <= side + 1e-9, `${content.width} vs ${side}`);
   assert.ok(contentClearance(inner, content) >= 16 - 1e-9);
   // A long pill keeps about its full height: trading more of it for width would not pay.
-  const pill = getBlocoLayout(parse({...sizeProps(getSize('faixa')), radius: 999}));
+  const pill = getBlockLayout(parse({...sizeProps(getSize('faixa')), radius: 999}));
   const full = pill.inner.height - 2 * parse({}).paddingY;
   assert.ok(pill.content.height <= full && pill.content.height >= full - 4, `${pill.content.height} vs ${full}`);
 });
 
 test('Bloco: a seed nunca move a caixa, o conteúdo nem a barra', () => {
   for (const size of sizesForKind('block')) {
-    const layout = getBlocoLayout(parse({...sized(size.id), accent: 'esquerda', seed: 1}));
+    const layout = getBlockLayout(parse({...sized(size.id), accent: 'esquerda', seed: 1}));
     for (const seed of [-7, 42, 2026]) {
-      assert.deepEqual(getBlocoLayout(parse({...sized(size.id), accent: 'esquerda', seed})), layout, size.id);
+      assert.deepEqual(getBlockLayout(parse({...sized(size.id), accent: 'esquerda', seed})), layout, size.id);
     }
   }
 });
@@ -191,7 +191,7 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
   assert.match(issuesOf(twitch).join(), /The glow goes past the margin: use bleed ≥ 20 or reduce the glow\./);
   assert.match(issuesOf({...twitch, halo: 0, glow: 14}).join(), /use bleed ≥ 14/);
   assert.match(issuesOf({...twitch, glow: 0, halo: 16}).join(), /use bleed ≥ 16/);
-  assert.equal(blocoLoopSchema.safeParse({...twitch, glow: 0, halo: 0}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...twitch, glow: 0, halo: 0}).success, true);
   // The painel-twitch size carries that itself, and wins over a preset's glow, as the CLI does.
   assert.deepEqual(sizeProps(getSize('painel-twitch')), {...twitch, shape: 'retangulo', glow: 0, halo: 0});
   for (const theme of THEMES) {
@@ -203,15 +203,15 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
   }
   // The bleed the message names is accepted; two px less is refused.
   assert.match(issuesOf({halo: 41}).join(), /use bleed ≥ 42/);
-  assert.equal(blocoLoopSchema.safeParse({halo: 41, bleed: 42}).success, true);
-  assert.equal(blocoLoopSchema.safeParse({halo: 41, bleed: 40}).success, false);
+  assert.equal(blockLoopSchema.safeParse({halo: 41, bleed: 42}).success, true);
+  assert.equal(blockLoopSchema.safeParse({halo: 41, bleed: 40}).success, false);
 });
 
 test('Bloco: padding ou barra que não deixam espaço para o conteúdo são recusados', () => {
   const tiny = sizeProps(getSize('etiqueta-p'));
   assert.match(issuesOf({...tiny, paddingY: 30}).join(), /The padding leaves no room for the content/);
   assert.match(issuesOf({...tiny, accent: 'topo', accentSize: 64}).join(), /leaves no room/);
-  assert.equal(blocoLoopSchema.safeParse({...tiny, paddingY: 12}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...tiny, paddingY: 12}).success, true);
 });
 
 // ── Legibility: what is drawn above the fill ────────────────────────────────────────────────
@@ -232,11 +232,11 @@ test('Legibilidade: nada acima do fill entra no conteúdo, e o brilho fica abaix
     for (const size of sizesForKind('block')) {
       for (const radius of [0, 16, 999]) {
         const props = parse({...input, ...sized(size.id), radius});
-        const layout = getBlocoLayout(props);
+        const layout = getBlockLayout(props);
         const id = `${JSON.stringify(input).slice(0, 40)} ${size.id} r${radius}`;
         assert.ok(contentGlowOpacity({...layout, glow: props.glow, glowStrength: props.glowStrength}) <= MAX_CONTENT_OPACITY, `${id}: brilho sobre o texto`);
         for (const frame of [0, 97, 240, 413]) {
-          const layers = getBlocoLayers(props, frame, 480);
+          const layers = getBlockLayers(props, frame, 480);
           // The stroke lives in the band between the box edge and the inside of the stroke.
           for (const element of layers.stroke) {
             assert.equal(element.track, 0);
@@ -268,10 +268,10 @@ test('Legibilidade: brilho grande com padding pequeno é recusado, e mais paddin
   const input = {glow: 48, bleed: 48, halo: 0, paddingX: 2, paddingY: 2, strokeWidth: 6};
   const [message] = issuesOf(input);
   assert.match(message!, /The stroke's glow would reach \d+% opacity over the text area \(the limit is 20%\): increase paddingX and paddingY or reduce glow\./);
-  assert.equal(blocoLoopSchema.safeParse({...input, paddingX: 40, paddingY: 40}).success, true);
-  assert.equal(blocoLoopSchema.safeParse({...input, glow: 2}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...input, paddingX: 40, paddingY: 40}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...input, glow: 2}).success, true);
   // The estimate falls with the distance and vanishes without a glow or a stroke.
-  const layout = getBlocoLayout(parse({}));
+  const layout = getBlockLayout(parse({}));
   assert.equal(contentGlowOpacity({...layout, glow: 0}), 0);
   assert.equal(contentGlowOpacity({...layout, strokeWidth: 0, glow: 20}), 0);
   assert.ok(contentClearance(layout.inner, layout.content) >= 16);
@@ -284,7 +284,7 @@ test('Legibilidade: o brilho é medido em 2D, e nos cantos do texto dois lados d
   // A one-sided estimate took this for 18%; at the corner of the text it is about 38%.
   const doubled = {radius: 16, paddingX: 8, paddingY: 8, strokeWidth: 8, glow: 20};
   assert.match(issuesOf(doubled).join(), /The stroke's glow would reach \d+% opacity over the text area .*increase paddingX and paddingY or reduce glow\./);
-  assert.equal(blocoLoopSchema.safeParse({...doubled, paddingX: 16, paddingY: 16}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...doubled, paddingX: 16, paddingY: 16}).success, true);
   // The fast measure agrees with brute force at square corners, round corners and a pill.
   for (const input of [
     doubled,
@@ -293,7 +293,7 @@ test('Legibilidade: o brilho é medido em 2D, e nos cantos do texto dois lados d
     {...sized('etiqueta'), radius: 999, paddingX: 10, paddingY: 10, strokeWidth: 4, glow: 16},
   ]) {
     const props = parse({...input, glow: 0});
-    const layout = getBlocoLayout(props);
+    const layout = getBlockLayout(props);
     const brute = Math.max(...cornersOf(layout.content).map(([x, y]) =>
       bruteGlowAt([{outer: layout.shape, inner: layout.inner}], input.glow, x, y, 0.25, props.glowStrength)));
     const fast = contentGlowOpacity({...layout, glow: input.glow, glowStrength: props.glowStrength});
@@ -308,16 +308,16 @@ test('Aliasing: contorno e preenchimento rápidos demais são recusados com a ve
   const [message] = issuesOf({...ants, strokeSpeed: 4000});
   assert.match(message!, /Speed too high for the dashes/);
   const limit = Number(message!.match(/strokeSpeed up to ([\d.]+) px\/s/)![1]);
-  assert.equal(blocoLoopSchema.safeParse({...ants, strokeSpeed: limit}).success, true);
-  assert.equal(blocoLoopSchema.safeParse({...ants, strokeSpeed: limit + 1}).success, false);
+  assert.equal(blockLoopSchema.safeParse({...ants, strokeSpeed: limit}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...ants, strokeSpeed: limit + 1}).success, false);
   const dots = {fill: 'pontos', fillScale: 8, fillAngle: 0};
   const [fillMessage] = issuesOf({...dots, fillSpeed: 480});
   assert.match(fillMessage!, /Speed too high for the dots/);
   const fillLimit = Number(fillMessage!.match(/fillSpeed up to ([\d.]+) px\/s/)![1]);
-  assert.equal(blocoLoopSchema.safeParse({...dots, fillSpeed: fillLimit}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...dots, fillSpeed: fillLimit}).success, true);
   // The effective speed is rounded to whole laps and exposed for the sidecar, on the block's own track.
   const comets = {strokeMotion: 'cometas', cometSpacing: 64, strokeColors: ['#FFFFFF'], ...sizeProps(getSize('etiqueta-p'))};
-  const motion = getStrokeMotion(parse({...comets, strokeSpeed: 100}), getBlocoLayout(parse(comets)).track);
+  const motion = getStrokeMotion(parse({...comets, strokeSpeed: 100}), getBlockLayout(parse(comets)).track);
   assert.ok(motion.laps >= 1 && motion.speed > 0);
 });
 
@@ -335,7 +335,7 @@ const CASES: Case[] = [
 
 for (const {id, input} of CASES) {
   const sample: Sampler = (scene: SceneInput, frame: number, length: number): Scene =>
-    getBlocoScene(parse({...input, ...scene}), frame, length);
+    getBlockScene(parse({...input, ...scene}), frame, length);
   test(`${id}: seed e frame determinam a cena`, () => {
     assertDeterministic(id, sample);
     assert.notDeepEqual(sample({seed: 42}, 180, 480), sample({seed: 42}, 137, 480));
@@ -352,7 +352,7 @@ test('Bloco: o ciclo fecha em todos os tamanhos nomeados, em WebM e GIF, com tud
       const props = parse({...preset(theme), ...sized(size.id), durationSeconds: 7.3, accentSheen: 1});
       for (const outputFormat of ['webm', 'gif'] as const) {
         const {durationInFrames} = getCompositionMetadata({durationSeconds: 7.3, outputFormat});
-        const at = (frame: number) => getBlocoScene({...props, outputFormat}, frame, durationInFrames);
+        const at = (frame: number) => getBlockScene({...props, outputFormat}, frame, durationInFrames);
         assert.deepEqual(at(durationInFrames), at(0), `${theme} ${size.id} ${outputFormat}`);
         assert.notDeepEqual(at(durationInFrames - 1), at(0), `${theme} ${size.id}: não duplique o primeiro frame`);
       }
@@ -364,11 +364,11 @@ test('Bloco: o reflexo da barra só dá a volta fora dela, longe da emenda', () 
   for (const accent of ['esquerda', 'topo'] as const) {
     for (const seed of [-7, 1, 2026]) {
       const props = parse({accent, accentSheen: 1, seed});
-      const bar = getBlocoLayout(props).accent!;
+      const bar = getBlockLayout(props).accent!;
       const length = accent === 'esquerda' ? bar.height : bar.width;
       const start = accent === 'esquerda' ? bar.y : bar.x;
       const positions = Array.from({length: 481}, (_, frame) => {
-        const sheen = getBlocoLayers(props, frame, 480).accent[1]!;
+        const sheen = getBlockLayers(props, frame, 480).accent[1]!;
         assert.equal(sheen.type, 'sheen');
         return sheen.type === 'sheen' ? {at: accent === 'esquerda' ? sheen.cy : sheen.cx, width: sheen.width} : {at: 0, width: 0};
       });
@@ -392,14 +392,14 @@ test('Bloco: o reflexo da barra só dá a volta fora dela, longe da emenda', () 
 
 const render = (input: object, frame = 0) => {
   const props = parse(input);
-  return renderToStaticMarkup(createElement(BlocoFrame, {props, frame, durationInFrames: 480}));
+  return renderToStaticMarkup(createElement(BlockFrame, {props, frame, durationInFrames: 480}));
 };
 
 test('Render: SVG do tamanho do arquivo, sem blend mode, camadas na ordem', () => {
   for (const theme of THEMES) {
     for (const size of sizesForKind('block')) {
       const props = parse({...preset(theme), ...sized(size.id)});
-      const {canvas} = getBlocoLayout(props);
+      const {canvas} = getBlockLayout(props);
       const markup = render({...preset(theme), ...sized(size.id)}, 211);
       assert.match(markup, new RegExp(`<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}"`));
       assert.doesNotMatch(markup, /mix-blend-mode|NaN|Infinity|undefined|data-guides/);
@@ -424,7 +424,7 @@ test('Bloco: o reflexo do vidro é tão discreto quanto o do chat, porque passa 
   const props = parse(preset('vidro'));
   let seen = 0;
   for (const frame of [0, 100, 300, 450]) {
-    for (const element of getBlocoLayers(props, frame, 480).fill) {
+    for (const element of getBlockLayers(props, frame, 480).fill) {
       if (element.type !== 'sheen') continue;
       seen++;
       assert.ok(element.opacity <= 0.2, `frame ${frame}`);

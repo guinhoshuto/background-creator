@@ -1,8 +1,8 @@
 import {readFileSync} from 'node:fs';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {BlocoFrame, blocoLoopSchema, getBlocoLayers, getBlocoLayout, getBlocoScene} from '../../src/overlays/block';
-import {BordaFrame, bordaLoopSchema, getBordaGeometry, getBordaSceneParts, getBordaScene} from '../../src/overlays/border';
+import {BlockFrame, blockLoopSchema, getBlockLayers, getBlockLayout, getBlockScene} from '../../src/overlays/block';
+import {BorderFrame, borderLoopSchema, getBorderGeometry, getBorderSceneParts, getBorderScene} from '../../src/overlays/border';
 import {ChatFrame, chatLoopSchema, getChatLayers, getChatLayout, getChatScene} from '../../src/overlays/chat';
 import type {FlashElement, OrnamentElement, OrnamentLayout, OrnamentStyle} from '../../src/overlays/shared';
 import {getCompositionMetadata} from '../../src/settings';
@@ -61,31 +61,31 @@ export const ORNAMENT_KINDS: Record<OrnamentKindName, OrnamentKindAdapter> = {
   block: {
     kind: 'block',
     sizes: sizesForKind('block'),
-    parse: (input) => blocoLoopSchema.strict().parse(input) as OrnamentProps,
-    issues: (input) => issuesOf(blocoLoopSchema.strict().safeParse(input)),
-    ornamentLayout: (props) => getBlocoLayout(props as never).ornamentLayout,
-    outset: (props) => getBlocoLayout(props as never).outset,
+    parse: (input) => blockLoopSchema.strict().parse(input) as OrnamentProps,
+    issues: (input) => issuesOf(blockLoopSchema.strict().safeParse(input)),
+    ornamentLayout: (props) => getBlockLayout(props as never).ornamentLayout,
+    outset: (props) => getBlockLayout(props as never).outset,
     layers: (props, frame, n) => {
-      const layers = getBlocoLayers(props as never, frame, n);
+      const layers = getBlockLayers(props as never, frame, n);
       return {back: layers.ornamentBack, front: layers.ornamentFront, flash: layers.flash};
     },
-    scene: (props, frame, n) => getBlocoScene(props as never, frame, n) as unknown as Scene,
-    render: (props, frame, n = 480) => renderToStaticMarkup(createElement(BlocoFrame, {props: props as never, frame, durationInFrames: n})),
+    scene: (props, frame, n) => getBlockScene(props as never, frame, n) as unknown as Scene,
+    render: (props, frame, n = 480) => renderToStaticMarkup(createElement(BlockFrame, {props: props as never, frame, durationInFrames: n})),
     preset: (theme) => readPreset(`block-${theme}`),
   },
   border: {
     kind: 'border',
     sizes: sizesForKind('border'),
-    parse: (input) => bordaLoopSchema.strict().parse(input) as OrnamentProps,
-    issues: (input) => issuesOf(bordaLoopSchema.strict().safeParse(input)),
-    ornamentLayout: (props) => getBordaGeometry(props as never).ornamentLayout,
-    outset: (props) => getBordaGeometry(props as never).layout.outset,
+    parse: (input) => borderLoopSchema.strict().parse(input) as OrnamentProps,
+    issues: (input) => issuesOf(borderLoopSchema.strict().safeParse(input)),
+    ornamentLayout: (props) => getBorderGeometry(props as never).ornamentLayout,
+    outset: (props) => getBorderGeometry(props as never).layout.outset,
     layers: (props, frame, n) => {
-      const parts = getBordaSceneParts(props as never, frame, n);
+      const parts = getBorderSceneParts(props as never, frame, n);
       return {back: parts.ornamentBack, front: parts.ornamentFront, flash: parts.flash};
     },
-    scene: (props, frame, n) => getBordaScene(props as never, frame, n) as unknown as Scene,
-    render: (props, frame, n = 480) => renderToStaticMarkup(createElement(BordaFrame, {props: props as never, frame, durationInFrames: n})),
+    scene: (props, frame, n) => getBorderScene(props as never, frame, n) as unknown as Scene,
+    render: (props, frame, n = 480) => renderToStaticMarkup(createElement(BorderFrame, {props: props as never, frame, durationInFrames: n})),
     preset: (theme) => readPreset(`border-${theme}`),
   },
 };

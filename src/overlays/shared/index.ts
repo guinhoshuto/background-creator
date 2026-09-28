@@ -7,15 +7,15 @@
  *   ...overlayBaseFields(size), radius: radiusField(), padding: paddingField(),
  *   ...fillFields(), ...strokeFields(), ...glowFields(), ...haloFields(),
  * });
- * export const blocoLoopSchema = fields.superRefine((props, context) => {
+ * export const blockLoopSchema = fields.superRefine((props, context) => {
  *   refineCanvas(props, context);
- *   const layout = getBlocoLayout(props);            // layoutPanel({...props, insets})
+ *   const layout = getBlockLayout(props);            // layoutPanel({...props, insets})
  *   refineOutset(props, layout.outset, context);
  *   refineContent(layout, context);
  *   refineStroke(props, layout.track, context);
  *   refineFill(props, layout.box, context);
  * });
- * export const getBlocoScene = (props, frame, n) => [
+ * export const getBlockScene = (props, frame, n) => [
  *   ...buildHaloScene(props, frame, n),
  *   ...buildFillScene(props, layout.box, frame, n, {corner: layout.shape.radius}),
  *   ...buildStrokeScene(props, layout.track, frame, n),

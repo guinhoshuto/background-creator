@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {getWindowFlash} from '../../src/backgrounds/HauntedInteriorLoop';
-import {bordaLoopSchema, getBordaMask, getBordaScene} from '../../src/overlays/border';
+import {borderLoopSchema, getBorderMask, getBorderScene} from '../../src/overlays/border';
 import {
   FLASH_COLOR, MAX_CONTENT_OPACITY, ORNAMENT_CLEARANCE, ORNAMENT_EDGE, ORNAMENT_REGISTRY, ORNAMENT_SIZE_RANGE,
   meetsKeepOut, ornamentOutset, ornamentWayOut, rectDistance, roundRectPath, roundRectSdf,
@@ -414,12 +414,12 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
   if (kinds.includes('border')) test(`ornaments [${set}] border: a máscara não muda com enfeites nem relâmpago`, () => {
     const adapter = ORNAMENT_KINDS.border;
     for (const size of adapter.sizes.filter((entry) => entry.props?.fit !== 'tela')) {
-      const mask = getBordaMask(bordaLoopSchema.parse({...sizeProps(size), ornaments: set, lightning: 0.7}));
+      const mask = getBorderMask(borderLoopSchema.parse({...sizeProps(size), ornaments: set, lightning: 0.7}));
       assert.ok(mask, size.id);
       assert.ok(!('ornaments' in mask) && !('lightning' in mask), `${size.id}: a máscara não leva enfeites`);
-      const plain = bordaLoopSchema.parse(mask);
-      const decorated = bordaLoopSchema.parse({...mask, ornaments: set, lightning: 0.7});
-      assert.deepEqual(getBordaScene(decorated, 0, 480), getBordaScene(plain, 0, 480), size.id);
+      const plain = borderLoopSchema.parse(mask);
+      const decorated = borderLoopSchema.parse({...mask, ornaments: set, lightning: 0.7});
+      assert.deepEqual(getBorderScene(decorated, 0, 480), getBorderScene(plain, 0, 480), size.id);
       assert.equal(adapter.render(decorated as OrnamentProps, 0), adapter.render(plain as OrnamentProps, 0), size.id);
     }
   });

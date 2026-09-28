@@ -4,9 +4,9 @@ import {test} from 'node:test';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {
-  BordaFrame, CORNER_STYLES, bordaCatalogEntry, bordaLoopSchema, getBordaGeometry, getBordaLayout, getBordaMask,
-  getBordaMaskElement, getBordaMotion, getBordaScene, getBordaSceneParts, secondLineOptions, TRACK_MAIN, TRACK_SECOND,
-  type BordaLoopProps, type CornerElement,
+  BorderFrame, CORNER_STYLES, borderCatalogEntry, borderLoopSchema, getBorderGeometry, getBorderLayout, getBorderMask,
+  getBorderMaskElement, getBorderMotion, getBorderScene, getBorderSceneParts, secondLineOptions, TRACK_MAIN, TRACK_SECOND,
+  type BorderLoopProps, type CornerElement,
 } from '../src/overlays/border';
 import {
   STROKE_MOTIONS, filletPath, getStrokeMotion, minBleedFor, perimeterLength, rectContains, rectPath as rectPathOf, roundRectPath, roundRectSdf,
@@ -21,8 +21,8 @@ import {
 } from './helpers/scene-scans';
 import {OVERLAY_THEMES} from './helpers/themes';
 
-const parse = (input: object): BordaLoopProps => bordaLoopSchema.parse(input);
-const BORDA_SIZES = sizesForKind('border');
+const parse = (input: object): BorderLoopProps => borderLoopSchema.parse(input);
+const BORDER_SIZES = sizesForKind('border');
 const THEMES = OVERLAY_THEMES;
 const presetOf = (theme: string): Record<string, unknown> =>
   JSON.parse(readFileSync(new URL(`../presets/border-${theme}.json`, import.meta.url), 'utf8'));
@@ -44,25 +44,25 @@ const ROOT_DEFAULT_PROPS = {
 test('Borda: padrões = visual neon no tamanho webcam-16x9, iguais ao literal do Root', () => {
   const defaults = parse({});
   // The integrator spreads this entry into assetCatalog: it must fit the catalog's contract.
-  const entry: CatalogEntry = bordaCatalogEntry;
-  assert.equal(entry.getLayout, getBordaLayout);
+  const entry: CatalogEntry = borderCatalogEntry;
+  assert.equal(entry.getLayout, getBorderLayout);
   assert.deepEqual(defaults, ROOT_DEFAULT_PROPS);
-  assert.deepEqual(bordaLoopSchema.parse(ROOT_DEFAULT_PROPS), defaults);
-  assert.deepEqual(bordaCatalogEntry.defaultProps, defaults);
-  assert.equal(bordaCatalogEntry.id, 'BorderLoop');
-  assert.equal(bordaCatalogEntry.kind, 'border');
+  assert.deepEqual(borderLoopSchema.parse(ROOT_DEFAULT_PROPS), defaults);
+  assert.deepEqual(borderCatalogEntry.defaultProps, defaults);
+  assert.equal(borderCatalogEntry.id, 'BorderLoop');
+  assert.equal(borderCatalogEntry.kind, 'border');
   assert.equal(matchNamedSize('border', defaults)?.id, 'webcam-16x9');
-  assert.deepEqual(bordaCatalogEntry.getLayout(defaults), getBordaLayout(defaults));
+  assert.deepEqual(borderCatalogEntry.getLayout(defaults), getBorderLayout(defaults));
   assert.equal(defaults.transparent, true);
   assert.equal(defaults.outputFormat, 'webm');
 });
 
 test('Borda: layout de cada tamanho nomeado (arquivo, janela, buraco, bleed respeitado)', () => {
-  for (const size of BORDA_SIZES) {
+  for (const size of BORDER_SIZES) {
     for (const radius of [0, 16, 200]) {
       for (const corners of CORNER_STYLES) {
         const props = parse({...sizeProps(size), radius, corners});
-        const layout = getBordaLayout(props);
+        const layout = getBorderLayout(props);
         assert.deepEqual(layout.canvas, {width: size.width + 2 * size.bleed, height: size.height + 2 * size.bleed}, size.id);
         assert.deepEqual(layout.box, {x: size.bleed, y: size.bleed, width: size.width, height: size.height});
         assert.ok(layout.hole && rectContains(layout.box, layout.hole), `${size.id}: buraco dentro da caixa`);
@@ -83,8 +83,8 @@ test('Borda: layout de cada tamanho nomeado (arquivo, janela, buraco, bleed resp
 
 test('Borda: a seed nunca move o layout, a janela nem os cantos', () => {
   for (const corners of CORNER_STYLES) {
-    const a = getBordaGeometry(parse({corners, seed: 1}));
-    const b = getBordaGeometry(parse({corners, seed: 999}));
+    const a = getBorderGeometry(parse({corners, seed: 1}));
+    const b = getBorderGeometry(parse({corners, seed: 999}));
     assert.deepEqual(a, b, corners);
   }
 });
@@ -95,9 +95,9 @@ test('Borda: presets parseiam estritos em todos os tamanhos e não fixam tamanho
     for (const key of ['width', 'height', 'bleed', 'fit', 'guides']) {
       assert.ok(!(key in preset), `border-${theme}: não fixe ${key} (o tamanho nomeado decide)`);
     }
-    assert.equal(bordaLoopSchema.strict().safeParse(preset).success, true, theme);
-    for (const size of BORDA_SIZES) {
-      const result = bordaLoopSchema.strict().safeParse({...preset, ...sizeProps(size)});
+    assert.equal(borderLoopSchema.strict().safeParse(preset).success, true, theme);
+    for (const size of BORDER_SIZES) {
+      const result = borderLoopSchema.strict().safeParse({...preset, ...sizeProps(size)});
       assert.equal(result.success, true, `border-${theme} em ${size.id}: ${result.error?.issues.map((issue) => issue.message).join(' | ')}`);
     }
   }
@@ -105,7 +105,7 @@ test('Borda: presets parseiam estritos em todos os tamanhos e não fixam tamanho
 
 test('Borda: recusas com a saída em inglês', () => {
   const message = (input: object) => {
-    const result = bordaLoopSchema.safeParse(input);
+    const result = borderLoopSchema.safeParse(input);
     assert.equal(result.success, false, JSON.stringify(input));
     return result.error!.issues.map((issue) => issue.message).join(' | ');
   };
@@ -122,9 +122,9 @@ test('Borda: recusas com a saída em inglês', () => {
     const text = message({...input, bleed: 32});
     const wanted = Number(/bleed ≥ (\d+)/.exec(text)![1]);
     assert.match(text, /^The glow goes past the margin: use bleed ≥ \d+ or reduce the glow\.$/);
-    assert.equal(wanted, minBleedFor(getBordaGeometry(parse({...input, bleed: 256})).layout.outset));
-    assert.equal(bordaLoopSchema.safeParse({...input, bleed: wanted}).success, true, `${corners}: bleed ${wanted}`);
-    assert.equal(bordaLoopSchema.safeParse({...input, bleed: wanted - 2}).success, false);
+    assert.equal(wanted, minBleedFor(getBorderGeometry(parse({...input, bleed: 256})).layout.outset));
+    assert.equal(borderLoopSchema.safeParse({...input, bleed: wanted}).success, true, `${corners}: bleed ${wanted}`);
+    assert.equal(borderLoopSchema.safeParse({...input, bleed: wanted - 2}).success, false);
   }
   // The corners alone reach past the bleed: their own message, same rule.
   for (const [input, pattern] of [
@@ -132,8 +132,8 @@ test('Borda: recusas com a saída em inglês', () => {
     [{corners: 'joias', gemSize: 80}, /^The gems go past the margin: use bleed ≥ (\d+)/],
   ] as const) {
     const wanted = Number(pattern.exec(message(input))![1]);
-    assert.equal(bordaLoopSchema.safeParse({...input, bleed: wanted}).success, true);
-    assert.equal(bordaLoopSchema.safeParse({...input, bleed: wanted - 2}).success, false);
+    assert.equal(borderLoopSchema.safeParse({...input, bleed: wanted}).success, true);
+    assert.equal(borderLoopSchema.safeParse({...input, bleed: wanted - 2}).success, false);
   }
 
   // Full screen: nothing leaves the file; the corners must stay between the hole and the edge.
@@ -142,7 +142,7 @@ test('Borda: recusas com a saída em inglês', () => {
   const bracketText = message({...screen, corners: 'colchetes', cornerGap: 60, glow: 0, lines: 1});
   const maxGap = Number(/cornerGap ≤ (\d+)/.exec(bracketText)![1]);
   assert.match(bracketText, /The brackets would enter the window/);
-  assert.equal(bordaLoopSchema.safeParse({...screen, corners: 'colchetes', cornerGap: maxGap, glow: 0, lines: 1}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...screen, corners: 'colchetes', cornerGap: maxGap, glow: 0, lines: 1}).success, true);
   assert.match(message({...screen, corners: 'joias', gemSize: 128, glow: 0, lines: 1, radius: 0}), /The gems do not fit/);
 
   // Aliasing: refused with the highest usable speed, which is accepted.
@@ -150,7 +150,7 @@ test('Borda: recusas com a saída em inglês', () => {
   const aliasText = message(fast);
   const maxSpeed = Number(/Use strokeSpeed up to ([\d.]+) px\/s/.exec(aliasText)![1]);
   assert.match(aliasText, /Speed too high for the dashes/);
-  assert.equal(bordaLoopSchema.safeParse({...fast, strokeSpeed: maxSpeed}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...fast, strokeSpeed: maxSpeed}).success, true);
   const dots = {fill: 'pontos', fillScale: 8, fillSpeed: 480, durationSeconds: 1};
   assert.match(message(dots), /Speed too high for the dots/);
 });
@@ -162,11 +162,11 @@ test('Borda: o gradiente nas duas linhas é recusado uma vez só, com uma veloci
     width: 16, height: 16, bleed: 48, strokeMotion: 'gradiente', strokeColors: ['#F00', '#0F0'], lines: 2, corners: 'nenhum',
     strokeSpeed: 4000, durationSeconds: 8,
   };
-  const issues = bordaLoopSchema.safeParse(input).error!.issues;
+  const issues = borderLoopSchema.safeParse(input).error!.issues;
   assert.equal(issues.length, 1, issues.map((issue) => issue.message).join(' | '));
   const limit = Number(/Use strokeSpeed up to ([\d.]+) px\/s/.exec(issues[0]!.message)![1]);
-  assert.equal(bordaLoopSchema.safeParse({...input, strokeSpeed: limit}).success, true);
-  assert.equal(bordaLoopSchema.safeParse({...input, strokeSpeed: limit + 1}).success, false);
+  assert.equal(borderLoopSchema.safeParse({...input, strokeSpeed: limit}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...input, strokeSpeed: limit + 1}).success, false);
 });
 
 test('Borda: no gradiente as duas linhas andam juntas, com as mesmas voltas da paleta, em todo tamanho', () => {
@@ -178,10 +178,10 @@ test('Borda: no gradiente as duas linhas andam juntas, com as mesmas voltas da p
     const period = (perimeterLength(track) * 0.5) / first / segments.length;
     return (start.s / period) % 1;
   };
-  for (const size of BORDA_SIZES) {
+  for (const size of BORDER_SIZES) {
     for (const strokeSpeed of [60, 120, 160]) {
       const props = parse({...sizeProps(size), strokeMotion: 'gradiente', lines: 2, strokeSpeed});
-      const geometry = getBordaGeometry(props);
+      const geometry = getBorderGeometry(props);
       const tracks = [geometry.tracks[TRACK_MAIN]!, geometry.tracks[TRACK_SECOND]!];
       const [mainTrack, secondTrack] = tracks as [RoundRect, RoundRect];
       const label = `${size.id} a ${strokeSpeed} px/s`;
@@ -196,7 +196,7 @@ test('Borda: no gradiente as duas linhas andam juntas, com as mesmas voltas da p
       const travelled = [0, 0];
       let previous: number[] | null = null;
       for (let frame = 0; frame <= 480; frame++) {
-        const segments = getBordaSceneParts(props, frame, 480).stroke.filter((element): element is SegmentElement => element.type === 'segment');
+        const segments = getBorderSceneParts(props, frame, 480).stroke.filter((element): element is SegmentElement => element.type === 'segment');
         const phases = [TRACK_MAIN, TRACK_SECOND].map((track, index) => phaseOf(segments.filter((segment) => segment.track === track), tracks[index]!));
         if (previous) {
           phases.forEach((phase, index) => {
@@ -213,12 +213,12 @@ test('Borda: no gradiente as duas linhas andam juntas, com as mesmas voltas da p
 });
 
 test('Borda: em tela a caixa é o arquivo, então bleed diferente de 0 é recusado', () => {
-  const issues = bordaLoopSchema.safeParse({fit: 'tela', width: 1920, height: 1080}).error!.issues;
+  const issues = borderLoopSchema.safeParse({fit: 'tela', width: 1920, height: 1080}).error!.issues;
   assert.deepEqual(issues.map((issue) => [issue.path, issue.message]), [
     [['bleed'], 'On a screen frame the box is the whole file: use bleed 0 (or --size tela-cheia / tela-vertical).'],
   ]);
   const screen = parse({fit: 'tela', width: 1920, height: 1080, bleed: 0});
-  assert.deepEqual(getBordaLayout(screen).canvas, {width: 1920, height: 1080});
+  assert.deepEqual(getBorderLayout(screen).canvas, {width: 1920, height: 1080});
   assert.equal(matchNamedSize('border', screen)?.id, 'tela-cheia');
 });
 
@@ -240,8 +240,8 @@ const strokeSamples = (element: StrokeElement, track: RoundRect) => {
 type Painted = {x: number; y: number; reach: number; what: string};
 
 /** Every painted point of a scene with how far paint reaches around it (half a width, a gem's tip). */
-const paintedPoints = (props: BordaLoopProps, frame: number): Painted[] => {
-  const {geometry, stroke, corners} = getBordaSceneParts(props, frame, 480);
+const paintedPoints = (props: BorderLoopProps, frame: number): Painted[] => {
+  const {geometry, stroke, corners} = getBorderSceneParts(props, frame, 480);
   const points: Painted[] = [];
   for (const element of stroke) {
     for (const point of strokeSamples(element, geometry.tracks[element.track]!)) {
@@ -262,13 +262,13 @@ const paintedPoints = (props: BordaLoopProps, frame: number): Painted[] => {
 };
 
 test('Borda: nada entra no buraco e nada sai do bleed, em todo tamanho nomeado e todo movimento', () => {
-  for (const size of BORDA_SIZES) {
+  for (const size of BORDER_SIZES) {
     for (const radius of [0, 24, 200]) {
       for (const lines of [1, 2]) {
         for (const strokeMotion of STROKE_MOTIONS) {
           const corners = CORNER_STYLES[(STROKE_MOTIONS.indexOf(strokeMotion) + lines) % CORNER_STYLES.length]!;
           const props = parse({...sizeProps(size), radius, lines, strokeMotion, corners, strokePulses: 2, cornerPulses: 2});
-          const {layout} = getBordaGeometry(props);
+          const {layout} = getBorderGeometry(props);
           for (const frame of [0, 173]) {
             for (const point of paintedPoints(props, frame)) {
               const label = `${size.id} r${radius} ${lines} linha(s) ${strokeMotion} ${point.what} (${point.x}, ${point.y})`;
@@ -296,11 +296,11 @@ test('Borda: nada entra no buraco e nada sai do bleed, em todo tamanho nomeado e
 test('Borda: webcam-quadrada com raio 200 vira redonda, com joias e colchetes fora do círculo', () => {
   for (const corners of ['colchetes', 'joias'] as const) {
     const props = parse({...sizeProps(getSize('webcam-quadrada')), radius: 200, corners});
-    const {layout, tracks} = getBordaGeometry(props);
+    const {layout, tracks} = getBorderGeometry(props);
     assert.equal(layout.window.radius, 200);
     assert.equal(tracks[0].radius, 205);
     for (const frame of [0, 97, 311]) {
-      const {corners: elements} = getBordaSceneParts(props, frame, 480);
+      const {corners: elements} = getBorderSceneParts(props, frame, 480);
       assert.equal(elements.length, 4);
       for (const point of paintedPoints(props, frame)) {
         assert.ok(roundRectSdf(layout.holeShape, point.x, point.y) >= point.reach - 1e-6, `${corners} ${point.what}`);
@@ -308,15 +308,15 @@ test('Borda: webcam-quadrada com raio 200 vira redonda, com joias e colchetes fo
     }
   }
   // Four quarter arcs would close into a ring: the brackets leave gaps between them.
-  const round = getBordaGeometry(parse({...sizeProps(getSize('webcam-quadrada')), radius: 200, corners: 'colchetes'}));
+  const round = getBorderGeometry(parse({...sizeProps(getSize('webcam-quadrada')), radius: 200, corners: 'colchetes'}));
   const spacing = perimeterLength(round.tracks[2]) / 4;
   for (const bracket of round.brackets) assert.ok(2 * bracket.half <= 0.7 * spacing + 1e-9);
 });
 
 // ── Rendering ──────────────────────────────────────────────────────────────────────────────
 
-const render = (props: BordaLoopProps, frame = 0) =>
-  renderToStaticMarkup(createElement(BordaFrame, {props, frame, durationInFrames: 480}));
+const render = (props: BorderLoopProps, frame = 0) =>
+  renderToStaticMarkup(createElement(BorderFrame, {props, frame, durationInFrames: 480}));
 
 /** Index just past the `</g>` closing the `<g` that opens at `start`. */
 const closingOf = (markup: string, start: number) => {
@@ -331,12 +331,12 @@ const closingOf = (markup: string, start: number) => {
 };
 
 test('Borda: a máscara do buraco cobre tudo o que é desenhado, em todo tamanho e movimento', () => {
-  for (const size of BORDA_SIZES) {
+  for (const size of BORDER_SIZES) {
     for (const strokeMotion of STROKE_MOTIONS) {
       for (const radius of [0, 200]) {
         // With a halo too: it spreads outwards, still inside the masked group.
         const props = parse({...sizeProps(size), strokeMotion, radius, fill: 'brilhos', corners: radius ? 'joias' : 'colchetes', halo: 16});
-        const {layout, band} = getBordaGeometry(props);
+        const {layout, band} = getBorderGeometry(props);
         const markup = render(props, 211);
         const svg = /<svg width="(\d+)" height="(\d+)" viewBox="0 0 \d+ \d+"[^>]*>([\s\S]*)<\/svg>/.exec(markup);
         assert.ok(svg, 'um SVG do tamanho do arquivo');
@@ -368,9 +368,9 @@ test('Borda: a máscara do buraco cobre tudo o que é desenhado, em todo tamanho
 
 test('Borda: em volta de uma janela os cantos da caixa são foscos, para a câmera ficar arredondada', () => {
   for (const theme of THEMES) {
-    for (const size of BORDA_SIZES) {
+    for (const size of BORDER_SIZES) {
       const props = parse({...presetOf(theme), ...sizeProps(size)});
-      const {layout} = getBordaGeometry(props);
+      const {layout} = getBorderGeometry(props);
       const markup = render(props);
       const matte = new RegExp(`<path d="${filletPath(layout).replace(/[.]/g, '\\.')}" fill-rule="evenodd" fill="${props.fillColors[0]}" data-matte="true"></path>`);
       if (layout.fit === 'janela' && props.shape === 'circulo') {
@@ -391,12 +391,12 @@ test('Borda: em volta de uma janela os cantos da caixa são foscos, para a câme
 test('Borda: a moldura nunca passa do próprio contorno; até raio (1 + √2)·espessura ela cobre os cantos da câmera', () => {
   const bandClip = (markup: string) => /<clipPath id="border-band-clip"[^>]*>([\s\S]*?)<\/clipPath>/.exec(markup)![1]!;
   for (const theme of THEMES) {
-    for (const size of BORDA_SIZES.filter((entry) => entry.props?.fit !== 'tela')) {
+    for (const size of BORDER_SIZES.filter((entry) => entry.props?.fit !== 'tela')) {
       const thickness = Number(presetOf(theme).thickness);
       const limit = (1 + Math.SQRT2) * thickness;
       for (const radius of [0, 16, Math.floor(limit), Math.ceil(limit) + 1, 200]) {
         const props = parse({...presetOf(theme), ...sizeProps(size), radius});
-        const {layout, band} = getBordaGeometry(props);
+        const {layout, band} = getBorderGeometry(props);
         const label = `${theme} ${size.id} r${radius}`;
         // The matte and the fill share one clip, and it is the band ring alone: nothing of the
         // frame is ever painted outside the band's outer edge.
@@ -412,37 +412,37 @@ test('Borda: a moldura nunca passa do próprio contorno; até raio (1 + √2)·e
   }
   // The round webcam: the box's corner (where a cream square used to show) is outside the band.
   const round = parse({...presetOf('pastel'), ...sizeProps(getSize('webcam-quadrada')), radius: 200});
-  const {layout, band} = getBordaGeometry(round);
+  const {layout, band} = getBorderGeometry(round);
   assert.ok(roundRectSdf(band, layout.box.x, layout.box.y) > 40);
 });
 
 // ── The OBS mask ───────────────────────────────────────────────────────────────────────────
 
-const maskOf = (input: object) => parse(getBordaMask(parse(input))!);
+const maskOf = (input: object) => parse(getBorderMask(parse(input))!);
 
 test('Máscara: cada tamanho de janela tem a sua, do tamanho da câmera, com a janela branca e opaca', () => {
   assert.equal(parse({}).mascara, false);
-  for (const size of BORDA_SIZES) {
+  for (const size of BORDER_SIZES) {
     for (const radius of [0, 16, 200, 999]) {
       const frame = parse({...sizeProps(size), radius});
-      const maskProps = getBordaMask(frame);
+      const maskProps = getBorderMask(frame);
       if (size.props?.fit === 'tela') {
         assert.equal(maskProps, null, `${size.id}: a tela não precisa de máscara`);
         continue;
       }
       const props = parse(maskProps!);
-      const window = getBordaGeometry(frame).layout.window;
+      const window = getBorderGeometry(frame).layout.window;
       assert.deepEqual(maskProps, {
         width: size.width, height: size.height, shape: size.props?.shape, radius: window.radius, fit: 'janela', mascara: true, bleed: 0,
         outputFormat: 'png', transparent: true,
       });
-      assert.equal(bordaLoopSchema.strict().safeParse(maskProps).success, true);
-      const layout = getBordaLayout(props);
+      assert.equal(borderLoopSchema.strict().safeParse(maskProps).success, true);
+      const layout = getBorderLayout(props);
       assert.deepEqual(layout, {
         canvas: {width: size.width, height: size.height}, box: {x: 0, y: 0, width: size.width, height: size.height},
         content: {x: 0, y: 0, width: size.width, height: size.height}, outset: 0,
       });
-      assert.equal(getBordaMask(props), null, 'uma máscara não tem máscara');
+      assert.equal(getBorderMask(props), null, 'uma máscara não tem máscara');
       const markup = render(props);
       const svg = /<svg width="(\d+)" height="(\d+)"[^>]*>([\s\S]*)<\/svg>/.exec(markup)!;
       assert.deepEqual([Number(svg[1]), Number(svg[2])], [size.width, size.height]);
@@ -454,14 +454,14 @@ test('Máscara: cada tamanho de janela tem a sua, do tamanho da câmera, com a j
   }
   // A round webcam's mask is a circle.
   const circle = maskOf({...sizeProps(getSize('webcam-quadrada')), radius: 200});
-  assert.deepEqual(getBordaMaskElement(circle), {
+  assert.deepEqual(getBorderMaskElement(circle), {
     type: 'mask-window', x: 0, y: 0, width: 400, height: 400, corner: 200, color: '#FFFFFF', opacity: 1,
   });
 });
 
 test('Máscara: a mesma em todos os temas para o mesmo tamanho e raio', () => {
-  for (const size of BORDA_SIZES.filter((entry) => entry.props?.fit !== 'tela')) {
-    const masks = THEMES.map((theme) => getBordaMask(parse({...presetOf(theme), ...sizeProps(size), radius: 20})));
+  for (const size of BORDER_SIZES.filter((entry) => entry.props?.fit !== 'tela')) {
+    const masks = THEMES.map((theme) => getBorderMask(parse({...presetOf(theme), ...sizeProps(size), radius: 20})));
     for (const mask of masks) assert.deepEqual(mask, masks[0], size.id);
     const renders = THEMES.map((theme) => render(maskOf({...presetOf(theme), ...sizeProps(size), radius: 20})));
     for (const markup of renders) assert.equal(markup, renders[0], size.id);
@@ -470,8 +470,8 @@ test('Máscara: a mesma em todos os temas para o mesmo tamanho e raio', () => {
 
 test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saída em inglês', () => {
   const mask = {...sizeProps(getSize('webcam-16x9')), mascara: true, bleed: 0, outputFormat: 'png'};
-  assert.equal(bordaLoopSchema.safeParse(mask).success, true);
-  const messages = (input: object) => bordaLoopSchema.safeParse(input).error!.issues.map((issue) => [issue.path.join('.'), issue.message]);
+  assert.equal(borderLoopSchema.safeParse(mask).success, true);
+  const messages = (input: object) => borderLoopSchema.safeParse(input).error!.issues.map((issue) => [issue.path.join('.'), issue.message]);
   assert.deepEqual(messages({...mask, bleed: 48}), [
     ['bleed', 'In the mask the file is the window itself, the size of the camera: use bleed 0 (with --size, add --bleed 0).'],
   ]);
@@ -481,15 +481,15 @@ test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saí
     ['fit', 'The mask only applies to fit janela: in a screen frame the window fills the whole screen and needs no mask.'],
   ]);
   // The frame's own refusals do not apply: nothing of it is drawn (a glow far past the missing bleed).
-  assert.equal(bordaLoopSchema.safeParse({...mask, glow: 128, corners: 'colchetes', cornerGap: 128}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...mask, glow: 128, corners: 'colchetes', cornerGap: 128}).success, true);
 });
 
 // A mask is one still PNG: nothing moves, so the generic scans run with `moving: false` (frame N is
 // frame 0 and no frame differs) and without the seed check, instead of faking a motion.
 {
   const sample: Sampler = (scene: SceneInput, frame: number, length: number): Scene =>
-    getBordaScene(parse({
-      ...getBordaMask(parse(presetOf('neon')))!, seed: scene.seed ?? 1,
+    getBorderScene(parse({
+      ...getBorderMask(parse(presetOf('neon')))!, seed: scene.seed ?? 1,
       ...(scene.durationSeconds === undefined ? {} : {durationSeconds: scene.durationSeconds}),
     }), frame, length);
   const label = 'BorderLoop máscara';
@@ -501,7 +501,7 @@ test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saí
   test(`${label}: velocidade contínua na emenda`, () => assertSeamVelocity(label, sample));
   test(`${label}: dimensões e opacidades válidas`, () => assertValidElements(label, sample));
   test(`${label}: sem velocidade para relatar`, () => {
-    assert.deepEqual(getBordaMotion(maskOf(presetOf('neon'))), {strokeSpeed: 0, fillSpeed: 0});
+    assert.deepEqual(getBorderMotion(maskOf(presetOf('neon'))), {strokeSpeed: 0, fillSpeed: 0});
   });
 }
 
@@ -509,7 +509,7 @@ test('Borda: o vão entre a faixa e a segunda linha fica vazio, na janela e na t
   for (const size of [getSize('webcam-16x9'), getSize('tela-cheia')]) {
     for (const radius of [0, 24]) {
       const props = parse({...sizeProps(size), radius, lines: 2, lineGap: 8, fill: 'solido'});
-      const {layout, band} = getBordaGeometry(props);
+      const {layout, band} = getBorderGeometry(props);
       // The fill's clip is the band ring (plus filletPath on a screen): a point in the middle of the gap is in neither.
       const gap = {x: layout.box.x + layout.box.width / 2, y: layout.window.y - props.thickness - props.lineGap / 2};
       const inRing = roundRectSdf(band, gap.x, gap.y) <= 0 && roundRectSdf(layout.window, gap.x, gap.y) > 0;
@@ -531,7 +531,7 @@ test('Borda: os brilhos cobrem a faixa com a mesma densidade em todo tamanho', (
       const props = parse({...presetOf(theme), ...sizeProps(getSize(sizeId))});
       let onFrame = 0;
       for (const frame of FRAMES) {
-        const {geometry, fill} = getBordaSceneParts(props, frame, 480);
+        const {geometry, fill} = getBorderSceneParts(props, frame, 480);
         const {band, layout} = geometry;
         const sparks = fill.filter((element) => element.type === 'spark');
         onFrame += sparks.filter(({x, y}) => roundRectSdf(layout.window, x, y) >= 0
@@ -546,10 +546,10 @@ test('Borda: os brilhos cobrem a faixa com a mesma densidade em todo tamanho', (
           for (const {x, y} of sparks) assert.ok(roundRectSdf(layout.window, x, y) >= -reach - 1e-6, `${theme} ${sizeId}: brilho na janela`);
         }
       }
-      return (perimeterLength(getBordaGeometry(props).tracks[0]) * FRAMES.length) / onFrame;
+      return (perimeterLength(getBorderGeometry(props).tracks[0]) * FRAMES.length) / onFrame;
     };
     const reference = perSpark('webcam-16x9');
-    for (const size of BORDA_SIZES) {
+    for (const size of BORDER_SIZES) {
       const spacing = perSpark(size.id);
       assert.ok(spacing > 0.75 * reference && spacing < 1.33 * reference, `${theme} ${size.id}: um brilho a cada ${spacing} px (webcam: ${reference})`);
     }
@@ -580,7 +580,7 @@ const CASES: Case[] = [
 
 for (const {id, input, moving, seeded} of CASES) {
   const sample: Sampler = (scene: SceneInput, frame: number, length: number): Scene =>
-    getBordaScene(parse({...input, ...scene}), frame, length);
+    getBorderScene(parse({...input, ...scene}), frame, length);
   const label = `BorderLoop ${id}`;
   test(`${label}: seed e frame determinam a cena`, () => assertDeterministic(label, sample, {seeded: seeded ?? true}));
   test(`${label}: o ciclo fecha em N para 50/60 fps e durações quebradas`, () => assertPeriodic(label, sample, {moving: moving ?? true}));
@@ -589,7 +589,7 @@ for (const {id, input, moving, seeded} of CASES) {
 }
 
 test('Borda: a cena padrão passa na mesma varredura do registro genérico (frame 137 ≠ 180)', () => {
-  const sample = (seed: number, frame: number) => getBordaScene(parse({seed}), frame, 480);
+  const sample = (seed: number, frame: number) => getBorderScene(parse({seed}), frame, 480);
   assert.notDeepEqual(sample(42, 180), sample(42, 137));
   assert.notDeepEqual(sample(43, 137), sample(42, 137));
 });
@@ -597,24 +597,24 @@ test('Borda: a cena padrão passa na mesma varredura do registro genérico (fram
 test('Borda: o halo sai da borda externa para o bleed, só em volta de uma janela', () => {
   const size = getSize('webcam-16x9');
   const props = parse({...sizeProps(size), corners: 'nenhum', halo: 24});
-  const {layout, totalThickness} = getBordaGeometry(props);
+  const {layout, totalThickness} = getBorderGeometry(props);
   assert.equal(layout.outset, totalThickness + 24);
   const markup = render(props, 60);
   // Blurred from the frame's outer edge and masked out of it, so nothing of it lands on the band or the window.
   assert.ok(markup.includes(`d="${roundRectPath(layout.outer)}" fill="#000000"`), 'o halo é mascarado fora da moldura');
-  assert.equal(getBordaSceneParts(props, 60, 480).halo.length, 1);
+  assert.equal(getBorderSceneParts(props, 60, 480).halo.length, 1);
   // Beyond the bleed it is refused with the bleed that holds it, which is accepted.
   const wide = {...sizeProps(size), corners: 'nenhum', halo: 40};
-  const issues = bordaLoopSchema.safeParse(wide).error!.issues;
+  const issues = borderLoopSchema.safeParse(wide).error!.issues;
   assert.deepEqual(issues.map((issue) => issue.message), [`The glow goes past the margin: use bleed ≥ ${totalThickness + 40} or reduce the glow.`]);
-  assert.equal(bordaLoopSchema.safeParse({...wide, bleed: totalThickness + 40}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...wide, bleed: totalThickness + 40}).success, true);
   // A screen frame has no bleed to spread into: no halo, nothing outside the box.
   const screen = parse({...sizeProps(getSize('tela-cheia')), halo: 24});
-  assert.deepEqual(getBordaSceneParts(screen, 60, 480).halo, []);
-  assert.equal(getBordaLayout(screen).outset, 0);
+  assert.deepEqual(getBorderSceneParts(screen, 60, 480).halo, []);
+  assert.equal(getBorderLayout(screen).outset, 0);
   // Every preset's halo fits every window size (the presets test parses them all).
   for (const theme of THEMES) {
     const themed = parse({...presetOf(theme), ...sizeProps(size)});
-    assert.ok(getBordaLayout(themed).outset <= size.bleed, theme);
+    assert.ok(getBorderLayout(themed).outset <= size.bleed, theme);
   }
 });

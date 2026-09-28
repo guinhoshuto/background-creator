@@ -6,8 +6,8 @@ import {
   FLASH_BAND_PEAK, FlashLayer, OrnamentLayer, type FlashClip,
 } from '../shared';
 import {
-  bandCoversCorners, bordaLoopSchema, getBordaLayout, getBordaMask, getBordaMaskElement, getBordaMotion, getBordaSceneParts, type BordaGeometry,
-  type BordaLoopProps, type CornerElement,
+  bandCoversCorners, borderLoopSchema, getBorderLayout, getBorderMask, getBorderMaskElement, getBorderMotion, getBorderSceneParts, type BorderGeometry,
+  type BorderLoopProps, type CornerElement,
 } from './scene';
 
 /** A diamond centred on (x, y), `half` px from the centre to each tip. */
@@ -45,7 +45,7 @@ const renderCorner = (element: CornerElement, key: number, tracks: readonly Roun
  * would only make most of the round band opaque. The band itself stays as translucent as the fill asks.
  */
 const BandFillLayer = ({elements, geometry, matte}: {
-  elements: readonly FillElement[]; geometry: BordaGeometry; matte: string;
+  elements: readonly FillElement[]; geometry: BorderGeometry; matte: string;
 }) => {
   const {idPrefix} = useStage();
   const id = `${idPrefix}-band`;
@@ -67,9 +67,9 @@ const BandFillLayer = ({elements, geometry, matte}: {
 };
 
 /** The OBS mask: the window in opaque white on transparency, the file as big as the camera. */
-const BordaMaskFrame = ({props}: {props: BordaLoopProps}) => {
-  const layout = getBordaLayout(props);
-  const window = getBordaMaskElement(props);
+const BorderMaskFrame = ({props}: {props: BorderLoopProps}) => {
+  const layout = getBorderLayout(props);
+  const window = getBorderMaskElement(props);
   return (
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
       guides={props.guides} idPrefix="border-mascara">
@@ -79,11 +79,11 @@ const BordaMaskFrame = ({props}: {props: BordaLoopProps}) => {
 };
 
 /** One frame of the border; pure, so the tests can render it with renderToStaticMarkup. */
-export const BordaFrame = ({props, frame, durationInFrames}: {
-  props: BordaLoopProps; frame: number; durationInFrames: number;
+export const BorderFrame = ({props, frame, durationInFrames}: {
+  props: BorderLoopProps; frame: number; durationInFrames: number;
 }) => {
-  if (props.mascara) return <BordaMaskFrame props={props} />;
-  const {geometry, halo, ornamentBack, fill, rim, stroke, corners, glow, ornamentFront, flash} = getBordaSceneParts(props, frame, durationInFrames);
+  if (props.mascara) return <BorderMaskFrame props={props} />;
+  const {geometry, halo, ornamentBack, fill, rim, stroke, corners, glow, ornamentFront, flash} = getBorderSceneParts(props, frame, durationInFrames);
   const layout: FrameLayout = geometry.layout;
   // The flash washes the band (and on a screen the file's corners outside it), like the band's fill.
   const flashClips: FlashClip[] = [
@@ -110,20 +110,20 @@ export const BordaFrame = ({props, frame, durationInFrames}: {
   );
 };
 
-export const BorderLoop = (props: BordaLoopProps) => {
+export const BorderLoop = (props: BorderLoopProps) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
-  return <BordaFrame props={props} frame={frame} durationInFrames={durationInFrames} />;
+  return <BorderFrame props={props} frame={frame} durationInFrames={durationInFrames} />;
 };
 
 /** The catalog entry the integrator registers (kind 'border', Studio folder 'borders'). */
-export const bordaCatalogEntry = {
+export const borderCatalogEntry = {
   id: 'BorderLoop',
   kind: 'border',
   component: BorderLoop,
-  schema: bordaLoopSchema,
-  defaultProps: bordaLoopSchema.parse({}),
-  getLayout: getBordaLayout,
-  getMotion: getBordaMotion,
-  getMask: getBordaMask,
+  schema: borderLoopSchema,
+  defaultProps: borderLoopSchema.parse({}),
+  getLayout: getBorderLayout,
+  getMotion: getBorderMotion,
+  getMask: getBorderMask,
 } as const;

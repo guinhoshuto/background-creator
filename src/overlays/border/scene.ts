@@ -29,7 +29,7 @@ const ROUND_SIZES = 'webcam-redonda-p, webcam-redonda or webcam-redonda-g';
 
 export const CORNER_STYLES = ['nenhum', 'colchetes', 'joias'] as const;
 
-const bordaFields = z.object({
+const borderFields = z.object({
   ...overlayBaseFields({width: SIZE.width, height: SIZE.height, bleed: SIZE.bleed}),
   // MP4 and GIF composite over this colour, the window included: a dark violet suits the neon look.
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#0B0620'),
@@ -82,7 +82,7 @@ const bordaFields = z.object({
   ...ornamentFields(),
 });
 
-export type BordaLoopProps = z.infer<typeof bordaFields>;
+export type BorderLoopProps = z.infer<typeof borderFields>;
 
 /** The shared engine's name for each track index a border draws on. */
 export const TRACK_MAIN = 0;
@@ -92,7 +92,7 @@ export const TRACK_BRACKETS = 2;
 /** Corners in the order the arc length meets them: top-right, bottom-right, bottom-left, top-left. */
 const CORNER_SIGNS = [[1, -1], [1, 1], [-1, 1], [-1, -1]] as const;
 
-export type BordaGeometry = {
+export type BorderGeometry = {
   /** The shared frame layout; its outset also holds the corner ornaments. */
   layout: FrameLayout;
   /** Band, gap and second line together: what layoutFrame lays out. */
@@ -147,7 +147,7 @@ const cornerPoint = (track: RoundRect, index: number) => {
  * a ring). Gems sit on the band's corners, moved along the diagonal just enough never to touch the
  * hole (nor, on a screen, to leave the file).
  */
-export const getBordaGeometry = (props: BordaLoopProps): BordaGeometry => {
+export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
   const second = props.lines === 2 ? props.lineGap + props.outerLineWidth : 0;
   const totalThickness = props.thickness + second;
   const base = layoutFrame({
@@ -230,13 +230,13 @@ export const getBordaGeometry = (props: BordaLoopProps): BordaGeometry => {
  * webcam) the camera's corners stick out of the band whatever is painted, and the window's mask
  * (mascara) is what rounds it; a matte would only turn most of a round band opaque.
  */
-export const bandCoversCorners = ({band, layout}: Pick<BordaGeometry, 'band' | 'layout'>) =>
+export const bandCoversCorners = ({band, layout}: Pick<BorderGeometry, 'band' | 'layout'>) =>
   layout.fit === 'janela' && roundRectSdf(band, layout.box.x, layout.box.y) <= 1e-9;
 
 /** The engine's cap on sparkles for a fill whose whole area shows (a panel). */
 const PANEL_SPARKS = 400;
 /** However large the frame, a border never lists more sparkles than this (tens of thousands would slow every frame). */
-const MAX_BORDA_SPARKS = 6000;
+const MAX_BORDER_SPARKS = 6000;
 
 const roundRectArea = (shape: RoundRect) => {
   const r = clampRadius(shape.radius, shape.width, shape.height);
@@ -251,13 +251,13 @@ const roundRectArea = (shape: RoundRect) => {
  * (embers rise across the whole box, so all of them can). Around a window only the band shows (a
  * round window's box corners lie beyond it, clipped away); on a screen, the file's corners too.
  */
-export const bordaFillOptions = (geometry: BordaGeometry): FillOptions => {
+export const borderFillOptions = (geometry: BorderGeometry): FillOptions => {
   const {band, fillArea, layout} = geometry;
   const painted = Math.max(1, roundRectArea(band) - roundRectArea(layout.window));
   const hidden = (fillArea.width * fillArea.height) / painted;
   const box = {...layout.box, radius: 0};
   return {
-    maxSparks: Math.min(MAX_BORDA_SPARKS, Math.ceil(PANEL_SPARKS * Math.max(1, hidden))),
+    maxSparks: Math.min(MAX_BORDER_SPARKS, Math.ceil(PANEL_SPARKS * Math.max(1, hidden))),
     keepSpark: (x, y, reach) => roundRectSdf(layout.window, x, y) >= -reach
       && (roundRectSdf(band, x, y) <= reach || (layout.fit === 'tela' && roundRectSdf(box, x, y) <= reach)),
   };
@@ -273,9 +273,9 @@ export type MaskWindowElement = {
 };
 
 /** The window a mask cuts out: the box at (0, 0) with the clamped radius (a disc for a circle). */
-const maskWindow = (props: BordaLoopProps) => roundRect(getBoxCanvas(props).box, shapeRadius(props));
+const maskWindow = (props: BorderLoopProps) => roundRect(getBoxCanvas(props).box, shapeRadius(props));
 
-export const getBordaMaskElement = (props: BordaLoopProps): MaskWindowElement => {
+export const getBorderMaskElement = (props: BorderLoopProps): MaskWindowElement => {
   const window = maskWindow(props);
   return {
     type: 'mask-window', x: window.x, y: window.y, width: window.width, height: window.height, corner: window.radius,
@@ -290,7 +290,7 @@ export const getBordaMaskElement = (props: BordaLoopProps): MaskWindowElement =>
  * shape travels with it so the mask is named after its own size: a round webcam's white disc is
  * not the square webcam's mask, though both are 400×400.
  */
-export const getBordaMask = (props: BordaLoopProps): Record<string, unknown> | null => {
+export const getBorderMask = (props: BorderLoopProps): Record<string, unknown> | null => {
   if (props.fit !== 'janela' || props.mascara) return null;
   return {
     width: props.width, height: props.height, shape: props.shape, radius: maskWindow(props).radius, fit: 'janela',
@@ -299,23 +299,23 @@ export const getBordaMask = (props: BordaLoopProps): Record<string, unknown> | n
 };
 
 /** The speeds the border actually shows along its main line and over its band (see AssetMotion). */
-export const getBordaMotion = (props: BordaLoopProps): AssetMotion => {
+export const getBorderMotion = (props: BorderLoopProps): AssetMotion => {
   if (props.mascara) return {strokeSpeed: 0, fillSpeed: 0};
-  const geometry = getBordaGeometry(props);
+  const geometry = getBorderGeometry(props);
   return {
     strokeSpeed: reportSpeed(getStrokeMotion(props, geometry.tracks[TRACK_MAIN]).speed),
-    fillSpeed: reportSpeed(getFillMotion(props, geometry.fillArea, bordaFillOptions(geometry)).speed),
+    fillSpeed: reportSpeed(getFillMotion(props, geometry.fillArea, borderFillOptions(geometry)).speed),
   };
 };
 
 /** The pure layout the exporter's sidecar and the Studio's metadata read. */
-export const getBordaLayout = (props: BordaLoopProps): AssetLayout => {
+export const getBorderLayout = (props: BorderLoopProps): AssetLayout => {
   if (props.mascara) {
     // The file is the window itself; there is no hole to keep empty, the window is what is drawn.
     const {canvas, box} = getBoxCanvas(props);
     return {canvas, box, content: {...box}, outset: 0};
   }
-  const {canvas, box, content, hole, outset} = getBordaGeometry(props).layout;
+  const {canvas, box, content, hole, outset} = getBorderGeometry(props).layout;
   return {canvas, box, content, hole, outset};
 };
 
@@ -323,7 +323,7 @@ export const getBordaLayout = (props: BordaLoopProps): AssetLayout => {
  * Whatever is drawn beyond the box must fit in the bleed ('janela'), and on a screen the corner
  * ornaments must stay between the hole and the file's edge ('tela'); refused with the way out.
  */
-const refineReach = (props: BordaLoopProps, geometry: BordaGeometry, context: z.RefinementCtx) => {
+const refineReach = (props: BorderLoopProps, geometry: BorderGeometry, context: z.RefinementCtx) => {
   if (props.fit === 'janela') {
     const frameOutset = geometry.totalThickness + Math.max(props.glow, props.halo);
     // The band and its glow come first, with the shared message; it names the bleed that holds
@@ -374,7 +374,7 @@ const secondMotion = (motion: StrokeMotionName): StrokeMotionName =>
  * and transparency. The frame's own refusals (glow, corners, speeds) do not apply: none of it is
  * drawn.
  */
-const refineMask = (props: BordaLoopProps, context: z.RefinementCtx) => {
+const refineMask = (props: BorderLoopProps, context: z.RefinementCtx) => {
   const issue = (path: string, message: string) => context.addIssue({code: 'custom', path: [path], message});
   if (props.fit !== 'janela') issue('fit', 'The mask only applies to fit janela: in a screen frame the window fills the whole screen and needs no mask.');
   if (props.bleed !== 0) issue('bleed', 'In the mask the file is the window itself, the size of the camera: use bleed 0 (with --size, add --bleed 0).');
@@ -382,7 +382,7 @@ const refineMask = (props: BordaLoopProps, context: z.RefinementCtx) => {
   if (!props.transparent) issue('transparent', 'The mask needs a transparent background: use transparent true.');
 };
 
-export const bordaLoopSchema = bordaFields.superRefine((props, context) => {
+export const borderLoopSchema = borderFields.superRefine((props, context) => {
   refineCanvas(props, context);
   // A full-screen frame follows the screen, which is a rectangle: a round window is a camera's.
   // Checked before the square box, so a round screen frame is not first sent to square its box
@@ -418,14 +418,14 @@ export const bordaLoopSchema = bordaFields.superRefine((props, context) => {
     });
     return;
   }
-  const geometry = getBordaGeometry(props);
+  const geometry = getBorderGeometry(props);
   if (props.fit === 'tela') refineHole(geometry.layout, context);
   refineReach(props, geometry, context);
   // Only the main line is checked: the second line is an outward offset of it, so it is longer,
   // travels no more colour periods per cycle and covers no larger share of one per frame. Checking
   // it too would only add a second refusal whose suggested speed the main line still refuses.
   refineStroke(props, geometry.tracks[TRACK_MAIN], context);
-  refineFill(props, geometry.fillArea, context, bordaFillOptions(geometry));
+  refineFill(props, geometry.fillArea, context, borderFillOptions(geometry));
   refineLightning(props, context);
   refineOrnaments(geometry.ornamentLayout, props, context);
 }, {when: (payload) => payload.issues.length === 0});
@@ -445,7 +445,7 @@ export type CornerElement = BracketElement | GemElement;
  * a gem's size) breathes, `cornerPulses` whole times per cycle, one corner after the other.
  */
 export const buildCornerScene = (
-  props: BordaLoopProps, geometry: BordaGeometry, frame: number, durationInFrames: number,
+  props: BorderLoopProps, geometry: BorderGeometry, frame: number, durationInFrames: number,
 ): CornerElement[] => {
   if (props.corners === 'nenhum') return [];
   const cycle = cycleOf(frame, durationInFrames);
@@ -466,8 +466,8 @@ export const buildCornerScene = (
   }));
 };
 
-export type BordaSceneParts = {
-  geometry: BordaGeometry;
+export type BorderSceneParts = {
+  geometry: BorderGeometry;
   halo: HaloElement[];
   /** Ornaments tucked under the band (see OrnamentLayer). */
   ornamentBack: OrnamentElement[];
@@ -485,15 +485,15 @@ export type BordaSceneParts = {
  * What the second line of a double line takes from the main one: its colour repeats and its laps
  * (see StrokeOptions), so the two flow in step.
  */
-export const secondLineOptions = (props: BordaLoopProps, geometry: BordaGeometry): StrokeOptions => {
+export const secondLineOptions = (props: BorderLoopProps, geometry: BorderGeometry): StrokeOptions => {
   const main = geometry.tracks[TRACK_MAIN];
   return {colorRepeats: colorRepeatsOf(props, main), laps: getStrokeMotion(props, main).laps};
 };
 
-/** The scene split by layer, for the component; getBordaScene flattens it for the scans. */
-export const getBordaSceneParts = (props: BordaLoopProps, frame: number, durationInFrames: number): BordaSceneParts => {
-  const geometry = getBordaGeometry(props);
-  const fill = buildFillScene(props, geometry.fillArea, frame, durationInFrames, bordaFillOptions(geometry));
+/** The scene split by layer, for the component; getBorderScene flattens it for the scans. */
+export const getBorderSceneParts = (props: BorderLoopProps, frame: number, durationInFrames: number): BorderSceneParts => {
+  const geometry = getBorderGeometry(props);
+  const fill = buildFillScene(props, geometry.fillArea, frame, durationInFrames, borderFillOptions(geometry));
   const main = buildStrokeScene(props, geometry.tracks[TRACK_MAIN], frame, durationInFrames, {
     track: TRACK_MAIN, trackOpacity: props.trackOpacity,
   });
@@ -528,8 +528,8 @@ export const getBordaSceneParts = (props: BordaLoopProps, frame: number, duratio
  * lightning flash. Pure: the frame, the props and the seed decide it all; nothing jumps
  * at the seam, so no field needs an exemption. A mask is its single still window.
  */
-export const getBordaScene = (props: BordaLoopProps, frame: number, durationInFrames: number) => {
-  if (props.mascara) return [getBordaMaskElement(props)];
-  const {halo, ornamentBack, fill, rim, stroke, corners, glow, ornamentFront, flash} = getBordaSceneParts(props, frame, durationInFrames);
+export const getBorderScene = (props: BorderLoopProps, frame: number, durationInFrames: number) => {
+  if (props.mascara) return [getBorderMaskElement(props)];
+  const {halo, ornamentBack, fill, rim, stroke, corners, glow, ornamentFront, flash} = getBorderSceneParts(props, frame, durationInFrames);
   return [...halo, ...ornamentBack, ...fill, ...rim, ...stroke, ...corners, ...glow, ...ornamentFront, ...flash];
 };

@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {getHauntedInteriorScene, hauntedInteriorLoopSchema} from '../src/backgrounds/HauntedInteriorLoop';
 import {flamePathOf} from '../src/backgrounds/halloween/hauntedInteriorGeometry';
-import {getBordaGeometry} from '../src/overlays/border';
+import {getBorderGeometry} from '../src/overlays/border';
 import {
   cornerSlot, harmonics, rectDistance, roomAt, roundRectSdf, type OrnamentElement, type OrnamentFrame, type OrnamentPlacement,
 } from '../src/overlays/shared';
@@ -524,7 +524,7 @@ test('ornaments interior: tela em qualquer raio e espessura nunca recusa, e as p
     const size = getSize(id);
     for (const extra of [{}, {radius: 0}, {radius: 16}, {radius: 96}, {radius: 200}, {radius: 300}, {thickness: 20}, {thickness: 32, radius: 0}, {thickness: 22, glow: 20}, {glow: 24}]) {
       const {props, frame, placements} = kitLayout(size, extra);
-      const {window} = getBordaGeometry(props as never).layout;
+      const {window} = getBorderGeometry(props as never).layout;
       for (const placement of placements.filter((entry) => entry.motif.endsWith('-pe') || entry.motif === SWAG_MOTIF)) {
         for (const point of drawnOf(frame, placement)) {
           assert.ok(roundRectSdf(window, point.x, point.y) - point.margin >= 1 - 1e-6, `${id} ${JSON.stringify(extra)} ${placement.motif}@${placement.slot}: fora da imagem`);

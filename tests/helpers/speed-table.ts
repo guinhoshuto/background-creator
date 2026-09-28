@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
-import {blocoLoopSchema, getBlocoLayout, getBlocoMotion} from '../../src/overlays/block';
+import {blockLoopSchema, getBlockLayout, getBlockMotion} from '../../src/overlays/block';
 import {
-  TRACK_MAIN, TRACK_SECOND, bordaFillOptions, bordaLoopSchema, getBordaGeometry, getBordaMotion,
+  TRACK_MAIN, TRACK_SECOND, borderFillOptions, borderLoopSchema, getBorderGeometry, getBorderMotion,
 } from '../../src/overlays/border';
 import {chatLoopSchema, getChatLayout, getChatMotion} from '../../src/overlays/chat';
 import {
@@ -61,20 +61,20 @@ const ADAPTERS: Record<(typeof SPEED_KINDS)[number], KindAdapter> = {
     motion: (props) => getChatMotion(props as never),
   },
   block: {
-    parse: (input) => blocoLoopSchema.strict().parse(input) as unknown as Parsed,
-    track: (props) => getBlocoLayout(props as never).track,
-    fillArea: (props) => ({area: getBlocoLayout(props as never).box, options: {}}),
-    motion: (props) => getBlocoMotion(props as never),
+    parse: (input) => blockLoopSchema.strict().parse(input) as unknown as Parsed,
+    track: (props) => getBlockLayout(props as never).track,
+    fillArea: (props) => ({area: getBlockLayout(props as never).box, options: {}}),
+    motion: (props) => getBlockMotion(props as never),
   },
   border: {
-    parse: (input) => bordaLoopSchema.strict().parse(input) as unknown as Parsed,
-    track: (props) => getBordaGeometry(props as never).tracks[TRACK_MAIN],
-    secondTrack: (props) => (props.lines === 2 ? getBordaGeometry(props as never).tracks[TRACK_SECOND] : null),
+    parse: (input) => borderLoopSchema.strict().parse(input) as unknown as Parsed,
+    track: (props) => getBorderGeometry(props as never).tracks[TRACK_MAIN],
+    secondTrack: (props) => (props.lines === 2 ? getBorderGeometry(props as never).tracks[TRACK_SECOND] : null),
     fillArea: (props) => {
-      const geometry = getBordaGeometry(props as never);
-      return {area: geometry.fillArea, options: bordaFillOptions(geometry)};
+      const geometry = getBorderGeometry(props as never);
+      return {area: geometry.fillArea, options: borderFillOptions(geometry)};
     },
-    motion: (props) => getBordaMotion(props as never),
+    motion: (props) => getBorderMotion(props as never),
   },
 };
 
