@@ -10,6 +10,7 @@ import {
 } from '../scripts/pack-plan';
 import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
 import {getBoxCanvas} from '../src/overlays/shared/box';
+import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {KIT_THEMES, OVERLAY_THEMES, expectedPackFiles} from './helpers/themes';
 
@@ -509,7 +510,7 @@ test('packs: cada kit de Halloween traz o seu fundo e os presets seguem a duraç
     assert.equal(pack.title, title, theme);
     assert.deepEqual(pack.items.filter((item) => item.sizes === undefined).map((item) => [item.composition, item.preset]), [[composition, preset]], theme);
     const background = getAsset(composition).schema.parse(presetJson(preset)) as {durationSeconds: number; seed: number};
-    for (const kind of ['chat', 'bloco', 'borda']) {
+    for (const kind of ['chat', 'bloco', 'borda'] as const satisfies readonly AssetKind[]) {
       const overlay = presetJson(`${kind}-${theme}`);
       assert.deepEqual([overlay.durationSeconds, overlay.seed], [background.durationSeconds, background.seed], `${kind}-${theme}`);
     }
@@ -519,7 +520,7 @@ test('packs: cada kit de Halloween traz o seu fundo e os presets seguem a duraç
 test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do tema', () => {
   // Every theme's pack, exactly.
   assert.deepEqual(readdirSync(path.join(root, 'packs')).filter((file) => file.endsWith('.json')).sort(), expectedPackFiles());
-  const ids = (kind: string) => sizesForKind(kind).map((size) => size.id);
+  const ids = (kind: AssetKind) => sizesForKind(kind).map((size) => size.id);
   const screens = new Set(sizesForKind('borda').filter((size) => size.props?.fit === 'tela').map((size) => size.id));
   for (const name of PACKS) {
     const pack = packManifestSchema.parse(readPack(name));
@@ -547,7 +548,7 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     const plain = pack.items.filter((item) => item.variant !== undefined);
     assert.ok(plain.every((item) => item.variant === 'sem-enfeites'), name);
     if (kit) {
-      for (const kind of ['chat', 'bloco', 'borda']) {
+      for (const kind of ['chat', 'bloco', 'borda'] as const) {
         const items = byPreset(`${kind}-${name}`, 'sem-enfeites');
         assert.deepEqual(items.flatMap((item) => item.sizes).sort(), ids(kind).sort(), `${name}: ${kind} sem enfeites`);
         for (const item of items) assert.deepEqual(item.props, {ornaments: 'nenhum'}, `${name}: ${kind} sem enfeites`);

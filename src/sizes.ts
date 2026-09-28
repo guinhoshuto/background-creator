@@ -1,4 +1,4 @@
-import type {OverlayKind} from './kinds';
+import type {AssetKind, OverlayKind} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
 import type {PanelShape} from './overlays/shared/shape';
 import type {OutputFormat} from './settings';
@@ -73,7 +73,7 @@ export const getSize = (id: string): NamedSize => {
   return size;
 };
 
-export const sizesForKind = (kind: string): NamedSize[] => NAMED_SIZES.filter((size) => size.kind === kind);
+export const sizesForKind = (kind: AssetKind): NamedSize[] => NAMED_SIZES.filter((size) => size.kind === kind);
 
 /** The file size: the box centred inside a transparent bleed on every side. */
 export const canvasOf = (size: Pick<NamedSize, 'width' | 'height' | 'bleed'>) => getBoxCanvas(size).canvas;
@@ -89,7 +89,7 @@ type SizedProps = {width?: unknown; height?: unknown; bleed?: unknown} & Record<
  * The named size these props describe exactly (box, bleed, fit and shape), if any. A border's
  * window mask (`mascara`) is the window alone, without the bleed, so it matches its size by the box.
  */
-export const matchNamedSize = (kind: string, props: SizedProps): NamedSize | undefined =>
+export const matchNamedSize = (kind: AssetKind, props: SizedProps): NamedSize | undefined =>
   sizesForKind(kind).find((size) =>
     props.width === size.width && props.height === size.height && (props.bleed === size.bleed || props.mascara === true)
     // A window-sized border drawn as a full-screen frame is a different product; fit defaults to the window.
@@ -101,7 +101,7 @@ export const matchNamedSize = (kind: string, props: SizedProps): NamedSize | und
  * File-name tag: the named size id, or the box as <W>x<H> for free sizes, followed by -circulo for
  * a round one, so a free circle never takes the name of the square of the same box.
  */
-export const sizeTag = (kind: string, props: SizedProps): string => {
+export const sizeTag = (kind: AssetKind, props: SizedProps): string => {
   const named = matchNamedSize(kind, props);
   if (named) return named.id;
   if (typeof props.width !== 'number' || typeof props.height !== 'number') {
@@ -114,10 +114,10 @@ export const sizeTag = (kind: string, props: SizedProps): string => {
  * The file name without extension: Remotion's `defaultOutName` appends the extension itself. A
  * window mask is tagged after its size: `BordaLoop-webcam-16x9-mascara`.
  */
-export const assetFileStem = ({id, kind, props}: {id: string; kind: string; props: SizedProps}) =>
+export const assetFileStem = ({id, kind, props}: {id: string; kind: AssetKind; props: SizedProps}) =>
   (kind === 'background' ? id : `${id}-${sizeTag(kind, props)}${props.mascara === true ? '-mascara' : ''}`);
 
 /** Backgrounds keep <Id>.<ext>; sized kinds carry the size: <Id>-<sizeId|WxH>.<ext>. */
 export const assetFileName = ({id, kind, props, format}: {
-  id: string; kind: string; props: SizedProps; format: OutputFormat;
+  id: string; kind: AssetKind; props: SizedProps; format: OutputFormat;
 }) => `${assetFileStem({id, kind, props})}.${format}`;
