@@ -23,8 +23,8 @@ export type OrnamentSetId = Exclude<OrnamentChoice, 'nenhum'>;
 export const ORNAMENT_SET_IDS = ORNAMENT_CHOICES.filter((choice): choice is OrnamentSetId => choice !== 'nenhum');
 
 export type OrnamentKind = 'chat' | 'block' | 'border';
-/** 'painel': chat and block; 'janela' and 'tela': the border's fits. */
-export type OrnamentFit = 'painel' | 'janela' | 'tela';
+/** 'panel': chat and block; 'window' and 'screen': the border's fits. */
+export type OrnamentFit = 'panel' | 'window' | 'screen';
 export type OrnamentLayerName = 'back' | 'front';
 
 /**
@@ -47,10 +47,10 @@ export type OrnamentFrame = {
   hole: RoundRect | null;
   /** Text areas front motifs keep clear of (chat: messages and title; block: text; border: none). */
   keepOut: readonly Rect[];
-  /** Nothing may be drawn past it: the canvas (panels, janela), the box on tela. */
+  /** Nothing may be drawn past it: the canvas (panels, window), the box on screen. */
   paintLimit: Rect;
   /**
-   * What hides the back layer: the panel; a border's outer edge (janela and tela alike, so back
+   * What hides the back layer: the panel; a border's outer edge (window and screen alike, so back
    * motifs tuck under the band and never show in the window nor in its glow margin, the part of
    * the window outside `hole`). Every frame uses 'nonzero' today; 'evenodd' stays for a cover
    * with a cut-out.

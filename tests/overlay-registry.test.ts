@@ -29,7 +29,7 @@ const presetsDir = new URL('../presets/', import.meta.url);
 const readPreset = (file: string): Record<string, unknown> =>
   JSON.parse(readFileSync(new URL(file, presetsDir), 'utf8')) as Record<string, unknown>;
 
-/** A named size as props: the size id alone must yield a valid file (painel-twitch turns glow and halo off itself). */
+/** A named size as props: the size id alone must yield a valid file (twitch-panel turns glow and halo off itself). */
 const sizePatch = sizeProps;
 
 test('overlays: o catálogo registra chat, bloco e borda com layout e o tipo de cada um', () => {

@@ -7,16 +7,16 @@ import {ORNAMENT_KINDS, type OrnamentKindName} from './helpers/ornament-kinds';
 /**
  * ornamentScale: every motif grows by s together. The set is placed on the kind's frame shrunk by
  * 1/s and drawn scaled by s, so each motif stays in its room of the real frame (the harness checks
- * the whole contract on the kits' scaled pack items, jogo and webcam-16x9-g); these tests pin the
+ * the whole contract on the kits' scaled pack items, gameplay and webcam-16x9-lg); these tests pin the
  * mechanism itself.
  */
 
 /** [size, the wider bleed that gives the scaled motifs room, scale]. */
 const CASES: [string, number, number][] = [
-  ['chat-padrao', 64, 2],
-  ['cartao', 48, 1.5],
-  ['webcam-16x9-g', 72, 1.5],
-  ['jogo', 96, 2],
+  ['chat-standard', 64, 2],
+  ['card', 48, 1.5],
+  ['webcam-16x9-lg', 72, 1.5],
+  ['gameplay', 96, 2],
 ];
 
 const inputOf = (set: string, id: string, extra: Record<string, unknown>) => {

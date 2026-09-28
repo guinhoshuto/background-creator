@@ -74,7 +74,7 @@ test('teia: quais motivos cada tamanho mantém', () => {
       assert.ok(quiet.size <= (even ? 1 : TEIA_QUIET_RATIO) * hero + 1e-9 && quiet.size >= TEIA_COUNTER_MIN - 1e-9, id);
     }
     if (kept.has('teia-contrapeso')) assert.ok(radius('teia-contrapeso') >= TEIA_COUNTER_MIN - 1e-9, `${id}: contrapeso legível`);
-    if (size.id === 'painel-twitch') {
+    if (size.id === 'twitch-panel') {
       // No glow: no soft light, no spider (crisp). The counterweight only where its room reaches
       // TEIA_COUNTER_MIN (not at the default padding: the kit's block padding brings it back).
       const want = TEIA_COUNTER_RATIO * hero >= TEIA_COUNTER_MIN ? ['teia', 'teia-contrapeso'] : ['teia'];
@@ -85,7 +85,7 @@ test('teia: quais motivos cada tamanho mantém', () => {
     assert.ok(kept.has('luar') && kept.has('brasa'), `${id}: luar e brasa`);
     // The spider hangs beside a panel, or sits in a border's (or a screen's) corner pocket.
     // (A screen's corner pocket holds it only with a larger radius, as the kit's pack gives it.)
-    assert.ok(kept.has('aranha') || frame.fit === 'tela', `${id}: a aranha`);
+    assert.ok(kept.has('aranha') || frame.fit === 'screen', `${id}: a aranha`);
     const spider = placements.find((placement) => placement.motif === 'aranha');
     if (spider) assert.ok(spider.size >= SPIDER_MIN_SCALE - 1e-9 && spider.layer === 'front', id);
     // Chat and blocks keep the background's diagonal pair; a border frames all four corners.
@@ -100,8 +100,8 @@ test('teia: quais motivos cada tamanho mantém', () => {
     const size = getSize(id);
     return layoutOf(ORNAMENT_KINDS[size.kind as 'chat'], size, {ornamentSize}).placements[0]!.size;
   };
-  for (const id of ['circulo', 'circulo-g', 'webcam-redonda', 'webcam-redonda-g']) assert.equal(heroAt(id, 64), 64, id);
-  for (const [id, least] of [['chat-padrao', 44], ['etiqueta-p', 40], ['cartao', 50], ['webcam-16x9', 50], ['painel-twitch', 13], ['tela-cheia', 20]] as const) {
+  for (const id of ['circle', 'circle-lg', 'webcam-round', 'webcam-round-lg']) assert.equal(heroAt(id, 64), 64, id);
+  for (const [id, least] of [['chat-standard', 44], ['label-sm', 40], ['card', 50], ['webcam-16x9', 50], ['twitch-panel', 13], ['fullscreen', 20]] as const) {
     assert.ok(heroAt(id, 64) >= least, `${id}: ${heroAt(id, 64)} ≥ ${least}`);
   }
 });
@@ -146,8 +146,8 @@ const cellsAt = (pieces: readonly Piece[], x: number, y: number) => pieces.filte
 
 test('teia: cada peça da teia segura toda a parte do envelope na sua célula (e as células não se sobrepõem)', () => {
   const cases: [string, number][] = [
-    ['chat-padrao', 58], ['chat-padrao', 12], ['etiqueta-p', 256], ['faixa', 58], ['circulo-p', 58], ['circulo-g', 256],
-    ['painel-twitch', 58], ['webcam-16x9', 58], ['webcam-redonda-g', 256], ['jogo', 58], ['tela-vertical', 58],
+    ['chat-standard', 58], ['chat-standard', 12], ['label-sm', 256], ['lower-third', 58], ['circle-sm', 58], ['circle-lg', 256],
+    ['twitch-panel', 58], ['webcam-16x9', 58], ['webcam-round-lg', 256], ['gameplay', 58], ['fullscreen-vertical', 58],
   ];
   for (const [id, ornamentSize] of cases) {
     const size = getSize(id);
@@ -206,7 +206,7 @@ test('teia: tudo o que a teia desenha cabe no envelope (FAN_MARGIN), em qualquer
 });
 
 test('teia: o frame 0 é a pose principal (teia acesa, faixa de luar sobre o leque, aranha em repouso)', () => {
-  for (const id of ['chat-padrao', 'cartao', 'circulo-g', 'webcam-16x9', 'webcam-redonda', 'tela-cheia']) {
+  for (const id of ['chat-standard', 'card', 'circle-lg', 'webcam-16x9', 'webcam-round', 'fullscreen']) {
     const size = getSize(id);
     const adapter = ORNAMENT_KINDS[size.kind as 'chat'];
     for (let seed = 1; seed <= 40; seed++) {
@@ -237,7 +237,7 @@ test('teia: o frame 0 é a pose principal (teia acesa, faixa de luar sobre o leq
 });
 
 test('teia: harmônicos inteiros do ciclo (3,7 s, 8 s e 12,25 s), sem salto na emenda, com a queda da aranha', () => {
-  for (const id of ['chat-padrao', 'circulo-g', 'webcam-redonda-p', 'jogo', 'tela-cheia', 'painel-twitch']) {
+  for (const id of ['chat-standard', 'circle-lg', 'webcam-round-sm', 'gameplay', 'fullscreen', 'twitch-panel']) {
     const size = getSize(id);
     const adapter = ORNAMENT_KINDS[size.kind as 'chat'];
     const base = {...BASE, ...KIT[adapter.kind], ...sizeProps(size), ornamentSize: 58};
@@ -252,7 +252,7 @@ test('teia: harmônicos inteiros do ciclo (3,7 s, 8 s e 12,25 s), sem salto na e
 });
 
 test('teia: a queda da aranha é a do fundo (spiderTimeline), uma por ciclo, parada na emenda (3, 12, 18 e 30 s)', () => {
-  const size = getSize('circulo-g');
+  const size = getSize('circle-lg');
   const adapter = ORNAMENT_KINDS.block;
   for (const durationSeconds of [3, 12, 18, 30]) {
     const {props, frame, placements} = layoutOf(adapter, size, {ornamentSize: 58, durationSeconds});
@@ -291,7 +291,7 @@ test('teia: constantes tiradas do fundo e paleta prata (âmbar só na ampulheta 
   assert.ok(TEIA_EMBER.opacity + TEIA_EMBER.swing <= 0.15 + 1e-9, 'brasa suave (≤ 0,15)');
   assert.ok(TEIA_MOON.opacity + TEIA_MOON.swing <= 0.2 + 1e-9, 'luar abaixo do teto sobre o texto');
   const warm = '#E8963C';
-  for (const id of ['chat-padrao', 'webcam-16x9', 'circulo']) {
+  for (const id of ['chat-standard', 'webcam-16x9', 'circle']) {
     const size = getSize(id);
     const adapter = ORNAMENT_KINDS[size.kind as 'chat'];
     const {props, frame, placements} = layoutOf(adapter, size, {ornamentSize: 58});
@@ -354,7 +354,7 @@ test('teia: os refactors do fundo são só opcionais (padrões idênticos)', () 
 
 test('teia: minExtent e o frame 0 do painel da Twitch (sem luz, nítido)', () => {
   assert.ok(teiaSet.minExtent > 0 && teiaSet.minExtent <= 12);
-  const size = getSize('painel-twitch');
+  const size = getSize('twitch-panel');
   const {props, frame, placements} = layoutOf(ORNAMENT_KINDS.block, size, {ornamentSize: 58});
   assert.equal(frame.glow, 0);
   for (const element of teiaSet.build(frame, placements, props, 0, framesOf(props))) assert.equal(element.light, 0);
@@ -366,15 +366,15 @@ test('teia: minExtent e o frame 0 do painel da Twitch (sem luz, nítido)', () =>
  * The screens' band as the kit was tuned (radius 160, thickness 16): the pack renders the telas only
  * without ornaments, so these props keep the set's screen-frame webs and garland tested.
  */
-const TELA_PROPS = {radius: 160, thickness: 16};
+const SCREEN_PROPS = {radius: 160, thickness: 16};
 /**
  * A kit size at its own px: the theme's preset, the pack item's props without the pack's scale on
  * the large frames (see packLayout), TELA_PROPS on the telas, the size, then `input`.
  */
 const kitInput = (size: NamedSize, input: Record<string, unknown> = {}) => {
   const item = unscaledItemProps('halloween-teia', size.id);
-  const tela = size.props?.fit === 'tela' ? TELA_PROPS : {};
-  return {...ORNAMENT_KINDS[size.kind as 'chat'].preset('halloween-teia'), ...item, ...sizeProps(size), ...tela, ...input};
+  const screen = size.props?.fit === 'screen' ? SCREEN_PROPS : {};
+  return {...ORNAMENT_KINDS[size.kind as 'chat'].preset('halloween-teia'), ...item, ...sizeProps(size), ...screen, ...input};
 };
 const kitLayout = (id: string) => {
   const size = getSize(id);
@@ -389,8 +389,8 @@ const packLayout = (id: string) => {
   return {adapter, props, ...adapter.ornamentLayout(props)};
 };
 
-test('teia: no pack, jogo e webcam-16x9-g escalam o kit (×2 e ×1,5): a teia usa o canto e cresce junto, dentro do bleed', () => {
-  for (const [id, scale, bleed] of [['jogo', 2, 96], ['webcam-16x9-g', 1.5, 72]] as const) {
+test('teia: no pack, jogo e webcam-16x9-lg escalam o kit (×2 e ×1,5): a teia usa o canto e cresce junto, dentro do bleed', () => {
+  for (const [id, scale, bleed] of [['gameplay', 2, 96], ['webcam-16x9-lg', 1.5, 72]] as const) {
     const {adapter, props, placements, scale: drawn} = packLayout(id);
     assert.equal(props.bleed, bleed, id);
     assert.equal(drawn, scale, id);
@@ -405,21 +405,21 @@ const sizeOf = (placements: readonly OrnamentPlacement[], motif: string) => plac
 test('teia: tamanhos do kit (a sala, não o preset, limita a teia; aranha legível; guirlandas nas bordas longas)', () => {
   // [size, hero ≥, counterweight ≥, quiet ≥, spider scale ≥, top swags, bottom swags]
   const table: [string, number, number, number, number, number, number][] = [
-    ['chat-compacto', 62, 53, 0, 0.36, 2, 0], ['chat-padrao', 62, 53, 0, 0.36, 2, 0], ['chat-alto', 62, 53, 0, 0.36, 2, 0],
-    ['chat-coluna', 62, 53, 0, 0.36, 2, 0], ['chat-vertical', 62, 53, 0, 0.36, 5, 0],
-    ['etiqueta-p', 64, 54, 0, 0.36, 1, 0], ['etiqueta', 64, 54, 0, 0.36, 2, 0],
-    ['faixa', 75, 64, 0, 0.4, 6, 6], ['titulo', 75, 64, 0, 0.4, 6, 6], ['cartao', 75, 64, 0, 0.4, 3, 3], ['quadrado', 75, 64, 0, 0.4, 2, 2],
-    ['lista', 75, 64, 0, 0.4, 2, 2],
-    ['circulo-p', 93, 79, 0, 0.4, 0, 0], ['circulo', 112, 95, 0, 0.4, 0, 0], ['circulo-g', 112, 95, 0, 0.4, 0, 0],
-    ['painel-twitch', 33, 28, 0, 0, 0, 0],
+    ['chat-compact', 62, 53, 0, 0.36, 2, 0], ['chat-standard', 62, 53, 0, 0.36, 2, 0], ['chat-tall', 62, 53, 0, 0.36, 2, 0],
+    ['chat-column', 62, 53, 0, 0.36, 2, 0], ['chat-vertical', 62, 53, 0, 0.36, 5, 0],
+    ['label-sm', 64, 54, 0, 0.36, 1, 0], ['label', 64, 54, 0, 0.36, 2, 0],
+    ['lower-third', 75, 64, 0, 0.4, 6, 6], ['title', 75, 64, 0, 0.4, 6, 6], ['card', 75, 64, 0, 0.4, 3, 3], ['square', 75, 64, 0, 0.4, 2, 2],
+    ['list', 75, 64, 0, 0.4, 2, 2],
+    ['circle-sm', 93, 79, 0, 0.4, 0, 0], ['circle', 112, 95, 0, 0.4, 0, 0], ['circle-lg', 112, 95, 0, 0.4, 0, 0],
+    ['twitch-panel', 33, 28, 0, 0, 0, 0],
     // Rect webcams and the game: the 48 px bleed at the window's 38 px radius sets the corner room,
     // the same at all four corners, so all four webs take it.
-    ['webcam-16x9', 69, 69, 69, 0.43, 3, 3], ['webcam-16x9-g', 69, 69, 69, 0.43, 5, 5], ['webcam-4x3', 69, 69, 69, 0.43, 2, 2],
-    ['webcam-quadrada', 69, 69, 69, 0.43, 2, 2], ['webcam-vertical', 69, 69, 69, 0.43, 2, 2],
-    ['webcam-redonda-p', 108, 91, 81, 0.45, 0, 0], ['webcam-redonda', 132, 112, 99, 0.45, 0, 0], ['webcam-redonda-g', 164, 139, 123, 0.45, 0, 0],
-    ['jogo', 69, 69, 69, 0.43, 7, 8],
+    ['webcam-16x9', 69, 69, 69, 0.43, 3, 3], ['webcam-16x9-lg', 69, 69, 69, 0.43, 5, 5], ['webcam-4x3', 69, 69, 69, 0.43, 2, 2],
+    ['webcam-square', 69, 69, 69, 0.43, 2, 2], ['webcam-vertical', 69, 69, 69, 0.43, 2, 2],
+    ['webcam-round-sm', 108, 91, 81, 0.45, 0, 0], ['webcam-round', 132, 112, 99, 0.45, 0, 0], ['webcam-round-lg', 164, 139, 123, 0.45, 0, 0],
+    ['gameplay', 69, 69, 69, 0.43, 7, 8],
     // Screens (the pack's radius 160): big corner webs; a garland in the top band only.
-    ['tela-cheia', 92, 92, 92, 0.5, 9, 0], ['tela-vertical', 92, 92, 92, 0.5, 5, 0],
+    ['fullscreen', 92, 92, 92, 0.5, 9, 0], ['fullscreen-vertical', 92, 92, 92, 0.5, 5, 0],
   ];
   for (const [id, hero, counter, quiet, spider, top, bottom] of table) {
     const {placements, frame, props} = kitLayout(id);
@@ -484,10 +484,10 @@ test('teia: guirlandas de seda: nós fixos, vãos inteiros de 150 a 270 px, pont
       // leaves the flashing dew less room): C, then B 7 px higher (6 on a screen), then A.
       const lows = restLows(run);
       const target = run.slot === 'top'
-        ? (frame.fit === 'painel' ? frame.outline.y + 5 : frame.fit === 'tela' ? frame.hole!.y - 7 : frame.hole!.y - 10)
+        ? (frame.fit === 'panel' ? frame.outline.y + 5 : frame.fit === 'screen' ? frame.hole!.y - 7 : frame.hole!.y - 10)
         : inner + (frame.kind === 'block' ? 22 : 32);
       assert.ok(lows[0]! <= target + 1e-6 && lows[0]! >= target - 2.5, `${where}: C em ${lows[0]} (alvo ${target})`);
-      const step = frame.fit === 'tela' ? 6 : 7;
+      const step = frame.fit === 'screen' ? 6 : 7;
       lows.forEach((low, thread) => assert.ok(Math.abs(low - (lows[0]! - step * thread)) < 0.05, `${where}: fio ${thread} em ${low}`));
       // Three threads only on deep top runs; two along the bottom.
       assert.equal(lows.length, run.slot === 'top' && lows[0]! - inner >= GARLAND.three ? 3 : 2, `${where}: fios`);
@@ -504,10 +504,10 @@ test('teia: guirlandas de seda: nós fixos, vãos inteiros de 150 a 270 px, pont
     }
     // Panels: C drapes over the panel's top edge (a chat's header text lifts it by at most 1 px).
     const top = runs.find((run) => run.slot === 'top');
-    if (top && frame.fit === 'painel' && frame.outline.y >= 32) assert.ok(restLows(top)[0]! >= frame.outline.y + 4, `${id}: C sobre a borda do painel`);
+    if (top && frame.fit === 'panel' && frame.outline.y >= 32) assert.ok(restLows(top)[0]! >= frame.outline.y + 4, `${id}: C sobre a borda do painel`);
     // No garlands on circles, and none on a chat's message edge, a screen's thin bottom band or a Twitch panel.
-    if (frame.circle || (frame.fit === 'painel' && props.bleed === 0)) assert.equal(runs.length, 0, id);
-    if (frame.kind === 'chat' || frame.fit === 'tela') assert.ok(runs.every((run) => run.slot === 'top'), id);
+    if (frame.circle || (frame.fit === 'panel' && props.bleed === 0)) assert.equal(runs.length, 0, id);
+    if (frame.kind === 'chat' || frame.fit === 'screen') assert.ok(runs.every((run) => run.slot === 'top'), id);
   }
 });
 
@@ -570,7 +570,7 @@ test('teia: cada peça da guirlanda segura o que desenha na sua faixa, longe do 
 });
 
 test('teia: orvalho nas guirlandas (uma conta em cada ponto baixo, contas menores alternadas, todas piscam a cada passagem)', () => {
-  for (const id of ['chat-padrao', 'etiqueta', 'faixa', 'webcam-16x9', 'jogo', 'tela-cheia']) {
+  for (const id of ['chat-standard', 'label', 'lower-third', 'webcam-16x9', 'gameplay', 'fullscreen']) {
     const {props, frame, placements} = kitLayout(id);
     const n = framesOf(props);
     const elements = teiaSet.build(frame, placements, props, 0, n);
@@ -650,7 +650,7 @@ test('teia: pontas partidas curtas (nenhum fio vertical além de 10 px, fora as 
 });
 
 test('teia: guirlandas voltam ao frame 0 com a mesma velocidade (kit: faixa, jogo e tela)', () => {
-  for (const id of ['faixa', 'jogo', 'tela-cheia']) {
+  for (const id of ['lower-third', 'gameplay', 'fullscreen']) {
     const size = getSize(id);
     const adapter = ORNAMENT_KINDS[size.kind as 'chat'];
     const sample: Sampler = (input, at, length) => {
@@ -665,7 +665,7 @@ test('teia: guirlandas voltam ao frame 0 com a mesma velocidade (kit: faixa, jog
 });
 
 test('teia: orvalho nos quatro cantos (teias quietas com quatro contas a menos)', () => {
-  for (const id of ['webcam-16x9', 'jogo', 'tela-cheia', 'webcam-redonda-p', 'webcam-redonda-g']) {
+  for (const id of ['webcam-16x9', 'gameplay', 'fullscreen', 'webcam-round-sm', 'webcam-round-lg']) {
     const {props, frame, placements} = kitLayout(id);
     const elements = webs(teiaSet.build(frame, placements, props, 0, framesOf(props)));
     for (const web of elements) {
@@ -678,7 +678,7 @@ test('teia: orvalho nos quatro cantos (teias quietas com quatro contas a menos)'
 });
 
 test('teia: a aranha do chat pendura num fio longo, abaixo da divisória do cabeçalho e fora do traço', () => {
-  for (const id of ['chat-compacto', 'chat-padrao', 'chat-alto', 'chat-coluna', 'chat-vertical']) {
+  for (const id of ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical']) {
     const {props, frame, placements} = kitLayout(id);
     const n = framesOf(props);
     const divider = props.bleed + (props.headerHeight as number);
@@ -708,7 +708,7 @@ test('teia: a aranha do chat pendura num fio longo, abaixo da divisória do cabe
 });
 
 test('teia: orvalho visível (≥ 3 contas acesas na principal no frame 0) e o luar a 0,35 R na diagonal', () => {
-  for (const id of ['chat-padrao', 'etiqueta', 'cartao', 'circulo', 'webcam-16x9', 'webcam-redonda', 'jogo', 'tela-cheia']) {
+  for (const id of ['chat-standard', 'label', 'card', 'circle', 'webcam-16x9', 'webcam-round', 'gameplay', 'fullscreen']) {
     const {props, frame, placements} = kitLayout(id);
     const elements = teiaSet.build(frame, placements, props, 0, framesOf(props));
     const hero = webs(elements).filter((element) => placements[element.anchor]!.motif === 'teia');
@@ -728,7 +728,7 @@ test('teia: orvalho visível (≥ 3 contas acesas na principal no frame 0) e o l
 });
 
 test('teia: a aranha no bolso do canto (borda e tela) olha para o cubo, só as pernas andam', () => {
-  for (const id of ['webcam-16x9', 'jogo', 'tela-cheia']) {
+  for (const id of ['webcam-16x9', 'gameplay', 'fullscreen']) {
     const {props, frame, placements} = kitLayout(id);
     const n = framesOf(props);
     const spiders = [0, n * 0.25, n * 0.5, n * 0.75].map((at) => teiaSet.build(frame, placements, props, at, n).find((element) => element.type === 'teia-spider')!);

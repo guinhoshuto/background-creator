@@ -25,7 +25,7 @@ import {
 const SIZE = getSize(kindPolicies.border.defaultSizeId!);
 
 /** The round window sizes, for the refusal of a circle in a box that is not square. */
-const ROUND_SIZES = 'webcam-redonda-p, webcam-redonda or webcam-redonda-g';
+const ROUND_SIZES = 'webcam-round-sm, webcam-round or webcam-round-lg';
 
 export const CORNER_STYLES = ['nenhum', 'colchetes', 'joias'] as const;
 
@@ -34,13 +34,13 @@ const borderFields = z.object({
   // MP4 and GIF composite over this colour, the window included: a dark violet suits the neon look.
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#0B0620'),
   fit: z.enum(FRAME_FITS)
-    .describe('janela: the box is the transparent window and the border goes outside, in the bleed; tela: the box is the whole file (use bleed 0) and the border is drawn inward')
-    .default('janela'),
-  shape: shapeField('Window shape: retangulo (corners with radius) or circulo, for a round camera (the box must be square: use --size webcam-redonda-p, webcam-redonda or webcam-redonda-g; only with fit janela)'),
-  mascara: z.boolean()
+    .describe('window: the box is the transparent window and the border goes outside, in the bleed; screen: the box is the whole file (use bleed 0) and the border is drawn inward')
+    .default('window'),
+  shape: shapeField('Window shape: rectangle (corners with radius) or circle, for a round camera (the box must be square: use --size webcam-round-sm, webcam-round or webcam-round-lg; only with fit window)'),
+  mask: z.boolean()
     .describe('Exports only the window mask (white PNG) for the OBS Image Mask filter')
     .default(false),
-  radius: radiusField(16, 'Corner radius of the window, in px; capped at half the shorter side; with shape circulo it is ignored, the radius is half the side'),
+  radius: radiusField(16, 'Corner radius of the window, in px; capped at half the shorter side; with shape circle it is ignored, the radius is half the side'),
   thickness: z.number().finite().min(2).max(256)
     .describe('Thickness of the border band, in px; the outline runs along its middle')
     .default(10),
@@ -71,7 +71,7 @@ const borderFields = z.object({
     .describe('colchetes: length of each arm after the corner curve, in px; in the circle, each bracket is an arc of 4×cornerSize px')
     .default(28),
   cornerGap: z.number().finite().min(0).max(128)
-    .describe('colchetes: distance from the outer edge of the border, in px; with tela they sit inward, from the edge of the file')
+    .describe('colchetes: distance from the outer edge of the border, in px; with screen they sit inward, from the edge of the file')
     .default(6),
   gemSize: z.number().finite().min(4).max(128)
     .describe('joias: width of each diamond, in px')
@@ -109,7 +109,7 @@ export type BorderGeometry = {
   brackets: {s: number; half: number}[];
   /** Centre of each gem. */
   gems: {x: number; y: number}[];
-  /** How far the corner ornaments reach beyond the box, glow excluded ('janela'). */
+  /** How far the corner ornaments reach beyond the box, glow excluded ('window'). */
   cornerOutset: number;
   /**
    * Where the themed ornaments go (none with ornaments 'nenhum'), on the frame's outer edge; around
@@ -161,7 +161,7 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
   const cornerWidth = Math.max(2, props.strokeWidth);
   const bracketOffset = props.cornerGap + cornerWidth / 2;
   // Brackets go out into the bleed around a window, and in from the file's edge on a screen.
-  const bracketTrack = offsetRoundRect(base.outer, props.fit === 'janela' ? bracketOffset : -bracketOffset);
+  const bracketTrack = offsetRoundRect(base.outer, props.fit === 'window' ? bracketOffset : -bracketOffset);
 
   const arcs = cornerArcs(bracketTrack);
   // A bracket covers its corner and cornerSize px of each side. A circle has no corner to cover,
@@ -181,7 +181,7 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
     const push = Math.max(0, reach - roundRectSdf(base.holeShape, point.x, point.y));
     let x = point.x + point.d.x * push;
     let y = point.y + point.d.y * push;
-    if (props.fit === 'tela') {
+    if (props.fit === 'screen') {
       // On a screen the file's edge is a wall too: a gem wider than the band slides back along the
       // diagonal into the glow's margin (the schema refuses it when there is no room for both).
       const room = Math.min(sx > 0 ? box.x + box.width - x : x - box.x, sy > 0 ? box.y + box.height - y : y - box.y);
@@ -205,7 +205,7 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
   // never feed back into it: seed- and frame-free, like everything above.
   const ornamentFrame = frameOrnamentFrame({layout: base, track: main, glow: props.glow});
   const ornamentLayout = layoutOrnaments(ornamentFrame, props);
-  const layout: FrameLayout = props.fit === 'janela'
+  const layout: FrameLayout = props.fit === 'window'
     ? {
       ...base,
       outset: Math.max(
@@ -214,7 +214,7 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
       ),
     }
     : base;
-  const fillArea = props.fit === 'janela'
+  const fillArea = props.fit === 'window'
     ? {x: band.x, y: band.y, width: band.width, height: band.height}
     : {...box};
 
@@ -228,10 +228,10 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
  * Whether the band covers the box's corners, so an opaque matte there rounds off a rectangular
  * camera as big as the box: true up to a window radius of (1 + √2)·thickness. Past it (a round
  * webcam) the camera's corners stick out of the band whatever is painted, and the window's mask
- * (mascara) is what rounds it; a matte would only turn most of a round band opaque.
+ * (mask) is what rounds it; a matte would only turn most of a round band opaque.
  */
 export const bandCoversCorners = ({band, layout}: Pick<BorderGeometry, 'band' | 'layout'>) =>
-  layout.fit === 'janela' && roundRectSdf(band, layout.box.x, layout.box.y) <= 1e-9;
+  layout.fit === 'window' && roundRectSdf(band, layout.box.x, layout.box.y) <= 1e-9;
 
 /** The engine's cap on sparkles for a fill whose whole area shows (a panel). */
 const PANEL_SPARKS = 400;
@@ -259,7 +259,7 @@ export const borderFillOptions = (geometry: BorderGeometry): FillOptions => {
   return {
     maxSparks: Math.min(MAX_BORDER_SPARKS, Math.ceil(PANEL_SPARKS * Math.max(1, hidden))),
     keepSpark: (x, y, reach) => roundRectSdf(layout.window, x, y) >= -reach
-      && (roundRectSdf(band, x, y) <= reach || (layout.fit === 'tela' && roundRectSdf(box, x, y) <= reach)),
+      && (roundRectSdf(band, x, y) <= reach || (layout.fit === 'screen' && roundRectSdf(box, x, y) <= reach)),
   };
 };
 
@@ -291,16 +291,16 @@ export const getBorderMaskElement = (props: BorderLoopProps): MaskWindowElement 
  * not the square webcam's mask, though both are 400×400.
  */
 export const getBorderMask = (props: BorderLoopProps): Record<string, unknown> | null => {
-  if (props.fit !== 'janela' || props.mascara) return null;
+  if (props.fit !== 'window' || props.mask) return null;
   return {
-    width: props.width, height: props.height, shape: props.shape, radius: maskWindow(props).radius, fit: 'janela',
-    mascara: true, bleed: 0, outputFormat: 'png', transparent: true,
+    width: props.width, height: props.height, shape: props.shape, radius: maskWindow(props).radius, fit: 'window',
+    mask: true, bleed: 0, outputFormat: 'png', transparent: true,
   };
 };
 
 /** The speeds the border actually shows along its main line and over its band (see AssetMotion). */
 export const getBorderMotion = (props: BorderLoopProps): AssetMotion => {
-  if (props.mascara) return {strokeSpeed: 0, fillSpeed: 0};
+  if (props.mask) return {strokeSpeed: 0, fillSpeed: 0};
   const geometry = getBorderGeometry(props);
   return {
     strokeSpeed: reportSpeed(getStrokeMotion(props, geometry.tracks[TRACK_MAIN]).speed),
@@ -310,7 +310,7 @@ export const getBorderMotion = (props: BorderLoopProps): AssetMotion => {
 
 /** The pure layout the exporter's sidecar and the Studio's metadata read. */
 export const getBorderLayout = (props: BorderLoopProps): AssetLayout => {
-  if (props.mascara) {
+  if (props.mask) {
     // The file is the window itself; there is no hole to keep empty, the window is what is drawn.
     const {canvas, box} = getBoxCanvas(props);
     return {canvas, box, content: {...box}, outset: 0};
@@ -320,11 +320,11 @@ export const getBorderLayout = (props: BorderLoopProps): AssetLayout => {
 };
 
 /**
- * Whatever is drawn beyond the box must fit in the bleed ('janela'), and on a screen the corner
- * ornaments must stay between the hole and the file's edge ('tela'); refused with the way out.
+ * Whatever is drawn beyond the box must fit in the bleed ('window'), and on a screen the corner
+ * ornaments must stay between the hole and the file's edge ('screen'); refused with the way out.
  */
 const refineReach = (props: BorderLoopProps, geometry: BorderGeometry, context: z.RefinementCtx) => {
-  if (props.fit === 'janela') {
+  if (props.fit === 'window') {
     const frameOutset = geometry.totalThickness + Math.max(props.glow, props.halo);
     // The band and its glow come first, with the shared message; it names the bleed that holds
     // the corners too, so following it is enough.
@@ -370,13 +370,13 @@ const secondMotion = (motion: StrokeMotionName): StrokeMotionName =>
   (motion === 'formigas' || motion === 'cometas' ? 'parado' : motion);
 
 /**
- * A mask is only the window, as big as the camera: it needs a window ('janela'), no bleed, a PNG
+ * A mask is only the window, as big as the camera: it needs a window ('window'), no bleed, a PNG
  * and transparency. The frame's own refusals (glow, corners, speeds) do not apply: none of it is
  * drawn.
  */
 const refineMask = (props: BorderLoopProps, context: z.RefinementCtx) => {
   const issue = (path: string, message: string) => context.addIssue({code: 'custom', path: [path], message});
-  if (props.fit !== 'janela') issue('fit', 'The mask only applies to fit janela: in a screen frame the window fills the whole screen and needs no mask.');
+  if (props.fit !== 'window') issue('fit', 'The mask only applies to fit window: in a screen frame the window fills the whole screen and needs no mask.');
   if (props.bleed !== 0) issue('bleed', 'In the mask the file is the window itself, the size of the camera: use bleed 0 (with --size, add --bleed 0).');
   if (props.outputFormat !== 'png') issue('outputFormat', 'The mask is a still image: export it as PNG (--format png).');
   if (!props.transparent) issue('transparent', 'The mask needs a transparent background: use transparent true.');
@@ -387,26 +387,26 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
   // A full-screen frame follows the screen, which is a rectangle: a round window is a camera's.
   // Checked before the square box, so a round screen frame is not first sent to square its box
   // only to be refused again here.
-  if (props.shape === 'circulo' && props.fit === 'tela') {
+  if (props.shape === 'circle' && props.fit === 'screen') {
     context.addIssue({
       code: 'custom',
       path: ['shape'],
-      message: 'A screen frame follows the screen, which is rectangular: use shape retangulo with fit tela, or fit janela for a round camera (--size webcam-redonda).',
+      message: 'A screen frame follows the screen, which is rectangular: use shape rectangle with fit screen, or fit window for a round camera (--size webcam-round).',
     });
     return;
   }
   if (!refineShape(props, ROUND_SIZES, context)) return;
-  if (props.mascara) {
+  if (props.mask) {
     refineMask(props, context);
     return;
   }
   // A screen frame draws nothing outside the box, so a bleed would only pad the file with an empty
   // margin and the file would no longer be the screen's size.
-  if (props.fit === 'tela' && props.bleed !== 0) {
+  if (props.fit === 'screen' && props.bleed !== 0) {
     context.addIssue({
       code: 'custom',
       path: ['bleed'],
-      message: 'On a screen frame the box is the whole file: use bleed 0 (or --size tela-cheia / tela-vertical).',
+      message: 'On a screen frame the box is the whole file: use bleed 0 (or --size fullscreen / fullscreen-vertical).',
     });
     return;
   }
@@ -419,7 +419,7 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
     return;
   }
   const geometry = getBorderGeometry(props);
-  if (props.fit === 'tela') refineHole(geometry.layout, context);
+  if (props.fit === 'screen') refineHole(geometry.layout, context);
   refineReach(props, geometry, context);
   // Only the main line is checked: the second line is an outward offset of it, so it is longer,
   // travels no more colour periods per cycle and covers no larger share of one per frame. Checking
@@ -509,7 +509,7 @@ export const getBorderSceneParts = (props: BorderLoopProps, frame: number, durat
   return {
     geometry,
     // The halo spreads outwards from the frame, into the bleed: a screen frame has none to spread into.
-    halo: props.fit === 'janela' ? buildHaloScene(props, frame, durationInFrames) : [],
+    halo: props.fit === 'window' ? buildHaloScene(props, frame, durationInFrames) : [],
     ornamentBack: ornaments.back,
     fill,
     // Along the band's outer edge, half a pixel in, so the 1 px line stays on the band.
@@ -529,7 +529,7 @@ export const getBorderSceneParts = (props: BorderLoopProps, frame: number, durat
  * at the seam, so no field needs an exemption. A mask is its single still window.
  */
 export const getBorderScene = (props: BorderLoopProps, frame: number, durationInFrames: number) => {
-  if (props.mascara) return [getBorderMaskElement(props)];
+  if (props.mask) return [getBorderMaskElement(props)];
   const {halo, ornamentBack, fill, rim, stroke, corners, glow, ornamentFront, flash} = getBorderSceneParts(props, frame, durationInFrames);
   return [...halo, ...ornamentBack, ...fill, ...rim, ...stroke, ...corners, ...glow, ...ornamentFront, ...flash];
 };

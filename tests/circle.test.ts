@@ -43,8 +43,8 @@ const parseBorder = (input: object): BorderLoopProps => borderLoopSchema.parse(i
 const messagesOf = (schema: typeof blockLoopSchema | typeof borderLoopSchema, input: object) =>
   schema.safeParse(input).error?.issues.map((issue) => [issue.path.join('.'), issue.message]) ?? [];
 
-const ROUND_BLOCKS = ['circulo-p', 'circulo', 'circulo-g'] as const;
-const ROUND_BORDERS = ['webcam-redonda-p', 'webcam-redonda', 'webcam-redonda-g'] as const;
+const ROUND_BLOCKS = ['circle-sm', 'circle', 'circle-lg'] as const;
+const ROUND_BORDERS = ['webcam-round-sm', 'webcam-round', 'webcam-round-lg'] as const;
 const sized = (id: string) => sizeProps(getSize(id));
 
 /** Every corner of the rect lies within the inner edge of the arc's band. */
@@ -54,78 +54,78 @@ const arcClearOf = (arc: AccentArc, area: Rect) =>
 // ── The shape prop ──────────────────────────────────────────────────────────────────────────
 
 test('Forma: bloco e borda começam retangulares; circulo é uma opção do schema, com descrição em inglês', () => {
-  assert.deepEqual(PANEL_SHAPES, ['retangulo', 'circulo']);
+  assert.deepEqual(PANEL_SHAPES, ['rectangle', 'circle']);
   for (const schema of [blockLoopSchema, borderLoopSchema]) {
-    assert.equal(schema.parse({}).shape, 'retangulo');
+    assert.equal(schema.parse({}).shape, 'rectangle');
     assert.equal(schema.safeParse({shape: 'oval'}).success, false);
   }
   for (const schema of [blockLoopSchema, borderLoopSchema]) {
-    assert.match(schema.shape.shape.unwrap().description ?? '', /circulo.*must be square/);
-    assert.match(schema.shape.radius.unwrap().description ?? '', /with shape circulo it is ignored, the radius is half the side/);
+    assert.match(schema.shape.shape.unwrap().description ?? '', /circle.*must be square/);
+    assert.match(schema.shape.radius.unwrap().description ?? '', /with shape circle it is ignored, the radius is half the side/);
   }
 });
 
 test('Forma: o círculo pede largura igual à altura, com a saída na mensagem', () => {
-  assert.deepEqual(messagesOf(blockLoopSchema, {shape: 'circulo'}), [[
-    'shape', 'A circle needs equal width and height (the box is 640×360): use --size circulo-p, circulo or circulo-g, make width and height equal or use shape retangulo.',
+  assert.deepEqual(messagesOf(blockLoopSchema, {shape: 'circle'}), [[
+    'shape', 'A circle needs equal width and height (the box is 640×360): use --size circle-sm, circle or circle-lg, make width and height equal or use shape rectangle.',
   ]]);
-  assert.deepEqual(messagesOf(borderLoopSchema, {shape: 'circulo'}), [[
-    'shape', 'A circle needs equal width and height (the box is 640×360): use --size webcam-redonda-p, webcam-redonda or webcam-redonda-g, make width and height equal or use shape retangulo.',
+  assert.deepEqual(messagesOf(borderLoopSchema, {shape: 'circle'}), [[
+    'shape', 'A circle needs equal width and height (the box is 640×360): use --size webcam-round-sm, webcam-round or webcam-round-lg, make width and height equal or use shape rectangle.',
   ]]);
   // Each way out is accepted.
-  assert.equal(blockLoopSchema.safeParse({shape: 'circulo', width: 360}).success, true);
-  assert.equal(blockLoopSchema.safeParse({...sized('circulo'), shape: 'circulo'}).success, true);
-  assert.equal(blockLoopSchema.safeParse({shape: 'retangulo'}).success, true);
-  assert.equal(borderLoopSchema.safeParse({shape: 'circulo', width: 360}).success, true);
+  assert.equal(blockLoopSchema.safeParse({shape: 'circle', width: 360}).success, true);
+  assert.equal(blockLoopSchema.safeParse({...sized('circle'), shape: 'circle'}).success, true);
+  assert.equal(blockLoopSchema.safeParse({shape: 'rectangle'}).success, true);
+  assert.equal(borderLoopSchema.safeParse({shape: 'circle', width: 360}).success, true);
   // Even a mask needs a square for a circle.
-  assert.deepEqual(messagesOf(borderLoopSchema, {shape: 'circulo', mascara: true, bleed: 0, outputFormat: 'png'})[0]![0], 'shape');
+  assert.deepEqual(messagesOf(borderLoopSchema, {shape: 'circle', mask: true, bleed: 0, outputFormat: 'png'})[0]![0], 'shape');
 });
 
 test('Forma: moldura de tela não pode ser círculo; a mensagem aponta a câmera redonda', () => {
-  const screen = {...sized('tela-cheia'), width: 1080, height: 1080, shape: 'circulo'};
+  const screen = {...sized('fullscreen'), width: 1080, height: 1080, shape: 'circle'};
   assert.deepEqual(messagesOf(borderLoopSchema, screen), [[
-    'shape', 'A screen frame follows the screen, which is rectangular: use shape retangulo with fit tela, or fit janela for a round camera (--size webcam-redonda).',
+    'shape', 'A screen frame follows the screen, which is rectangular: use shape rectangle with fit screen, or fit window for a round camera (--size webcam-round).',
   ]]);
-  assert.equal(borderLoopSchema.safeParse({...screen, shape: 'retangulo'}).success, true);
-  assert.equal(borderLoopSchema.safeParse({...sized('webcam-redonda')}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...screen, shape: 'rectangle'}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...sized('webcam-round')}).success, true);
   // A round screen frame in a wide box gets only this refusal, not first the square-box one whose
   // way out (square the box) would lead straight back here.
-  const wide = {...sized('tela-cheia'), shape: 'circulo'};
+  const wide = {...sized('fullscreen'), shape: 'circle'};
   assert.deepEqual(messagesOf(borderLoopSchema, wide), messagesOf(borderLoopSchema, screen));
-  assert.equal(borderLoopSchema.safeParse({...wide, shape: 'retangulo'}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...wide, shape: 'rectangle'}).success, true);
 });
 
 test('Forma: no círculo o raio é metade do lado, diga o radius o que disser', () => {
   for (const radius of [0, 16, 200, 1920]) {
-    assert.equal(shapeRadius({shape: 'circulo', radius, width: 400, height: 400}), 200);
-    assert.equal(shapeRadius({shape: 'retangulo', radius, width: 400, height: 400}), radius);
-    const round = getBlockLayout(parseBlock({...sized('circulo'), radius}));
+    assert.equal(shapeRadius({shape: 'circle', radius, width: 400, height: 400}), 200);
+    assert.equal(shapeRadius({shape: 'rectangle', radius, width: 400, height: 400}), radius);
+    const round = getBlockLayout(parseBlock({...sized('circle'), radius}));
     assert.equal(round.shape.radius, 160);
     assert.ok(round.circle && isCircle(round.shape) && isCircle(round.inner) && isCircle(round.track));
-    assert.deepEqual(round, getBlockLayout(parseBlock({...sized('circulo'), radius: 7})), 'o raio pedido não muda nada');
-    const window = getBorderGeometry(parseBorder({...sized('webcam-redonda'), radius})).layout;
+    assert.deepEqual(round, getBlockLayout(parseBlock({...sized('circle'), radius: 7})), 'o raio pedido não muda nada');
+    const window = getBorderGeometry(parseBorder({...sized('webcam-round'), radius})).layout;
     assert.deepEqual([window.window.radius, window.holeShape.radius], [200, 200]);
   }
   // A square with the old trick (radius ≥ half the side) is a circle too, laid out the same way.
-  const trick = getBlockLayout(parseBlock({...sized('circulo'), shape: 'retangulo', radius: 999}));
+  const trick = getBlockLayout(parseBlock({...sized('circle'), shape: 'rectangle', radius: 999}));
   assert.ok(trick.circle);
-  assert.deepEqual(trick.content, getBlockLayout(parseBlock(sized('circulo'))).content);
-  assert.equal(getBlockLayout(parseBlock(sized('quadrado'))).circle, false);
+  assert.deepEqual(trick.content, getBlockLayout(parseBlock(sized('circle'))).content);
+  assert.equal(getBlockLayout(parseBlock(sized('square'))).circle, false);
 });
 
 // ── Named sizes ─────────────────────────────────────────────────────────────────────────────
 
 test('Tamanhos redondos: caixa quadrada, bleed, arquivo = caixa + 2·bleed e forma fixada pelo tamanho', () => {
   const expected = {
-    'circulo-p': [160, 24, 208], circulo: [320, 32, 384], 'circulo-g': [480, 32, 544],
-    'webcam-redonda-p': [280, 48, 376], 'webcam-redonda': [400, 48, 496], 'webcam-redonda-g': [560, 48, 656],
+    'circle-sm': [160, 24, 208], circle: [320, 32, 384], 'circle-lg': [480, 32, 544],
+    'webcam-round-sm': [280, 48, 376], 'webcam-round': [400, 48, 496], 'webcam-round-lg': [560, 48, 656],
   } as const;
   for (const [id, [side, bleed, file]] of Object.entries(expected)) {
     const size = getSize(id);
     assert.deepEqual([size.width, size.height, size.bleed], [side, side, bleed], id);
     assert.deepEqual(canvasOf(size), {width: file, height: file}, id);
-    assert.equal(size.props?.shape, 'circulo', id);
-    if (size.kind === 'border') assert.equal(size.props?.fit, 'janela', id);
+    assert.equal(size.props?.shape, 'circle', id);
+    if (size.kind === 'border') assert.equal(size.props?.fit, 'window', id);
   }
   // Every block and border size spells its shape out, so a size id alone fixes the product; the chat has none.
   for (const size of NAMED_SIZES) {
@@ -134,43 +134,43 @@ test('Tamanhos redondos: caixa quadrada, bleed, arquivo = caixa + 2·bleed e for
       continue;
     }
     assert.ok(size.props?.shape, size.id);
-    assert.equal(size.props.shape === 'circulo', size.id.startsWith('circulo') || size.id.startsWith('webcam-redonda'), size.id);
-    if (size.props.shape === 'circulo') assert.equal(size.width, size.height, size.id);
+    assert.equal(size.props.shape === 'circle', size.id.startsWith('circle') || size.id.startsWith('webcam-round'), size.id);
+    if (size.props.shape === 'circle') assert.equal(size.width, size.height, size.id);
   }
-  assert.match(getSize('webcam-quadrada').use, /webcam-redonda/);
-  assert.doesNotMatch(getSize('webcam-quadrada').use, /radius 200/);
+  assert.match(getSize('webcam-square').use, /webcam-round/);
+  assert.doesNotMatch(getSize('webcam-square').use, /radius 200/);
 });
 
 test('Tamanhos redondos: um tamanho retangular desenha retângulo mesmo sobre um preset redondo, e vice-versa', () => {
-  const roundPreset = {...presetOf('border', 'neon'), shape: 'circulo'};
+  const roundPreset = {...presetOf('border', 'neon'), shape: 'circle'};
   const rect = parseBorder({...roundPreset, ...sized('webcam-16x9')});
-  assert.equal(rect.shape, 'retangulo');
+  assert.equal(rect.shape, 'rectangle');
   assert.equal(getBorderGeometry(rect).layout.window.radius, 16);
-  const square = parseBorder({...roundPreset, ...sized('webcam-quadrada')});
-  assert.equal(square.shape, 'retangulo');
-  const round = parseBorder({...presetOf('border', 'neon'), ...sized('webcam-redonda')});
-  assert.equal(round.shape, 'circulo');
-  const card = parseBlock({...presetOf('block', 'neon'), shape: 'circulo', ...sized('cartao')});
-  assert.equal(card.shape, 'retangulo');
+  const square = parseBorder({...roundPreset, ...sized('webcam-square')});
+  assert.equal(square.shape, 'rectangle');
+  const round = parseBorder({...presetOf('border', 'neon'), ...sized('webcam-round')});
+  assert.equal(round.shape, 'circle');
+  const card = parseBlock({...presetOf('block', 'neon'), shape: 'circle', ...sized('card')});
+  assert.equal(card.shape, 'rectangle');
 });
 
 test('Tamanhos redondos: quadrado e círculo da mesma caixa são produtos diferentes, também no nome', () => {
-  const box = {width: 400, height: 400, bleed: 48, fit: 'janela'};
-  assert.equal(matchNamedSize('border', box)?.id, 'webcam-quadrada');
-  assert.equal(matchNamedSize('border', {...box, shape: 'retangulo'})?.id, 'webcam-quadrada');
-  assert.equal(matchNamedSize('border', {...box, shape: 'circulo'})?.id, 'webcam-redonda');
-  assert.equal(matchNamedSize('block', {width: 480, height: 480, bleed: 32, shape: 'retangulo'})?.id, 'quadrado');
-  assert.equal(matchNamedSize('block', {width: 480, height: 480, bleed: 32, shape: 'circulo'})?.id, 'circulo-g');
+  const box = {width: 400, height: 400, bleed: 48, fit: 'window'};
+  assert.equal(matchNamedSize('border', box)?.id, 'webcam-square');
+  assert.equal(matchNamedSize('border', {...box, shape: 'rectangle'})?.id, 'webcam-square');
+  assert.equal(matchNamedSize('border', {...box, shape: 'circle'})?.id, 'webcam-round');
+  assert.equal(matchNamedSize('block', {width: 480, height: 480, bleed: 32, shape: 'rectangle'})?.id, 'square');
+  assert.equal(matchNamedSize('block', {width: 480, height: 480, bleed: 32, shape: 'circle'})?.id, 'circle-lg');
   // Masks match by the box and the shape.
-  assert.equal(matchNamedSize('border', {...box, bleed: 0, mascara: true, shape: 'circulo'})?.id, 'webcam-redonda');
-  assert.equal(matchNamedSize('border', {...box, bleed: 0, mascara: true})?.id, 'webcam-quadrada');
+  assert.equal(matchNamedSize('border', {...box, bleed: 0, mask: true, shape: 'circle'})?.id, 'webcam-round');
+  assert.equal(matchNamedSize('border', {...box, bleed: 0, mask: true})?.id, 'webcam-square');
   // A free circle never takes the square's name.
-  assert.equal(sizeTag('block', {width: 300, height: 300, bleed: 24, shape: 'circulo'}), '300x300-circulo');
-  assert.equal(sizeTag('block', {width: 300, height: 300, bleed: 24, shape: 'retangulo'}), '300x300');
-  assert.equal(assetFileName({id: 'BorderLoop', kind: 'border', props: {...box, shape: 'circulo'}, format: 'webm'}), 'BorderLoop-webcam-redonda.webm');
+  assert.equal(sizeTag('block', {width: 300, height: 300, bleed: 24, shape: 'circle'}), '300x300-circle');
+  assert.equal(sizeTag('block', {width: 300, height: 300, bleed: 24, shape: 'rectangle'}), '300x300');
+  assert.equal(assetFileName({id: 'BorderLoop', kind: 'border', props: {...box, shape: 'circle'}, format: 'webm'}), 'BorderLoop-webcam-round.webm');
   assert.equal(
-    assetFileName({id: 'BorderLoop', kind: 'border', props: {...box, bleed: 0, shape: 'circulo', mascara: true}, format: 'png'}),
-    'BorderLoop-webcam-redonda-mascara.png',
+    assetFileName({id: 'BorderLoop', kind: 'border', props: {...box, bleed: 0, shape: 'circle', mask: true}, format: 'png'}),
+    'BorderLoop-webcam-round-mask.png',
   );
 });
 
@@ -205,7 +205,7 @@ test('Bloco redondo: o texto vai no quadrado centralizado, em px inteiros, com o
 });
 
 test('Bloco redondo: padding ou barra que não deixam espaço são recusados com a saída', () => {
-  const small = sized('circulo-p');
+  const small = sized('circle-sm');
   assert.deepEqual(messagesOf(blockLoopSchema, {...small, paddingX: 80}), [
     ['padding', 'The padding leaves no room for the content: reduce padding or strokeWidth, or enlarge the box.'],
   ]);
@@ -248,7 +248,7 @@ test('Bloco redondo: o destaque é um arco de 120° por dentro do contorno, à e
     }
   }
   // The rendered layer is clipped to the arc band, not to the panel.
-  const props = parseBlock({...sized('circulo'), accent: 'esquerda', accentSheen: 1});
+  const props = parseBlock({...sized('circle'), accent: 'esquerda', accentSheen: 1});
   const markup = renderToStaticMarkup(createElement(BlockFrame, {props, frame: 0, durationInFrames: 480}));
   const clip = /<clipPath id="block-accent-clip"[^>]*><path d="([^"]+)"/.exec(markup)!;
   assert.equal(clip[1], arcBandPath(getBlockLayout(props).accentArc!));
@@ -258,7 +258,7 @@ test('Bloco redondo: o destaque é um arco de 120° por dentro do contorno, à e
 test('Bloco redondo: o reflexo do destaque dá voltas inteiras pelo meio do arco, tangente a ele, sem pulo', () => {
   for (const accent of ['esquerda', 'topo'] as const) {
     for (const seed of [-7, 1, 2026]) {
-      const props = parseBlock({...sized('circulo'), accent, accentSize: 10, accentSheen: 2, seed});
+      const props = parseBlock({...sized('circle'), accent, accentSize: 10, accentSheen: 2, seed});
       const arc = getBlockLayout(props).accentArc!;
       const middle = arc.outer - arc.width / 2;
       let visible = 0;
@@ -287,7 +287,7 @@ test('Bloco redondo: o reflexo do destaque dá voltas inteiras pelo meio do arco
 });
 
 test('Redondo: o reflexo de cima acende só o arco de cima do círculo, sumindo até o meio', () => {
-  const props = parseBlock({...sized('circulo'), rimLight: 0.9, paddingX: 24, paddingY: 24});
+  const props = parseBlock({...sized('circle'), rimLight: 0.9, paddingX: 24, paddingY: 24});
   const [rim] = getBlockLayers(props, 0, 480).rim;
   const inner = getBlockLayout(props).inner;
   assert.ok(rim);
@@ -303,14 +303,14 @@ test('Redondo: o reflexo de cima acende só o arco de cima do círculo, sumindo 
   const [flat] = getBlockLayers(parseBlock({rimLight: 0.9}), 0, 480).rim;
   assert.ok(flat && flat.hold === flat.corner && flat.hold > 0);
   // The border's glass rim follows its round band the same way.
-  const round = parseBorder({...presetOf('border', 'vidro'), ...sized('webcam-redonda')});
+  const round = parseBorder({...presetOf('border', 'vidro'), ...sized('webcam-round')});
   const [bandRim] = getBorderSceneParts(round, 0, 480).rim;
   assert.ok(bandRim && bandRim.hold === 0 && bandRim.corner === bandRim.width / 2);
 });
 
 test('Bloco redondo: fundo, halo e reflexo do vidro seguem o círculo (recorte e halo pelo mesmo contorno)', () => {
   for (const theme of THEMES) {
-    const props = parseBlock({...presetOf('block', theme), ...sized('circulo')});
+    const props = parseBlock({...presetOf('block', theme), ...sized('circle')});
     const layout = getBlockLayout(props);
     const markup = renderToStaticMarkup(createElement(BlockFrame, {props, frame: 100, durationInFrames: 480}));
     const circle = roundRectPath(layout.shape);
@@ -374,7 +374,7 @@ test('Borda redonda: os colchetes têm o mesmo comprimento em px em todo tamanho
     // An arc of 4·cornerSize px (112 px at the default), whatever the circle's size.
     for (const id of ROUND_BORDERS) assert.ok(Math.abs(bracketLength(id, cornerSize) - 4 * cornerSize) < 1e-9, `${id} ${cornerSize}`);
   }
-  assert.ok(bracketLength('webcam-redonda', 40) > bracketLength('webcam-redonda', 28), 'cornerSize muda o colchete redondo');
+  assert.ok(bracketLength('webcam-round', 40) > bracketLength('webcam-round', 28), 'cornerSize muda o colchete redondo');
   // A long bracket stops at 70% of a quarter, so the four never close into a ring.
   for (const id of ROUND_BORDERS) {
     const geometry = getBorderGeometry(parseBorder({...presetOf('border', 'neon'), corners: 'colchetes', cornerSize: 512, ...sized(id)}));
@@ -382,15 +382,15 @@ test('Borda redonda: os colchetes têm o mesmo comprimento em px em todo tamanho
     for (const {half} of geometry.brackets) assert.ok(Math.abs(2 * half - 0.7 * quarter) < 1e-9, id);
   }
   // A square box with the radius trick is a circle too, and so are its brackets.
-  const trick = getBorderGeometry(parseBorder({...sized('webcam-quadrada'), radius: 200, corners: 'colchetes', cornerSize: 28}));
+  const trick = getBorderGeometry(parseBorder({...sized('webcam-square'), radius: 200, corners: 'colchetes', cornerSize: 28}));
   assert.ok(trick.brackets.every(({half}) => Math.abs(2 * half - 112) < 1e-9));
   // A rectangular window keeps its arms: the corner's curve plus cornerSize on each side.
-  assert.ok(Math.abs(bracketLength('webcam-quadrada', 40) - bracketLength('webcam-quadrada', 28) - 24) < 1e-9);
+  assert.ok(Math.abs(bracketLength('webcam-square', 40) - bracketLength('webcam-square', 28) - 24) < 1e-9);
 });
 
 test('Borda redonda: nada é desenhado dentro do disco, em nenhum frame', () => {
   for (const theme of THEMES) {
-    const props = parseBorder({...presetOf('border', theme), ...sized('webcam-redonda-p')});
+    const props = parseBorder({...presetOf('border', theme), ...sized('webcam-round-sm')});
     const markup = renderToStaticMarkup(createElement(BorderFrame, {props, frame: 123, durationInFrames: 480}));
     // The frame group hides the disc from every layer.
     const {layout} = getBorderGeometry(props);
@@ -455,18 +455,18 @@ test('Redondos: a velocidade continua na emenda também no círculo grande, com 
   // The glint turns round the biggest circle four times a cycle; near the top of its circle one
   // coordinate barely moves while it accelerates hard, which the scan must not take for a seam.
   const blockSample: Sampler = (input, frame, length) => getBlockScene(parseBlock({
-    ...sized('circulo-g'), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
+    ...sized('circle-lg'), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
     glowPulses: 4, halo: 32, ...input,
   }), frame, length);
   assertSeamVelocity('BlockLoop (círculo-g, máximos)', blockSample);
   for (const theme of THEMES) {
     for (const accent of ['esquerda', 'topo'] as const) {
-      assertSeamVelocity(`BlockLoop ${theme} circulo-g ${accent}`, (input, frame, length) =>
-        getBlockScene(parseBlock({...presetOf('block', theme), ...sized('circulo-g'), accent, accentSheen: 4, ...input}), frame, length));
+      assertSeamVelocity(`BlockLoop ${theme} circle-lg ${accent}`, (input, frame, length) =>
+        getBlockScene(parseBlock({...presetOf('block', theme), ...sized('circle-lg'), accent, accentSheen: 4, ...input}), frame, length));
     }
   }
-  assertSeamVelocity('BorderLoop (webcam-redonda-g, máximos)', (input, frame, length) => getBorderScene(parseBorder({
-    ...sized('webcam-redonda-g'), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
+  assertSeamVelocity('BorderLoop (webcam-round-lg, máximos)', (input, frame, length) => getBorderScene(parseBorder({
+    ...sized('webcam-round-lg'), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
     corners: 'joias', cornerPulses: 4, glowPulses: 4, ...input,
   }), frame, length));
   // The scan still catches a real seam: a point turning round a circle whose speed jumps there.
@@ -486,7 +486,7 @@ test('Máscara redonda: um disco branco do tamanho da câmera, com a forma no no
     for (const theme of THEMES) {
       const maskProps = getBorderMask(parseBorder({...presetOf('border', theme), ...sized(id)}))!;
       assert.deepEqual(maskProps, {
-        width: side, height: side, shape: 'circulo', radius: side / 2, fit: 'janela', mascara: true, bleed: 0,
+        width: side, height: side, shape: 'circle', radius: side / 2, fit: 'window', mask: true, bleed: 0,
         outputFormat: 'png', transparent: true,
       }, `${theme} ${id}: a mesma em todos os temas`);
       const mask = parseBorder(maskProps);
@@ -500,21 +500,21 @@ test('Máscara redonda: um disco branco do tamanho da câmera, com a forma no no
   }
 });
 
-test('CLI: --size webcam-redonda e circulo nomeiam o arquivo, e a máscara sai com --bleed 0', () => {
+test('CLI: --size webcam-round e circulo nomeiam o arquivo, e a máscara sai com --bleed 0', () => {
   const cli = (...args: string[]) => parseRenderArgs(args);
-  for (const [composition, id] of [['BorderLoop', 'webcam-redonda'], ['BorderLoop', 'webcam-redonda-g'], ['BlockLoop', 'circulo'], ['BlockLoop', 'circulo-p']] as const) {
+  for (const [composition, id] of [['BorderLoop', 'webcam-round'], ['BorderLoop', 'webcam-round-lg'], ['BlockLoop', 'circle'], ['BlockLoop', 'circle-sm']] as const) {
     const kind = composition === 'BorderLoop' ? 'border' : 'block';
     for (const format of ['webm', 'png', 'mov'] as const) {
       const {output, props} = resolveExport(buildExportOptions(cli(composition, '--size', id, '--format', format), presetOf(kind, 'neon')));
       assert.equal(path.basename(output), `${composition}-${id}.${format}`);
-      assert.equal((props as {shape: string}).shape, 'circulo');
+      assert.equal((props as {shape: string}).shape, 'circle');
     }
   }
-  const mask = resolveExport(buildExportOptions(cli('BorderLoop', '--size', 'webcam-redonda', '--bleed', '0', '--format', 'png'), {mascara: true}));
-  assert.equal(path.basename(mask.output), 'BorderLoop-webcam-redonda-mascara.png');
+  const mask = resolveExport(buildExportOptions(cli('BorderLoop', '--size', 'webcam-round', '--bleed', '0', '--format', 'png'), {mask: true}));
+  assert.equal(path.basename(mask.output), 'BorderLoop-webcam-round-mask.png');
   assert.equal((mask.props as {radius: number}).radius, 16, 'o radius pedido fica nas props…');
   assert.equal(getBorderMaskElement(mask.props as BorderLoopProps).corner, 200, '…mas a máscara é o disco');
-  assert.throws(() => resolveExport(buildExportOptions(cli('BorderLoop', '--size', 'webcam-redonda', '--format', 'png'), {mascara: true})),
+  assert.throws(() => resolveExport(buildExportOptions(cli('BorderLoop', '--size', 'webcam-round', '--format', 'png'), {mask: true})),
     /use bleed 0 \(with --size, add --bleed 0\)/);
 });
 
@@ -528,29 +528,29 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
     for (const id of ROUND_BLOCKS) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/BlockLoop-${id}.${format}`), `${name}: ${id}.${format}`);
     }
-    // The Halloween kits also ship every size without ornaments (variant sem-enfeites).
+    // The Halloween kits also ship every size without ornaments (variant plain).
     const kit = name.startsWith('halloween-');
     for (const id of ROUND_BLOCKS.filter(() => kit)) {
-      for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/BlockLoop-${id}-sem-enfeites.${format}`), `${name}: ${id} sem enfeites`);
+      for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/BlockLoop-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
     }
     for (const id of ROUND_BORDERS) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/BorderLoop-${id}.${format}`), `${name}: ${id}.${format}`);
-      if (kit) for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/BorderLoop-${id}-sem-enfeites.${format}`), `${name}: ${id} sem enfeites`);
+      if (kit) for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/BorderLoop-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
       const mask = plan.find((file) => file.output.endsWith(`borders/mascara-${id}.png`))!;
       assert.ok(mask, `${name}: máscara de ${id}`);
-      assert.deepEqual([mask.exportProps.shape, mask.exportProps.radius, mask.canvas.width], ['circulo', getSize(id).width / 2, getSize(id).width]);
+      assert.deepEqual([mask.exportProps.shape, mask.exportProps.radius, mask.canvas.width], ['circle', getSize(id).width / 2, getSize(id).width]);
       for (const file of plan.filter((entry) => entry.size === id && entry.role !== 'mask')) assert.equal(file.mask, mask.output);
     }
     // The square webcam keeps its own (rounded-rect) mask.
-    const square = plan.find((file) => file.output.endsWith('borders/mascara-webcam-quadrada.png'))!;
-    assert.equal(square.exportProps.shape, 'retangulo');
+    const square = plan.find((file) => file.output.endsWith('borders/mascara-webcam-square.png'))!;
+    assert.equal(square.exportProps.shape, 'rectangle');
     // Kits: the background, 25 sizes with ornaments (no screens) and 27 without, in two formats, plus the nine masks, shared by both.
     assert.equal(plan.length, name === 'halloween' ? 69 : kit ? 2 + 2 * 25 + 2 * 27 + 9 : 65, name);
   }
 });
 
 test('Packs: dois temas com raios diferentes dividem a mesma máscara redonda', () => {
-  const border = (preset: string, format: 'webm' | 'png') => ({composition: 'BorderLoop', preset, sizes: ['webcam-redonda'], formats: [format]});
+  const border = (preset: string, format: 'webm' | 'png') => ({composition: 'BorderLoop', preset, sizes: ['webcam-round'], formats: [format]});
   const plan = planPack({name: 'teste', items: [border('border-neon', 'webm'), border('border-pastel', 'png')]}, realPackDeps);
-  assert.deepEqual(plan.filter((file) => file.role === 'mask').map((file) => path.posix.basename(file.output)), ['mascara-webcam-redonda.png']);
+  assert.deepEqual(plan.filter((file) => file.role === 'mask').map((file) => path.posix.basename(file.output)), ['mascara-webcam-round.png']);
 });

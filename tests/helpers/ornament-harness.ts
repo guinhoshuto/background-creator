@@ -33,10 +33,10 @@ const SIZE_EXTREMES = [ORNAMENT_SIZE_RANGE.min, ORNAMENT_SIZE_RANGE.max];
  */
 type Case = {label: string; input: Record<string, unknown>; mustFit?: boolean};
 
-/** Small round screen frames (a square tela with radius ≥ side/2): the outline is a circle, but the frame is still a tela. */
-const ROUND_TELAS: readonly Record<string, unknown>[] = [
-  {width: 96, height: 96, bleed: 0, fit: 'tela', shape: 'retangulo', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'nenhum'},
-  {width: 96, height: 96, bleed: 0, fit: 'tela', shape: 'retangulo', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'nenhum'},
+/** Small round screen frames (a square screen with radius ≥ side/2): the outline is a circle, but the frame is still a screen. */
+const ROUND_SCREENS: readonly Record<string, unknown>[] = [
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'nenhum'},
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'nenhum'},
 ];
 
 /** Every named size, the border's radii 0/16/200 on each and small round screen frames, and the round blocks with each accent. */
@@ -46,10 +46,10 @@ const variants = (adapter: OrnamentKindAdapter): Case[] => {
     for (const size of adapter.sizes) {
       for (const radius of [0, 16, 200]) cases.push({label: `${size.id} radius ${radius}`, input: {...sizeProps(size), radius}, mustFit: true});
     }
-    ROUND_TELAS.forEach((input, index) => cases.push({label: `tela redonda ${index}`, input}));
+    ROUND_SCREENS.forEach((input, index) => cases.push({label: `tela redonda ${index}`, input}));
   }
   if (adapter.kind === 'block') {
-    for (const size of adapter.sizes.filter((entry) => entry.props?.shape === 'circulo')) {
+    for (const size of adapter.sizes.filter((entry) => entry.props?.shape === 'circle')) {
       for (const accent of ['esquerda', 'topo']) cases.push({label: `${size.id} accent ${accent}`, input: {...sizeProps(size), accent}, mustFit: true});
     }
   }
@@ -87,7 +87,7 @@ const checkPlacements = (id: string, frame: OrnamentFrame, placements: readonly 
       && y - extent >= limit.y + ORNAMENT_EDGE - 1e-6 && y + extent <= limit.y + limit.height - ORNAMENT_EDGE + 1e-6, `${where}: dentro do arquivo`);
     if (frame.hole) assert.ok(roundRectSdf(frame.hole, x, y) >= extent - 1e-6, `${where}: fora da janela`);
     // A screen frame has no back room: the rest of its box is the band's fillet, which the band fill covers.
-    if (frame.fit === 'tela') assert.equal(placement.layer, 'front', `${where}: em tela só na frente`);
+    if (frame.fit === 'screen') assert.equal(placement.layer, 'front', `${where}: em tela só na frente`);
     if (placement.layer === 'front') {
       for (const area of frame.keepOut) assert.ok(rectDistance(area, x, y) >= extent + ORNAMENT_CLEARANCE - 1e-6, `${where}: longe do texto`);
     }
@@ -140,7 +140,7 @@ const checkCase = (
     }
     const layout = adapter.ornamentLayout({...adapter.parse({...input, ornaments: 'nenhum'}), ornaments: set});
     assert.equal(layout.placements.length, 0, `${id}: recusado só quando nada cabe`);
-    // The way out named is the one of this kind and fit (a border has no padding; tela, no bleed).
+    // The way out named is the one of this kind and fit (a border has no padding; screen, no bleed).
     for (const issue of issues) assert.equal(issue.message, `The "${set}" ornaments do not fit this size: ${ornamentWayOut(layout.frame)}`, id);
     return false;
   }
@@ -160,7 +160,7 @@ const checkCase = (
   const fresh = () => ornamentSet.place(frame, {ornamentSize: props.ornamentSize});
   assert.deepEqual(fresh(), placements, `${id}: place() determinístico`);
   assert.deepEqual(fresh(), placements, `${id}: place() determinístico`);
-  // A border's back layer tucks under the band: its cover is the whole outer edge (janela and tela).
+  // A border's back layer tucks under the band: its cover is the whole outer edge (window and screen).
   if (adapter.kind === 'border') assert.deepEqual(frame.cover, {path: roundRectPath(frame.outline), fillRule: 'nonzero'}, `${id}: a faixa esconde os de trás`);
   // Seed- and frame-free: another seed lays out exactly the same.
   assert.deepEqual(adapter.ornamentLayout(adapter.parse({...input, seed: 999})), layout, `${id}: a seed não move os enfeites`);
@@ -223,7 +223,7 @@ const checkCase = (
 
 /** The size the generic scans and the markup use besides the kind's default: a round one where the kind has it. */
 export const roundSize = (adapter: OrnamentKindAdapter): NamedSize =>
-  adapter.kind === 'block' ? getSize('circulo') : adapter.kind === 'border' ? getSize('webcam-redonda') : getSize('chat-vertical');
+  adapter.kind === 'block' ? getSize('circle') : adapter.kind === 'border' ? getSize('webcam-round') : getSize('chat-vertical');
 
 const closingOf = (markup: string, start: number) => {
   const tags = /<g[\s>]|<\/g>/g;
@@ -399,7 +399,7 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
     });
 
     test(`ornaments [${set}] ${kindName}: markup limpo, na ordem das camadas${kindName === 'border' ? ', tudo dentro da moldura' : ''}`, () => {
-      for (const input of [{}, sizeProps(roundSize(adapter)), ...(kindName === 'border' ? [sizeProps(getSize('tela-cheia'))] : [])]) {
+      for (const input of [{}, sizeProps(roundSize(adapter)), ...(kindName === 'border' ? [sizeProps(getSize('fullscreen'))] : [])]) {
         for (const lightning of [0, 0.7]) {
           const props = adapter.parse({...NEUTRAL, ornaments: set, ...input, lightning});
           for (const at of [0, 123]) checkMarkup(`[${set}] ${kindName} ${JSON.stringify(input)} lightning ${lightning} frame ${at}`, adapter, props, adapter.render(props, at));
@@ -413,7 +413,7 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
 
   if (kinds.includes('border')) test(`ornaments [${set}] border: a máscara não muda com enfeites nem relâmpago`, () => {
     const adapter = ORNAMENT_KINDS.border;
-    for (const size of adapter.sizes.filter((entry) => entry.props?.fit !== 'tela')) {
+    for (const size of adapter.sizes.filter((entry) => entry.props?.fit !== 'screen')) {
       const mask = getBorderMask(borderLoopSchema.parse({...sizeProps(size), ornaments: set, lightning: 0.7}));
       assert.ok(mask, size.id);
       assert.ok(!('ornaments' in mask) && !('lightning' in mask), `${size.id}: a máscara não leva enfeites`);

@@ -100,7 +100,7 @@ const packCache = new Map<string, PackItems>();
 
 /**
  * The props of the pack item (packs/<theme>.json) that renders a named size with the kit's
- * ornaments (never a variant such as sem-enfeites); {} when it has none or only a variant has it.
+ * ornaments (never a variant such as plain); {} when it has none or only a variant has it.
  */
 export const packItemProps = (theme: string, sizeId: string): Record<string, unknown> => {
   let pack = packCache.get(theme);

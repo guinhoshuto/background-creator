@@ -507,9 +507,9 @@ export const fitGarlands = (frame: OrnamentFrame, webs: readonly CornerWeb[], av
   const runs: GarlandRun[] = [];
 
   const knotY = paintLimit.y + GARLAND.knotDrop;
-  const topLows = frame.fit === 'painel'
+  const topLows = frame.fit === 'panel'
     ? [outline.y + 5, outline.y - 2, outline.y - 9]
-    : hole ? (frame.fit === 'tela' ? [hole.y - 7, hole.y - 13] : [hole.y - 10, hole.y - 17, hole.y - 24]) : [];
+    : hole ? (frame.fit === 'screen' ? [hole.y - 7, hole.y - 13] : [hole.y - 10, hole.y - 17, hole.y - 24]) : [];
   const end = (fan: FanLayout | null, x: number) => (fan ? {...onEdgeRadial(fan), tie: false} : {x, y: knotY, tie: true});
   if (topLows.length > 0) {
     const top = fitRun(frame, {
@@ -520,7 +520,7 @@ export const fitGarlands = (frame: OrnamentFrame, webs: readonly CornerWeb[], av
   }
 
   // The bottom: a block's outline or a border's main stroke line, knotted on the frame itself.
-  const bottomY = frame.kind === 'block' ? outline.y + outline.height : frame.fit === 'janela' ? frame.track.y + frame.track.height : null;
+  const bottomY = frame.kind === 'block' ? outline.y + outline.height : frame.fit === 'window' ? frame.track.y + frame.track.height : null;
   if (bottomY !== null) {
     const lows = frame.kind === 'block' ? [bottomY + 22, bottomY + 15] : [bottomY + 32, bottomY + 25];
     const side = (slot: OrnamentCornerId, x: number) => {

@@ -30,7 +30,7 @@ const preset = (kind: OrnamentKindName) =>
  * The band the screen frames were tuned for (rounder corners, a wider band). The pack renders the
  * telas only without ornaments; these props keep the set's screen-frame behaviour tested.
  */
-const TELA_PROPS = {radius: 48, thickness: 24};
+const SCREEN_PROPS = {radius: 48, thickness: 24};
 
 /**
  * The kit's layout at a size at its own px: the preset and the pack item's props, without the
@@ -39,8 +39,8 @@ const TELA_PROPS = {radius: 48, thickness: 24};
 const kitLayout = (size: NamedSize, extra: Record<string, unknown> = {}) => {
   const adapter = ORNAMENT_KINDS[size.kind as OrnamentKindName];
   const item = unscaledItemProps('halloween-interior', size.id);
-  const tela = size.props?.fit === 'tela' ? TELA_PROPS : {};
-  const props = adapter.parse({...preset(size.kind as OrnamentKindName), ...item, ...sizeProps(size), ...tela, ...extra});
+  const screen = size.props?.fit === 'screen' ? SCREEN_PROPS : {};
+  const props = adapter.parse({...preset(size.kind as OrnamentKindName), ...item, ...sizeProps(size), ...screen, ...extra});
   return {props, ...adapter.ornamentLayout(props)};
 };
 /** The kit exactly as the pack renders it (packs/halloween-interior.json), scale included. */
@@ -74,39 +74,39 @@ test('ornaments interior: quais peças ficam onde em cada classe de tamanho (kit
   const expect = (id: string, expected: string[], extra: Record<string, unknown> = {}) =>
     assert.deepEqual(motifs(kitLayout(getSize(id), extra).placements), expected, `${id} ${JSON.stringify(extra)}`);
   const corners = ['candelabro-3@TR', 'candelabro-2@TL'];
-  for (const id of ['chat-compacto', 'chat-padrao', 'chat-alto', 'chat-coluna', 'chat-vertical', 'cartao', 'quadrado', 'lista']) expect(id, corners);
-  for (const id of ['webcam-16x9', 'webcam-4x3', 'webcam-quadrada', 'webcam-vertical', 'webcam-redonda-p', 'webcam-redonda', 'webcam-redonda-g']) expect(id, corners);
+  for (const id of ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical', 'card', 'square', 'list']) expect(id, corners);
+  for (const id of ['webcam-16x9', 'webcam-4x3', 'webcam-square', 'webcam-vertical', 'webcam-round-sm', 'webcam-round', 'webcam-round-lg']) expect(id, corners);
   // Wide blocks and windows (AD round 3): the red-velvet swag valance along the bottom, a festoon
-  // every 40 px (blocks) or 38 px (windows): faixa and titulo 28, webcam-16x9-g 24, jogo 36.
+  // every 40 px (blocks) or 38 px (windows): lower-third and title 28, webcam-16x9-lg 24, gameplay 36.
   const swags = (count: number, slot = 'bottom') => Array(count).fill(`${SWAG_MOTIF}@${slot}`) as string[];
-  for (const id of ['faixa', 'titulo']) expect(id, [...corners, ...swags(28)]);
+  for (const id of ['lower-third', 'title']) expect(id, [...corners, ...swags(28)]);
   // Wide windows: the top-centre girandole on its foot, two-light wall girandoles 320 px apart up
-  // both sides, and on the jogo two-light girandoles on the top rail at ±400 px.
-  expect('webcam-16x9-g', [...corners, 'candelabro-3-pe@top', 'arandela@right', 'arandela@left', ...swags(24)]);
-  expect('jogo', [
+  // both sides, and on the gameplay two-light girandoles on the top rail at ±400 px.
+  expect('webcam-16x9-lg', [...corners, 'candelabro-3-pe@top', 'arandela@right', 'arandela@left', ...swags(24)]);
+  expect('gameplay', [
     ...corners, 'candelabro-3-pe@top', 'arandela@right', 'arandela@left', 'arandela@right', 'arandela@left',
     'candelabro-2-pe@top', 'candelabro-2-pe@top', ...swags(36),
   ]);
   // Labels: one two-light girandole.
-  for (const id of ['etiqueta-p', 'etiqueta']) expect(id, ['candelabro-2@TR']);
-  // Round blocks: the left accent arc sends the partner to the right side; circulo-p is too small for two.
-  expect('circulo-p', ['candelabro-3@TR']);
-  for (const id of ['circulo', 'circulo-g']) {
+  for (const id of ['label-sm', 'label']) expect(id, ['candelabro-2@TR']);
+  // Round blocks: the left accent arc sends the partner to the right side; circle-sm is too small for two.
+  expect('circle-sm', ['candelabro-3@TR']);
+  for (const id of ['circle', 'circle-lg']) {
     expect(id, ['candelabro-3@TR', 'candelabro-2@right']);
     expect(id, corners, {accent: 'nenhum'});
     expect(id, ['candelabro-3@right', 'candelabro-2@left'], {accent: 'topo'});
   }
   // The Twitch panel keeps its sill candle (no room for a girandole, and no glow).
-  expect('painel-twitch', ['vela-alta@BR']);
+  expect('twitch-panel', ['vela-alta@BR']);
   // Screen frames (the pack's radius 48, thickness 24): standing girandoles below, two-light ones
   // above, wall girandoles up the sides, the swag valance across the top band between the top ones.
   const telaCorners = ['candelabro-3-pe@BR', 'candelabro-3-pe@BL', 'candelabro-2@TR', 'candelabro-2@TL'];
-  expect('tela-cheia', [...telaCorners, ...Array(3).fill(['arandela@right', 'arandela@left']).flat(), ...swags(54, 'top')]);
-  expect('tela-vertical', [...telaCorners, ...Array(5).fill(['arandela@right', 'arandela@left']).flat(), ...swags(28, 'top')]);
+  expect('fullscreen', [...telaCorners, ...Array(3).fill(['arandela@right', 'arandela@left']).flat(), ...swags(54, 'top')]);
+  expect('fullscreen-vertical', [...telaCorners, ...Array(5).fill(['arandela@right', 'arandela@left']).flat(), ...swags(28, 'top')]);
 });
 
-test('ornaments interior: no pack, jogo e webcam-16x9-g escalam o kit (×2 e ×1,5): o herói usa o quarto e cresce junto', () => {
-  for (const [id, scale, bleed] of [['jogo', 2, 96], ['webcam-16x9-g', 1.5, 72]] as const) {
+test('ornaments interior: no pack, jogo e webcam-16x9-lg escalam o kit (×2 e ×1,5): o herói usa o quarto e cresce junto', () => {
+  for (const [id, scale, bleed] of [['gameplay', 2, 96], ['webcam-16x9-lg', 1.5, 72]] as const) {
     const size = getSize(id);
     const {adapter, props, frame, placements, scale: drawn} = packLayout(size);
     assert.equal(props.bleed, bleed, id);
@@ -122,13 +122,13 @@ test('ornaments interior: no pack, jogo e webcam-16x9-g escalam o kit (×2 e ×1
 test('ornaments interior: o quarto é o limite (herói ≥ 85 %, parceiro ≥ 60 %) e os tamanhos em px', () => {
   const at = (id: string) => kitLayout(getSize(id));
   // Tela is not here: its standing corner girandoles give up some room to keep their flames off the
-  // picture (the 'tela' test below); its partners still use ≥ 60 %.
-  for (const id of ['chat-compacto', 'chat-padrao', 'chat-vertical', 'etiqueta-p', 'etiqueta', 'faixa', 'titulo', 'cartao', 'quadrado', 'lista',
-    'webcam-16x9', 'webcam-16x9-g', 'webcam-4x3', 'webcam-quadrada', 'webcam-vertical', 'jogo', 'webcam-redonda-p', 'webcam-redonda', 'webcam-redonda-g',
-    'circulo-p', 'tela-cheia', 'tela-vertical']) {
+  // picture (the 'screen' test below); its partners still use ≥ 60 %.
+  for (const id of ['chat-compact', 'chat-standard', 'chat-vertical', 'label-sm', 'label', 'lower-third', 'title', 'card', 'square', 'list',
+    'webcam-16x9', 'webcam-16x9-lg', 'webcam-4x3', 'webcam-square', 'webcam-vertical', 'gameplay', 'webcam-round-sm', 'webcam-round', 'webcam-round-lg',
+    'circle-sm', 'fullscreen', 'fullscreen-vertical']) {
     const {frame, placements} = at(id);
     const share = (placement: OrnamentPlacement) => placement.extent / roomAt(frame, cornerSlot(frame, placement.slot as 'TR'), 'front').extent;
-    if (frame.fit !== 'tela') assert.ok(share(placements[0]!) >= 0.85, `${id}: herói usa ${share(placements[0]!)} do quarto`);
+    if (frame.fit !== 'screen') assert.ok(share(placements[0]!) >= 0.85, `${id}: herói usa ${share(placements[0]!)} do quarto`);
     for (const partner of placements.slice(1).filter((placement) => ['TR', 'TL', 'BR', 'BL'].includes(placement.slot))) {
       assert.ok(share(partner) >= 0.6, `${id}: ${partner.motif}@${partner.slot} usa ${share(partner)}`);
       assert.ok(partner.size >= PARTNER_SHARE * placements[0]!.size - 1e-9, `${id}: parceiro perto da altura do herói`);
@@ -136,20 +136,20 @@ test('ornaments interior: o quarto é o limite (herói ≥ 85 %, parceiro ≥ 60
   }
   const height = (id: string, index = 0) => at(id).placements[index]!.size;
   // Full heights (mount to the tallest flame tip), px: measured with the kit presets.
-  for (const id of ['chat-compacto', 'chat-padrao', 'chat-vertical']) assert.ok(height(id) >= 52, `${id}: ${height(id)}`);
-  for (const id of ['faixa', 'titulo', 'cartao']) assert.ok(height(id) >= 60, `${id}: ${height(id)}`);
-  for (const id of ['etiqueta-p', 'etiqueta']) assert.ok(height(id) >= 49, `${id}: ${height(id)}`);
-  for (const id of ['webcam-16x9', 'webcam-4x3', 'jogo']) assert.ok(height(id) >= 54, `${id}: ${height(id)}`);
+  for (const id of ['chat-compact', 'chat-standard', 'chat-vertical']) assert.ok(height(id) >= 52, `${id}: ${height(id)}`);
+  for (const id of ['lower-third', 'title', 'card']) assert.ok(height(id) >= 60, `${id}: ${height(id)}`);
+  for (const id of ['label-sm', 'label']) assert.ok(height(id) >= 49, `${id}: ${height(id)}`);
+  for (const id of ['webcam-16x9', 'webcam-4x3', 'gameplay']) assert.ok(height(id) >= 54, `${id}: ${height(id)}`);
   // Round cams and blocks (AD round 2: the room, not the preset, limits them): redonda-p, redonda and
-  // circulo-p at their room (redonda gives up ≤ 14 % of it so its rosettes meet the ring);
-  // redonda-g, circulo and circulo-g at the preset's ornamentSize.
-  assert.ok(height('webcam-redonda-p') >= 100, `webcam-redonda-p: ${height('webcam-redonda-p')}`);
-  assert.ok(height('webcam-redonda') >= 115, `webcam-redonda: ${height('webcam-redonda')}`);
-  assert.ok(height('circulo-p') >= 80, `circulo-p: ${height('circulo-p')}`);
-  for (const id of ['webcam-redonda-g', 'circulo', 'circulo-g']) assert.equal(height(id), preset(getSize(id).kind as OrnamentKindName).ornamentSize, id);
+  // circle-sm at their room (redonda gives up ≤ 14 % of it so its rosettes meet the ring);
+  // round-lg, circle and circle-lg at the preset's ornamentSize.
+  assert.ok(height('webcam-round-sm') >= 100, `webcam-round-sm: ${height('webcam-round-sm')}`);
+  assert.ok(height('webcam-round') >= 115, `webcam-round: ${height('webcam-round')}`);
+  assert.ok(height('circle-sm') >= 80, `circle-sm: ${height('circle-sm')}`);
+  for (const id of ['webcam-round-lg', 'circle', 'circle-lg']) assert.equal(height(id), preset(getSize(id).kind as OrnamentKindName).ornamentSize, id);
   assert.deepEqual([preset('chat').ornamentSize, preset('block').ornamentSize, preset('border').ornamentSize], [56, 96, 144]);
   // On the round blocks and on redonda-p/redonda the rosette meets the ring's outline.
-  for (const id of ['circulo-p', 'circulo', 'circulo-g', 'webcam-redonda-p', 'webcam-redonda']) {
+  for (const id of ['circle-sm', 'circle', 'circle-lg', 'webcam-round-sm', 'webcam-round']) {
     const {frame, placements} = at(id);
     const {outline} = frame;
     for (const placement of placements) {
@@ -161,34 +161,34 @@ test('ornaments interior: o quarto é o limite (herói ≥ 85 %, parceiro ≥ 60
     }
   }
   // The round blocks' side partner (the left accent arc takes TL) keeps the side's room.
-  for (const id of ['circulo', 'circulo-g']) assert.ok(height(id, 1) >= 64, `${id}: parceiro do lado`);
-  assert.ok(height('jogo', 2) >= 43, 'jogo: girândola do topo');
-  for (const index of [3, 4, 5, 6]) assert.ok(height('jogo', index) >= 43, 'jogo: arandelas');
-  for (const index of [7, 8]) assert.ok(height('jogo', index) >= PARTNER_SHARE * height('jogo', 2), 'jogo: girândolas do trilho');
-  for (const id of ['tela-cheia', 'tela-vertical']) {
+  for (const id of ['circle', 'circle-lg']) assert.ok(height(id, 1) >= 64, `${id}: parceiro do lado`);
+  assert.ok(height('gameplay', 2) >= 43, 'jogo: girândola do topo');
+  for (const index of [3, 4, 5, 6]) assert.ok(height('gameplay', index) >= 43, 'jogo: arandelas');
+  for (const index of [7, 8]) assert.ok(height('gameplay', index) >= PARTNER_SHARE * height('gameplay', 2), 'jogo: girândolas do trilho');
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
     for (const index of [0, 1]) assert.ok(height(id, index) >= 45, `${id}: canto de baixo ${index}`);
     for (const index of [2, 3]) assert.ok(height(id, index) >= 55, `${id}: canto de cima ${index}`);
     assert.ok(height(id, 4) >= 37, `${id}: arandela`);
   }
   // The Twitch panel's sill candle is unchanged.
-  assert.equal(height('painel-twitch'), 22.5);
+  assert.equal(height('twitch-panel'), 22.5);
   // Where the rows stand.
-  const jogo = at('jogo').placements;
-  assert.deepEqual(jogo.filter((placement) => placement.motif === 'arandela').map((placement) => Math.round(placement.y)), [293, 293, 613, 613]);
-  assert.deepEqual(at('tela-cheia').placements.filter((placement) => placement.motif === 'arandela').map((placement) => Math.round(placement.y)), [220, 220, 540, 540, 860, 860]);
+  const gameplay = at('gameplay').placements;
+  assert.deepEqual(gameplay.filter((placement) => placement.motif === 'arandela').map((placement) => Math.round(placement.y)), [293, 293, 613, 613]);
+  assert.deepEqual(at('fullscreen').placements.filter((placement) => placement.motif === 'arandela').map((placement) => Math.round(placement.y)), [220, 220, 540, 540, 860, 860]);
   const offsets = (id: string, keep: (placement: OrnamentPlacement) => boolean, of = (placement: OrnamentPlacement) => placement.x) => {
     const {frame, placements} = at(id);
     const centre = frame.outline.x + frame.outline.width / 2;
     return placements.filter(keep).map((placement) => Math.round((of(placement) - centre) * 1000) / 1000).sort((a, b) => a - b);
   };
-  assert.deepEqual(offsets('jogo', (placement) => placement.motif === 'candelabro-2-pe'), [-TOP_SPACING, TOP_SPACING]);
+  assert.deepEqual(offsets('gameplay', (placement) => placement.motif === 'candelabro-2-pe'), [-TOP_SPACING, TOP_SPACING]);
   // The valance: festoons abutting at their pitch, centred on the frame, hanging from the bottom
   // line's centreline (a border's outer line: 1 px inside the outline; a block's stroke), their
   // circles centred 6.5 / 8 px below it; its ends ≥ 16 px past the corner curve. On a screen frame
   // it hangs from a rail 15 px into the top band.
   const isSwag = (placement: OrnamentPlacement) => placement.motif === SWAG_MOTIF;
   for (const [id, pitch, count, joinFromOutline, centre] of [
-    ['faixa', 40, 28, -2, 8], ['titulo', 40, 28, -2, 8], ['webcam-16x9-g', 38, 24, -1, 6.5], ['jogo', 38, 36, -1, 6.5],
+    ['lower-third', 40, 28, -2, 8], ['title', 40, 28, -2, 8], ['webcam-16x9-lg', 38, 24, -1, 6.5], ['gameplay', 38, 36, -1, 6.5],
   ] as const) {
     const {frame, placements} = at(id);
     const {outline} = frame;
@@ -202,19 +202,19 @@ test('ornaments interior: o quarto é o limite (herói ≥ 85 %, parceiro ≥ 60
     const reach = (count * pitch) / 2;
     assert.ok(outline.width / 2 - outline.radius - reach >= SWAG_CORNER - 1e-9, `${id}: pontas longe da curva`);
   }
-  for (const [id, count] of [['tela-cheia', 54], ['tela-vertical', 28]] as const) {
+  for (const [id, count] of [['fullscreen', 54], ['fullscreen-vertical', 28]] as const) {
     const {frame, placements} = at(id);
-    assert.deepEqual(offsets(id, isSwag), Array.from({length: count}, (_, index) => (index - (count - 1) / 2) * SWAG.tela.pitch), id);
+    assert.deepEqual(offsets(id, isSwag), Array.from({length: count}, (_, index) => (index - (count - 1) / 2) * SWAG.screen.pitch), id);
     assert.equal(swagLine(frame)!.y, frame.outline.y + 15);
     for (const placement of placements.filter(isSwag)) assert.equal(placement.y, 21.5, id);
     // As long as the top corners' girandoles allow (the pair gap), an even count.
     const corners = placements.filter((placement) => placement.slot === 'TR' || placement.slot === 'TL');
-    const wider = [-(count + 1) / 2, (count + 1) / 2].map((index) => ({x: frame.outline.x + frame.outline.width / 2 + index * SWAG.tela.pitch, y: 21.5, extent: placements.find(isSwag)!.extent}));
+    const wider = [-(count + 1) / 2, (count + 1) / 2].map((index) => ({x: frame.outline.x + frame.outline.width / 2 + index * SWAG.screen.pitch, y: 21.5, extent: placements.find(isSwag)!.extent}));
     assert.ok(wider.some((festoon) => corners.some((corner) => Math.hypot(festoon.x - corner.x, festoon.y - corner.y) < festoon.extent + corner.extent + 2)), `${id}: a sanefa vai até as girândolas`);
   }
   assert.equal(SIDE_SPACING, 320);
-  // Each festoon's circle is the AD's: janela r ≤ 23.5 (room 23.5 at the outline + 5.5), blocks ≤ 25, tela ≤ 20.5.
-  assert.deepEqual(['jogo', 'faixa', 'tela-cheia'].map((id) => at(id).placements.find(isSwag)!.extent), [23.5, 25, 20.5]);
+  // Each festoon's circle is the AD's: window r ≤ 23.5 (room 23.5 at the outline + 5.5), blocks ≤ 25, screen ≤ 20.5.
+  assert.deepEqual(['gameplay', 'lower-third', 'fullscreen'].map((id) => at(id).placements.find(isSwag)!.extent), [23.5, 25, 20.5]);
 });
 
 /** Every pair of placements keeps its circles apart by 2 px, except two festoons of the valance (they abut). */
@@ -230,7 +230,7 @@ test('ornaments interior: as peças nunca se sobrepõem (kit, padrões, extremos
       assertApart(neutralLayout(size, {ornamentSize}).placements, `${size.id} ${ornamentSize}`);
     }
   }
-  for (const id of ['chat-padrao', 'chat-compacto', 'quadrado', 'cartao', 'faixa', 'webcam-quadrada', 'webcam-4x3', 'jogo']) {
+  for (const id of ['chat-standard', 'chat-compact', 'square', 'card', 'lower-third', 'webcam-square', 'webcam-4x3', 'gameplay']) {
     const size = getSize(id);
     for (let radius = 0; radius <= Math.min(size.width, size.height) / 2; radius += 3) {
       const {placements} = kitLayout(size, {radius});
@@ -243,7 +243,7 @@ test('ornaments interior: as peças nunca se sobrepõem (kit, padrões, extremos
 test('ornaments interior: frame 0 é a pose do herói (chamas perto da média, borlas da sanefa em repouso)', () => {
   const glowMin = FLICKER.glowMean - FLICKER.glowSlow - FLICKER.glowFast;
   const glowSpan = 2 * (FLICKER.glowSlow + FLICKER.glowFast);
-  for (const id of ['chat-padrao', 'faixa', 'jogo', 'circulo', 'painel-twitch', 'tela-cheia']) {
+  for (const id of ['chat-standard', 'lower-third', 'gameplay', 'circle', 'twitch-panel', 'fullscreen']) {
     for (let seed = 0; seed < 60; seed++) {
       const {props, frame, placements} = kitLayout(getSize(id), {seed});
       const elements = interiorSet.build(frame, placements, props, 0, 960);
@@ -270,7 +270,7 @@ test('ornaments interior: harmônicos inteiros a partir de Hz (16 s, 3,7 s e 12,
   assert.deepEqual([CANDLE_HZ.glowSlow, CANDLE_HZ.glowFast, CANDLE_HZ.height, CANDLE_HZ.leanSlow, CANDLE_HZ.leanFast].map((hz) => harmonics(hz, 16)), [7, 19, 11, 5, 13]);
   assert.deepEqual([CANDLE_HZ.glowSlow, CANDLE_HZ.glowFast, CANDLE_HZ.height, CANDLE_HZ.leanSlow, CANDLE_HZ.leanFast].map((hz) => harmonics(hz, 12.25)), [5, 15, 8, 4, 10]);
   assert.equal(harmonics(TASSEL_HZ, 16), 2);
-  for (const id of ['faixa', 'painel-twitch', 'tela-vertical']) {
+  for (const id of ['lower-third', 'twitch-panel', 'fullscreen-vertical']) {
     for (const durationSeconds of [3.7, 12.25, 16]) {
       const {props, frame, placements} = kitLayout(getSize(id), {durationSeconds});
       const n = Math.round(durationSeconds * 60);
@@ -417,14 +417,14 @@ test('ornaments interior: a luz não gasta o quarto (≤ o alcance do corpo) e s
     }
   }
   // glow 0 on any size: no light.
-  for (const id of ['chat-padrao', 'webcam-16x9', 'faixa']) {
+  for (const id of ['chat-standard', 'webcam-16x9', 'lower-third']) {
     const {props, frame, placements} = kitLayout(getSize(id), {glow: 0});
     for (const element of interiorSet.build(frame, placements, props, 0, 960)) assert.equal(element.light, 0, id);
   }
 });
 
 test('ornaments interior: no relâmpago o latão acende do lado da janela, uma luz fria abre em volta e a sanefa brilha', () => {
-  const {props, frame, placements} = kitLayout(getSize('chat-padrao'));
+  const {props, frame, placements} = kitLayout(getSize('chat-standard'));
   const calm = interiorSet.build(frame, placements, props, 0, 960);
   const strike = interiorSet.build(frame, placements, props, 174, 960);
   const flames = (elements: OrnamentElement[]) => elements.filter((element) => element.type === 'interior-flames');
@@ -453,30 +453,30 @@ test('ornaments interior: no relâmpago o latão acende do lado da janela, uma l
       }
     }
   }
-  // At the strike with the kit border (lightning 1.0) the jogo's fixtures bloom (≈ 0.5 at full flash).
-  const jogo = kitLayout(getSize('jogo'));
-  const bloom = interiorSet.build(jogo.frame, jogo.placements, jogo.props, 174, 960).filter((element) => element.type === 'interior-flames');
+  // At the strike with the kit border (lightning 1.0) the gameplay's fixtures bloom (≈ 0.5 at full flash).
+  const gameplay = kitLayout(getSize('gameplay'));
+  const bloom = interiorSet.build(gameplay.frame, gameplay.placements, gameplay.props, 174, 960).filter((element) => element.type === 'interior-flames');
   assert.ok(bloom.every((element) => (element.cold as number) > 0.3), 'jogo: luz fria no frame 174');
   // The valance flares on the flashing window's side, and not before the strike.
-  const swag = (at: number) => interiorSet.build(jogo.frame, jogo.placements, jogo.props, at, 960).filter((element) => element.type === 'interior-swag');
+  const swag = (at: number) => interiorSet.build(gameplay.frame, gameplay.placements, gameplay.props, at, 960).filter((element) => element.type === 'interior-swag');
   assert.ok(swag(174).every((element) => (element.flash as number) > 0.3), 'jogo: sanefa acende');
   assert.ok(swag(0).every((element) => element.flash === 0) && swag(959).every((element) => element.flash === 0), 'jogo: sanefa sem clarão');
   assert.equal(SWAG_TASSEL.swing, 3);
 });
 
-/** Small round screen frames (a square tela with radius ≥ side/2): the girandoles do not fit, so the chambersticks stand on the band. */
-const ROUND_TELAS = [
-  {width: 96, height: 96, bleed: 0, fit: 'tela', shape: 'retangulo', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'nenhum', ornamentSize: 48},
-  {width: 96, height: 96, bleed: 0, fit: 'tela', shape: 'retangulo', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'nenhum', ornamentSize: 96},
+/** Small round screen frames (a square screen with radius ≥ side/2): the girandoles do not fit, so the chambersticks stand on the band. */
+const ROUND_SCREENS = [
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'nenhum', ornamentSize: 48},
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'nenhum', ornamentSize: 96},
 ];
 
 test('ornaments interior: numa tela redonda as velas ficam na faixa, sem braço, e o desenho cabe no lugar e no arquivo', () => {
   const adapter = ORNAMENT_KINDS.border;
-  for (const input of ROUND_TELAS) {
+  for (const input of ROUND_SCREENS) {
     const props = adapter.parse({...input, ornaments: 'interior'});
     const {frame, placements} = adapter.ornamentLayout(props);
     const label = JSON.stringify(input);
-    assert.ok(frame.circle && frame.fit === 'tela', `${label}: tela redonda`);
+    assert.ok(frame.circle && frame.fit === 'screen', `${label}: tela redonda`);
     assert.ok(placements.length > 0 && placements.every((placement) => placement.motif.startsWith('vela-')), `${label}: castiçais (${motifs(placements)})`);
     for (const placement of placements) {
       assert.equal(candleOf(frame, placement).bracket, null, `${label} ${placement.motif}@${placement.slot}: sem braço na tela`);
@@ -501,7 +501,7 @@ test('ornaments interior: numa tela redonda as velas ficam na faixa, sem braço,
 });
 
 test('ornaments interior: tela em qualquer raio e espessura nunca recusa, e as peças ficam na faixa', () => {
-  for (const id of ['tela-cheia', 'tela-vertical']) {
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
     const size = getSize(id);
     for (const extra of [{}, {radius: 0}, {radius: 16}, {radius: 96}, {radius: 200}, {radius: 300}, {thickness: 12, radius: 8}]) {
       for (const layout of [() => kitLayout(size, extra), () => neutralLayout(size, extra)]) {
@@ -514,13 +514,13 @@ test('ornaments interior: tela em qualquer raio e espessura nunca recusa, e as p
     }
   }
   // The pack renders the telas without ornaments only; TELA_PROPS is the band their corners were tuned for.
-  assert.deepEqual(packItemProps('halloween-interior', 'tela-cheia'), {});
+  assert.deepEqual(packItemProps('halloween-interior', 'fullscreen'), {});
   assert.ok(GIRANDOLE_MIN <= 12);
   // The girandoles standing on the band (the bottom corners) and the top band's valance keep
   // everything they draw (flames, halos, wax, brass, velvet, tassels) ≥ 1 px off the picture (layout.window), not only off
   // holeShape (the window less the glow margin, which the contract allows): with the pack's props
   // and at any radius.
-  for (const id of ['tela-cheia', 'tela-vertical']) {
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
     const size = getSize(id);
     for (const extra of [{}, {radius: 0}, {radius: 16}, {radius: 96}, {radius: 200}, {radius: 300}, {thickness: 20}, {thickness: 32, radius: 0}, {thickness: 22, glow: 20}, {glow: 24}]) {
       const {props, frame, placements} = kitLayout(size, extra);

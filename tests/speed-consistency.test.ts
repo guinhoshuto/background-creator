@@ -46,17 +46,17 @@ test('Velocidade: a tabela cobre todos os temas, tipos e tamanhos, e bate com o 
 test('Velocidade: os casos que andavam várias vezes mais rápido nos tamanhos grandes agora seguem o pedido', () => {
   const at = (preset: string, size: string, layer: SpeedRow['layer']) =>
     ROWS.find((row) => row.preset === preset && row.size === size && row.layer === layer)!;
-  // The neon comets asked 160 px/s and ran ~735 on tela-cheia, ~362 on chat-coluna; the chat's
+  // The neon comets asked 160 px/s and ran ~735 on fullscreen, ~362 on chat-column; the chat's
   // gradient asked 16 and ran ~414. Their periods are fixed px now (or a sway, for the gradient).
   for (const [preset, size, layer] of [
-    ['border-neon', 'tela-cheia', 'stroke'], ['border-neon', 'webcam-16x9', 'stroke'], ['chat-neon', 'chat-coluna', 'stroke'],
-    ['chat-neon', 'chat-coluna', 'fill'], ['block-vidro', 'faixa', 'stroke'], ['border-halloween', 'tela-vertical', 'fill'],
+    ['border-neon', 'fullscreen', 'stroke'], ['border-neon', 'webcam-16x9', 'stroke'], ['chat-neon', 'chat-column', 'stroke'],
+    ['chat-neon', 'chat-column', 'fill'], ['block-vidro', 'lower-third', 'stroke'], ['border-halloween', 'fullscreen-vertical', 'fill'],
   ] as const) {
     const row = at(preset, size, layer);
     assert.ok(Math.abs(speedError(row)) <= SPEED_TOLERANCE, `${rowId(row)}: ${reportSpeed(row.effective)} px/s`);
   }
   // The gradient's sway and the embers are exact; the glass sheens too unless they would merge.
-  assert.equal(at('chat-neon', 'chat-coluna', 'fill').effective, 16);
-  assert.equal(at('border-halloween', 'tela-vertical', 'fill').effective, 40);
+  assert.equal(at('chat-neon', 'chat-column', 'fill').effective, 16);
+  assert.equal(at('border-halloween', 'fullscreen-vertical', 'fill').effective, 40);
   assert.equal(at('chat-vidro', 'chat-vertical', 'fill').effective, 60);
 });

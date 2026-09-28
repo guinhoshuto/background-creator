@@ -101,7 +101,7 @@ test('the walk reaches the described fields of every composition', () => {
 
 /**
  * The Studio shows these texts to whoever edits a preset, so they are English like the rest of the
- * repo. The ids quoted inside them (retangulo, nenhum, formigas, circulo-p...) are still Portuguese
+ * repo. The ids quoted inside them (rectangle, nenhum, formigas, circle-sm...) are still Portuguese
  * until the renaming round reaches them; they carry no accent and are not in the word list below.
  */
 const PORTUGUESE = /[áàâãéêíóôõúç]|\b(de|da|do|das|dos|para|com|em|ou|sem|uma|cada|quando|pelo|pela|entre|mais|menos|não|só)\b/i;

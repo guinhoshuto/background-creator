@@ -45,7 +45,7 @@ test('[noite] a lua (principal) está em todos os 27 tamanhos, atrás, e na fren
       const {frame, placements} = layoutAt(size, {ornamentSize});
       assert.equal(placements[0]?.motif, 'moon', `${size.id} @${ornamentSize}`);
       assert.ok(placements[0]!.extent >= Math.min(MOON_MIN_EXTENT, 0.35 * ornamentSize) - 1e-9, `${size.id} @${ornamentSize}`);
-      const front = frame.fit === 'tela' || size.bleed === 0;
+      const front = frame.fit === 'screen' || size.bleed === 0;
       assert.equal(placements[0]!.layer, front ? 'front' : 'back', `${size.id}: camada da lua`);
       assert.equal(placements.filter((placement) => placement.motif === 'moon').length, 1);
     }
@@ -65,34 +65,34 @@ test('[noite] kit: quais motivos ficam em cada tamanho e com que tamanho (preset
   type Want = {bats: number; pumpkins: number; small: number; stars: number; embers: number};
   const want = (bats: number, stars: number, embers = 0): Want => ({bats, pumpkins: 2, small: 1, stars, embers});
   const expected: Record<string, Want> = {
-    'chat-compacto': want(2, 0),
-    'chat-padrao': want(2, 4),
-    'chat-alto': want(2, 6),
-    'chat-coluna': want(2, 9),
+    'chat-compact': want(2, 0),
+    'chat-standard': want(2, 4),
+    'chat-tall': want(2, 6),
+    'chat-column': want(2, 9),
     'chat-vertical': want(4, 9, 2),
-    'etiqueta-p': want(1, 0),
-    etiqueta: want(2, 0),
-    faixa: want(5, 6, 3),
-    titulo: want(5, 6, 3),
-    cartao: want(2, 3, 1),
-    quadrado: want(2, 0),
-    lista: want(2, 6),
-    'circulo-p': want(1, 0),
-    circulo: want(2, 0),
-    'circulo-g': want(2, 0),
+    'label-sm': want(1, 0),
+    label: want(2, 0),
+    'lower-third': want(5, 6, 3),
+    title: want(5, 6, 3),
+    card: want(2, 3, 1),
+    square: want(2, 0),
+    list: want(2, 6),
+    'circle-sm': want(1, 0),
+    circle: want(2, 0),
+    'circle-lg': want(2, 0),
     // The Twitch panel (with the pack's padding 48 × 36): the moon in front (Ø46, 6 px in from the edge), one bat, three pumpkins.
-    'painel-twitch': want(1, 0),
+    'twitch-panel': want(1, 0),
     'webcam-16x9': want(2, 3, 1),
-    // The large frames scale the kit (webcam-16x9-g ×1.5 with bleed 72, jogo ×2 with bleed 96):
+    // The large frames scale the kit (webcam-16x9-lg ×1.5 with bleed 72, gameplay ×2 with bleed 96):
     // in the set's own space they hold the motifs of a webcam-16x9.
-    'webcam-16x9-g': want(2, 3, 1),
+    'webcam-16x9-lg': want(2, 3, 1),
     'webcam-4x3': want(2, 0),
-    'webcam-quadrada': want(2, 0),
-    'webcam-redonda-p': want(3, 0),
-    'webcam-redonda': want(3, 0),
-    'webcam-redonda-g': want(3, 3),
+    'webcam-square': want(2, 0),
+    'webcam-round-sm': want(3, 0),
+    'webcam-round': want(3, 0),
+    'webcam-round-lg': want(3, 3),
     'webcam-vertical': want(2, 4),
-    jogo: want(2, 4, 2),
+    gameplay: want(2, 4, 2),
   };
   // Every size the pack renders with ornaments (the screen frames come only without them).
   assert.deepEqual(Object.keys(expected).sort(), kitSizeIds('halloween-noite').sort());
@@ -106,7 +106,7 @@ test('[noite] kit: quais motivos ficam em cada tamanho e com que tamanho (preset
     );
     const moon = placements[0]!;
     // The hero is limited by its room, not by the preset, wherever a room target applies (every
-    // size but the round blocks, where the block preset's Ø64 caps it: more would crowd circulo-p);
+    // size but the round blocks, where the block preset's Ø64 caps it: more would crowd circle-sm);
     // its room is its extent's ceiling at its corner.
     const room = roomAt(frame, cornerSlots(frame).find((corner) => corner.slot === moon.slot)!, moon.layer).extent;
     if (frame.circle && size.kind === 'block') assert.equal(moon.size, props.ornamentSize, `${size.id}: lua no tamanho do preset`);
@@ -123,16 +123,16 @@ test('[noite] kit: quais motivos ficam em cada tamanho e com que tamanho (preset
     }
     // The Twitch panel (no bleed): the front moon keeps 7 px from the image's edges (4 px inside
     // the 3 px stroke), so neither the edge nor the stroke's corner cuts it.
-    if (size.id === 'painel-twitch') {
+    if (size.id === 'twitch-panel') {
       assert.equal(moon.layer, 'front');
-      assert.ok(moon.x + moon.size / 2 <= 313 + 1e-9 && moon.y - moon.size / 2 >= 7 - 1e-9, `painel-twitch: lua ${moon.x}, ${moon.y}, Ø${moon.size}`);
+      assert.ok(moon.x + moon.size / 2 <= 313 + 1e-9 && moon.y - moon.size / 2 >= 7 - 1e-9, `twitch-panel: lua ${moon.x}, ${moon.y}, Ø${moon.size}`);
     }
   }
   // Too small an ornamentSize leaves the moon alone (every secondary is under its minimum).
-  const chat = NAMED_SIZES.find((entry) => entry.id === 'chat-padrao')!;
+  const chat = NAMED_SIZES.find((entry) => entry.id === 'chat-standard')!;
   assert.deepEqual(motifs(layoutAt(chat, {ornamentSize: 12}).placements).filter((motif) => !motif.startsWith('star')), ['moon']);
   // A huge ornamentSize never grows the secondaries past their px caps.
-  for (const placement of layoutAt(NAMED_SIZES.find((entry) => entry.id === 'jogo')!, {ornamentSize: 256}).placements) {
+  for (const placement of layoutAt(NAMED_SIZES.find((entry) => entry.id === 'gameplay')!, {ornamentSize: 256}).placements) {
     if (placement.motif === 'bat') assert.ok(placement.size <= BAT_MAX_SPANS[0] + 1e-9);
     if (placement.motif.startsWith('pumpkin')) assert.ok(placement.size <= PUMPKIN_MAX.large + 1e-9);
   }
@@ -144,7 +144,7 @@ test('[noite] estrelas e brasas: passo fixo nas bordas longas, longe dos outros 
     const {frame, placements} = kitAt(size);
     const stars = placements.filter(isEdge);
     const others = placements.filter((placement) => !isEdge(placement));
-    if (['etiqueta-p', 'etiqueta', 'circulo-p', 'painel-twitch'].includes(size.id)) assert.equal(stars.length, 0, size.id);
+    if (['label-sm', 'label', 'circle-sm', 'twitch-panel'].includes(size.id)) assert.equal(stars.length, 0, size.id);
     // Top, sides and ring arcs alternate a big and a small star; the bottom run an ember and a small star (an ember first).
     const along = stars.filter((star) => star.slot !== 'bottom');
     const bottom = stars.filter((star) => star.slot === 'bottom');
@@ -189,7 +189,7 @@ test('[noite] luz nunca come o espaço do corpo: light ≤ reach + max(4, 0,25·
 test('[noite] blocos redondos: a lua fica no céu (TR) e nada da frente toca o arco de destaque', () => {
   // The arc (BlockLoop: 60° to each side of the top or the left), in degrees counter-clockwise from the right, y up.
   const arcSpan = {topo: [30, 150], esquerda: [120, 240]} as const;
-  for (const id of ['circulo-p', 'circulo', 'circulo-g']) {
+  for (const id of ['circle-sm', 'circle', 'circle-lg']) {
     const size = NAMED_SIZES.find((entry) => entry.id === id)!;
     for (const accent of ['esquerda', 'topo', 'nenhum'] as const) {
       for (const glow of [0, 14]) {
@@ -218,7 +218,7 @@ test('[noite] blocos redondos: a lua fica no céu (TR) e nada da frente toca o a
 });
 
 test('[noite] tela: lua, morcegos e abóboras na faixa com o preset, radius 64 e thickness 24', () => {
-  for (const id of ['tela-cheia', 'tela-vertical']) {
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
     const size = NAMED_SIZES.find((entry) => entry.id === id)!;
     const adapter = ORNAMENT_KINDS.border;
     const {placements} = adapter.ornamentLayout(adapter.parse({...adapter.preset('halloween-noite'), ...sizeProps(size), radius: 64, thickness: 24}));
@@ -228,7 +228,7 @@ test('[noite] tela: lua, morcegos e abóboras na faixa com o preset, radius 64 e
     for (const bat of placements.filter((placement) => placement.motif === 'bat')) assert.ok(bat.size >= 29, `${id}: morcego ${bat.size}`);
   }
   // The bare preset (radius 12, thickness 12) keeps the moon and still fits bats in the band.
-  for (const id of ['tela-cheia', 'tela-vertical']) {
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
     const size = NAMED_SIZES.find((entry) => entry.id === id)!;
     const adapter = ORNAMENT_KINDS.border;
     const {placements} = adapter.ornamentLayout(adapter.parse({...adapter.preset('halloween-noite'), ...sizeProps(size)}));
@@ -239,7 +239,7 @@ test('[noite] tela: lua, morcegos e abóboras na faixa com o preset, radius 64 e
 
 test('[noite] frame 0 é a pose do pack: asas abertas, abóboras acesas perto da média, lua inteira', () => {
   for (const seed of [1, 7, 31, 99, 2024]) {
-    for (const id of ['chat-padrao', 'faixa', 'webcam-redonda', 'jogo', 'tela-cheia', 'painel-twitch']) {
+    for (const id of ['chat-standard', 'lower-third', 'webcam-round', 'gameplay', 'fullscreen', 'twitch-panel']) {
       const size = NAMED_SIZES.find((entry) => entry.id === id)!;
       const {props, frame, placements} = layoutAt(size, {seed});
       const elements = build(frame, placements, props, 0, framesOf(props));
@@ -278,7 +278,7 @@ const spectrum = (values: readonly number[]) => {
 };
 
 test('[noite] ritmos do fundo: asas a 2 Hz, chama 3 e 7 por 12 s, voo 1×; periódicos em 3,7 e 12,25 s', () => {
-  const size = NAMED_SIZES.find((entry) => entry.id === 'chat-padrao')!;
+  const size = NAMED_SIZES.find((entry) => entry.id === 'chat-standard')!;
   const {props, frame, placements} = layoutAt(size);
   const n = framesOf(props);
   const series = Array.from({length: n}, (_, f) => build(frame, placements, props, f, n));
@@ -293,9 +293,9 @@ test('[noite] ritmos do fundo: asas a 2 Hz, chama 3 e 7 por 12 s, voo 1×; peri�
   assert.deepEqual(spectrum(field('noite-pumpkin', 'glow')), [3, 7]);
   assert.deepEqual(spectrum(field('noite-bat', 'x')), [1]);
   assert.deepEqual(spectrum(field('noite-bat', 'y')), [2]);
-  // Embers (faixa's bottom run): an in-place orbit once per loop, the disc breathing twice.
+  // Embers (lower-third's bottom run): an in-place orbit once per loop, the disc breathing twice.
   {
-    const at = layoutAt(NAMED_SIZES.find((entry) => entry.id === 'faixa')!);
+    const at = layoutAt(NAMED_SIZES.find((entry) => entry.id === 'lower-third')!);
     const frames = framesOf(at.props);
     const embers = Array.from({length: frames}, (_, f) => build(at.frame, at.placements, at.props, f, frames).filter((element) => element.type === 'noite-ember'));
     assert.ok(embers[0]!.length >= 2);
@@ -317,7 +317,7 @@ test('[noite] ritmos do fundo: asas a 2 Hz, chama 3 e 7 por 12 s, voo 1×; peri�
   }
 
   for (const durationSeconds of [3.7, 12.25]) {
-    for (const id of ['chat-padrao', 'circulo', 'webcam-16x9', 'tela-vertical']) {
+    for (const id of ['chat-standard', 'circle', 'webcam-16x9', 'fullscreen-vertical']) {
       const target = NAMED_SIZES.find((entry) => entry.id === id)!;
       const at = layoutAt(target, {durationSeconds});
       const frames = framesOf(at.props);
@@ -359,7 +359,7 @@ test('[noite] formas e cores do fundo', () => {
   assert.ok(BAT_EXTENT > 0.54 && BAT_EXTENT < 0.7);
   assert.ok(BAT_INK >= BAT_RIM + 0.35 - 1e-9);
 
-  const size = NAMED_SIZES.find((entry) => entry.id === 'chat-padrao')!;
+  const size = NAMED_SIZES.find((entry) => entry.id === 'chat-standard')!;
   const {props} = layoutAt(size);
   const markup = ORNAMENT_KINDS.chat.render(props, 0, framesOf(props));
   // No moon disc (its gradient's moonlight stop at 0.63); the pumpkins in the warm colour.

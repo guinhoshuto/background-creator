@@ -19,25 +19,25 @@
     {
       "composition": "ChatLoop",
       "preset": "chat-halloween",
-      "sizes": ["chat-compacto", "chat-padrao", "chat-alto", "chat-coluna", "chat-vertical"],
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
       "formats": ["webm", "png"]
     },
     {
       "composition": "BlockLoop",
       "preset": "block-halloween",
-      "sizes": ["etiqueta-p", "etiqueta", "faixa", "titulo", "cartao", "quadrado", "lista", "circulo-p", "circulo", "circulo-g"],
+      "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
       "formats": ["webm", "png"]
     },
     {
       "composition": "BlockLoop",
       "preset": "block-halloween",
-      "sizes": ["painel-twitch"],
+      "sizes": ["twitch-panel"],
       "formats": ["gif", "png"]
     },
     {
       "composition": "BorderLoop",
       "preset": "border-halloween",
-      "sizes": ["webcam-16x9", "webcam-16x9-g", "webcam-4x3", "webcam-quadrada", "webcam-redonda-p", "webcam-redonda", "webcam-redonda-g", "webcam-vertical", "jogo", "tela-cheia", "tela-vertical"],
+      "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
       "formats": ["webm", "png"]
     }
   ]

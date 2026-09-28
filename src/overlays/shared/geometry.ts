@@ -83,7 +83,7 @@ export const roundRectPath = ({x, y, width, height, radius}: RoundRect): string 
 };
 
 /**
- * Whether the rounded rect is a circle: square, with corners that meet. A box 'circulo' lays out
+ * Whether the rounded rect is a circle: square, with corners that meet. A box 'circle' lays out
  * this way, and so does a square with a radius of half its side; the finish (the rim light) and
  * the decorations treat both alike.
  */

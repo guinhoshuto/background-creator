@@ -14,8 +14,8 @@ import type {OrnamentCornerId, OrnamentFrame, OrnamentLayerName, OrnamentPlaceme
  *
  *   - Moon (hero): behind the panel or frame, centred just outside the TR corner so it rises
  *     behind it, with a halo of 1.25 r (the halo shrinks first, down to 1.1 r, when room is short).
- *     In front where the back has no room: tela (the band covers the rest of the box) and a panel
- *     without bleed (painel-twitch), where it sits in the padding pocket, with no halo.
+ *     In front where the back has no room: screen (the band covers the rest of the box) and a panel
+ *     without bleed (twitch-panel), where it sits in the padding pocket, with no halo.
  *   - Bats: in front, 1–3 in the sky next to the moon (the top bleed on rectangles, along the ring
  *     on circles), one crossing the moon's limb as in the background; on top edges of 900 px or
  *     more, a second flock of two (32 and 28 px) in the middle of the free run.
@@ -115,14 +115,14 @@ const BAT_ARC_SEARCH = Math.PI / 3;
 const BAT_ARC_STEP = Math.PI / 90;
 
 /**
- * On a panel without bleed (painel-twitch) the front moon's disc fills its extent, so it would
+ * On a panel without bleed (twitch-panel) the front moon's disc fills its extent, so it would
  * touch the image's edge and cover the frame stroke's corner: there (and only for the moon, whose
  * disc fills its circle) the paint limit is taken this many px further in.
  */
 export const PANEL_MOON_INSET = 6;
 
-/** A panel whose file is its box (no bleed): painel-twitch. */
-const bleedless = (frame: OrnamentFrame) => frame.fit === 'painel'
+/** A panel whose file is its box (no bleed): twitch-panel. */
+const bleedless = (frame: OrnamentFrame) => frame.fit === 'panel'
   && frame.box.x === frame.canvas.x && frame.box.y === frame.canvas.y
   && frame.box.width === frame.canvas.width && frame.box.height === frame.canvas.height;
 
@@ -187,7 +187,7 @@ export const meetsAccentSpan = (frame: OrnamentFrame, x: number, y: number, exte
   return offset - half < (span[1] - span[0]) / 2;
 };
 
-/** The moon: behind at the first corner that fits (in front on tela and without bleed); null when it fits nowhere. */
+/** The moon: behind at the first corner that fits (in front on screen and without bleed); null when it fits nowhere. */
 const placeMoon = (frame: OrnamentFrame, corners: readonly OrnamentCorner[], diameter: number): OrnamentPlacement | null => {
   const lit = noiteLit(frame);
   const nominal = (lit ? MOON_HALO : 1) * diameter / 2;
@@ -198,7 +198,7 @@ const placeMoon = (frame: OrnamentFrame, corners: readonly OrnamentCorner[], dia
     const radius = Math.min(frame.outline.radius, frame.outline.width / 2, frame.outline.height / 2);
     const prefer = (frame.circle ? 0 : radius * (Math.SQRT2 - 1)) + diameter / 8;
     const back = fitMotif(frame, corner, {motif: 'moon', layer: 'back', nominal, min: MOON_MIN_EXTENT, prefer, hero: true});
-    // Behind wherever it fits; otherwise (tela, a panel without bleed) in front, tucked into the
+    // Behind wherever it fits; otherwise (screen, a panel without bleed) in front, tucked into the
     // corner (PANEL_MOON_INSET px clear of the edge on a panel without bleed).
     if (back) return {...back, size: 2 * moonShape(back.extent, diameter, lit).r};
     const room = bleedless(frame) ? {...frame, paintLimit: insetRect(frame.paintLimit, PANEL_MOON_INSET)} : frame;
@@ -333,7 +333,7 @@ const placePumpkins = (frame: OrnamentFrame, corners: readonly OrnamentCorner[],
 
 /**
  * The background's own 4-point stars along the long edges, so big frames never look bare: at a
- * fixed STAR_PITCH, centred on the outline line (the band's centreline on tela), alternating a
+ * fixed STAR_PITCH, centred on the outline line (the band's centreline on screen), alternating a
  * big and a small one. Runs: the top edge from TL + 48 to 64 px short of the moon and its trio;
  * the sides from 64 px below the top corner's motifs to 64 px above the pumpkins; the bottom edge
  * between the pumpkins, 64 px clear of the inner one on each side (embers alternating with small
@@ -377,7 +377,7 @@ type Run = {
 
 const placeStars = (frame: OrnamentFrame, motifs: readonly OrnamentPlacement[], corners: readonly OrnamentPlacement[]): OrnamentPlacement[] => {
   const stars: OrnamentPlacement[] = [];
-  const line = frame.fit === 'tela' ? frame.track : frame.outline;
+  const line = frame.fit === 'screen' ? frame.track : frame.outline;
   const offsets = scanAround(-STAR_SLIDE, STAR_SLIDE, 0);
   const runs: Run[] = [];
   if (!frame.circle) {

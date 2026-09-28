@@ -22,7 +22,7 @@ const THEMES = OVERLAY_THEMES;
 const preset = (theme: string): Record<string, unknown> =>
   JSON.parse(readFileSync(new URL(`../presets/block-${theme}.json`, import.meta.url), 'utf8'));
 
-/** A named size as props; painel-twitch has no bleed, and its size turns glow and halo off itself. */
+/** A named size as props; twitch-panel has no bleed, and its size turns glow and halo off itself. */
 const sized = (id: string): Record<string, unknown> => sizeProps(getSize(id));
 
 const parse = (input: object): BlockLoopProps => blockLoopSchema.parse(input);
@@ -44,8 +44,8 @@ test('Bloco: defaults são o neon no tamanho cartão, transparente, em WebM', ()
   assert.equal(blockCatalogEntry.id, 'BlockLoop');
   assert.equal(blockCatalogEntry.kind, 'block');
   assert.equal(blockCatalogEntry.getLayout, getBlockLayout);
-  const cartao = getSize('cartao');
-  assert.deepEqual([props.width, props.height, props.bleed], [cartao.width, cartao.height, cartao.bleed]);
+  const card = getSize('card');
+  assert.deepEqual([props.width, props.height, props.bleed], [card.width, card.height, card.bleed]);
   assert.equal(props.transparent, true);
   assert.equal(props.outputFormat, 'webm');
   assert.equal(props.guides, false);
@@ -112,7 +112,7 @@ test('Bloco: arquivo acima de 4K é recusado com a saída', () => {
 test('Bloco: os 11 tamanhos nomeados, inclusive as proporções extremas e os círculos, têm geometria coerente', () => {
   const sizes = sizesForKind('block');
   assert.deepEqual(sizes.map((size) => size.id).sort(),
-    ['cartao', 'circulo', 'circulo-g', 'circulo-p', 'etiqueta', 'etiqueta-p', 'faixa', 'lista', 'painel-twitch', 'quadrado', 'titulo']);
+    ['card', 'circle', 'circle-lg', 'circle-sm', 'label', 'label-sm', 'list', 'lower-third', 'square', 'title', 'twitch-panel']);
   for (const size of sizes) {
     for (const accent of BLOCK_ACCENTS) {
       for (const radius of [0, 16, 999]) {
@@ -164,14 +164,14 @@ test('Bloco: a barra de destaque desloca o conteúdo pela sua espessura, com o p
 });
 
 test('Bloco: num círculo o conteúdo é o quadrado inscrito, com a folga do padding até a curva', () => {
-  const props = parse({...sizeProps(getSize('quadrado')), radius: 999, paddingX: 16, paddingY: 16});
+  const props = parse({...sizeProps(getSize('square')), radius: 999, paddingX: 16, paddingY: 16});
   const {inner, content} = getBlockLayout(props);
   const side = (inner.width - 32) / Math.SQRT2;
   assert.ok(Math.abs(content.width - content.height) <= 2, JSON.stringify(content));
   assert.ok(content.width >= side - 2 && content.width <= side + 1e-9, `${content.width} vs ${side}`);
   assert.ok(contentClearance(inner, content) >= 16 - 1e-9);
   // A long pill keeps about its full height: trading more of it for width would not pay.
-  const pill = getBlockLayout(parse({...sizeProps(getSize('faixa')), radius: 999}));
+  const pill = getBlockLayout(parse({...sizeProps(getSize('lower-third')), radius: 999}));
   const full = pill.inner.height - 2 * parse({}).paddingY;
   assert.ok(pill.content.height <= full && pill.content.height >= full - 4, `${pill.content.height} vs ${full}`);
 });
@@ -192,14 +192,14 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
   assert.match(issuesOf({...twitch, halo: 0, glow: 14}).join(), /use bleed ≥ 14/);
   assert.match(issuesOf({...twitch, glow: 0, halo: 16}).join(), /use bleed ≥ 16/);
   assert.equal(blockLoopSchema.safeParse({...twitch, glow: 0, halo: 0}).success, true);
-  // The painel-twitch size carries that itself, and wins over a preset's glow, as the CLI does.
-  assert.deepEqual(sizeProps(getSize('painel-twitch')), {...twitch, shape: 'retangulo', glow: 0, halo: 0});
+  // The twitch-panel size carries that itself, and wins over a preset's glow, as the CLI does.
+  assert.deepEqual(sizeProps(getSize('twitch-panel')), {...twitch, shape: 'rectangle', glow: 0, halo: 0});
   for (const theme of THEMES) {
-    const options = buildExportOptions(parseRenderArgs(['BlockLoop', '--size', 'painel-twitch', '--format', 'gif']), preset(theme));
+    const options = buildExportOptions(parseRenderArgs(['BlockLoop', '--size', 'twitch-panel', '--format', 'gif']), preset(theme));
     const {props, output} = resolveExport(options);
     const {glow, halo, bleed} = props as Record<string, unknown>;
     assert.deepEqual([glow, halo, bleed], [0, 0, 0], theme);
-    assert.match(output, /BlockLoop-painel-twitch\.gif$/);
+    assert.match(output, /BlockLoop-twitch-panel\.gif$/);
   }
   // The bleed the message names is accepted; two px less is refused.
   assert.match(issuesOf({halo: 41}).join(), /use bleed ≥ 42/);
@@ -208,7 +208,7 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
 });
 
 test('Bloco: padding ou barra que não deixam espaço para o conteúdo são recusados', () => {
-  const tiny = sizeProps(getSize('etiqueta-p'));
+  const tiny = sizeProps(getSize('label-sm'));
   assert.match(issuesOf({...tiny, paddingY: 30}).join(), /The padding leaves no room for the content/);
   assert.match(issuesOf({...tiny, accent: 'topo', accentSize: 64}).join(), /leaves no room/);
   assert.equal(blockLoopSchema.safeParse({...tiny, paddingY: 12}).success, true);
@@ -290,7 +290,7 @@ test('Legibilidade: o brilho é medido em 2D, e nos cantos do texto dois lados d
     doubled,
     {radius: 0, paddingX: 12, paddingY: 12, strokeWidth: 6, glow: 20},
     {radius: 8, paddingX: 10, paddingY: 10, strokeWidth: 4, glow: 16},
-    {...sized('etiqueta'), radius: 999, paddingX: 10, paddingY: 10, strokeWidth: 4, glow: 16},
+    {...sized('label'), radius: 999, paddingX: 10, paddingY: 10, strokeWidth: 4, glow: 16},
   ]) {
     const props = parse({...input, glow: 0});
     const layout = getBlockLayout(props);
@@ -316,7 +316,7 @@ test('Aliasing: contorno e preenchimento rápidos demais são recusados com a ve
   const fillLimit = Number(fillMessage!.match(/fillSpeed up to ([\d.]+) px\/s/)![1]);
   assert.equal(blockLoopSchema.safeParse({...dots, fillSpeed: fillLimit}).success, true);
   // The effective speed is rounded to whole laps and exposed for the sidecar, on the block's own track.
-  const comets = {strokeMotion: 'cometas', cometSpacing: 64, strokeColors: ['#FFFFFF'], ...sizeProps(getSize('etiqueta-p'))};
+  const comets = {strokeMotion: 'cometas', cometSpacing: 64, strokeColors: ['#FFFFFF'], ...sizeProps(getSize('label-sm'))};
   const motion = getStrokeMotion(parse({...comets, strokeSpeed: 100}), getBlockLayout(parse(comets)).track);
   assert.ok(motion.laps >= 1 && motion.speed > 0);
 });
@@ -327,10 +327,10 @@ const CASES: Case[] = [
   {id: 'BlockLoop (padrão neon)', input: {}},
   ...THEMES.map((theme) => ({id: `BlockLoop (${theme})`, input: preset(theme)})),
   {id: 'BlockLoop (formigas, barra à esquerda com reflexo)', input: {strokeMotion: 'formigas', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'esquerda', accentSheen: 2}},
-  {id: 'BlockLoop (faixa, gradiente, barra no topo com reflexo)', input: {...sizeProps(getSize('faixa')), strokeMotion: 'gradiente', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'topo', accentSheen: 3, fill: 'listras'}},
-  {id: 'BlockLoop (etiqueta-p em pílula, cometas)', input: {...sizeProps(getSize('etiqueta-p')), radius: 999, cometSpacing: 240, strokeSpeed: 300}},
-  {id: 'BlockLoop (lista, brilhos, halo pulsando)', input: {...sizeProps(getSize('lista')), fill: 'brilhos', halo: 24, glowPulses: 3}},
-  {id: 'BlockLoop (painel da Twitch, sem bleed)', input: {...sizeProps(getSize('painel-twitch')), glow: 0, halo: 0, fill: 'gradiente', accent: 'topo', accentSheen: 1}},
+  {id: 'BlockLoop (faixa, gradiente, barra no topo com reflexo)', input: {...sizeProps(getSize('lower-third')), strokeMotion: 'gradiente', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'topo', accentSheen: 3, fill: 'listras'}},
+  {id: 'BlockLoop (label-sm em pílula, cometas)', input: {...sizeProps(getSize('label-sm')), radius: 999, cometSpacing: 240, strokeSpeed: 300}},
+  {id: 'BlockLoop (lista, brilhos, halo pulsando)', input: {...sizeProps(getSize('list')), fill: 'brilhos', halo: 24, glowPulses: 3}},
+  {id: 'BlockLoop (painel da Twitch, sem bleed)', input: {...sizeProps(getSize('twitch-panel')), glow: 0, halo: 0, fill: 'gradiente', accent: 'topo', accentSheen: 1}},
 ];
 
 for (const {id, input} of CASES) {

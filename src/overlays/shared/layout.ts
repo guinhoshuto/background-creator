@@ -17,7 +17,7 @@ export type PanelLayoutInput = {
   bleed: number;
   /** Requested corner radius; clamped to half the smaller side. */
   radius: number;
-  /** 'circulo' makes the radius half the side (the box must be square, see refineShape). */
+  /** 'circle' makes the radius half the side (the box must be square, see refineShape). */
   shape?: PanelShape;
   /** The stroke sits inside the box edge: its outer edge is the box edge. 0 = no stroke. */
   strokeWidth: number;
@@ -43,7 +43,7 @@ export type PanelLayout = AssetLayout & {
   inner: RoundRect;
   strokeWidth: number;
   /**
-   * The panel is a circle ('circulo', or a square box with a radius of half its side): the shapes
+   * The panel is a circle ('circle', or a square box with a radius of half its side): the shapes
    * above are concentric circles, and a kind lays its text and decorations out around the centre.
    */
   circle: boolean;
@@ -57,7 +57,7 @@ export type PanelLayout = AssetLayout & {
  */
 export const layoutPanel = (input: PanelLayoutInput): PanelLayout => {
   const {canvas, box} = getBoxCanvas(input);
-  const shape = roundRect(box, shapeRadius({shape: input.shape ?? 'retangulo', radius: input.radius, width: box.width, height: box.height}));
+  const shape = roundRect(box, shapeRadius({shape: input.shape ?? 'rectangle', radius: input.radius, width: box.width, height: box.height}));
   const strokeWidth = Math.min(input.strokeWidth, Math.min(box.width, box.height) / 2);
   const track = offsetRoundRect(shape, -strokeWidth / 2);
   const inner = offsetRoundRect(shape, -strokeWidth);
@@ -82,7 +82,7 @@ export const layoutPanel = (input: PanelLayoutInput): PanelLayout => {
   };
 };
 
-export const FRAME_FITS = ['janela', 'tela'] as const;
+export const FRAME_FITS = ['window', 'screen'] as const;
 export type FrameFit = (typeof FRAME_FITS)[number];
 
 export type FrameLayoutInput = {
@@ -91,15 +91,15 @@ export type FrameLayoutInput = {
   bleed: number;
   /** Corner radius of the window; clamped to half its smaller side. */
   radius: number;
-  /** 'circulo' makes the window a circle, its radius half the side ('janela' only, see refineShape). */
+  /** 'circle' makes the window a circle, its radius half the side ('window' only, see refineShape). */
   shape?: PanelShape;
   /** Total width of the frame band (both lines and their gap, for a double line). */
   thickness: number;
   /** Reach of the band's glow. */
   glow?: number;
-  /** 'janela': the box is the window, the band goes out into the bleed. 'tela': the box is the file. */
+  /** 'window': the box is the window, the band goes out into the bleed. 'screen': the box is the file. */
   fit: FrameFit;
-  /** Anything else a kind draws beyond the band (outer ornaments), in px; 'janela' only. */
+  /** Anything else a kind draws beyond the band (outer ornaments), in px; 'window' only. */
   extraOutset?: number;
 };
 
@@ -122,7 +122,7 @@ export type FrameLayout = AssetLayout & {
 /**
  * The single source of truth for a border's geometry, in canvas pixels.
  *
- * 'janela' (window): the box is the window, with the requested radius (half the side for a
+ * 'window' (window): the box is the window, with the requested radius (half the side for a
  * circle). The band of `thickness`
  * goes outwards into the bleed, and the corners of the box outside the window's arcs belong to
  * the frame too (`filletPath`) as far as the band reaches: a kind paints them opaque inside the
@@ -131,22 +131,22 @@ export type FrameLayout = AssetLayout & {
  * the window: the glow is masked out of it.
  * `content` is the box, where the camera goes; `hole` is the whole-pixel rect inside the window.
  *
- * 'tela' (screen): the box is the whole file (use bleed 0). The band is drawn inwards from the
+ * 'screen' (screen): the box is the whole file (use bleed 0). The band is drawn inwards from the
  * box edge, the glow reaches only inwards, and the hole is the window pulled in by the glow.
  */
 export const layoutFrame = (input: FrameLayoutInput): FrameLayout => {
   const {canvas, box} = getBoxCanvas(input);
   const glow = Math.max(0, input.glow ?? 0);
   const thickness = input.thickness;
-  if (input.fit === 'janela') {
-    const window = roundRect(box, shapeRadius({shape: input.shape ?? 'retangulo', radius: input.radius, width: box.width, height: box.height}));
+  if (input.fit === 'window') {
+    const window = roundRect(box, shapeRadius({shape: input.shape ?? 'rectangle', radius: input.radius, width: box.width, height: box.height}));
     return {
       canvas,
       box,
       content: {...box},
       hole: inscribedRect(window),
       outset: Math.max(0, thickness + glow, input.extraOutset ?? 0),
-      fit: 'janela',
+      fit: 'window',
       window,
       outer: offsetRoundRect(window, thickness),
       track: offsetRoundRect(window, thickness / 2),
@@ -162,7 +162,7 @@ export const layoutFrame = (input: FrameLayoutInput): FrameLayout => {
     content: {x: window.x, y: window.y, width: window.width, height: window.height},
     hole: inscribedRect(holeShape),
     outset: 0,
-    fit: 'tela',
+    fit: 'screen',
     window,
     outer: offsetRoundRect(window, thickness),
     track: offsetRoundRect(window, thickness / 2),
@@ -175,15 +175,15 @@ export const layoutFrame = (input: FrameLayoutInput): FrameLayout => {
 export const ringPath = (layout: FrameLayout) => `${roundRectPath(layout.outer)}${roundRectPath(layout.window)}`;
 
 /**
- * The box's corners outside the window or the band (draw with `fill-rule="evenodd"`). In 'janela',
+ * The box's corners outside the window or the band (draw with `fill-rule="evenodd"`). In 'window',
  * the part of the box outside the window: the fillets that round a rectangular camera off, to be
  * clipped to the band (a large radius would otherwise leave square corners around the frame). In
- * 'tela', the file's square corners outside the band's rounded outer edge, so the screen's corners
+ * 'screen', the file's square corners outside the band's rounded outer edge, so the screen's corners
  * are covered but a gap between the band and an outer line stays as empty as around a window.
  * Empty-looking when the corners are square.
  */
 export const filletPath = (layout: FrameLayout) =>
-  `${rectPath(layout.box)}${roundRectPath(layout.fit === 'janela' ? layout.window : layout.outer)}`;
+  `${rectPath(layout.box)}${roundRectPath(layout.fit === 'window' ? layout.window : layout.outer)}`;
 
 /** The smallest even bleed that holds `outset` (bleed must be even for H.264). */
 export const minBleedFor = (outset: number) => 2 * Math.ceil(outset / 2 - 1e-9);

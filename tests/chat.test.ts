@@ -87,7 +87,7 @@ const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
 test('Tamanhos: os 5 tamanhos de chat, em todos os temas, dão o arquivo da tabela com o brilho dentro do bleed', () => {
-  assert.deepEqual(CHAT_SIZES.map((size) => size.id), ['chat-compacto', 'chat-padrao', 'chat-alto', 'chat-coluna', 'chat-vertical']);
+  assert.deepEqual(CHAT_SIZES.map((size) => size.id), ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical']);
   for (const size of CHAT_SIZES) {
     for (const [theme, preset] of [['padrão', {}], ...Object.entries(PRESETS)] as const) {
       const props = parse({...preset, ...sizeProps(size)});
@@ -106,7 +106,7 @@ test('Tamanhos: os 5 tamanhos de chat, em todos os temas, dão o arquivo da tabe
     }
   }
   // The full-height column: the file is exactly the screen's height.
-  const column = getChatLayout(parse(sizeProps(CHAT_SIZES.find((size) => size.id === 'chat-coluna')!)));
+  const column = getChatLayout(parse(sizeProps(CHAT_SIZES.find((size) => size.id === 'chat-column')!)));
   assert.deepEqual(column.canvas, {width: 512, height: 1080});
   const vertical = getChatLayout(parse(sizeProps(CHAT_SIZES.find((size) => size.id === 'chat-vertical')!)));
   assert.deepEqual(vertical.canvas, {width: 1024, height: 704});
@@ -380,7 +380,7 @@ test('Catálogo: entrada do chat, defaults do schema e o literal do Root', () =>
   assert.equal(chatLoopSchema.strict().safeParse(ROOT_DEFAULT_PROPS).success, true);
   const layout = chatCatalogEntry.getLayout(chatCatalogEntry.defaultProps);
   assert.deepEqual(layout.canvas, {width: 464, height: 664});
-  // The kind policy: transparent WebM at chat-padrao.
+  // The kind policy: transparent WebM at chat-standard.
   assert.equal(chatCatalogEntry.defaultProps.transparent, true);
   assert.equal(chatCatalogEntry.defaultProps.outputFormat, 'webm');
 });

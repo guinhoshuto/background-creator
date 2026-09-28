@@ -69,8 +69,8 @@ test('ornaments: quando nem o motivo principal cabe, a combinação é recusada 
   // A border has no padding, and a screen frame no bleed: each names its own way out, which works.
   const border = {width: 200, height: 120, radius: 0, thickness: 2, strokeWidth: 2, glow: 0, halo: 0, corners: 'nenhum', ornaments: 'noite'};
   for (const [input, wayOut, fixed] of [
-    [{...border, fit: 'tela', bleed: 0}, 'increase thickness, glow or radius or use ornaments nenhum.', {radius: 60}],
-    [{...border, fit: 'janela', bleed: 8}, 'increase bleed or radius or use ornaments nenhum.', {bleed: 24}],
+    [{...border, fit: 'screen', bleed: 0}, 'increase thickness, glow or radius or use ornaments nenhum.', {radius: 60}],
+    [{...border, fit: 'window', bleed: 8}, 'increase bleed or radius or use ornaments nenhum.', {bleed: 24}],
   ] as const) {
     const refused = ORNAMENT_KINDS.border.issues(input);
     assert.deepEqual(refused.map((issue) => [issue.path, issue.message]), [[['ornaments'], `The "noite" ornaments do not fit this size: ${wayOut}`]], input.fit);
@@ -79,7 +79,7 @@ test('ornaments: quando nem o motivo principal cabe, a combinação é recusada 
   // A radius already at its maximum (a pill, a round screen frame) is not offered: raising it changes nothing.
   const pill = {width: 240, height: 64, radius: 32, bleed: 0, padding: 8, headerHeight: 0, glow: 0, halo: 0, ornaments: 'noite'};
   const round = {
-    width: 64, height: 64, fit: 'tela', shape: 'retangulo', bleed: 0, radius: 32, thickness: 4, glow: 0, strokeWidth: 0, lines: 1, corners: 'nenhum', ornaments: 'noite',
+    width: 64, height: 64, fit: 'screen', shape: 'rectangle', bleed: 0, radius: 32, thickness: 4, glow: 0, strokeWidth: 0, lines: 1, corners: 'nenhum', ornaments: 'noite',
   };
   for (const [adapter, input, wayOut, fixes] of [
     [ORNAMENT_KINDS.chat, pill, 'increase bleed or padding or use ornaments nenhum.', [{bleed: 64}, {padding: 20}]],
@@ -109,7 +109,7 @@ test('ornaments: relâmpago num ciclo curto demais para um raio é recusado com 
 
 test('ornaments: lugares nos cantos, espaço livre e deslize ao longo da diagonal', () => {
   const adapter = ORNAMENT_KINDS.block;
-  const round = adapter.ornamentLayout(adapter.parse({...sizeProps(getSize('circulo')), ornaments: 'noite', accent: 'esquerda'})).frame;
+  const round = adapter.ornamentLayout(adapter.parse({...sizeProps(getSize('circle')), ornaments: 'noite', accent: 'esquerda'})).frame;
   const {outline} = round;
   const [cx, cy, r] = [outline.x + outline.width / 2, outline.y + outline.height / 2, outline.width / 2];
   // A circle's slots are its 45° points, in the order TR, BR, BL, TL.
@@ -151,14 +151,14 @@ test('ornaments: lugares nos cantos, espaço livre e deslize ao longo da diagona
   assert.equal(ornamentOutset(frame, []), 0);
   // A screen frame has no back room (the rest of its box is the band's fillet, under the band fill).
   const borderKind = ORNAMENT_KINDS.border;
-  for (const size of ['tela-cheia', 'tela-vertical']) {
+  for (const size of ['fullscreen', 'fullscreen-vertical']) {
     for (const extra of [{}, {radius: 48}]) {
-      const tela = borderKind.ornamentLayout(borderKind.parse({...sizeProps(getSize(size)), ...extra, ornaments: 'noite'}));
-      for (const corner of cornerSlots(tela.frame)) {
-        assert.equal(roomAt(tela.frame, corner, 'back').extent, 0, `${size} ${corner.slot}`);
-        assert.equal(fitMotif(tela.frame, corner, {motif: 'x', layer: 'back', nominal: 500, min: 0.5}), null, `${size} ${corner.slot}`);
+      const screen = borderKind.ornamentLayout(borderKind.parse({...sizeProps(getSize(size)), ...extra, ornaments: 'noite'}));
+      for (const corner of cornerSlots(screen.frame)) {
+        assert.equal(roomAt(screen.frame, corner, 'back').extent, 0, `${size} ${corner.slot}`);
+        assert.equal(fitMotif(screen.frame, corner, {motif: 'x', layer: 'back', nominal: 500, min: 0.5}), null, `${size} ${corner.slot}`);
       }
-      assert.ok(tela.placements.length > 0 && tela.placements.every((placement) => placement.layer === 'front'), size);
+      assert.ok(screen.placements.length > 0 && screen.placements.every((placement) => placement.layer === 'front'), size);
     }
   }
   assert.equal(harmonics(2, 12), 24);

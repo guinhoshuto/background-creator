@@ -27,7 +27,7 @@ import {contentGlowOpacity} from './legibility';
 
 export const BLOCK_ACCENTS = ['nenhum', 'esquerda', 'topo'] as const;
 
-/** The kind's default named size ('cartao', 640×360 with a 32 px bleed): the schema's defaults. */
+/** The kind's default named size ('card', 640×360 with a 32 px bleed): the schema's defaults. */
 const DEFAULT_SIZE = getSize(kindPolicies.block.defaultSizeId!);
 
 /** Peak opacity of the glint that runs along the accent bar. */
@@ -41,7 +41,7 @@ const ACCENT_SHEEN_OPACITY = 0.55;
 export const ACCENT_ARC_SPREAD = Math.PI / 3;
 
 /** The round sizes, for the refusal of a circle in a box that is not square. */
-const ROUND_SIZES = 'circulo-p, circulo or circulo-g';
+const ROUND_SIZES = 'circle-sm, circle or circle-lg';
 
 /**
  * The glass sheen crosses the text: as discreet as the chat's over its messages, so a theme's
@@ -59,8 +59,8 @@ const fillOptions = (layout: PanelLayout): FillOptions => ({corner: layout.shape
  */
 const blockFields = z.object({
   ...overlayBaseFields(DEFAULT_SIZE),
-  shape: shapeField('Block shape: retangulo (corners with radius) or circulo (the box must be square: use --size circulo-p, circulo or circulo-g); in the circle the text goes in the square centered inside it'),
-  radius: radiusField(16, 'Corner radius, in px; capped at half the shorter side (becomes a pill); with shape circulo it is ignored, the radius is half the side'),
+  shape: shapeField('Block shape: rectangle (corners with radius) or circle (the box must be square: use --size circle-sm, circle or circle-lg); in the circle the text goes in the square centered inside it'),
+  radius: radiusField(16, 'Corner radius, in px; capped at half the shorter side (becomes a pill); with shape circle it is ignored, the radius is half the side'),
   paddingX: z.number().finite().min(0).max(512)
     .describe('Horizontal space between the outline (or the accent bar) and the content, in px; in the circle the larger of paddingX and paddingY applies all the way around')
     .default(24),
@@ -121,7 +121,7 @@ export type BlockLayout = PanelLayout & {
  * after it (padding counts from the bar), so the bar never runs under the text. Near round
  * corners the content keeps the smaller padding from the curve too (see fitClearContent).
  *
- * A circle ('circulo', or a square with a radius of half its side) has no sides to pad: its text
+ * A circle ('circle', or a square with a radius of half its side) has no sides to pad: its text
  * area is the centred square whose corners keep the accent's thickness plus the larger padding
  * from the inside of the stroke, all the way round (see fitCircleContent). The accent is then an
  * arc of that thickness along the inside of the stroke, centred on the left or the top, so it

@@ -95,15 +95,15 @@ export const buildFlashScene = (
 
 /**
  * The ways out of a refusal, per frame: what gives the corners more room there (measured with
- * roomAt on the chat defaults, a 320×120 block, a 320×180 janela and a 640×360 tela).
+ * roomAt on the chat defaults, a 320×120 block, a 320×180 window and a 640×360 screen).
  *   - Panels: a larger bleed, padding or radius (a rounder corner sits further in and pushes the
  *     text inward; a smaller radius never gains room).
- *   - Border around a window ('janela'): no padding; a larger bleed or a rounder window. The band's
+ *   - Border around a window ('window'): no padding; a larger bleed or a rounder window. The band's
  *     thickness and the glow do not help: the window and the canvas stay put.
- *   - Screen frame ('tela'): no bleed (always 0); a thicker band, more glow or a larger radius moves
+ *   - Screen frame ('screen'): no bleed (always 0); a thicker band, more glow or a larger radius moves
  *     the window's corner inward, away from the box's.
  * A radius already at its maximum (a circle, a pill, a round screen frame) is never offered: every
- * outline is the clamped shape (janela/tela: the window offset by the band, maxed exactly when the
+ * outline is the clamped shape (window/screen: the window offset by the band, maxed exactly when the
  * window is), so a larger radius prop changes nothing there.
  */
 export const ornamentWayOut = (frame: Pick<OrnamentFrame, 'kind' | 'fit' | 'circle' | 'outline'>): string => {
@@ -116,7 +116,7 @@ export const ornamentWayOut = (frame: Pick<OrnamentFrame, 'kind' | 'fit' | 'circ
       ? 'increase bleed, paddingX, paddingY or radius or use ornaments nenhum.'
       : 'increase bleed, paddingX or paddingY or use ornaments nenhum.';
   }
-  if (frame.fit === 'tela') return rounder ? 'increase thickness, glow or radius or use ornaments nenhum.' : 'increase thickness or glow or use ornaments nenhum.';
+  if (frame.fit === 'screen') return rounder ? 'increase thickness, glow or radius or use ornaments nenhum.' : 'increase thickness or glow or use ornaments nenhum.';
   return rounder ? 'increase bleed or radius or use ornaments nenhum.' : 'increase bleed or use ornaments nenhum.';
 };
 

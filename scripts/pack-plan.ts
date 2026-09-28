@@ -28,7 +28,7 @@ export const packItemSchema = z.object({
   formats: z.array(outputFormatSchema).min(1).describe('Formats exported for each size'),
   frame: z.number().int().min(0).optional().describe('PNG frame (default 0)'),
   variant: z.string().regex(slug, 'The variant becomes part of the file name: use lowercase letters, digits and hyphens.').optional()
-    .describe('Suffix of this item\'s files, for example sem-enfeites: <Id>-<size>-<variant>.<ext>'),
+    .describe('Suffix of this item\'s files, for example plain: <Id>-<size>-<variant>.<ext>'),
 }).strict();
 
 export const packManifestSchema = z.object({
@@ -130,7 +130,7 @@ const itemSizePatch = (asset: PackAsset, sizeId: string) => {
  * the wider margin only makes room (bigger ornaments on a large frame). An item's `variant` tags
  * its file names, so one pack can hold the same size twice (with and without ornaments).
  *
- * A window border (a named size with fit 'janela') also needs its OBS mask. The mask depends only
+ * A window border (a named size with fit 'window') also needs its OBS mask. The mask depends only
  * on the window (box and clamped radius), so the pack plans it once per size and radius, right
  * after the first file that needs it, as `<folder>/mascara-<size>.png`; when one pack holds the
  * same size with several radii, each mask is tagged with its radius: `mascara-<size>-r<radius>.png`.

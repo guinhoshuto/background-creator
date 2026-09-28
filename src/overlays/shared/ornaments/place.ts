@@ -61,13 +61,13 @@ export const rectDistance = (rect: Rect, x: number, y: number) => roundRectSdf({
 /**
  * The largest extent a motif centred on (x, y) may take on `layer`: inside the paint limit by
  * ORNAMENT_EDGE, clear of the hole and, in front, ORNAMENT_CLEARANCE from every text area.
- * Negative when the centre itself is off limits. On a screen frame ('tela') the back layer has no
+ * Negative when the centre itself is off limits. On a screen frame ('screen') the back layer has no
  * room at all (−∞): what the outer edge leaves of the box is the band's fillet, which the band
  * fill paints over right after, so a back motif there would only show through the fill's
- * transparency. A tela set puts its motifs (its hero included) in front.
+ * transparency. A screen set puts its motifs (its hero included) in front.
  */
 export const maxExtentAt = (frame: OrnamentFrame, x: number, y: number, layer: OrnamentLayerName) => {
-  if (layer === 'back' && frame.fit === 'tela') return -Infinity;
+  if (layer === 'back' && frame.fit === 'screen') return -Infinity;
   const limit = frame.paintLimit;
   let room = Math.min(x - limit.x, limit.x + limit.width - x, y - limit.y, limit.y + limit.height - y) - ORNAMENT_EDGE;
   if (frame.hole) room = Math.min(room, roundRectSdf(frame.hole, x, y));

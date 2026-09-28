@@ -153,7 +153,7 @@ const planOf = (frame: OrnamentFrame, ornamentSize: number): Plan | null => {
   // border's corner has no such column, so it sits in the corner's pocket on the hero web when that
   // holds a larger spider (always on a screen). No glow (a Twitch panel): no spider.
   const spiderScale = SPIDER_PER_SIZE * ornamentSize;
-  const hang = frame.glow > 0 && frame.fit !== 'tela' ? fitSpider(frame, hero, spiderScale) : null;
+  const hang = frame.glow > 0 && frame.fit !== 'screen' ? fitSpider(frame, hero, spiderScale) : null;
   const pocket = frame.glow > 0 && (frame.kind === 'border' || !hang) ? fitPocket(frame, hero, spiderScale) : null;
   const spider = hang && (!pocket || hang.scale >= pocket.scale) ? hang : pocket;
   // Silk garlands along the top (and the bottom of big frames), between the corners' webs, clear of the spider.

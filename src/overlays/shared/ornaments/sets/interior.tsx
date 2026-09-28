@@ -29,7 +29,7 @@ import {Swag, SWAG_MOTIF, SWAG_TASSEL, swagSpecOf, type InteriorSwagElement} fro
  * every fixture, the flames dip, and the valance's velvet and gold flare on that side.
  *
  * ornamentSize is a fixture's full height H, px (mount to the tallest flame tip); the room of its
- * slot usually limits it first (chat ≈ 53, blocks ≈ 62, webcams and jogo ≈ 55). The Twitch panel,
+ * slot usually limits it first (chat ≈ 53, blocks ≈ 62, webcams and gameplay ≈ 55). The Twitch panel,
  * too small for a girandole, keeps a chamberstick candle on its sill (the fallback, below).
  *
  * Motion is the background's candle flicker, in Hz so any duration keeps whole cycles: glow 7 and

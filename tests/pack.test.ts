@@ -26,7 +26,7 @@ const common = {durationSeconds: 8, seed: 1, transparent: false, backgroundColor
 
 const sized = (id: string, kind: 'chat' | 'block' | 'border', box: {width: number; height: number; bleed: number}): PackAsset => ({
   id, kind,
-  parse: fakeParse({...common, transparent: true, ...box, fit: 'janela', ...(kind === 'chat' ? {} : {shape: 'retangulo'}), halo: 8, glow: 12}),
+  parse: fakeParse({...common, transparent: true, ...box, fit: 'window', ...(kind === 'chat' ? {} : {shape: 'rectangle'}), halo: 8, glow: 12}),
   layout: (props) => {
     const {canvas, box: rect} = getBoxCanvas(props as {width: number; height: number; bleed: number});
     const content = {x: rect.x + 16, y: rect.y + 16, width: rect.width - 32, height: rect.height - 32};
@@ -45,7 +45,7 @@ const fakePresets: Record<string, unknown> = {
   'fundo-teste': {speed: 3, outputFormat: 'mp4', durationSeconds: 4},
   'chat-teste': {glow: 20, width: 999, transparent: true},
   'block-test': {halo: 10},
-  'border-test': {fit: 'tela'},
+  'border-test': {fit: 'screen'},
   'quebrado': [1, 2],
 };
 
@@ -81,24 +81,24 @@ test('pack: o manifesto é estrito e recusa campos desconhecidos com mensagem em
 test('pack: o plano segue a ordem do manifesto e nomeia <Id>-<tamanho>.<ext> na pasta do tipo', () => {
   const plan = planPack(manifest([
     {composition: 'FundoLoop', preset: 'fundo-teste', formats: ['webm', 'png']},
-    {composition: 'ChatLoop', preset: 'chat-teste', sizes: ['chat-compacto', 'chat-coluna'], formats: ['webm', 'png']},
-    {composition: 'BorderLoop', sizes: ['tela-cheia'], formats: ['mov']},
+    {composition: 'ChatLoop', preset: 'chat-teste', sizes: ['chat-compact', 'chat-column'], formats: ['webm', 'png']},
+    {composition: 'BorderLoop', sizes: ['fullscreen'], formats: ['mov']},
   ]), fakeDeps);
   assert.deepEqual(plan.map((file) => file.output), [
     'out/packs/teste/backgrounds/FundoLoop.webm',
     'out/packs/teste/backgrounds/FundoLoop.png',
-    'out/packs/teste/chat/ChatLoop-chat-compacto.webm',
-    'out/packs/teste/chat/ChatLoop-chat-compacto.png',
-    'out/packs/teste/chat/ChatLoop-chat-coluna.webm',
-    'out/packs/teste/chat/ChatLoop-chat-coluna.png',
-    'out/packs/teste/borders/BorderLoop-tela-cheia.mov',
+    'out/packs/teste/chat/ChatLoop-chat-compact.webm',
+    'out/packs/teste/chat/ChatLoop-chat-compact.png',
+    'out/packs/teste/chat/ChatLoop-chat-column.webm',
+    'out/packs/teste/chat/ChatLoop-chat-column.png',
+    'out/packs/teste/borders/BorderLoop-fullscreen.mov',
   ]);
   assert.deepEqual(plan.map((file) => file.folder), ['backgrounds', 'backgrounds', 'chat', 'chat', 'chat', 'chat', 'borders']);
   assert.deepEqual(plan[0]!.canvas, {width: 1920, height: 1080}, 'fundos usam o tamanho fixo do tipo');
   assert.deepEqual(plan[2]!.canvas, {width: 424, height: 544});
   assert.deepEqual(plan[4]!.canvas, {width: 512, height: 1080});
   assert.deepEqual(plan[6]!.canvas, {width: 1920, height: 1080});
-  assert.equal(plan[2]!.size, 'chat-compacto');
+  assert.equal(plan[2]!.size, 'chat-compact');
   assert.equal(plan[0]!.size, undefined);
   // fps and frames come from the shared metadata rule: 60 fps, 4 s from the preset.
   assert.deepEqual([plan[0]!.fps, plan[0]!.frames], [60, 240]);
@@ -109,24 +109,24 @@ test('pack: o plano segue a ordem do manifesto e nomeia <Id>-<tamanho>.<ext> na 
 test('pack: props mesclam preset < props do item < tamanho < formato', () => {
   const [file] = planPack(manifest([{
     composition: 'ChatLoop', preset: 'chat-teste', props: {glow: 4, width: 800, seed: 7, outputFormat: 'gif'},
-    sizes: ['chat-alto'], formats: ['webm'],
+    sizes: ['chat-tall'], formats: ['webm'],
   }]), fakeDeps);
   assert.deepEqual(file!.props, {glow: 4, width: 400, height: 800, bleed: 32, transparent: true, seed: 7, outputFormat: 'webm'});
   // A window size fixes the product even over a full-screen preset.
   const [border] = planPack(manifest([{composition: 'BorderLoop', preset: 'border-test', sizes: ['webcam-4x3'], formats: ['png']}]), fakeDeps);
-  assert.equal(border!.props.fit, 'janela');
+  assert.equal(border!.props.fit, 'window');
   assert.equal(border!.output, 'out/packs/teste/borders/BorderLoop-webcam-4x3.png');
 });
 
 test('pack: o bleed do item vence o do tamanho (a caixa continua a do tamanho)', () => {
   const [file] = planPack(manifest([{
-    composition: 'BorderLoop', props: {bleed: 96, width: 999}, sizes: ['jogo'], formats: ['webm'],
+    composition: 'BorderLoop', props: {bleed: 96, width: 999}, sizes: ['gameplay'], formats: ['webm'],
   }]), fakeDeps);
   assert.deepEqual([file!.props.width, file!.props.height, file!.props.bleed], [1440, 810, 96]);
   assert.deepEqual(file!.canvas, {width: 1440 + 2 * 96, height: 810 + 2 * 96});
-  assert.equal(file!.output, 'out/packs/teste/borders/BorderLoop-jogo.webm', 'o nome segue o tamanho');
+  assert.equal(file!.output, 'out/packs/teste/borders/BorderLoop-gameplay.webm', 'o nome segue o tamanho');
   // Without an item bleed, the size's.
-  const [plain] = planPack(manifest([{composition: 'BorderLoop', sizes: ['jogo'], formats: ['webm']}]), fakeDeps);
+  const [plain] = planPack(manifest([{composition: 'BorderLoop', sizes: ['gameplay'], formats: ['webm']}]), fakeDeps);
   assert.equal(plain!.props.bleed, 48);
 });
 
@@ -134,27 +134,27 @@ test('pack: a variante marca o nome dos arquivos, e o mesmo tamanho cabe duas ve
   const plan = planPack(manifest([
     {composition: 'FundoLoop', formats: ['png']},
     {composition: 'FundoLoop', props: {speed: 2}, formats: ['png'], variant: 'lento'},
-    {composition: 'ChatLoop', sizes: ['chat-padrao'], formats: ['webm', 'png']},
-    {composition: 'ChatLoop', props: {glow: 0}, sizes: ['chat-padrao'], formats: ['webm', 'png'], variant: 'sem-enfeites'},
+    {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'png']},
+    {composition: 'ChatLoop', props: {glow: 0}, sizes: ['chat-standard'], formats: ['webm', 'png'], variant: 'plain'},
     {composition: 'BlockLoop', props: {width: 700, height: 100, bleed: 16}, formats: ['webm'], variant: 'v2'},
   ]), fakeDeps);
   assert.deepEqual(plan.map((file) => file.output), [
     'out/packs/teste/backgrounds/FundoLoop.png',
     'out/packs/teste/backgrounds/FundoLoop-lento.png',
-    'out/packs/teste/chat/ChatLoop-chat-padrao.webm',
-    'out/packs/teste/chat/ChatLoop-chat-padrao.png',
-    'out/packs/teste/chat/ChatLoop-chat-padrao-sem-enfeites.webm',
-    'out/packs/teste/chat/ChatLoop-chat-padrao-sem-enfeites.png',
+    'out/packs/teste/chat/ChatLoop-chat-standard.webm',
+    'out/packs/teste/chat/ChatLoop-chat-standard.png',
+    'out/packs/teste/chat/ChatLoop-chat-standard-plain.webm',
+    'out/packs/teste/chat/ChatLoop-chat-standard-plain.png',
     'out/packs/teste/text-boxes/BlockLoop-700x100-v2.webm',
   ]);
   assert.equal(plan[4]!.props.glow, 0);
   // Two variants of one window share its OBS mask, planned once.
   const borders = planPack(manifest([
     {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['webm']},
-    {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['webm'], variant: 'sem-enfeites'},
+    {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['webm'], variant: 'plain'},
   ]), realPackDeps);
   assert.deepEqual(borders.map((file) => path.posix.basename(file.output)), [
-    'BorderLoop-webcam-16x9.webm', 'mascara-webcam-16x9.png', 'BorderLoop-webcam-16x9-sem-enfeites.webm',
+    'BorderLoop-webcam-16x9.webm', 'mascara-webcam-16x9.png', 'BorderLoop-webcam-16x9-plain.webm',
   ]);
   assert.equal(borders[2]!.mask, borders[1]!.output);
   // The variant becomes part of a file name: a slug only.
@@ -171,7 +171,7 @@ test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nom
     {composition: 'BlockLoop', props: {width: 700, height: 100, bleed: 16}, formats: ['webm']},
   ]), fakeDeps);
   assert.deepEqual(plan.map((file) => file.output), [
-    'out/packs/teste/text-boxes/BlockLoop-cartao.webm',
+    'out/packs/teste/text-boxes/BlockLoop-card.webm',
     'out/packs/teste/text-boxes/BlockLoop-700x100.webm',
   ]);
   assert.deepEqual(plan[1]!.canvas, {width: 732, height: 132});
@@ -179,7 +179,7 @@ test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nom
 
 test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em inglês', () => {
   assert.throws(
-    () => planPack(manifest([{composition: 'FundoLoop', sizes: ['cartao'], formats: ['webm']}]), fakeDeps),
+    () => planPack(manifest([{composition: 'FundoLoop', sizes: ['card'], formats: ['webm']}]), fakeDeps),
     /Item 1 \(FundoLoop\): .*with a fixed size \(1920×1080\): remove "sizes"/,
   );
   assert.throws(
@@ -203,13 +203,13 @@ test('pack: composição, preset e props inválidos param o plano antes de qualq
 test('pack: nomes de arquivo repetidos são recusados', () => {
   assert.throws(
     () => planPack(manifest([
-      {composition: 'ChatLoop', sizes: ['chat-padrao'], formats: ['webm']},
-      {composition: 'ChatLoop', preset: 'chat-teste', sizes: ['chat-padrao'], formats: ['png', 'webm']},
+      {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm']},
+      {composition: 'ChatLoop', preset: 'chat-teste', sizes: ['chat-standard'], formats: ['png', 'webm']},
     ]), fakeDeps),
-    /Item 2 \(ChatLoop\) repeats the file out\/packs\/teste\/chat\/ChatLoop-chat-padrao\.webm, already produced by Item 1/,
+    /Item 2 \(ChatLoop\) repeats the file out\/packs\/teste\/chat\/ChatLoop-chat-standard\.webm, already produced by Item 1/,
   );
   assert.throws(
-    () => planPack(manifest([{composition: 'ChatLoop', sizes: ['chat-alto', 'chat-alto'], formats: ['webm']}]), fakeDeps),
+    () => planPack(manifest([{composition: 'ChatLoop', sizes: ['chat-tall', 'chat-tall'], formats: ['webm']}]), fakeDeps),
     /repeats the file/,
   );
 });
@@ -224,25 +224,25 @@ test('pack: frame vale só com PNG e precisa existir no loop', () => {
 
 const samplePlan = () => planPack(manifest([
   {composition: 'FundoLoop', formats: ['webm']},
-  {composition: 'ChatLoop', sizes: ['chat-padrao'], formats: ['webm', 'png']},
+  {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'png']},
   {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['png']},
 ]), fakeDeps);
 
 test('pack: --only filtra pelo caminho e recusa um filtro vazio', () => {
   const plan = samplePlan();
   assert.equal(filterPlan(plan, undefined).length, 4);
-  assert.deepEqual(filterPlan(plan, 'CHAT-PADRAO').map((file) => file.format), ['webm', 'png']);
+  assert.deepEqual(filterPlan(plan, 'CHAT-STANDARD').map((file) => file.format), ['webm', 'png']);
   assert.deepEqual(filterPlan(plan, '.png').map((file) => file.composition), ['ChatLoop', 'BorderLoop']);
   assert.throws(() => filterPlan(plan, 'xyz'), /No pack file contains "xyz"/);
 });
 
 test('pack: --dry-run lista cada arquivo com o tamanho do arquivo e o total', () => {
   const plan = samplePlan();
-  const text = dryRunText(plan, new Set(['out/packs/teste/chat/ChatLoop-chat-padrao.png']));
+  const text = dryRunText(plan, new Set(['out/packs/teste/chat/ChatLoop-chat-standard.png']));
   assert.deepEqual(text.split('\n'), [
     'out/packs/teste/backgrounds/FundoLoop.webm  1920×1080, 60 fps, 480 frames',
-    'out/packs/teste/chat/ChatLoop-chat-padrao.webm  464×664, 60 fps, 480 frames',
-    'out/packs/teste/chat/ChatLoop-chat-padrao.png  464×664, frame 0 (already exists)',
+    'out/packs/teste/chat/ChatLoop-chat-standard.webm  464×664, 60 fps, 480 frames',
+    'out/packs/teste/chat/ChatLoop-chat-standard.png  464×664, frame 0 (already exists)',
     'out/packs/teste/borders/BorderLoop-webcam-16x9.png  736×456, frame 0',
     'Total: 4 files.',
   ]);
@@ -303,8 +303,8 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
   assert.deepEqual(data.files.map((entry) => entry.file), [
     'backgrounds/FundoLoop.webm',
     'borders/BorderLoop-webcam-16x9.png',
-    'chat/ChatLoop-chat-padrao.png',
-    'chat/ChatLoop-chat-padrao.webm',
+    'chat/ChatLoop-chat-standard.png',
+    'chat/ChatLoop-chat-standard.webm',
   ]);
   const border = data.files.find((entry) => entry.file === 'borders/BorderLoop-webcam-16x9.png')!;
   assert.deepEqual(border, {
@@ -373,7 +373,7 @@ test('pack: a manifest entry the whole plan no longer has is pruned before the f
   assert.equal('title' in written, false, 'an old manifest\'s title is not carried over');
   const files = (written as {files: {file: string}[]}).files;
   assert.deepEqual(files.map((entry) => entry.file), [
-    'backgrounds/FundoLoop.webm', 'borders/BorderLoop-webcam-16x9.png', 'chat/ChatLoop-chat-padrao.png', 'chat/ChatLoop-chat-padrao.webm',
+    'backgrounds/FundoLoop.webm', 'borders/BorderLoop-webcam-16x9.png', 'chat/ChatLoop-chat-standard.png', 'chat/ChatLoop-chat-standard.webm',
   ]);
 });
 
@@ -416,7 +416,7 @@ test('pack: a finished file whose item props changed since its render is planned
   // One prop of the background (no sidecar) and of the chat item (sidecars) changes; every file name stays the same.
   const changed = planPack(manifest([
     {composition: 'FundoLoop', formats: ['webm'], props: {speed: 2}},
-    {composition: 'ChatLoop', sizes: ['chat-padrao'], formats: ['webm', 'png'], props: {glow: 20}},
+    {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'png'], props: {glow: 20}},
     {composition: 'BorderLoop', sizes: ['webcam-16x9'], formats: ['png']},
   ]), fakeDeps);
   assert.deepEqual(changed.map((file) => file.output), plan.map((file) => file.output));
@@ -444,7 +444,7 @@ test('pack: a finished file without a recorded props hash is skipped with a warn
   const before = first.disk.get(MANIFEST) as {files: Record<string, unknown>[]};
   const unhashed = before.files.map((entry) => Object.fromEntries(Object.entries(entry).filter(([key]) => key !== 'propsHash')));
   // Two finished files lost their entries: the background has nothing else, the chat PNG left its sidecar behind.
-  const lost = ['backgrounds/FundoLoop.webm', 'chat/ChatLoop-chat-padrao.png'];
+  const lost = ['backgrounds/FundoLoop.webm', 'chat/ChatLoop-chat-standard.png'];
   const png = unhashed.find((entry) => entry.file === lost[1])!;
   const {canvas, box, content, hole, bleed, fps, frames, frame, format, alpha} = png;
   const run = fakeRun({
@@ -486,7 +486,7 @@ test('pack: pouco disco recusa antes de exportar qualquer arquivo', async () => 
 
 const PACKS = OVERLAY_THEMES;
 /**
- * The painel-twitch item's props per pack; every other pack gives the panel none. The glass keeps
+ * The twitch-panel item's props per pack; every other pack gives the panel none. The glass keeps
  * an opaque PNG, which would vanish on Twitch's light theme (GIF is always flattened on
  * backgroundColor anyway). Two kits widen the padding so the panel's pockets hold their motifs
  * (noite: the moon, a bat and the pumpkins; mansão: the two hung lanterns); the other kits fit the
@@ -525,7 +525,7 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
   // Every theme's pack, exactly.
   assert.deepEqual(readdirSync(path.join(root, 'packs')).filter((file) => file.endsWith('.json')).sort(), expectedPackFiles());
   const ids = (kind: AssetKind) => sizesForKind(kind).map((size) => size.id);
-  const screens = new Set(sizesForKind('border').filter((size) => size.props?.fit === 'tela').map((size) => size.id));
+  const screens = new Set(sizesForKind('border').filter((size) => size.props?.fit === 'screen').map((size) => size.id));
   for (const name of PACKS) {
     const pack = packManifestSchema.parse(readPack(name));
     assert.equal(pack.name, name);
@@ -537,32 +537,32 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     assert.deepEqual(byPreset(`border-${name}`).flatMap((item) => item.sizes).sort(), ids('border').filter((id) => !kit || !screens.has(id)).sort());
     const blocks = byPreset(`block-${name}`);
     assert.deepEqual(blocks.flatMap((item) => item.sizes).sort(), ids('block').sort());
-    const twitch = blocks.find((item) => item.sizes?.includes('painel-twitch'))!;
-    assert.deepEqual(twitch.sizes, ['painel-twitch'], 'o painel da Twitch é um item separado');
+    const twitch = blocks.find((item) => item.sizes?.includes('twitch-panel'))!;
+    assert.deepEqual(twitch.sizes, ['twitch-panel'], 'o painel da Twitch é um item separado');
     assert.deepEqual(twitch.formats, ['gif', 'png']);
     // The size itself turns glow and halo off; the panel takes item props only where it needs them.
     assert.deepEqual(twitch.props, TWITCH_PROPS[name], name);
-    // The kits' large frames scale their ornaments on a wider bleed (webcam-16x9-g ×1.5, jogo ×2);
+    // The kits' large frames scale their ornaments on a wider bleed (webcam-16x9-lg ×1.5, gameplay ×2);
     // the classic themes have no such items.
     const scaled = pack.items.filter((item) => item.props?.ornamentScale !== undefined);
     assert.deepEqual(scaled.map((item) => [item.sizes, item.props]), kit ? [
-      [['webcam-16x9-g'], {bleed: 72, ornamentScale: 1.5}], [['jogo'], {bleed: 96, ornamentScale: 2}],
+      [['webcam-16x9-lg'], {bleed: 72, ornamentScale: 1.5}], [['gameplay'], {bleed: 96, ornamentScale: 2}],
     ] : [], name);
     // Every size of the kit also ships without ornaments: the preset alone, only ornaments off.
     const plain = pack.items.filter((item) => item.variant !== undefined);
-    assert.ok(plain.every((item) => item.variant === 'sem-enfeites'), name);
+    assert.ok(plain.every((item) => item.variant === 'plain'), name);
     if (kit) {
       for (const kind of ['chat', 'block', 'border'] as const) {
-        const items = byPreset(`${kind}-${name}`, 'sem-enfeites');
+        const items = byPreset(`${kind}-${name}`, 'plain');
         assert.deepEqual(items.flatMap((item) => item.sizes).sort(), ids(kind).sort(), `${name}: ${kind} sem enfeites`);
         for (const item of items) assert.deepEqual(item.props, {ornaments: 'nenhum'}, `${name}: ${kind} sem enfeites`);
       }
-      const plainTwitch = byPreset(`block-${name}`, 'sem-enfeites').find((item) => item.sizes?.includes('painel-twitch'))!;
-      assert.deepEqual([plainTwitch.sizes, plainTwitch.formats], [['painel-twitch'], ['gif', 'png']]);
+      const plainTwitch = byPreset(`block-${name}`, 'plain').find((item) => item.sizes?.includes('twitch-panel'))!;
+      assert.deepEqual([plainTwitch.sizes, plainTwitch.formats], [['twitch-panel'], ['gif', 'png']]);
     } else {
       assert.deepEqual(plain, [], name);
     }
-    for (const item of pack.items.filter((entry) => !entry.sizes?.includes('painel-twitch'))) {
+    for (const item of pack.items.filter((entry) => !entry.sizes?.includes('twitch-panel'))) {
       assert.deepEqual(item.formats, ['webm', 'png'], `${name}/${item.composition}: mov é opcional`);
     }
     const backgrounds = pack.items.filter((item) => item.sizes === undefined);
@@ -581,7 +581,7 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     const backgrounds = pack.items.filter((item) => item.sizes === undefined).length;
     // Each sized item × its sizes × its formats, plus each background × its formats, plus the OBS
     // mask of each of the nine window sizes (the two screen frames have none). The Halloween kits
-    // hold every size twice (with ornaments, screens excepted, and sem-enfeites), sharing the masks.
+    // hold every size twice (with ornaments, screens excepted, and plain), sharing the masks.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
     const sizes = kit ? (5 + 10 + 9 + 1) + (5 + 10 + 11 + 1) : 5 + 10 + 11 + 1;
     assert.equal(plan.length, 2 * backgrounds + 2 * sizes + 9, name);
@@ -590,23 +590,23 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
       assert.ok(file.output.startsWith(`out/packs/${name}/`), file.output);
       assert.ok(file.canvas.width % 2 === 0 && file.canvas.height % 2 === 0, file.output);
     }
-    const twitch = plan.filter((file) => file.size === 'painel-twitch');
+    const twitch = plan.filter((file) => file.size === 'twitch-panel');
     assert.deepEqual(twitch.map((file) => [path.posix.basename(file.output), file.canvas]), [
-      ['BlockLoop-painel-twitch.gif', {width: 320, height: 160}],
-      ['BlockLoop-painel-twitch.png', {width: 320, height: 160}],
+      ['BlockLoop-twitch-panel.gif', {width: 320, height: 160}],
+      ['BlockLoop-twitch-panel.png', {width: 320, height: 160}],
       ...(kit ? [
-        ['BlockLoop-painel-twitch-sem-enfeites.gif', {width: 320, height: 160}],
-        ['BlockLoop-painel-twitch-sem-enfeites.png', {width: 320, height: 160}],
+        ['BlockLoop-twitch-panel-plain.gif', {width: 320, height: 160}],
+        ['BlockLoop-twitch-panel-plain.png', {width: 320, height: 160}],
       ] : []),
     ]);
     if (kit) {
       // The scaled frames keep their box and widen the file by the item's bleed; the twins keep the size's.
       const canvasOf = (file: string) => plan.find((entry) => entry.output === `out/packs/${name}/borders/${file}`)!.canvas;
-      assert.deepEqual(canvasOf('BorderLoop-jogo.webm'), {width: 1440 + 2 * 96, height: 810 + 2 * 96});
-      assert.deepEqual(canvasOf('BorderLoop-jogo-sem-enfeites.webm'), {width: 1440 + 2 * 48, height: 810 + 2 * 48});
-      assert.deepEqual(canvasOf('BorderLoop-webcam-16x9-g.webm'), {width: 960 + 2 * 72, height: 540 + 2 * 72});
-      assert.deepEqual(canvasOf('BorderLoop-tela-cheia-sem-enfeites.webm'), {width: 1920, height: 1080});
-      assert.ok(!plan.some((file) => file.output.endsWith('BorderLoop-tela-cheia.webm')), `${name}: telas só sem enfeites`);
+      assert.deepEqual(canvasOf('BorderLoop-gameplay.webm'), {width: 1440 + 2 * 96, height: 810 + 2 * 96});
+      assert.deepEqual(canvasOf('BorderLoop-gameplay-plain.webm'), {width: 1440 + 2 * 48, height: 810 + 2 * 48});
+      assert.deepEqual(canvasOf('BorderLoop-webcam-16x9-lg.webm'), {width: 960 + 2 * 72, height: 540 + 2 * 72});
+      assert.deepEqual(canvasOf('BorderLoop-fullscreen-plain.webm'), {width: 1920, height: 1080});
+      assert.ok(!plan.some((file) => file.output.endsWith('BorderLoop-fullscreen.webm')), `${name}: telas só sem enfeites`);
     }
   }
 });
@@ -638,7 +638,7 @@ test('packs: o plano, o --dry-run e o manifesto mostram a velocidade real de cad
   }
   // Comets travel whole spacings per cycle: the tall column runs close to the 160 px/s the preset
   // asks for, but not exactly, and the plan says so.
-  const column = plan.find((file) => file.output.endsWith('ChatLoop-chat-coluna.webm'))!;
+  const column = plan.find((file) => file.output.endsWith('ChatLoop-chat-column.webm'))!;
   assert.notEqual(column.motion!.strokeSpeed, 160);
   assert.ok(Math.abs(column.motion!.strokeSpeed / 160 - 1) <= 0.35, String(column.motion!.strokeSpeed));
   assert.match(dryRunText([column]), new RegExp(`, stroke ${column.motion!.strokeSpeed} px/s, fill ${column.motion!.fillSpeed} px/s\n`));
@@ -648,7 +648,7 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
   for (const name of PACKS) {
     const plan = planPack(parsePackManifest(readPack(name)), realPackDeps);
     const masks = plan.filter((file) => file.role === 'mask');
-    const windows = sizesForKind('border').filter((size) => size.props?.fit !== 'tela');
+    const windows = sizesForKind('border').filter((size) => size.props?.fit !== 'screen');
     // One mask per window size, shared by the kits' two variants (in the order their sizes first appear).
     assert.deepEqual(masks.map((file) => file.output).sort(), windows.map((size) => `out/packs/${name}/borders/mascara-${size.id}.png`).sort(), name);
     for (const mask of masks) {
@@ -656,7 +656,7 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
       assert.deepEqual(mask.canvas, {width: size.width, height: size.height}, 'do tamanho da câmera');
       assert.deepEqual([mask.format, mask.frame, mask.composition, mask.folder], ['png', 0, 'BorderLoop', 'borders']);
       assert.deepEqual(
-        [mask.exportProps.mascara, mask.exportProps.bleed, mask.exportProps.outputFormat, mask.exportProps.transparent],
+        [mask.exportProps.mask, mask.exportProps.bleed, mask.exportProps.outputFormat, mask.exportProps.transparent],
         [true, 0, 'png', true],
       );
       // Right after the last format of its size.
@@ -674,7 +674,7 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
       const entry = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), null);
       assert.equal(entry.mask, isWindow ? `borders/mascara-${file.size}.png` : undefined, file.output);
       // Even with a sidecar that names another mask file (older exports did), the pack's own mask wins.
-      const sidecar = {...entry, mask: `BorderLoop-${file.size}-mascara.png`, hole: entry.hole};
+      const sidecar = {...entry, mask: `BorderLoop-${file.size}-mask.png`, hole: entry.hole};
       const fromSidecar = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), sidecar);
       assert.equal(fromSidecar.mask, entry.mask, file.output);
       assert.deepEqual(fromSidecar.motion, entry.motion, file.output);
@@ -686,27 +686,27 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
 test('packs: a máscara depende só do tamanho e do raio; raios diferentes no mesmo pack levam o raio no nome', () => {
   // One pack holds a size once per format, so the two themes here differ by format.
   const border = (preset: string, format: 'webm' | 'png', props: Record<string, unknown> = {}) => ({
-    composition: 'BorderLoop', preset, props, sizes: ['webcam-16x9', 'webcam-quadrada', 'tela-cheia'], formats: [format],
+    composition: 'BorderLoop', preset, props, sizes: ['webcam-16x9', 'webcam-square', 'fullscreen'], formats: [format],
   });
   const masksOf = (plan: PlannedFile[]) => plan.filter((file) => file.role === 'mask');
   const names = (plan: PlannedFile[]) => masksOf(plan).map((file) => path.posix.basename(file.output));
   // Two themes with one radius share each mask, and both point at it.
   const shared = planPack(manifest([border('border-neon', 'webm', {radius: 20}), border('border-pastel', 'png', {radius: 20})]), realPackDeps);
-  assert.deepEqual(names(shared), ['mascara-webcam-16x9.png', 'mascara-webcam-quadrada.png']);
+  assert.deepEqual(names(shared), ['mascara-webcam-16x9.png', 'mascara-webcam-square.png']);
   assert.deepEqual(shared.filter((file) => file.mask === 'out/packs/teste/borders/mascara-webcam-16x9.png').map((file) => file.output), [
     'out/packs/teste/borders/BorderLoop-webcam-16x9.webm', 'out/packs/teste/borders/BorderLoop-webcam-16x9.png',
   ]);
   // A radius beyond the circle is the circle: 200 and 999 on the square webcam give one mask.
   const circle = planPack(manifest([border('border-neon', 'webm', {radius: 200}), border('border-pastel', 'png', {radius: 999})]), realPackDeps);
   assert.deepEqual(masksOf(circle).map((file) => [path.posix.basename(file.output), file.exportProps.radius]), [
-    ['mascara-webcam-16x9.png', 180], ['mascara-webcam-quadrada.png', 200],
+    ['mascara-webcam-16x9.png', 180], ['mascara-webcam-square.png', 200],
   ]);
   // Different radii for one size: each mask carries its radius, and each file points at its own.
   const mixed = planPack(manifest([border('border-neon', 'webm'), border('border-pastel', 'png')]), realPackDeps);
   assert.deepEqual(names(mixed), [
-    'mascara-webcam-16x9-r16.png', 'mascara-webcam-quadrada-r16.png', 'mascara-webcam-16x9-r24.png', 'mascara-webcam-quadrada-r24.png',
+    'mascara-webcam-16x9-r16.png', 'mascara-webcam-square-r16.png', 'mascara-webcam-16x9-r24.png', 'mascara-webcam-square-r24.png',
   ]);
   const pastel = mixed.find((file) => file.output === 'out/packs/teste/borders/BorderLoop-webcam-16x9.png')!;
   assert.equal(pastel.mask, 'out/packs/teste/borders/mascara-webcam-16x9-r24.png');
-  assert.equal(filterPlan(mixed, 'webcam-quadrada').filter((file) => file.role === 'mask').length, 2, '--only leva as máscaras do tamanho');
+  assert.equal(filterPlan(mixed, 'webcam-square').filter((file) => file.role === 'mask').length, 2, '--only leva as máscaras do tamanho');
 });

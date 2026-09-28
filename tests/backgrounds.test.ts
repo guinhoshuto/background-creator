@@ -229,30 +229,30 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     // The round block: its text square, the accent arc and the glint going round the circle.
     id: 'BlockLoop (círculo)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBlockScene(blockLoopSchema.parse({...sizeProps(getSize('circulo')), ...(input as object)}), frame, length),
+      getBlockScene(blockLoopSchema.parse({...sizeProps(getSize('circle')), ...(input as object)}), frame, length),
   },
   {
     id: 'BlockLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBlockScene(blockLoopSchema.parse({
-        ...sizeProps(getSize('circulo')), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
+        ...sizeProps(getSize('circle')), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
         glowPulses: 4, halo: 32, ...(input as object),
       }), frame, length),
   },
   {
     id: 'BorderLoop (círculo)',
     sample: (input: unknown, frame: number, length: number): Scene =>
-      getBorderScene(borderLoopSchema.parse({...sizeProps(getSize('webcam-redonda')), ...(input as object)}), frame, length),
+      getBorderScene(borderLoopSchema.parse({...sizeProps(getSize('webcam-round')), ...(input as object)}), frame, length),
   },
   {
     id: 'BorderLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBorderScene(borderLoopSchema.parse({
-        ...sizeProps(getSize('webcam-redonda')), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
+        ...sizeProps(getSize('webcam-round')), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
         corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
       }), frame, length),
   },
-  // BorderLoop's mask mode (mascara) is left out on purpose: it is one still PNG, so the scans'
+  // BorderLoop's mask mode (mask) is left out on purpose: it is one still PNG, so the scans'
   // "frames differ" and "the seed changes the scene" checks cannot hold. tests/border.test.ts runs
   // the same scans on it as a still (moving: false, seeded: false) instead of faking a motion.
 ];

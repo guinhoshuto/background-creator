@@ -19,7 +19,7 @@ import {
  * title ("CHAT"), separated from the messages by a line; the layout reports its own text area.
  */
 
-const baseFields = overlayBaseFields(getSize('chat-padrao'));
+const baseFields = overlayBaseFields(getSize('chat-standard'));
 
 const chatFields = z.object({
   ...baseFields,

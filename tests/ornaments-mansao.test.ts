@@ -44,16 +44,16 @@ const layoutAt = (id: string, extra: Record<string, unknown> = {}) => {
 
 /**
  * The kit at its own px: the preset and the pack item's props (the Twitch panel's padding), without
- * the pack's scale on the large frames (jogo and webcam-16x9-g grow ×2 and ×1.5 with a wider bleed:
+ * the pack's scale on the large frames (gameplay and webcam-16x9-lg grow ×2 and ×1.5 with a wider bleed:
  * see packAt), and on the telas, which the pack renders only without ornaments, the band they were
  * tuned for (TELA_PROPS).
  */
-const TELA_PROPS = {radius: 48, thickness: 24};
+const SCREEN_PROPS = {radius: 48, thickness: 24};
 const kitAt = (id: string, extra: Record<string, unknown> = {}) => {
   const adapter = ORNAMENT_KINDS[kindOf(id)];
   const item = unscaledItemProps('halloween-mansao', id);
-  const tela = getSize(id).props?.fit === 'tela' ? TELA_PROPS : {};
-  const props = adapter.parse({...adapter.preset('halloween-mansao'), ...item, ...sizeProps(getSize(id)), ...tela, ...extra});
+  const screen = getSize(id).props?.fit === 'screen' ? SCREEN_PROPS : {};
+  const props = adapter.parse({...adapter.preset('halloween-mansao'), ...item, ...sizeProps(getSize(id)), ...screen, ...extra});
   return {adapter, props, ...adapter.ornamentLayout(props)};
 };
 /** The kit exactly as the pack renders it (packs/halloween-mansao.json). */
@@ -73,10 +73,10 @@ const build = (frame: OrnamentFrame, placements: readonly OrnamentPlacement[], p
 const glassOf = (elements: readonly OrnamentElement[], type = 'mansao-lantern') =>
   elements.filter((element) => element.type === type).map((element) => element.glass as number);
 
-const CHATS = ['chat-compacto', 'chat-padrao', 'chat-alto', 'chat-coluna', 'chat-vertical'];
-const RECT_BLOCKS = ['faixa', 'titulo', 'cartao', 'quadrado', 'lista'];
-const RECT_CAMS = ['webcam-16x9', 'webcam-16x9-g', 'webcam-4x3', 'webcam-quadrada', 'webcam-vertical', 'jogo'];
-const ROUND_CAMS = ['webcam-redonda-p', 'webcam-redonda', 'webcam-redonda-g'];
+const CHATS = ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical'];
+const RECT_BLOCKS = ['lower-third', 'title', 'card', 'square', 'list'];
+const RECT_CAMS = ['webcam-16x9', 'webcam-16x9-lg', 'webcam-4x3', 'webcam-square', 'webcam-vertical', 'gameplay'];
+const ROUND_CAMS = ['webcam-round-sm', 'webcam-round', 'webcam-round-lg'];
 
 test('mansao: a lanterna principal (ornamentSize = altura da lanterna) em todos os 27 tamanhos nomeados', () => {
   assert.equal(NAMED_SIZES.length, 27);
@@ -90,7 +90,7 @@ test('mansao: a lanterna principal (ornamentSize = altura da lanterna) em todos 
     }
   }
   // Where the room allows, the lantern is exactly ornamentSize px tall (hook to base), fixed px.
-  for (const id of ['chat-padrao', 'chat-vertical', 'cartao', 'faixa', 'circulo', 'webcam-16x9', 'jogo', 'webcam-redonda']) {
+  for (const id of ['chat-standard', 'chat-vertical', 'card', 'lower-third', 'circle', 'webcam-16x9', 'gameplay', 'webcam-round']) {
     const {placements} = layoutAt(id);
     assert.equal(placements[0]!.size, 36, id);
     assert.equal(placements[0]!.slot, 'TR', id);
@@ -106,7 +106,7 @@ test('mansao: com o kit, a lanterna usa ≥ 85 % do espaço do canto (webcams re
     const room = roomAt(frame, cornerSlot(frame, hero.slot as 'TR'), 'front').extent;
     // The lamp's body (its hull's circle), not its light, takes the room.
     const body = ceilHalf(lanternMountOf(frame, hero).lantern.reach);
-    // Round webcams have room for far more; the preset caps them at the circulo blocks' 60 px.
+    // Round webcams have room for far more; the preset caps them at the circle blocks' 60 px.
     if (ROUND_CAMS.includes(id)) assert.equal(hero.size, props.ornamentSize, `${id}: teto do preset`);
     else assert.ok(body >= 0.85 * room - 1e-9, `${id}: lanterna ${hero.size} px usa ${body} de ${room}`);
     assert.ok(hero.size <= props.ornamentSize, id);
@@ -124,27 +124,27 @@ test('mansao: com o kit, a lanterna usa ≥ 85 % do espaço do canto (webcams re
       assert.ok(rose.extent >= 0.6 * maxExtentAt(frame, rose.x, rose.y, 'front') - 1e-9, `${id}: rosácea pequena demais`);
     }
   }
-  // The measured sizes (the review's targets): chat 52, rect blocks 58.5, janela 54.5, round webcams the preset's 60 (as the circulo blocks).
+  // The measured sizes (the review's targets): chat 52, rect blocks 58.5, window 54.5, round webcams the preset's 60 (as the circle blocks).
   const size = (id: string) => kitAt(id).placements[0]!.size;
-  assert.equal(size('chat-padrao'), 52);
-  assert.equal(size('cartao'), 58.5);
+  assert.equal(size('chat-standard'), 52);
+  assert.equal(size('card'), 58.5);
   assert.equal(size('webcam-16x9'), 54.5);
-  assert.equal(size('jogo'), 54.5);
+  assert.equal(size('gameplay'), 54.5);
   for (const id of ROUND_CAMS) assert.equal(size(id), 60, measured.join(', '));
-  // Label strips: at most 0.6 of the strip (etiqueta-p 38.5), else the room (etiqueta 50). Circles: the preset's 60.
-  assert.equal(size('etiqueta-p'), 38.5);
-  assert.equal(size('etiqueta'), 50);
-  for (const id of ['circulo-p', 'circulo', 'circulo-g']) assert.equal(size(id), 60, id);
+  // Label strips: at most 0.6 of the strip (label-sm 38.5), else the room (label 50). Circles: the preset's 60.
+  assert.equal(size('label-sm'), 38.5);
+  assert.equal(size('label'), 50);
+  for (const id of ['circle-sm', 'circle', 'circle-lg']) assert.equal(size(id), 60, id);
   // Telas at the pack's thickness 24 / radius 48: hung in the band's corner, ≥ 85 % of its room.
-  for (const id of ['tela-cheia', 'tela-vertical']) {
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
     const {frame, placements} = kitAt(id);
     assert.ok(placements[0]!.size >= 56, `${id}: ${placements[0]!.size}`);
     assert.ok(placements[0]!.extent >= 0.85 * roomAt(frame, cornerSlot(frame, 'TR'), 'front').extent, id);
   }
 });
 
-test('mansao: no pack, jogo e webcam-16x9-g escalam o kit (×2 e ×1,5) e a lanterna cresce junto, dentro do bleed', () => {
-  for (const [id, scale, bleed] of [['jogo', 2, 96], ['webcam-16x9-g', 1.5, 72]] as const) {
+test('mansao: no pack, jogo e webcam-16x9-lg escalam o kit (×2 e ×1,5) e a lanterna cresce junto, dentro do bleed', () => {
+  for (const [id, scale, bleed] of [['gameplay', 2, 96], ['webcam-16x9-lg', 1.5, 72]] as const) {
     const {adapter, frame, placements, props} = packAt(id);
     assert.equal(props.bleed, bleed, id);
     const layout = adapter.ornamentLayout(props);
@@ -164,7 +164,7 @@ test('mansao: onde cada motivo fica (braços, rosácea, lancetas, cercas) e onde
   for (const id of [...CHATS, ...RECT_BLOCKS, ...RECT_CAMS]) {
     const {placements} = layoutAt(id);
     assert.deepEqual(lanterns(placements).map((placement) => `${placement.motif}@${placement.slot}`), ['lantern@TR', 'lantern@TL'], id);
-    const sides = ['jogo', 'webcam-16x9-g'].includes(id) ? ['left', 'right'] : [];
+    const sides = ['gameplay', 'webcam-16x9-lg'].includes(id) ? ['left', 'right'] : [];
     assert.deepEqual(motifs(placements, 'arm').map((placement) => placement.slot), ['TR', 'TL', ...sides], id);
     assert.deepEqual(motifs(placements, 'sconce').map((placement) => placement.slot), sides, id);
     const left = fences(placements, 'BL');
@@ -172,38 +172,38 @@ test('mansao: onde cada motivo fica (braços, rosácea, lancetas, cercas) e onde
     assert.equal(fences(placements, 'BR').length, left.length, `${id}: cerca em BR igual à de BL`);
   }
   // Etiquetas: uma lanterna (TR) e uma cerca (BL), para respirar.
-  for (const id of ['etiqueta-p', 'etiqueta']) {
+  for (const id of ['label-sm', 'label']) {
     const {placements} = layoutAt(id);
     assert.deepEqual(lanterns(placements).map((placement) => placement.slot), ['TR'], id);
     assert.ok(fences(placements, 'BL').length >= 3 && fences(placements, 'BR').length === 0, id);
   }
   // Círculos e webcams redondas: duas lanternas em ganchos, sem cerca.
-  for (const id of ['circulo-p', 'circulo', 'circulo-g', ...ROUND_CAMS]) {
+  for (const id of ['circle-sm', 'circle', 'circle-lg', ...ROUND_CAMS]) {
     const {placements} = layoutAt(id);
     assert.deepEqual(lanterns(placements).map((placement) => placement.motif), ['lantern', 'lantern'], id);
     assert.equal(fences(placements).length, 0, id);
   }
   // Round blocks with an accent: the lanterns take the slots the arc leaves free (a bottom slot hangs from a wall arm).
-  assert.deepEqual(lanterns(layoutAt('circulo', {accent: 'esquerda'}).placements).map((placement) => placement.slot), ['TR', 'BR']);
-  assert.deepEqual(lanterns(layoutAt('circulo', {accent: 'topo'}).placements).map((placement) => placement.slot), ['BR', 'BL']);
+  assert.deepEqual(lanterns(layoutAt('circle', {accent: 'esquerda'}).placements).map((placement) => placement.slot), ['TR', 'BR']);
+  assert.deepEqual(lanterns(layoutAt('circle', {accent: 'topo'}).placements).map((placement) => placement.slot), ['BR', 'BL']);
   // Painel da Twitch e telas: lanternas penduradas da borda de cima (sem braço, sem bleed).
-  for (const id of ['painel-twitch', 'tela-cheia', 'tela-vertical']) {
+  for (const id of ['twitch-panel', 'fullscreen', 'fullscreen-vertical']) {
     const {placements} = layoutAt(id);
     assert.deepEqual(lanterns(placements).map((placement) => `${placement.motif}@${placement.slot}`), ['lantern-hung@TR', 'lantern-hung@TL'], id);
     // Only the side sconces (telas) hang from arms.
     assert.equal(motifs(placements, 'arm').length, motifs(placements, 'sconce').length, id);
   }
   // The pack's padding on the Twitch panel (README): the lanterns grow from 22 to 32 px.
-  assert.deepEqual(kitAt('painel-twitch').placements.map((placement) => `${placement.motif}@${placement.slot} ${placement.size}`),
-    ['lantern-hung@TR 32', 'lantern-hung@TL 32'], 'kit painel-twitch');
-  assert.deepEqual(kitAt('painel-twitch', {paddingX: 24, paddingY: 16}).placements.map((placement) => placement.size), [22, 22], 'painel-twitch sem o padding do pack');
+  assert.deepEqual(kitAt('twitch-panel').placements.map((placement) => `${placement.motif}@${placement.slot} ${placement.size}`),
+    ['lantern-hung@TR 32', 'lantern-hung@TL 32'], 'kit twitch-panel');
+  assert.deepEqual(kitAt('twitch-panel', {paddingX: 24, paddingY: 16}).placements.map((placement) => placement.size), [22, 22], 'twitch-panel sem o padding do pack');
   // Painel: no bleed under it, so no fence (it would stand in the padding over the fill, a comb of ticks), and no rose (too narrow).
   for (const extra of [{radius: 0}, {radius: 4}, {radius: 8}, {radius: 16}, {paddingX: 32, paddingY: 24}, {paddingX: 48, paddingY: 40}]) {
-    const {placements} = layoutAt('painel-twitch', extra);
+    const {placements} = layoutAt('twitch-panel', extra);
     assert.equal(fences(placements).length + motifs(placements, 'rose').length, 0, `painel ${JSON.stringify(extra)}`);
   }
   // Telas: a fence on the file's bottom edge, no taller than the band (+2 px).
-  for (const id of ['tela-cheia', 'tela-vertical']) {
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
     const {placements, frame} = kitAt(id);
     const fence = fences(placements);
     assert.ok(fence.length >= 6, `${id}: cerca na faixa de baixo`);
@@ -211,7 +211,7 @@ test('mansao: onde cada motivo fica (braços, rosácea, lancetas, cercas) e onde
     assert.ok(fence[0]!.size <= band + 2 + 1e-9, `${id}: cerca na faixa (${fence[0]!.size} > ${band + 2})`);
   }
   // A small ornamentSize keeps the hero only: the second lantern (≥ 20 px), the rose (≥ 14) and the fence (≥ 16) drop.
-  for (const id of ['chat-vertical', 'faixa', 'jogo', 'tela-cheia']) {
+  for (const id of ['chat-vertical', 'lower-third', 'gameplay', 'fullscreen']) {
     const {placements} = layoutAt(id, {ornamentSize: 12});
     assert.deepEqual(placements.filter((placement) => placement.motif !== 'arm').map((placement) => placement.motif), [placements[0]!.motif], id);
   }
@@ -245,33 +245,33 @@ test('mansao: com o kit, rosácea e lancetas no topo dos contornos largos e cerc
       }
     }
   }
-  assert.deepEqual(['faixa', 'titulo', 'jogo', 'chat-vertical', 'webcam-16x9-g', 'tela-cheia', 'tela-vertical', 'cartao', 'webcam-16x9']
+  assert.deepEqual(['lower-third', 'title', 'gameplay', 'chat-vertical', 'webcam-16x9-lg', 'fullscreen', 'fullscreen-vertical', 'card', 'webcam-16x9']
     .map((id) => count(id, 'lancet')), [2, 2, 2, 2, 2, 4, 2, 0, 0]);
-  // Side sconces on big frames (jogo, webcam-16x9-g: one per side; tela: every 480 px), and the gate on outlines ≥ 1000 px wide.
-  assert.deepEqual(['jogo', 'webcam-16x9-g', 'tela-cheia', 'tela-vertical', 'webcam-16x9', 'webcam-vertical', 'faixa', 'chat-vertical']
+  // Side sconces on big frames (gameplay, webcam-16x9-lg: one per side; screen: every 480 px), and the gate on outlines ≥ 1000 px wide.
+  assert.deepEqual(['gameplay', 'webcam-16x9-lg', 'fullscreen', 'fullscreen-vertical', 'webcam-16x9', 'webcam-vertical', 'lower-third', 'chat-vertical']
     .map((id) => count(id, 'sconce')), [2, 2, 2, 6, 0, 0, 0, 0]);
-  assert.deepEqual(['faixa', 'titulo', 'jogo', 'tela-cheia', 'tela-vertical', 'webcam-16x9-g', 'chat-vertical', 'cartao']
+  assert.deepEqual(['lower-third', 'title', 'gameplay', 'fullscreen', 'fullscreen-vertical', 'webcam-16x9-lg', 'chat-vertical', 'card']
     .map((id) => count(id, 'gate') / 6), [1, 1, 1, 1, 1, 0, 0, 0]);
-  // Rose extents: blocks 24.5, janela 23.5, tela (thickness 24) 20.5.
-  assert.deepEqual(['faixa', 'jogo', 'tela-cheia'].map((id) => motifs(kitAt(id).placements, 'rose')[0]!.extent), [24.5, 23.5, 20.5]);
+  // Rose extents: blocks 24.5, window 23.5, screen (thickness 24) 20.5.
+  assert.deepEqual(['lower-third', 'gameplay', 'fullscreen'].map((id) => motifs(kitAt(id).placements, 'rose')[0]!.extent), [24.5, 23.5, 20.5]);
   // Fence runs per side: 0.22 of the width, at most 16 pickets.
-  assert.deepEqual(['chat-padrao', 'cartao', 'faixa', 'jogo', 'etiqueta'].map((id) => fences(kitAt(id).placements, 'BL').length), [5, 8, 14, 16, 8]);
-  // Heavier fence: 30 px on chat, blocks, janela and tela (the band's depth); 25 on etiqueta-p.
-  assert.deepEqual(['chat-padrao', 'cartao', 'webcam-16x9', 'etiqueta-p', 'tela-cheia'].map((id) => fences(kitAt(id).placements)[0]!.size),
+  assert.deepEqual(['chat-standard', 'card', 'lower-third', 'gameplay', 'label'].map((id) => fences(kitAt(id).placements, 'BL').length), [5, 8, 14, 16, 8]);
+  // Heavier fence: 30 px on chat, blocks, window and screen (the band's depth); 25 on label-sm.
+  assert.deepEqual(['chat-standard', 'card', 'webcam-16x9', 'label-sm', 'fullscreen'].map((id) => fences(kitAt(id).placements)[0]!.size),
     [30, 30, 30, 25, 30]);
   // Lowered 3–4 px where the bleed allows, so the top rail clears the stroke's glow: the spear tips
-  // 2 px (chat, faixa) or 3 px (jogo, webcam) over the outline's bottom edge, not 0.2·H.
+  // 2 px (chat, lower-third) or 3 px (gameplay, webcam) over the outline's bottom edge, not 0.2·H.
   const tipOver = (id: string) => {
     const {frame, placements} = kitAt(id);
     const picket = fences(placements)[0]!;
     return frame.outline.y + frame.outline.height - (picket.y - fenceMeasures(picket.size).centre);
   };
-  assert.deepEqual(['chat-padrao', 'faixa', 'cartao', 'jogo', 'webcam-16x9'].map(tipOver), [2, 2, 2, 3, 3]);
+  assert.deepEqual(['chat-standard', 'lower-third', 'card', 'gameplay', 'webcam-16x9'].map(tipOver), [2, 2, 2, 3, 3]);
 });
 
 test('mansao: frame 0 é a pose principal (vidros acesos) e a luz some no painel da Twitch', () => {
   for (const seed of [1, 7, 81, 999, 123456]) {
-    for (const id of ['chat-padrao', 'etiqueta-p', 'circulo-p', 'painel-twitch', 'webcam-16x9', 'webcam-redonda-p', 'tela-cheia', 'faixa']) {
+    for (const id of ['chat-standard', 'label-sm', 'circle-sm', 'twitch-panel', 'webcam-16x9', 'webcam-round-sm', 'fullscreen', 'lower-third']) {
       const {frame, placements, props} = kitAt(id, {seed});
       const n = framesOf(props);
       const elements = build(frame, placements, props, 0, n);
@@ -407,7 +407,7 @@ test('mansao: constantes vindas do fundo (lanterna, rosácea, lanceta, tremulaç
 });
 
 test('mansao: nada desenha sobre o texto nos tamanhos extremos', () => {
-  for (const id of ['chat-compacto', 'chat-vertical', 'etiqueta-p', 'painel-twitch', 'circulo-p', 'lista', 'faixa']) {
+  for (const id of ['chat-compact', 'chat-vertical', 'label-sm', 'twitch-panel', 'circle-sm', 'list', 'lower-third']) {
     for (const ornamentSize of [12, 36, 256]) {
       const {frame, placements, props} = layoutAt(id, {ornamentSize});
       const n = framesOf(props);
@@ -425,7 +425,7 @@ test('mansao: nada desenha sobre o texto nos tamanhos extremos', () => {
 });
 
 test('mansao: o gancho de pastor sai da borda de cima, sobe e passa pelo gancho da lanterna', () => {
-  for (const id of [...CHATS, ...RECT_BLOCKS, ...RECT_CAMS, ...ROUND_CAMS, 'circulo-p', 'circulo', 'circulo-g', 'etiqueta-p', 'etiqueta']) {
+  for (const id of [...CHATS, ...RECT_BLOCKS, ...RECT_CAMS, ...ROUND_CAMS, 'circle-sm', 'circle', 'circle-lg', 'label-sm', 'label']) {
     const {frame, placements} = kitAt(id);
     for (const placement of motifs(placements, 'lantern')) {
       const {lantern, hook} = lanternMountOf(frame, placement);
@@ -478,12 +478,12 @@ const insidePolygon = (polygon: readonly (readonly number[])[], x: number, y: nu
 
 test('mansao: o suporte (gancho ou braço) nunca atravessa a lanterna, também em paredes redondas', () => {
   const cases: [string, Record<string, unknown>][] = [];
-  for (const id of ['circulo-p', 'circulo', 'circulo-g', ...ROUND_CAMS, 'chat-padrao', 'cartao', 'webcam-16x9', 'etiqueta-p']) {
+  for (const id of ['circle-sm', 'circle', 'circle-lg', ...ROUND_CAMS, 'chat-standard', 'card', 'webcam-16x9', 'label-sm']) {
     for (const ornamentSize of [36, 128, 256]) cases.push([id, {ornamentSize}]);
   }
-  cases.push(['webcam-16x9', {radius: 200}], ['cartao', {radius: 200}], ['circulo', {accent: 'esquerda'}], ['circulo', {accent: 'topo'}],
-    ['chat-padrao', {bleed: 16, glow: 8, halo: 0}]);
-  for (const id of ['jogo', 'webcam-16x9-g', 'tela-cheia', 'tela-vertical']) cases.push([id, {radius: 48, thickness: 24, corners: 'nenhum'}], [id, {corners: 'nenhum'}]);
+  cases.push(['webcam-16x9', {radius: 200}], ['card', {radius: 200}], ['circle', {accent: 'esquerda'}], ['circle', {accent: 'topo'}],
+    ['chat-standard', {bleed: 16, glow: 8, halo: 0}]);
+  for (const id of ['gameplay', 'webcam-16x9-lg', 'fullscreen', 'fullscreen-vertical']) cases.push([id, {radius: 48, thickness: 24, corners: 'nenhum'}], [id, {corners: 'nenhum'}]);
   let armed = 0;
   for (const [id, extra] of cases) {
     const {frame, placements, props} = layoutAt(id, extra);
@@ -532,8 +532,8 @@ test('mansao: a tinta (traços inclusos) cabe no círculo de cada lugar, no arqu
 });
 
 test('mansao: na tela os enfeites ficam na faixa e no máximo `glow` px sobre a borda da imagem', () => {
-  for (const id of ['tela-cheia', 'tela-vertical']) {
-    for (const extra of [{}, {glow: 12, thickness: 12, lines: 2, radius: 10}, {glow: 16, ornamentSize: 48}, {radius: 48}, {thickness: 24}, TELA_PROPS]) {
+  for (const id of ['fullscreen', 'fullscreen-vertical']) {
+    for (const extra of [{}, {glow: 12, thickness: 12, lines: 2, radius: 10}, {glow: 16, ornamentSize: 48}, {radius: 48}, {thickness: 24}, SCREEN_PROPS]) {
       const {frame, placements, props} = layoutAt(id, extra);
       const {window} = getBorderGeometry(props as never).layout;
       const where = `${id} ${JSON.stringify(extra)}`;
@@ -558,7 +558,7 @@ test('mansao: na tela os enfeites ficam na faixa e no máximo `glow` px sobre a 
 
 test('mansao: sob cantos redondos grandes (até pílulas) a cerca começa onde as lanças alcançam o contorno', () => {
   const cases: [string, Record<string, unknown>][] = [];
-  for (const id of ['webcam-16x9', 'jogo', 'cartao', 'chat-padrao', 'faixa']) for (const radius of [0, 10, 40, 200]) cases.push([id, {radius}], [id, {radius, ornamentSize: 60}]);
+  for (const id of ['webcam-16x9', 'gameplay', 'card', 'chat-standard', 'lower-third']) for (const radius of [0, 10, 40, 200]) cases.push([id, {radius}], [id, {radius, ornamentSize: 60}]);
   for (const [id, extra] of cases) {
     const {frame, placements} = layoutAt(id, extra);
     const {outline} = frame;
@@ -584,8 +584,8 @@ test('mansao: sob cantos redondos grandes (até pílulas) a cerca começa onde a
 
 test('mansao: as cercas BL e BR ficam ao menos um passo afastadas (cantos grandes, faixa grossa, pouca sangria)', () => {
   const cases: [string, Record<string, unknown>][] = [];
-  const panels = ['chat-compacto', 'chat-padrao', 'quadrado', 'lista'];
-  const frames = ['webcam-4x3', 'webcam-quadrada', 'webcam-vertical', 'tela-vertical'];
+  const panels = ['chat-compact', 'chat-standard', 'square', 'list'];
+  const frames = ['webcam-4x3', 'webcam-square', 'webcam-vertical', 'fullscreen-vertical'];
   for (const id of [...panels, ...frames]) {
     const extras: Record<string, unknown>[] = panels.includes(id) ? [{}, {bleed: 16, glow: 8, halo: 0}, {bleed: 24, glow: 12, halo: 0}] : [{corners: 'nenhum'}, {corners: 'nenhum', thickness: 24}];
     for (const radius of [10, 120, 160, 200, 300, 1000]) for (const ornamentSize of [36, 48, 80]) for (const extra of extras) {
@@ -670,9 +670,9 @@ test('mansao: toda estaca, poste e barra tem luar de 2 px (#D6DDC7 ≥ 0,55) do 
 });
 
 test('mansao: arandelas nas laterais das bordas grandes e o portão no meio de baixo', () => {
-  // Sconces: 44 px on jogo and webcam-16x9-g, straddling the outline's side at its middle; on the telas
-  // (pack props) as tall as the band allows (≥ 28), every 480 px: tela-cheia at y 540, tela-vertical at 480 / 960 / 1440.
-  const expected: Record<string, number[]> = {'jogo': [453], 'webcam-16x9-g': [318], 'tela-cheia': [540], 'tela-vertical': [480, 960, 1440]};
+  // Sconces: 44 px on gameplay and webcam-16x9-lg, straddling the outline's side at its middle; on the telas
+  // (pack props) as tall as the band allows (≥ 28), every 480 px: fullscreen at y 540, fullscreen-vertical at 480 / 960 / 1440.
+  const expected: Record<string, number[]> = {'gameplay': [453], 'webcam-16x9-lg': [318], 'fullscreen': [540], 'fullscreen-vertical': [480, 960, 1440]};
   for (const [id, ys] of Object.entries(expected)) {
     const {frame, placements, props} = kitAt(id);
     const sconces = motifs(placements, 'sconce');
@@ -680,10 +680,10 @@ test('mansao: arandelas nas laterais das bordas grandes e o portão no meio de b
     for (const sconce of sconces) {
       const {lantern, arm} = lanternMountOf(frame, sconce);
       assert.ok(arm, `${id}: braço`);
-      if (frame.fit === 'tela') assert.ok(sconce.size >= SCONCE_MIN && sconce.size <= SCONCE_HEIGHT, `${id}: ${sconce.size}`);
+      if (frame.fit === 'screen') assert.ok(sconce.size >= SCONCE_MIN && sconce.size <= SCONCE_HEIGHT, `${id}: ${sconce.size}`);
       else assert.equal(sconce.size, SCONCE_HEIGHT, id);
       const line = sconce.slot === 'left' ? frame.outline.x : frame.outline.x + frame.outline.width;
-      if (frame.fit !== 'tela') assert.ok(Math.abs(lantern.cx - line) < lantern.reach, `${id}: a lanterna cavalga a linha de fora`);
+      if (frame.fit !== 'screen') assert.ok(Math.abs(lantern.cx - line) < lantern.reach, `${id}: a lanterna cavalga a linha de fora`);
       // The arm follows its lamp and rests level on the hook's crook.
       assert.equal(placements[placements.indexOf(sconce) + 1]!.motif, 'arm');
       assert.ok(Math.abs(arm!.hy - (lantern.oy + LANTERN_UNITS.armY * lantern.scale)) < 1e-9, id);
@@ -695,12 +695,12 @@ test('mansao: arandelas nas laterais das bordas grandes e o portão no meio de b
   }
   // No sconce without glow's light: a copy with glow 0 keeps the sconces, unlit.
   {
-    const {frame, placements, props} = kitAt('jogo', {glow: 0, halo: 0});
+    const {frame, placements, props} = kitAt('gameplay', {glow: 0, halo: 0});
     assert.equal(motifs(placements, 'sconce').length, 2);
     for (const element of build(frame, placements, props, 0, framesOf(props))) assert.equal(element.light, 0);
   }
   // The gate: at the outline's centre on the fence's base line, 7 + 22 + 22 + 7 px, the arch peaking at 36 (lower only where the band is short).
-  for (const id of ['faixa', 'titulo', 'jogo', 'tela-cheia', 'tela-vertical']) {
+  for (const id of ['lower-third', 'title', 'gameplay', 'fullscreen', 'fullscreen-vertical']) {
     const {frame, placements, props} = kitAt(id);
     const gate = motifs(placements, 'gate');
     assert.equal(gate.length, 6, id);
@@ -714,7 +714,7 @@ test('mansao: arandelas nas laterais das bordas grandes e o portão no meio de b
       assert.equal(strip.edge, picket.size, id);
     }
     const peak = gate[0]!.size;
-    if (frame.fit === 'tela') assert.ok(peak >= picket.size + 2 && peak <= GATE_PEAK, `${id}: ${peak}`);
+    if (frame.fit === 'screen') assert.ok(peak >= picket.size + 2 && peak <= GATE_PEAK, `${id}: ${peak}`);
     else assert.equal(peak, GATE_PEAK, id);
     // Clear of the fence runs.
     for (const strip of gate) for (const other of fences(placements)) assert.ok(Math.abs(other.x - strip.x) >= other.extent + strip.extent, id);

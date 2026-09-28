@@ -22,7 +22,7 @@ export const panelOrnamentFrame = (input: {
   const canvas = canvasRect(layout.canvas);
   return {
     kind: input.kind,
-    fit: 'painel',
+    fit: 'panel',
     canvas,
     box: {...layout.box},
     outline: {...layout.shape},
@@ -39,13 +39,13 @@ export const panelOrnamentFrame = (input: {
 
 /**
  * The frame of a border: motifs hang on its outer edge (the second line included) and never enter
- * the window. Around a window ('janela') they use the bleed; on a screen ('tela') nothing leaves
+ * the window. Around a window ('window') they use the bleed; on a screen ('screen') nothing leaves
  * the file. On both the outer edge hides the back layer (tucked under the band).
  */
 export const frameOrnamentFrame = (input: {layout: FrameLayout; track: RoundRect; glow: number}): OrnamentFrame => {
   const {layout} = input;
   const canvas = canvasRect(layout.canvas);
-  const tela = layout.fit === 'tela';
+  const screen = layout.fit === 'screen';
   return {
     kind: 'border',
     fit: layout.fit,
@@ -56,11 +56,11 @@ export const frameOrnamentFrame = (input: {layout: FrameLayout; track: RoundRect
     circle: isCircle(layout.outer),
     hole: {...layout.holeShape},
     keepOut: [],
-    paintLimit: tela ? {...layout.box} : canvas,
-    // Janela and tela alike, the outer edge hides the back layer, so it never shows in the window
+    paintLimit: screen ? {...layout.box} : canvas,
+    // Window and screen alike, the outer edge hides the back layer, so it never shows in the window
     // or its glow margin (window minus holeShape), which the hole mask leaves in. Around a window
     // back motifs show in the bleed; on a screen the rest of the box is the band's fillet, which
-    // the band fill covers, so tela has no back room at all (maxExtentAt) and its sets use front.
+    // the band fill covers, so screen has no back room at all (maxExtentAt) and its sets use front.
     cover: {path: roundRectPath(layout.outer), fillRule: 'nonzero'},
     accent: null,
     glow: input.glow,

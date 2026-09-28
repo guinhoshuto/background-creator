@@ -16,8 +16,8 @@ test('tipos: os quatro tipos e a política de cada um', () => {
     }),
     [
       ['background', 'backgrounds', {width: 1920, height: 1080}, null, false, 'webm'],
-      ['chat', 'chat', null, 'chat-padrao', true, 'webm'],
-      ['block', 'text-boxes', null, 'cartao', true, 'webm'],
+      ['chat', 'chat', null, 'chat-standard', true, 'webm'],
+      ['block', 'text-boxes', null, 'card', true, 'webm'],
       ['border', 'borders', null, 'webcam-16x9', true, 'webm'],
     ],
   );

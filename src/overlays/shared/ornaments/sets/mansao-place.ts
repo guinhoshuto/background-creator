@@ -29,7 +29,7 @@ import {LANCET_CIRCLE, roseScaleFor} from './mansao-glass';
  *   - on big borders (≥ SCONCE_WIDTH wide) wall sconces straddle the side edges ('sconce' + 'arm').
  *     Not on circles; on a pill only under its straight bottom edge.
  *
- * A full-screen frame ('tela') keeps its motifs off frame.hole (the holeShape), like every set:
+ * A full-screen frame ('screen') keeps its motifs off frame.hole (the holeShape), like every set:
  * they lie over the band and may reach into its inner glow margin (window minus holeShape, at most
  * `glow` px into the picture's edge), where the band's own glow already paints.
  *
@@ -478,7 +478,7 @@ export const armMount = (frame: OrnamentFrame, corner: OrnamentCorner, height: n
 const hungExtent = (height: number) => ceilHalf(lanternAt(0, 0, height, 1).reach);
 
 /** Label strips (under COMPACT_HEIGHT px tall): one lantern (TR) and one fence run (BL), the lantern ≤ 0.6 of the strip. */
-const compact = (frame: OrnamentFrame) => frame.fit === 'painel' && !frame.circle && frame.outline.height < COMPACT_HEIGHT;
+const compact = (frame: OrnamentFrame) => frame.fit === 'panel' && !frame.circle && frame.outline.height < COMPACT_HEIGHT;
 
 /**
  * One lantern at `corner`: the tallest height from the nominal down (0.5 px steps, not under
@@ -496,7 +496,7 @@ const placeLantern = (
   // An upper bound for the search: no lantern is taller than about twice the corner's best room.
   const top = Math.min(floorHalf(nominal), floorHalf(2.2 * room.extent + 4));
   const side = corner.dx > 0 ? 1 : -1;
-  if (armed && frame.fit !== 'tela' && corner.dy < 0) {
+  if (armed && frame.fit !== 'screen' && corner.dy < 0) {
     const {min: inmost} = slideRange(frame, 'front');
     for (let height = top; height >= least - 1e-9; height -= 0.5) {
       // A lamp smaller than the room slides from the best spot towards the corner (1 px steps)
@@ -841,13 +841,13 @@ const fenceCount = (frame: OrnamentFrame, height: number) =>
 const placeFence = (frame: OrnamentFrame, ornamentSize: number): OrnamentPlacement[] => {
   // A panel with no bleed under it (a Twitch panel) keeps no fence: it would stand inside the
   // panel's padding over its fill, a comb of ticks rather than a railing along its edge.
-  if (frame.fit === 'painel' && frame.paintLimit.y + frame.paintLimit.height - (frame.outline.y + frame.outline.height) < FENCE_MIN) return [];
+  if (frame.fit === 'panel' && frame.paintLimit.y + frame.paintLimit.height - (frame.outline.y + frame.outline.height) < FENCE_MIN) return [];
   const bl = cornerSlot(frame, 'BL');
   const br = cornerSlot(frame, 'BR');
   // On a full-screen frame no taller than the band (+2 px). Standing on the floor, the pickets'
   // circles keep off frame.hole, so the spears rise at most into the band's inner glow margin.
   let fenceTop = Math.min(FENCE_MAX, FENCE_PER_SIZE * ornamentSize);
-  if (frame.fit === 'tela' && frame.hole) {
+  if (frame.fit === 'screen' && frame.hole) {
     const band = frame.paintLimit.y + frame.paintLimit.height - (frame.hole.y + frame.hole.height) - frame.glow;
     fenceTop = Math.min(fenceTop, Math.max(0, band) + 2);
   }

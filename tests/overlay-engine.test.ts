@@ -38,7 +38,7 @@ const panelOf = (props: KitProps) => layoutPanel({...props, halo: props.halo});
 // ── Perimeter ───────────────────────────────────────────────────────────────────────────────
 
 const TRACKS: [string, RoundRect][] = [
-  ['quadrado', {x: 32, y: 32, width: 640, height: 360, radius: 0}],
+  ['square', {x: 32, y: 32, width: 640, height: 360, radius: 0}],
   ['cantos 16', {x: 33, y: 33, width: 638, height: 358, radius: 15}],
   ['pílula', {x: 25, y: 25, width: 322, height: 66, radius: 33}],
   ['círculo', {x: 45, y: 45, width: 406, height: 406, radius: 203}],
@@ -185,16 +185,16 @@ test('Layout de painel: tamanhos nomeados de chat e bloco, conteúdo dentro do t
 
 test('Layout de moldura: janela vazia para fora, tela do tamanho do arquivo', () => {
   for (const size of sizesForKind('border')) {
-    const fit = size.props?.fit ?? 'janela';
+    const fit = size.props?.fit ?? 'window';
     for (const radius of [0, 24, 200]) {
-      const glow = fit === 'janela' ? 16 : 24;
+      const glow = fit === 'window' ? 16 : 24;
       const layout = layoutFrame({...size, radius, thickness: 8, glow, fit});
       assert.deepEqual(layout.canvas, {width: size.width + 2 * size.bleed, height: size.height + 2 * size.bleed}, size.id);
       assert.ok(rectContains(layout.box, layout.hole), `${size.id}: buraco dentro da caixa`);
       assert.ok(layout.hole.width >= 1 && layout.hole.height >= 1);
       assertInside(layout.holeShape, layout.hole, `${size.id} r${radius}`);
       assert.ok(rectContains(layout.box, layout.content));
-      if (fit === 'janela') {
+      if (fit === 'window') {
         assert.deepEqual(layout.window, {...layout.box, radius: clampRadius(radius, size.width, size.height)});
         assert.deepEqual(layout.content, layout.box);
         assert.equal(layout.outset, 8 + glow);
@@ -209,7 +209,7 @@ test('Layout de moldura: janela vazia para fora, tela do tamanho do arquivo', ()
       }
     }
   }
-  const round = layoutFrame({width: 400, height: 400, bleed: 48, radius: 200, thickness: 6, fit: 'janela'});
+  const round = layoutFrame({width: 400, height: 400, bleed: 48, radius: 200, thickness: 6, fit: 'window'});
   assert.equal(round.window.radius, 200);
   assert.match(ringPath(round), /Z.*Z/);
   assert.match(filletPath(round), /^M48 48H448V448H48Z/);
@@ -239,7 +239,7 @@ test('Recusas de layout: conteúdo sem espaço e moldura sem janela', () => {
   assert.equal(content.safeParse({padding: 10}).success, true);
   assert.match(content.safeParse({padding: 16}).error!.issues[0]!.message, /padding leaves no room/);
   const hole = z.object({thickness: z.number()}).superRefine((props, context) =>
-    refineHole(layoutFrame({width: 200, height: 100, bleed: 0, radius: 0, thickness: props.thickness, glow: 10, fit: 'tela'}), context));
+    refineHole(layoutFrame({width: 200, height: 100, bleed: 0, radius: 0, thickness: props.thickness, glow: 10, fit: 'screen'}), context));
   assert.equal(hole.safeParse({thickness: 20}).success, true);
   assert.match(hole.safeParse({thickness: 45}).error!.issues[0]!.message, /leaves no window/);
 });
@@ -259,7 +259,7 @@ const fillCase = (id: string, input: object, flags: Partial<Case> = {}): Case =>
 });
 
 const PANEL_TRACK = layoutPanel({width: 640, height: 360, bleed: 32, radius: 16, strokeWidth: 3, padding: 16}).track;
-const FRAME = layoutFrame({width: 640, height: 360, bleed: 48, radius: 0, thickness: 8, glow: 16, fit: 'janela'});
+const FRAME = layoutFrame({width: 640, height: 360, bleed: 48, radius: 0, thickness: 8, glow: 16, fit: 'window'});
 const PILL_TRACK = layoutPanel({width: 320, height: 64, bleed: 24, radius: 999, strokeWidth: 2, padding: 8}).track;
 
 const strokeCase = (id: string, input: object, track: RoundRect, flags: Partial<Case> = {}, options = {}): Case => ({
@@ -350,7 +350,7 @@ test('Movimento: a velocidade real é arredondada para períodos inteiros e expo
 
 test('Movimento: cometas, gradientes, vidro e brasas têm períodos em px fixos, não em frações da caixa', () => {
   const small = layoutPanel({width: 320, height: 64, bleed: 24, radius: 16, strokeWidth: 2, padding: 8}).track;
-  const large = layoutFrame({width: 1920, height: 1080, bleed: 0, radius: 16, thickness: 12, fit: 'tela'}).track;
+  const large = layoutFrame({width: 1920, height: 1080, bleed: 0, radius: 16, thickness: 12, fit: 'screen'}).track;
   for (const track of [small, PANEL_TRACK, large]) {
     const perimeter = perimeterLength(track);
     // Comets: as many as fit cometSpacing (at least one), travelling whole spacings.
@@ -470,8 +470,8 @@ const strokeSamples = (element: StrokeElement, track: RoundRect) => {
 test('Molduras: nada do contorno entra no buraco (janela e tela, cantos retos e redondos)', () => {
   const frames: FrameLayout[] = [];
   for (const radius of [0, 24, 200]) {
-    frames.push(layoutFrame({width: 400, height: 400, bleed: 48, radius, thickness: 10, glow: 16, fit: 'janela'}));
-    frames.push(layoutFrame({width: 1920, height: 1080, bleed: 0, radius, thickness: 12, glow: 20, fit: 'tela'}));
+    frames.push(layoutFrame({width: 400, height: 400, bleed: 48, radius, thickness: 10, glow: 16, fit: 'window'}));
+    frames.push(layoutFrame({width: 1920, height: 1080, bleed: 0, radius, thickness: 12, glow: 20, fit: 'screen'}));
   }
   for (const layout of frames) {
     for (const strokeMotion of STROKE_MOTIONS) {
@@ -871,8 +871,8 @@ test('Render: SVG do tamanho do arquivo, brilho sobre o canvas inteiro, sem blen
 });
 
 test('Render: a moldura mascara o buraco e, em tela, recorta na caixa', () => {
-  for (const fit of ['janela', 'tela'] as const) {
-    const layout = layoutFrame(fit === 'janela'
+  for (const fit of ['window', 'screen'] as const) {
+    const layout = layoutFrame(fit === 'window'
       ? {width: 640, height: 360, bleed: 48, radius: 24, thickness: 8, glow: 16, fit}
       : {width: 1920, height: 1080, bleed: 0, radius: 24, thickness: 12, glow: 16, fit});
     const props = kit({strokeMotion: 'cometas', strokeWidth: layout.thickness, width: layout.box.width, height: layout.box.height, bleed: layout.box.x});
@@ -885,7 +885,7 @@ test('Render: a moldura mascara o buraco e, em tela, recorta na caixa', () => {
     assert.match(markup, /<mask id="ov-frame-hole" maskUnits="userSpaceOnUse" x="0" y="0"/);
     assert.ok(markup.includes(`d="${roundRectPath(layout.holeShape)}" fill="#000000"`), 'o buraco é preto na máscara');
     assert.match(markup, /mask="url\(#ov-frame-hole\)"/);
-    assert.equal(markup.includes('clip-path="url(#ov-frame-box)"'), fit === 'tela');
+    assert.equal(markup.includes('clip-path="url(#ov-frame-box)"'), fit === 'screen');
     assert.match(markup, /data-guides/);
   }
 });

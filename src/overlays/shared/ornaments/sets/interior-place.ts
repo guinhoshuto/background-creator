@@ -23,16 +23,16 @@ import {swagRun} from './interior-swag';
  * height. Each candle is one placement: a circle holding its body, its flickering flame and its
  * light; the light shrinks (down to LIGHT.min) before the candle does.
  *
- *   - Panels and windows with room above the top edge (chat, blocks, webcams, jogo): standing on the
+ *   - Panels and windows with room above the top edge (chat, blocks, webcams, gameplay): standing on the
  *     top edge like on a mantel: the hero and the short one at TR, a medium one at TL; a wide
- *     window (jogo) adds three at the top centre, the chandelier's echo.
+ *     window (gameplay) adds three at the top centre, the chandelier's echo.
  *   - Rings (round blocks and webcams): on brass brackets from the ±45° upper diagonals (TR hero, TL
  *     medium). A round block's accent arc takes its slots: 'esquerda' keeps TR and moves the second
  *     to the right side (0°); 'topo' moves both to the sides (0° and 180°).
  *   - A panel with no room above (the Twitch panel): on the inner sill, in the side padding pockets
  *     (BR hero and its twin at BL, unless the left accent bar is there), like the hall's floor
  *     candelabra at both lower corners.
- *   - Screen frames (tela): in the band's bottom corners, rising along the side bands (BR hero, BL);
+ *   - Screen frames (screen): in the band's bottom corners, rising along the side bands (BR hero, BL);
  *     with a large corner radius, up the band's rounded corner.
  *   - A short straight top edge (a pill-shaped chat): the three stand together at its middle.
  *
@@ -68,7 +68,7 @@ const SINK = 1;
 const PAIR_GAP = 16;
 /** A candle's axis from the end of the straight top edge, in units. */
 const CORNER_INSET = 8;
-/** Windows at least this wide (jogo, webcam-16x9-g) add the top-centre fixture (and, as chambersticks, the three-candle cluster). */
+/** Windows at least this wide (gameplay, webcam-16x9-lg) add the top-centre fixture (and, as chambersticks, the three-candle cluster). */
 export const CLUSTER_MIN_WIDTH = 900;
 /** Height steps of the search, px. */
 const STEP = 0.5;
@@ -80,7 +80,7 @@ export type CandleSpec = {kind: CandleKind; dir: 1 | -1; bracket: BracketId | nu
  * Chambersticks hang on brackets only in the ring family (a round panel or window); a screen frame,
  * even a round one, stands them on its band (telaStands). Placement and build both ask this.
  */
-const onBrackets = (frame: Pick<OrnamentFrame, 'circle' | 'fit'>) => frame.circle && frame.fit !== 'tela';
+const onBrackets = (frame: Pick<OrnamentFrame, 'circle' | 'fit'>) => frame.circle && frame.fit !== 'screen';
 
 /** The candle a placement holds: its kind (the motif), its side (dir) and its bracket, from the slot and the frame. */
 export const candleOf = (frame: OrnamentFrame, placement: Pick<OrnamentPlacement, 'motif' | 'slot' | 'x'>): CandleSpec => {
@@ -225,7 +225,7 @@ const topStands = (frame: OrnamentFrame, ornamentSize: number) => {
     {slot: 'top', kind: 'alta', dir: 1, bracket: null, feet: () => [{x: edge.centre, y: edge.y}]},
     {slot: 'top', kind: 'baixa', dir: 1, bracket: null, feet: (u) => [{x: edge.centre + PAIR_GAP * u, y: edge.y}]},
   ];
-  return {hero, secondaries: [partner, single], cluster: frame.fit === 'janela' && frame.outline.width >= CLUSTER_MIN_WIDTH ? cluster : []};
+  return {hero, secondaries: [partner, single], cluster: frame.fit === 'window' && frame.outline.width >= CLUSTER_MIN_WIDTH ? cluster : []};
 };
 
 /** The stroke's width on a panel: the track runs half of it inside the outline. */
@@ -329,7 +329,7 @@ const placeChambersticks = (frame: OrnamentFrame, ornamentSize: number): Ornamen
   const heroLeast = Math.min(HERO_MIN, floorHalf(nominal));
   let layout: {hero: Stand; secondaries: Stand[]; cluster?: Stand[]; sill?: boolean} | null = null;
   let hero: Fit | null = null;
-  const families = frame.fit === 'tela' ? [telaStands(frame)] : onBrackets(frame) ? [ringStands(frame)] : [topStands(frame, ornamentSize), sillStands(frame)];
+  const families = frame.fit === 'screen' ? [telaStands(frame)] : onBrackets(frame) ? [ringStands(frame)] : [topStands(frame, ornamentSize), sillStands(frame)];
   for (const family of families) {
     hero = largestFit(frame, family.hero, nominal, heroLeast);
     if (hero) {
@@ -369,15 +369,15 @@ const placeChambersticks = (frame: OrnamentFrame, ornamentSize: number): Ornamen
  *   - Rect panels and windows: the hero 'candelabro-3' at TR, a 'candelabro-2' mirrored at TL, both
  *     on rosettes on the frame's side line at the corner, centred at the slot's best spot (roomAt).
  *     Short labels (a block ≤ COMPACT_HEIGHT tall): one 'candelabro-2' at TR only.
- *   - Wide windows (jogo, webcam-16x9-g: width ≥ CLUSTER_MIN_WIDTH): a 'candelabro-3' standing on
+ *   - Wide windows (gameplay, webcam-16x9-lg: width ≥ CLUSTER_MIN_WIDTH): a 'candelabro-3' standing on
  *     the band at the top centre (the chandelier's echo), and wall sconces ('arandela') on both
  *     sides, SIDE_SPACING px apart, centred on the side's straight stretch.
- *   - Wide blocks and windows (faixa, titulo, jogo, webcam-16x9-g: width ≥ CLUSTER_MIN_WIDTH): the
+ *   - Wide blocks and windows (lower-third, title, gameplay, webcam-16x9-lg: width ≥ CLUSTER_MIN_WIDTH): the
  *     hall's red-velvet swag valance hanging from the bottom line into the bleed (interior-swag.tsx),
  *     a festoon per fixed pitch along the straight stretch.
  *   - Rings: the hero at the 45° upper right, a 'candelabro-2' at the upper left; a round block's
  *     accent arc moves them to the sides (0°, 180°).
- *   - Screen frames (tela): 'candelabro-3' standing on the bottom rail in both bottom band corners,
+ *   - Screen frames (screen): 'candelabro-3' standing on the bottom rail in both bottom band corners,
  *     'candelabro-2' in the top ones, sconces up both side bands (SIDE_SPACING px apart), and the
  *     swag valance across the top band between the top corners' fixtures.
  *
@@ -664,7 +664,7 @@ export const placeGirandoles = (frame: OrnamentFrame, ornamentSize: number): Orn
     const partner = secondaryAt(corner, slot, kind, mount);
     return partner && partner.size >= PARTNER_SHARE * placements[0]!.size - 1e-9 ? partner : null;
   };
-  if (frame.fit === 'tela') {
+  if (frame.fit === 'screen') {
     // The standing corner girandoles keep their flames and halos off the picture (AD round 2).
     const found = heroAt(cornerSlot(frame, 'BR'), 'BR', 'candelabro-3', 'foot');
     if (!found) return null;
@@ -703,14 +703,14 @@ export const placeGirandoles = (frame: OrnamentFrame, ornamentSize: number): Orn
   if (compact) return placements;
   add(partnerAt(cornerSlot(frame, 'TL'), 'TL', 'candelabro-2', 'rosette'));
   if (frame.outline.width >= CLUSTER_MIN_WIDTH) {
-    if (frame.fit === 'janela') {
+    if (frame.fit === 'window') {
       const centre = topCentre(frame, ornamentSize);
       add(centre);
       for (const sconce of sideSconces(frame, ornamentSize)) add(sconce);
       for (const stand of topRail(frame, ornamentSize, centre)) add(stand);
     }
     // The swag valance from the bottom line (a border's outer line, a block's stroke) into the bleed.
-    if (frame.fit === 'janela' || frame.kind === 'block') placements.push(...swagRun(frame, placements));
+    if (frame.fit === 'window' || frame.kind === 'block') placements.push(...swagRun(frame, placements));
   }
   return placements;
 };

@@ -29,11 +29,11 @@ export const kindPolicies: Record<AssetKind, KindPolicy> = {
   },
   chat: {
     kind: 'chat', folder: 'chat', label: 'Chat backgrounds',
-    fixedSize: null, defaultSizeId: 'chat-padrao', transparent: true, format: 'webm',
+    fixedSize: null, defaultSizeId: 'chat-standard', transparent: true, format: 'webm',
   },
   block: {
     kind: 'block', folder: 'text-boxes', label: 'Text boxes',
-    fixedSize: null, defaultSizeId: 'cartao', transparent: true, format: 'webm',
+    fixedSize: null, defaultSizeId: 'card', transparent: true, format: 'webm',
   },
   border: {
     kind: 'border', folder: 'borders', label: 'Borders and frames',

@@ -29,22 +29,22 @@ export const SWAG_MOTIF = 'sanefa';
 /** A run's fixed px: pitch P, hem depth D, the circle's centre below the join line, the tassel's length. */
 export type SwagSpec = {pitch: number; depth: number; centre: number; tassel: number};
 /** Per frame kind (the rooms measured by the AD, round 3). */
-export const SWAG: Record<'janela' | 'painel' | 'tela', SwagSpec> = {
+export const SWAG: Record<'window' | 'panel' | 'screen', SwagSpec> = {
   // Borders' bottom: the outer line's centreline; room 23.5 at the outline + 5.5.
-  janela: {pitch: 38, depth: 15, centre: 6.5, tassel: 9},
+  window: {pitch: 38, depth: 15, centre: 6.5, tassel: 9},
   // Blocks' bottom: the stroke's centreline; room 25 at the outline + 6, the text 20 px above.
-  painel: {pitch: 40, depth: 17, centre: 8, tassel: 10},
+  panel: {pitch: 40, depth: 17, centre: 8, tassel: 10},
   // Screen frames' top band: a rail at y 15 (the circle about y 21.5 is the band's room, 20.5 px,
   // which the joins need), the hem at y 27 so everything drawn stays ≥ 1 px off the picture (y 30;
   // the glow margin down to the window's hole, y 42, shows the picture too).
-  tela: {pitch: 32, depth: 12, centre: 6.5, tassel: 8},
+  screen: {pitch: 32, depth: 12, centre: 6.5, tassel: 8},
 };
 /** The upper edge's control point (a 5 px sag). */
 const SAG_CONTROL = 10;
 /** A run's ends stay this far (px) past the corner curve. */
 export const SWAG_CORNER = 16;
 /** A screen frame's valance rail, px below the outline's top. */
-export const SWAG_TELA_RAIL = 15;
+export const SWAG_SCREEN_RAIL = 15;
 /** The boss at a join: radius, px (Ø5). */
 export const BOSS_RADIUS = 2.5;
 /** The tassel: head radius, its top below the join, the skirt's half-widths at top and bottom. */
@@ -134,11 +134,11 @@ export const swagExtent = (spec: SwagSpec) => {
 /** The run's spec and its join line for a frame; null where no run hangs. */
 export const swagLine = (frame: OrnamentFrame): {spec: SwagSpec; y: number; top: boolean} | null => {
   const {outline} = frame;
-  if (frame.fit === 'tela') return {spec: SWAG.tela, y: outline.y + SWAG_TELA_RAIL, top: true};
-  if (frame.fit === 'janela') return {spec: SWAG.janela, y: outline.y + outline.height - 1, top: false};
+  if (frame.fit === 'screen') return {spec: SWAG.screen, y: outline.y + SWAG_SCREEN_RAIL, top: true};
+  if (frame.fit === 'window') return {spec: SWAG.window, y: outline.y + outline.height - 1, top: false};
   // A panel: the bottom stroke's centreline.
   const stroke = Math.max(0, 2 * (frame.track.y - frame.outline.y));
-  return {spec: SWAG.painel, y: outline.y + outline.height - stroke / 2, top: false};
+  return {spec: SWAG.panel, y: outline.y + outline.height - stroke / 2, top: false};
 };
 
 /**

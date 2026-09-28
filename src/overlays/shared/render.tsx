@@ -457,7 +457,7 @@ export const HaloLayer = ({elements, shape, name = 'halo'}: {elements: readonly 
 
 /**
  * Everything a border draws goes inside this group: it masks out the hole, so no stroke, glow or
- * ornament can ever show in the window, and for 'tela' it clips to the box, so the glow only
+ * ornament can ever show in the window, and for 'screen' it clips to the box, so the glow only
  * reaches inwards.
  */
 export const FrameGroup = ({layout, name = 'frame', children}: {layout: FrameLayout; name?: string; children: ReactNode}) => {
@@ -468,11 +468,11 @@ export const FrameGroup = ({layout, name = 'frame', children}: {layout: FrameLay
     <g>
       <defs>
         <HidingMask id={`${id}-hole`} shape={layout.holeShape} />
-        {layout.fit === 'tela' ? (
+        {layout.fit === 'screen' ? (
           <clipPath id={`${id}-box`} clipPathUnits="userSpaceOnUse"><path d={rectPath(layout.box)} /></clipPath>
         ) : null}
       </defs>
-      {layout.fit === 'tela' ? <g clipPath={url(`${id}-box`)}>{masked}</g> : masked}
+      {layout.fit === 'screen' ? <g clipPath={url(`${id}-box`)}>{masked}</g> : masked}
     </g>
   );
 };

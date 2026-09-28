@@ -261,12 +261,12 @@ export const streamMockup = (
 /** The default stream layouts, in 1920×1080 box coordinates, from the Halloween kits' art direction. */
 const MOCK_LAYOUTS: {out: string; base: 'background' | string; layers: {size: string; x: number; y: number}[]}[] = [
   {out: 'mock-chatting', base: 'background', layers: [
-    {size: 'webcam-16x9-g', x: 80, y: 100}, {size: 'chat-padrao', x: 1440, y: 100},
-    {size: 'faixa', x: 80, y: 820}, {size: 'etiqueta', x: 1400, y: 780}, {size: 'circulo-p', x: 1680, y: 880}]},
+    {size: 'webcam-16x9-lg', x: 80, y: 100}, {size: 'chat-standard', x: 1440, y: 100},
+    {size: 'lower-third', x: 80, y: 820}, {size: 'label', x: 1400, y: 780}, {size: 'circle-sm', x: 1680, y: 880}]},
   {out: 'mock-gameplay', base: '#3A4150', layers: [
-    {size: 'jogo', x: 48, y: 48}, {size: 'chat-padrao', x: 1496, y: 32},
-    {size: 'webcam-redonda-p', x: 1556, y: 700}, {size: 'etiqueta', x: 40, y: 910}]},
-  {out: 'mock-screen', base: '#8E9AAB', layers: [{size: 'tela-cheia', x: 0, y: 0}, {size: 'etiqueta-p', x: 80, y: 960}]},
+    {size: 'gameplay', x: 48, y: 48}, {size: 'chat-standard', x: 1496, y: 32},
+    {size: 'webcam-round-sm', x: 1556, y: 700}, {size: 'label', x: 40, y: 910}]},
+  {out: 'mock-screen', base: '#8E9AAB', layers: [{size: 'fullscreen', x: 0, y: 0}, {size: 'label-sm', x: 80, y: 960}]},
 ];
 
 const SHEETS: {out: string; kind: string; cols: number; width: number; bg: string}[] = [
@@ -305,14 +305,14 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
       const {outputFormat: _format, ...props} = file.props;
       void _format;
       stills.push({name: stillName, id: file.composition, props, frame});
-      // Mockups use the plain size, not a variant (sem-enfeites and the like).
+      // Mockups use the plain size, not a variant (plain and the like).
       if (file.size !== undefined && stem === file.size) bySize.set(file.size, stillName);
     }
     for (const sheet of SHEETS) {
       const names = files.filter(({file}) => file.kind === sheet.kind).map(({stem}) => `${stem}-${frame}`);
       if (names.length > 0) sheets.push({out: `${sheet.out}-${frame}.png`, names, cols: Math.min(sheet.cols, names.length), width: sheet.width, bg: sheet.bg});
     }
-    const light = ['chat-padrao', 'cartao', 'webcam-16x9', 'webcam-redonda-p'].flatMap((size) => bySize.get(size) ?? []);
+    const light = ['chat-standard', 'card', 'webcam-16x9', 'webcam-round-sm'].flatMap((size) => bySize.get(size) ?? []);
     if (light.length > 0) sheets.push({out: `sheet-light-${frame}.png`, names: light, cols: light.length, width: 390, bg: 'light'});
     const backgroundStill = background ? `${background.stem}-${frame}` : null;
     for (const layout of MOCK_LAYOUTS) {
