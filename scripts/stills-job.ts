@@ -8,7 +8,7 @@ import type {PlannedFile} from './pack-plan';
 
 /** Sheets and mockups are for people and for agents that read images: never wider than this. */
 export const MAX_SHEET_WIDTH = 1600;
-/** The machine rule (HARNESS "Máquina"): no render starts with less free disk than this. */
+/** The machine rule in HARNESS: no render starts with less free disk than this. */
 export const STILLS_MIN_FREE_BYTES = 3 * 1024 ** 3;
 
 const name = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, 'Use letters, digits, dot, hyphen and underscore (it becomes a file name).');

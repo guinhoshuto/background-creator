@@ -217,7 +217,7 @@ const cli = (...args: string[]) => parseRenderArgs(args);
 test('CLI: a composição é obrigatória e o formato do comando prevalece sobre o JSON', () => {
   assert.throws(() => buildExportOptions(cli()), /Name the composition\. Use --list/);
   assert.throws(() => buildExportOptions(cli('GradientLoop', 'ParticleLoop')), /only one composition/);
-  assert.throws(() => buildExportOptions(cli('Nada')), /Composição desconhecida: Nada/);
+  assert.throws(() => buildExportOptions(cli('NoSuchLoop')), /Unknown composition: NoSuchLoop/);
   assert.throws(() => buildExportOptions(cli('GradientLoop'), [1, 2]), /JSON object/);
   assert.throws(() => buildExportOptions(cli('GradientLoop', '--format', 'avi')));
   const options = buildExportOptions(
@@ -241,7 +241,7 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
   const overPreset = {fit: 'screen', transparent: true, ...expandSize('border', 'webcam-16x9')};
   assert.equal(overPreset.fit, 'window');
   assert.equal(sizeTag('border', overPreset), 'webcam-16x9');
-  assert.throws(() => expandSize('chat', 'webcam-16x9'), /Size webcam-16x9 is for borders and frames, not chat backgrounds\. Options: chat-compact/);
+  assert.throws(() => expandSize('chat', 'webcam-16x9'), /Size webcam-16x9 is for borders, not chat backgrounds\. Options: chat-compact/);
   assert.throws(() => expandSize('block', 'chat-standard'), /not text boxes/);
   assert.throws(() => expandSize('border', 'enorme'), /Unknown size: enorme/);
   assert.throws(() => expandSize('background', 'card'), /Backgrounds have a fixed size \(1920×1080\)/);
@@ -253,7 +253,7 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
 test('CLI: --list agrupa por tipo com cabeçalhos em inglês', () => {
   const text = listText();
   const headers = text.split('\n').filter((line) => /^\S/.test(line));
-  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders and frames (border):']);
+  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders (border):']);
   assert.match(text, /^ {2}GradientLoop$/m);
   assert.match(text, /webcam-16x9: box 640×360, file 736×456; standard camera/);
 });

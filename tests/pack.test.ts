@@ -52,7 +52,7 @@ const fakePresets: Record<string, unknown> = {
 const fakeDeps: PackDeps = {
   getAsset: (id) => {
     const asset = fakeAssets[id];
-    if (!asset) throw new Error(`Composição desconhecida: ${id}.`);
+    if (!asset) throw new Error(`Unknown composition: ${id}.`);
     return asset;
   },
   readPreset: (name) => {
@@ -201,7 +201,7 @@ test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em inglê
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', formats: ['webm']}, {composition: 'ChatLoop', sizes: ['webcam-16x9'], formats: ['webm']}]), fakeDeps),
-    /Item 2 \(ChatLoop\): Size webcam-16x9 is for borders and frames, not chat backgrounds/,
+    /Item 2 \(ChatLoop\): Size webcam-16x9 is for borders, not chat backgrounds/,
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', sizes: ['gigante'], formats: ['webm']}]), fakeDeps),
@@ -210,7 +210,7 @@ test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em inglê
 });
 
 test('pack: composição, preset e props inválidos param o plano antes de qualquer render', () => {
-  assert.throws(() => planPack(manifest([{composition: 'Nada', formats: ['webm']}]), fakeDeps), /Item 1 \(Nada\): Composição desconhecida/);
+  assert.throws(() => planPack(manifest([{composition: 'NoSuchLoop', formats: ['webm']}]), fakeDeps), /Item 1 \(NoSuchLoop\): Unknown composition/);
   assert.throws(() => planPack(manifest([{composition: 'ChatLoop', preset: 'sumiu', formats: ['webm']}]), fakeDeps), /Preset not found/);
   assert.throws(() => planPack(manifest([{composition: 'ChatLoop', preset: 'quebrado', formats: ['webm']}]), fakeDeps), /JSON object/);
   assert.throws(() => planPack(manifest([{composition: 'ChatLoop', props: {typo: 1}, formats: ['webm']}]), fakeDeps), /typo/);

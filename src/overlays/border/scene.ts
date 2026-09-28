@@ -346,7 +346,7 @@ const refineReach = (props: BorderLoopProps, geometry: BorderGeometry, context: 
     context.addIssue({
       code: 'custom',
       path: ['cornerGap'],
-      message: `The brackets would enter the window: on a screen frame use cornerGap ≤ ${Math.max(0, geometry.totalThickness + props.glow - geometry.cornerWidth)} or increase thickness or the glow.`,
+      message: `The brackets would enter the window: on a screen border use cornerGap ≤ ${Math.max(0, geometry.totalThickness + props.glow - geometry.cornerWidth)} or increase thickness or the glow.`,
     });
   }
   if (props.corners === 'jewels') {
@@ -376,7 +376,7 @@ const secondMotion = (motion: StrokeMotionName): StrokeMotionName =>
  */
 const refineMask = (props: BorderLoopProps, context: z.RefinementCtx) => {
   const issue = (path: string, message: string) => context.addIssue({code: 'custom', path: [path], message});
-  if (props.fit !== 'window') issue('fit', 'The mask only applies to fit window: in a screen frame the window fills the whole screen and needs no mask.');
+  if (props.fit !== 'window') issue('fit', 'The mask only applies to fit window: in a screen border the window fills the whole screen and needs no mask.');
   if (props.bleed !== 0) issue('bleed', 'In the mask the file is the window itself, the size of the camera: use bleed 0 (with --size, add --bleed 0).');
   if (props.outputFormat !== 'png') issue('outputFormat', 'The mask is a still image: export it as PNG (--format png).');
   if (!props.transparent) issue('transparent', 'The mask needs a transparent background: use transparent true.');
@@ -391,7 +391,7 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
     context.addIssue({
       code: 'custom',
       path: ['shape'],
-      message: 'A screen frame follows the screen, which is rectangular: use shape rectangle with fit screen, or fit window for a round camera (--size webcam-round).',
+      message: 'A screen border follows the screen, which is rectangular: use shape rectangle with fit screen, or fit window for a round camera (--size webcam-round).',
     });
     return;
   }
@@ -406,7 +406,7 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
     context.addIssue({
       code: 'custom',
       path: ['bleed'],
-      message: 'On a screen frame the box is the whole file: use bleed 0 (or --size fullscreen / fullscreen-vertical).',
+      message: 'On a screen border the box is the whole file: use bleed 0 (or --size fullscreen / fullscreen-vertical).',
     });
     return;
   }

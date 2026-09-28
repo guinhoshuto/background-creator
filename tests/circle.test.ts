@@ -84,7 +84,7 @@ test('Forma: o círculo pede largura igual à altura, com a saída na mensagem',
 test('Forma: moldura de tela não pode ser círculo; a mensagem aponta a câmera redonda', () => {
   const screen = {...sized('fullscreen'), width: 1080, height: 1080, shape: 'circle'};
   assert.deepEqual(messagesOf(borderLoopSchema, screen), [[
-    'shape', 'A screen frame follows the screen, which is rectangular: use shape rectangle with fit screen, or fit window for a round camera (--size webcam-round).',
+    'shape', 'A screen border follows the screen, which is rectangular: use shape rectangle with fit screen, or fit window for a round camera (--size webcam-round).',
   ]]);
   assert.equal(borderLoopSchema.safeParse({...screen, shape: 'rectangle'}).success, true);
   assert.equal(borderLoopSchema.safeParse({...sized('webcam-round')}).success, true);

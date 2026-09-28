@@ -63,8 +63,8 @@ const NAMED_SIZE_TABLE = [
   {id: 'webcam-vertical', kind: 'border', label: 'Vertical webcam', use: '9:16 camera in vertical streams', width: 360, height: 640, bleed: 48, props: {fit: 'window', shape: 'rectangle'}},
   {id: 'gameplay', kind: 'border', label: 'Game', use: 'game capture in layouts with a side column', width: 1440, height: 810, bleed: 48, props: {fit: 'window', shape: 'rectangle'}},
   // Full-screen frames: the box is the whole file, so the frame is drawn inward.
-  {id: 'fullscreen', kind: 'border', label: 'Full screen', use: 'frame for the whole screen', width: 1920, height: 1080, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},
-  {id: 'fullscreen-vertical', kind: 'border', label: 'Vertical screen', use: 'frame for the whole vertical screen', width: 1080, height: 1920, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},
+  {id: 'fullscreen', kind: 'border', label: 'Full screen', use: 'border for the whole screen', width: 1920, height: 1080, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},
+  {id: 'fullscreen-vertical', kind: 'border', label: 'Vertical screen', use: 'border for the whole vertical screen', width: 1080, height: 1920, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},
 ] as const satisfies readonly NamedSize[];
 
 export const NAMED_SIZES: readonly NamedSize[] = NAMED_SIZE_TABLE;

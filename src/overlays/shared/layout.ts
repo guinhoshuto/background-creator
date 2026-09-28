@@ -217,6 +217,6 @@ export const refineHole = (layout: FrameLayout, context: z.RefinementCtx) => {
   context.addIssue({
     code: 'custom',
     path: ['strokeWidth'],
-    message: 'The frame leaves no window: reduce the thickness or the glow, or enlarge the screen.',
+    message: 'The border leaves no window: reduce the thickness or the glow, or enlarge the screen.',
   });
 };

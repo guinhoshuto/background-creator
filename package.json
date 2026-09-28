@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Backgrounds animados em loop e overlays de live (chat, blocos de texto e bordas) com transparência, em packs, com Remotion Studio",
+  "description": "Looping animated backgrounds and stream overlays (chat, text blocks and borders) with transparency, sold in packs, built with Remotion Studio",
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "render": "tsx scripts/render.ts",

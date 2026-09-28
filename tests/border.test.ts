@@ -215,7 +215,7 @@ test('Borda: no gradiente as duas linhas andam juntas, com as mesmas voltas da p
 test('Borda: em tela a caixa é o arquivo, então bleed diferente de 0 é recusado', () => {
   const issues = borderLoopSchema.safeParse({fit: 'screen', width: 1920, height: 1080}).error!.issues;
   assert.deepEqual(issues.map((issue) => [issue.path, issue.message]), [
-    [['bleed'], 'On a screen frame the box is the whole file: use bleed 0 (or --size fullscreen / fullscreen-vertical).'],
+    [['bleed'], 'On a screen border the box is the whole file: use bleed 0 (or --size fullscreen / fullscreen-vertical).'],
   ]);
   const screen = parse({fit: 'screen', width: 1920, height: 1080, bleed: 0});
   assert.deepEqual(getBorderLayout(screen).canvas, {width: 1920, height: 1080});
@@ -478,7 +478,7 @@ test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saí
   assert.deepEqual(messages({...mask, outputFormat: 'webm'}), [['outputFormat', 'The mask is a still image: export it as PNG (--format png).']]);
   assert.deepEqual(messages({...mask, transparent: false}), [['transparent', 'The mask needs a transparent background: use transparent true.']]);
   assert.deepEqual(messages({...sizeProps(getSize('fullscreen')), mask: true, outputFormat: 'png'}), [
-    ['fit', 'The mask only applies to fit window: in a screen frame the window fills the whole screen and needs no mask.'],
+    ['fit', 'The mask only applies to fit window: in a screen border the window fills the whole screen and needs no mask.'],
   ]);
   // The frame's own refusals do not apply: nothing of it is drawn (a glow far past the missing bleed).
   assert.equal(borderLoopSchema.safeParse({...mask, glow: 128, corners: 'brackets', cornerGap: 128}).success, true);

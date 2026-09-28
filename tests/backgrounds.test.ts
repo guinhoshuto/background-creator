@@ -465,8 +465,8 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     const props: unknown = JSON.parse(readFileSync(new URL(`../presets/${filename}`, import.meta.url), 'utf8'));
     assert.equal(getBackground(id!).schema.strict().safeParse(props).success, true, filename);
   }
-  assert.throws(() => getBackground('UnknownLoop'), /Background desconhecido/);
-  assert.throws(() => getBackground('__proto__'), /Background desconhecido/);
+  assert.throws(() => getBackground('UnknownLoop'), /Unknown background/);
+  assert.throws(() => getBackground('__proto__'), /Unknown background/);
 });
 
 test('loop helper rejects invalid frame counts instead of propagating NaN', () => {

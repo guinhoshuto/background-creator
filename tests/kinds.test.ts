@@ -31,8 +31,8 @@ test('tipos: os quatro tipos e a política de cada um', () => {
     assert.equal(getKindPolicy(kind), policy);
   }
   assert.equal(new Set(ASSET_KINDS.map((kind) => kindPolicies[kind].folder)).size, ASSET_KINDS.length);
-  assert.throws(() => getKindPolicy('painel'), /Tipo desconhecido: painel\. Opções: background, chat, block, border\./);
-  assert.throws(() => getKindPolicy('__proto__'), /Tipo desconhecido/);
+  assert.throws(() => getKindPolicy('panel'), /Unknown kind: panel\. Options: background, chat, block, border\./);
+  assert.throws(() => getKindPolicy('__proto__'), /Unknown kind/);
 });
 
 test('tipos: o tamanho fixo dos fundos é o mesmo dos metadados atuais', () => {
@@ -53,8 +53,8 @@ test('catalog: all 15 backgrounds retain their original composition IDs', () => 
   for (const entry of Object.values(assetCatalog)) {
     assert.ok((ASSET_KINDS as readonly string[]).includes(entry.kind), entry.id);
   }
-  assert.throws(() => getAsset('UnknownLoop'), /Composição desconhecida: UnknownLoop\. Opções: WutheringWavesLoop, KawaiiLoop, /);
-  assert.throws(() => getAsset('__proto__'), /Composição desconhecida/);
+  assert.throws(() => getAsset('UnknownLoop'), /Unknown composition: UnknownLoop\. Options: WutheringWavesLoop, KawaiiLoop, /);
+  assert.throws(() => getAsset('__proto__'), /Unknown composition/);
 });
 
 test('Studio: cada composição fica na pasta do seu tipo, com metadados de fundo intactos', () => {

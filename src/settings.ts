@@ -16,7 +16,7 @@ export const baseBackgroundSchema = z.object({
   durationSeconds: z.number().finite().positive().describe('Cycle duration, in seconds').default(8),
   seed: z.number().int().safe().describe('Distribution seed').default(1),
   transparent: z.boolean().describe('Alpha in WebM, MOV and PNG').default(false),
-  backgroundColor: zColor().regex(/^#[0-9a-f]{6}$/i, 'Use an opaque colour in the #RRGGBB format.').default('#0B0F19'),
+  backgroundColor: zColor().regex(/^#[0-9a-f]{6}$/i, 'Use an opaque color in the #RRGGBB format.').default('#0B0F19'),
   colors: z.array(zColor()).min(2).max(6).default(['#67E8F9', '#818CF8', '#F472B6']),
   outputFormat: outputFormatSchema.describe('Format of the preview and the export').default('webm'),
 });

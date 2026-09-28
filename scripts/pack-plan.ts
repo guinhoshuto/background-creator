@@ -533,7 +533,7 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
     if (data !== null) await effects.remove(sidecar);
   }
   await save();
-  effects.log(`Pack ${manifest.name}: ${rendered} exportados, ${skipped} pulados. Manifesto: ${manifestPath}`);
+  effects.log(`Pack ${manifest.name}: ${rendered} exported, ${skipped} skipped. Manifest: ${manifestPath}`);
   return {rendered, skipped, manifestPath};
 };
 

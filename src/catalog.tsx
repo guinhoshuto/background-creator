@@ -188,14 +188,14 @@ export const getMaskOf = (asset: CatalogEntry): ((props: Record<string, unknown>
 
 export const getAsset = (id: string): Asset => {
   if (!Object.prototype.hasOwnProperty.call(assetCatalog, id)) {
-    throw new Error(`Composição desconhecida: ${id}. Opções: ${Object.keys(assetCatalog).join(', ')}.`);
+    throw new Error(`Unknown composition: ${id}. Options: ${Object.keys(assetCatalog).join(', ')}.`);
   }
   return assetCatalog[id as AssetId];
 };
 
 export const getBackground = (id: string) => {
   if (!Object.prototype.hasOwnProperty.call(backgroundCatalog, id)) {
-    throw new Error(`Background desconhecido: ${id}. Opções: ${Object.keys(backgroundCatalog).join(', ')}.`);
+    throw new Error(`Unknown background: ${id}. Options: ${Object.keys(backgroundCatalog).join(', ')}.`);
   }
   return backgroundCatalog[id as BackgroundId];
 };

@@ -36,7 +36,7 @@ export const kindPolicies: Record<AssetKind, KindPolicy> = {
     fixedSize: null, defaultSizeId: 'card', transparent: true, format: 'webm',
   },
   border: {
-    kind: 'border', folder: 'borders', label: 'Borders and frames',
+    kind: 'border', folder: 'borders', label: 'Borders',
     fixedSize: null, defaultSizeId: 'webcam-16x9', transparent: true, format: 'webm',
   },
 };
@@ -47,7 +47,7 @@ export const isAssetKind = (value: unknown): value is AssetKind =>
 export const isOverlayKind = (kind: AssetKind): kind is OverlayKind => kind !== 'background';
 
 export const getKindPolicy = (kind: string): KindPolicy => {
-  if (!isAssetKind(kind)) throw new Error(`Tipo desconhecido: ${kind}. Opções: ${ASSET_KINDS.join(', ')}.`);
+  if (!isAssetKind(kind)) throw new Error(`Unknown kind: ${kind}. Options: ${ASSET_KINDS.join(', ')}.`);
   return kindPolicies[kind];
 };
 
