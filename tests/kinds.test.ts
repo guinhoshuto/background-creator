@@ -40,9 +40,9 @@ test('tipos: o tamanho fixo dos fundos é o mesmo dos metadados atuais', () => {
   assert.deepEqual(kindPolicies.background.fixedSize, {width, height});
 });
 
-test('catalog: all 14 backgrounds retain their original composition IDs', () => {
+test('catalog: all 15 backgrounds retain their original composition IDs', () => {
   const ids = Object.keys(backgroundCatalog);
-  assert.equal(ids.length, 14);
+  assert.equal(ids.length, 15);
   for (const id of ids) {
     const entry = getAsset(id);
     assert.equal(entry, backgroundCatalog[id as keyof typeof backgroundCatalog]);

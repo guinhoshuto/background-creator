@@ -24,6 +24,7 @@ Os fundos (pasta `backgrounds`) ocupam a tela inteira:
 | `HauntedMansionLoop` | Mansão vitoriana à direita, luar frio, janelas âmbar e névoa baixa | `batCount` (0–12), `moteCount` (0–100), `fogIntensity` (0–1), `windowIntensity` (0–1), `moonScale` (0,6–1,4) |
 | `HauntedInteriorLoop` | Salão gótico em perspectiva central, com a parede do fundo atrás do conteúdo, janelas enluaradas, relâmpagos, cortinas de veludo, candelabros e lustre oscilante | `dustCount` (0–100), `fogIntensity` (0–1), `candleIntensity` (0–1), `moonlightIntensity` (0–1), `hauntingIntensity` (0–1), `chandelierSway` (0–1), `lightningIntensity` (0–1) |
 | `CobwebLoop` | Teias de aranha nos cantos, com orvalho, fios de seda e aranha pendurada | `webCount` (0–4), `strandCount` (0–24), `moteCount` (0–120), `spiderCount` (0–3), `dewIntensity` (0–1), `mistIntensity` (0–1) |
+| `ChristmasLoop` | Christmas frame on dark evergreen velvet: a gilded pine garland with a burgundy bow across the top, glass baubles swaying on ribbons, frosted pine with cones and holly in the corners, warm garland lights, bokeh and two depths of slow snow around a calm center | `baubleCount` (0–10), `snowCount` (0–240), `bokehCount` (0–48), `sparkleCount` (0–60), `sway` (0–1), `lightGlow` (0–1), `twinkle` (0–1), `centerCalm` (0–1) |
 | `KawaiiLoop` | Nuvens, corações e estrelas pastel em grupos, com o miolo livre | `familyCount` (2–6), `familyScale` (0,7–1,4), `centerClearance` (0–1), `drift` (0–1), `sparkleTrail` (0–4) |
 | `SunburstLoop` | Leque de raios que partem do centro, com gradiente do miolo para fora | `rayCount` (6–48), `rayWidth` (0,15–0,8), `swirl` (0–1), `spin` (−24–24, inteiro), `coreFade` (0–1), `coreShade` (0–1) |
 | `VaporwaveLoop` | Horizonte neon com sol fatiado, grade rosa e ciano em perspectiva, montanhas aramadas, palmeiras e sólidos flutuando, com o miolo livre | `speed` (0–12, inteiro), `sunPosition` (0,1–0,9), `neonGlow` (0–1), `starCount` (0–200), `shootingStars` (0–3), `palmCount` (0–3), `shapeCount` (0–4), `centerShade` (0–1) |
@@ -64,6 +65,7 @@ Um arquivo de parâmetros pode conter somente as opções que você quer alterar
 - `halloween-haunted-mansion.json`: mansão vitoriana em azul-noite, luar pálido, janelas âmbar e área central esquerda escura para overlay.
 - `halloween-haunted-interior.json`: salão gótico em perspectiva, cortinas de veludo carmim, luar esverdeado e velas âmbar nas laterais, com um grande arco escuro exatamente atrás da área de conteúdo.
 - `halloween-cobweb.json`: teias enluaradas em seda prateada, orvalho brilhante e um calor âmbar no rodapé.
+- `christmas-gilded-garland.json`: evergreen, burgundy and gold Christmas frame with a gilded garland, swaying glass baubles and slow snow around a dark, calm center, in a 20-second loop.
 - `kawaii-constelacao.json`: nuvens, corações e estrelas em grupos, sobre leite morno, em ritmo lento.
 - `sunburst-crimson.json`: leque de vermelho sobre vermelho escuro, o contraste mais baixo da série.
 - `sunburst-sand.json`: raios largos de areia sobre creme, em ritmo mais lento.
@@ -115,7 +117,7 @@ Cada composição pertence a um tipo, definido em `src/kinds.ts`. O tipo decide 
 
 | Tipo | Pasta no Studio | Composições | Tamanho | `transparent` padrão |
 | --- | --- | --- | --- | --- |
-| `background` (fundos) | `backgrounds` | as 14 da primeira tabela | Fixo, 1920×1080 | `false` |
+| `background` (fundos) | `backgrounds` | as 15 da primeira tabela | Fixo, 1920×1080 | `false` |
 | `chat` (fundos de chat) | `chat` | `ChatLoop` | Livre; começa em `chat-padrao` | `true` |
 | `bloco` (blocos de texto) | `blocos` | `BlocoLoop` | Livre; começa em `cartao` | `true` |
 | `borda` (bordas e molduras) | `bordas` | `BordaLoop` | Livre; começa em `webcam-16x9` | `true` |
@@ -541,6 +543,28 @@ A luz vem de uma lua rente à borda de cima, perto do canto superior direito: a 
 Com `transparent: true` e `outputFormat: "webm"`, o céu de fundo, a vinheta e o brilho difuso em volta da lua desaparecem, preservando teias, orvalho, fios, aranhas, poeira e névoa com alpha. Como luz de fundo, restam apenas o halo da lua, no canto superior direito, e uma faixa âmbar na borda de baixo, ambos fora da área central; o luar e o reflexo âmbar sobre a seda continuam, e um contorno escuro discreto sob a seda mantém os fios legíveis sobre vídeo claro. A aranha tem o corpo opaco, a borda de luar das pernas a mantém visível sobre vídeo escuro, e o fio que a sustenta tem uma sombra discreta para não sumir sobre vídeo claro. Em MP4/GIF, todos os elementos são compostos sobre `backgroundColor`.
 
 **Kit de overlays.** O tema [`halloween-teia`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 12 s e a seed 47: `presets/chat-halloween-teia.json`, `presets/bloco-halloween-teia.json` e `presets/borda-halloween-teia.json`, e o pack sai com `npm run render:pack -- halloween-teia`. Os enfeites `teia` desenham as teias do fundo, com os mesmos fios, o rasgo e as pontas partidas, nos cantos das caixas, o orvalho faiscando quando passa a faixa de luar e a viúva-negra, pendurada no fio ao lado do chat e dos blocos e pousada na teia nas bordas. Ao longo da borda de cima pendem guirlandas de fios, presas em nós fixos, com gotas de orvalho nos pontos mais baixos e algumas pontas partidas; nas bordas de janela retangulares e nos blocos retangulares (menos as etiquetas e o painel da Twitch, que não tem guirlandas), outra guirlanda presa ao próprio quadro ao longo da borda de baixo. O âmbar só aparece na ampulheta da aranha e na brasa atrás da teia de baixo. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra: teias, guirlandas e a aranha ficam nessas margens.
+
+## Christmas: gilded garland
+
+Select `ChristmasLoop` in the Studio. The preset `presets/christmas-gilded-garland.json` renders a seamless **20-second loop at 1920×1080 and 60 fps** with seed `1225`. The scene is pure SVG: no WebGL, text, images, fonts or audio.
+
+A dark evergreen velvet backdrop keeps all the detail at the edges. A pine garland, bundled from overlapping sprigs that point away from the center, runs in two shallow swags across the top, wrapped in a gold ribbon, with a burgundy velvet bow at the center. Small glass baubles hang from the garland, and larger ones hang down both side columns on satin ribbons tied to the boughs with small bows. Frosted pine boughs with cones and holly fill the four corners, warm lights run along the garland, soft warm bokeh glows near the garland lights, behind the top boughs (above the hanging baubles) and in the lower corners, and snow falls slowly at two depths.
+
+**Stream layout.** The content area, x 360–1560 and y 170–900, is kept for the webcam, the gameplay and the overlays. Only the small far snowflakes cross it, dimmed by `centerCalm`. Baubles, pine, lights, bokeh and sparkles stay outside it even at their widest swing, and the tests enforce this. The bottom center between the lower boughs stays open for a lower third.
+
+**Motion.** Baubles swing on their ribbons, the pine boughs and the bow tails sway, a slow chase runs along the garland lights, sparkles glint and the bokeh drifts. Nothing flashes. Every movement repeats a whole number of times per cycle, so shorter cycles move faster: keep `durationSeconds` at 16 s or more (at 12 s the near snow falls at about 190 px/s).
+
+**Palette.** `colors[0]` is the evergreen (needles, holly, the velvet tint, evergreen baubles), `colors[1]` the burgundy (bow, berries, burgundy baubles) and `colors[2]` the gold (ribbons, bauble caps and bands, lights, sparkles, bokeh and the warm glow behind the bow and in the lower corners). The bokeh behind the greenery leans amber whatever the palette (the gold mixed toward amber), and only the faint orbs in front of the pine are plain gold: each orb is a soft warm core that fades out at its edge, never a pale disc, which over the green velvet would read as grey. With only two colors, the ribbons take the second color, the bauble caps and rings turn plain silver, and the lights, glints, bokeh and bands take a light tint of the second color (the bokeh mixed toward amber again); colors after the third are ignored. Snow, pine cones and stems keep fixed colors, so any palette still reads as pine and snow.
+
+**Controls.** `baubleCount` removes baubles in a fixed order, `snowCount`, `bokehCount` and `sparkleCount` set their layers without rearranging the others, `sway: 0` holds the baubles, bow tails and boughs still (snow, bokeh, sparkles and the light chase keep moving), `lightGlow: 0` leaves the bulbs unlit as glass beads and also turns off the sparkles and the bauble glints, `twinkle: 0` keeps every bulb steady (at 1 the chase dims each bulb to half its glow and back) and `centerCalm` dims the snow over the content area (at 1 it keeps 15% of its strength) and darkens the center. `snowCount: 0` leaves a completely still center.
+
+**Transparency.** With `transparent: true` and `outputFormat` set to `webm`, `mov` or `png`, the velvet backdrop, the corner warmth, the center shade and the vignette are left out, and so are the bokeh orbs behind the greenery, which would read as smudges over bright footage. What remains is a festive frame over the game: garland, bow, baubles, corner pine with soft drop shadows, lights, the faint orbs in front of the pine, sparkles and snow. MP4 and GIF composite everything over `backgroundColor`. There is no command-line switch for transparency: save a copy of the preset with `"transparent": true`.
+
+```sh
+npm run render:webm -- ChristmasLoop --props presets/christmas-gilded-garland.json
+npm run render:mp4 -- ChristmasLoop --props presets/christmas-gilded-garland.json
+npm run render:png -- ChristmasLoop --props presets/christmas-gilded-garland.json --frame 0
+```
 
 ## Kawaii: constelação pastel
 

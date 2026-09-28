@@ -1,0 +1,16 @@
+{
+  "durationSeconds": 20,
+  "seed": 1225,
+  "transparent": false,
+  "backgroundColor": "#0A1712",
+  "colors": ["#1E5A43", "#8E1F35", "#D8B25A"],
+  "outputFormat": "webm",
+  "baubleCount": 10,
+  "snowCount": 90,
+  "bokehCount": 14,
+  "sparkleCount": 24,
+  "sway": 0.6,
+  "lightGlow": 0.75,
+  "twinkle": 0.5,
+  "centerCalm": 0.7
+}

@@ -13,6 +13,7 @@ const hauntedMansion = backgroundCatalog.HauntedMansionLoop;
 const hauntedInterior = backgroundCatalog.HauntedInteriorLoop;
 const kawaii = backgroundCatalog.KawaiiLoop;
 const cobweb = backgroundCatalog.CobwebLoop;
+const christmas = backgroundCatalog.ChristmasLoop;
 const sunburst = backgroundCatalog.SunburstLoop;
 const vaporwave = backgroundCatalog.VaporwaveLoop;
 const dotGrid = backgroundCatalog.DotGridLoop;
@@ -119,6 +120,19 @@ export const RemotionRoot = () => (
         defaultProps={{"durationSeconds":12,"seed":47,"transparent":false,"backgroundColor":"#6630de","colors":["#c7bae7","#e4c769","#7c1b7d"],"outputFormat":"webm" as const,"webCount":4,"strandCount":12,"moteCount":40,"spiderCount":1,"dewIntensity":0.7,"mistIntensity":0.5}}
         {...getCompositionMetadata(cobweb.defaultProps)}
         calculateMetadata={({props}: {props: typeof cobweb.defaultProps}) => metadataFor(cobweb.id, cobweb.schema.parse(props))}
+      />
+      <Composition
+        id="ChristmasLoop"
+        component={christmas.component}
+        schema={christmas.schema}
+        defaultProps={{
+          durationSeconds: 20, seed: 1225, transparent: false, backgroundColor: '#0A1712',
+          colors: ['#1E5A43', '#8E1F35', '#D8B25A'], outputFormat: 'webm',
+          baubleCount: 10, snowCount: 90, bokehCount: 14, sparkleCount: 24,
+          sway: 0.6, lightGlow: 0.75, twinkle: 0.5, centerCalm: 0.7,
+        }}
+        {...getCompositionMetadata(christmas.defaultProps)}
+        calculateMetadata={({props}: {props: typeof christmas.defaultProps}) => metadataFor(christmas.id, christmas.schema.parse(props))}
       />
       <Composition
         id="SunburstLoop"

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {getCheckerboardScene, checkerboardLoopSchema} from '../src/backgrounds/CheckerboardLoop';
+import {christmasLoopSchema, getChristmasScene} from '../src/backgrounds/ChristmasLoop';
 import {getCobwebScene, cobwebLoopSchema} from '../src/backgrounds/CobwebLoop';
 import {getDotGridScene, dotGridLoopSchema} from '../src/backgrounds/DotGridLoop';
 import {getGeometricScene, geometricLoopSchema} from '../src/backgrounds/GeometricLoop';
@@ -81,6 +82,20 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
         sheen: geometry?.sheen ?? 0,
         nodeCount: geometry?.nodes.length ?? 0,
       })),
+  },
+  {
+    id: 'ChristmasLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getChristmasScene(christmasLoopSchema.parse(input), frame, length),
+  },
+  {
+    // Every layer at its maximum, the lights and boughs at full swing and the alpha path on.
+    id: 'ChristmasLoop (maximum controls)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getChristmasScene(christmasLoopSchema.parse({
+        baubleCount: 10, snowCount: 240, bokehCount: 48, sparkleCount: 60,
+        sway: 1, lightGlow: 1, twinkle: 1, centerCalm: 1, transparent: true, ...(input as object),
+      }), frame, length),
   },
   {
     id: 'SunburstLoop',
@@ -426,6 +441,7 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['HauntedMansionLoop', 'halloween-haunted-mansion.json'],
     ['KawaiiLoop', 'kawaii-constelacao.json'],
     ['CobwebLoop', 'halloween-cobweb.json'],
+    ['ChristmasLoop', 'christmas-gilded-garland.json'],
     ['SunburstLoop', 'sunburst-crimson.json'],
     ['SunburstLoop', 'sunburst-sand.json'],
     ['SunburstLoop', 'sunburst-ocean.json'],

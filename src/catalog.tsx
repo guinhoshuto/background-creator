@@ -6,6 +6,7 @@ import {HauntedMansionLoop, hauntedMansionLoopSchema} from './backgrounds/Haunte
 import {HauntedInteriorLoop, hauntedInteriorLoopSchema} from './backgrounds/HauntedInteriorLoop';
 import {KawaiiLoop, kawaiiLoopSchema} from './backgrounds/KawaiiLoop';
 import {CobwebLoop, cobwebLoopSchema} from './backgrounds/CobwebLoop';
+import {ChristmasLoop, christmasLoopSchema} from './backgrounds/ChristmasLoop';
 import {DotGridLoop, dotGridLoopSchema} from './backgrounds/DotGridLoop';
 import {CheckerboardLoop, checkerboardLoopSchema} from './backgrounds/CheckerboardLoop';
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
@@ -63,6 +64,13 @@ export const backgroundCatalog = {
     component: CobwebLoop,
     schema: cobwebLoopSchema,
     defaultProps: cobwebLoopSchema.parse({}),
+  },
+  ChristmasLoop: {
+    id: 'ChristmasLoop',
+    kind: 'background',
+    component: ChristmasLoop,
+    schema: christmasLoopSchema,
+    defaultProps: christmasLoopSchema.parse({}),
   },
   SunburstLoop: {
     id: 'SunburstLoop',
