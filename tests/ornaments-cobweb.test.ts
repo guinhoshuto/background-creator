@@ -363,13 +363,13 @@ test('cobweb: minExtent e o frame 0 do painel da Twitch (sem luz, nítido)', () 
 });
 
 /**
- * The screens' band as the kit was tuned (radius 160, thickness 16): the pack renders the telas only
+ * The screens' band as the kit was tuned (radius 160, thickness 16): the pack renders the screens only
  * without ornaments, so these props keep the set's screen-frame webs and garland tested.
  */
 const SCREEN_PROPS = {radius: 160, thickness: 16};
 /**
  * A kit size at its own px: the theme's preset, the pack item's props without the pack's scale on
- * the large frames (see packLayout), TELA_PROPS on the telas, the size, then `input`.
+ * the large frames (see packLayout), SCREEN_PROPS on the screens, the size, then `input`.
  */
 const kitInput = (size: NamedSize, input: Record<string, unknown> = {}) => {
   const item = unscaledItemProps('halloween-cobweb', size.id);

@@ -435,7 +435,7 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
       if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'none', `${theme}: com enfeites, corners none`);
       for (const size of adapter.sizes) {
         checkCase(adapter, set, `[${theme}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
-        // And as the pack renders it, where its item adds props (the telas' band, the Twitch panel's padding).
+        // And as the pack renders it, where its item adds props (the screens' band, the Twitch panel's padding).
         if (Object.keys(packItemProps(theme, size.id)).length > 0) {
           checkCase(adapter, set, `[${theme}] ${kindName} ${size.id} pack`, kitProps(theme, size), {mustFit: true});
         }

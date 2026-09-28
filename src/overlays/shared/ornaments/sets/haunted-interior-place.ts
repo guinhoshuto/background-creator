@@ -78,7 +78,7 @@ export type CandleSpec = {kind: CandleKind; dir: 1 | -1; bracket: BracketId | nu
 
 /**
  * Chambersticks hang on brackets only in the ring family (a round panel or window); a screen frame,
- * even a round one, stands them on its band (telaStands). Placement and build both ask this.
+ * even a round one, stands them on its band (screenStands). Placement and build both ask this.
  */
 const onBrackets = (frame: Pick<OrnamentFrame, 'circle' | 'fit'>) => frame.circle && frame.fit !== 'screen';
 
@@ -268,7 +268,7 @@ const ARC_OUT = [0, 4, 8, 12] as const;
  * inside the rounded outline. First the feet on the bottom rail's rows; then, when a large corner
  * radius cuts those away, feet up the band's corner arc (lowest first).
  */
-const telaStands = (frame: OrnamentFrame) => {
+const screenStands = (frame: OrnamentFrame) => {
   const {outline, box} = frame;
   const hole = frame.hole ?? {...box, radius: 0};
   const bottom = box.y + box.height;
@@ -329,7 +329,7 @@ const placeChambersticks = (frame: OrnamentFrame, ornamentSize: number): Ornamen
   const heroLeast = Math.min(HERO_MIN, floorHalf(nominal));
   let layout: {hero: Stand; secondaries: Stand[]; cluster?: Stand[]; sill?: boolean} | null = null;
   let hero: Fit | null = null;
-  const families = frame.fit === 'screen' ? [telaStands(frame)] : onBrackets(frame) ? [ringStands(frame)] : [topStands(frame, ornamentSize), sillStands(frame)];
+  const families = frame.fit === 'screen' ? [screenStands(frame)] : onBrackets(frame) ? [ringStands(frame)] : [topStands(frame, ornamentSize), sillStands(frame)];
   for (const family of families) {
     hero = largestFit(frame, family.hero, nominal, heroLeast);
     if (hero) {

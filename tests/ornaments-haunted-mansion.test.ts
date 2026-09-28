@@ -45,8 +45,8 @@ const layoutAt = (id: string, extra: Record<string, unknown> = {}) => {
 /**
  * The kit at its own px: the preset and the pack item's props (the Twitch panel's padding), without
  * the pack's scale on the large frames (gameplay and webcam-16x9-lg grow ×2 and ×1.5 with a wider bleed:
- * see packAt), and on the telas, which the pack renders only without ornaments, the band they were
- * tuned for (TELA_PROPS).
+ * see packAt), and on the screens, which the pack renders only without ornaments, the band they were
+ * tuned for (SCREEN_PROPS).
  */
 const SCREEN_PROPS = {radius: 48, thickness: 24};
 const kitAt = (id: string, extra: Record<string, unknown> = {}) => {
@@ -190,7 +190,7 @@ test('haunted-mansion: onde cada motivo fica (braços, rosácea, lancetas, cerca
   for (const id of ['twitch-panel', 'fullscreen', 'fullscreen-vertical']) {
     const {placements} = layoutAt(id);
     assert.deepEqual(lanterns(placements).map((placement) => `${placement.motif}@${placement.slot}`), ['lantern-hung@TR', 'lantern-hung@TL'], id);
-    // Only the side sconces (telas) hang from arms.
+    // Only the side sconces (screens) hang from arms.
     assert.equal(motifs(placements, 'arm').length, motifs(placements, 'sconce').length, id);
   }
   // The pack's padding on the Twitch panel (README): the lanterns grow from 22 to 32 px.
@@ -670,7 +670,7 @@ test('haunted-mansion: toda estaca, poste e barra tem luar de 2 px (#D6DDC7 ≥ 
 });
 
 test('haunted-mansion: arandelas nas laterais das bordas grandes e o portão no meio de baixo', () => {
-  // Sconces: 44 px on gameplay and webcam-16x9-lg, straddling the outline's side at its middle; on the telas
+  // Sconces: 44 px on gameplay and webcam-16x9-lg, straddling the outline's side at its middle; on the screens
   // (pack props) as tall as the band allows (≥ 28), every 480 px: fullscreen at y 540, fullscreen-vertical at 480 / 960 / 1440.
   const expected: Record<string, number[]> = {'gameplay': [453], 'webcam-16x9-lg': [318], 'fullscreen': [540], 'fullscreen-vertical': [480, 960, 1440]};
   for (const [id, ys] of Object.entries(expected)) {

@@ -28,13 +28,13 @@ const preset = (kind: OrnamentKindName) =>
   JSON.parse(readFileSync(new URL(`../presets/${kind}-halloween-haunted-interior.json`, import.meta.url), 'utf8')) as Record<string, unknown>;
 /**
  * The band the screen frames were tuned for (rounder corners, a wider band). The pack renders the
- * telas only without ornaments; these props keep the set's screen-frame behaviour tested.
+ * screens only without ornaments; these props keep the set's screen-frame behaviour tested.
  */
 const SCREEN_PROPS = {radius: 48, thickness: 24};
 
 /**
  * The kit's layout at a size at its own px: the preset and the pack item's props, without the
- * pack's scale on the large frames (packLayout), TELA_PROPS on the telas, then extra props.
+ * pack's scale on the large frames (packLayout), SCREEN_PROPS on the screens, then extra props.
  */
 const kitLayout = (size: NamedSize, extra: Record<string, unknown> = {}) => {
   const adapter = ORNAMENT_KINDS[size.kind as OrnamentKindName];
@@ -100,9 +100,9 @@ test('ornaments haunted-interior: quais peças ficam onde em cada classe de tama
   expect('twitch-panel', ['candle-tall@BR']);
   // Screen frames (the pack's radius 48, thickness 24): standing girandoles below, two-light ones
   // above, wall girandoles up the sides, the swag valance across the top band between the top ones.
-  const telaCorners = ['candelabra-3-foot@BR', 'candelabra-3-foot@BL', 'candelabra-2@TR', 'candelabra-2@TL'];
-  expect('fullscreen', [...telaCorners, ...Array(3).fill(['sconce@right', 'sconce@left']).flat(), ...swags(54, 'top')]);
-  expect('fullscreen-vertical', [...telaCorners, ...Array(5).fill(['sconce@right', 'sconce@left']).flat(), ...swags(28, 'top')]);
+  const screenCorners = ['candelabra-3-foot@BR', 'candelabra-3-foot@BL', 'candelabra-2@TR', 'candelabra-2@TL'];
+  expect('fullscreen', [...screenCorners, ...Array(3).fill(['sconce@right', 'sconce@left']).flat(), ...swags(54, 'top')]);
+  expect('fullscreen-vertical', [...screenCorners, ...Array(5).fill(['sconce@right', 'sconce@left']).flat(), ...swags(28, 'top')]);
 });
 
 test('ornaments haunted-interior: no pack, jogo e webcam-16x9-lg escalam o kit (×2 e ×1,5): o herói usa o quarto e cresce junto', () => {
@@ -513,7 +513,7 @@ test('ornaments haunted-interior: tela em qualquer raio e espessura nunca recusa
       }
     }
   }
-  // The pack renders the telas without ornaments only; TELA_PROPS is the band their corners were tuned for.
+  // The pack renders the screens without ornaments only; SCREEN_PROPS is the band their corners were tuned for.
   assert.deepEqual(packItemProps('halloween-haunted-interior', 'fullscreen'), {});
   assert.ok(GIRANDOLE_MIN <= 12);
   // The girandoles standing on the band (the bottom corners) and the top band's valance keep
