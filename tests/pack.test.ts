@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {resolveExport} from '../scripts/export';
 import {
-  MIN_FREE_BYTES, assertFreeSpace, dryRunText, filterPlan, packFileEntry, packManifestSchema, parsePackManifest, planPack,
+  MIN_FREE_BYTES, assertFreeSpace, dryRunText, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
   realPackDeps, runPack, scratchText, type PackAsset, type PackDeps, type PackManifest, type PlannedFile, type PackRunEffects,
 } from '../scripts/pack-plan';
 import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
@@ -309,6 +309,7 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
     canvas: {width: 736, height: 456}, box: {x: 48, y: 48, width: 640, height: 360},
     content: {x: 64, y: 64, width: 608, height: 328}, hole: {x: 48, y: 48, width: 640, height: 360},
     bleed: 48, fps: 60, frames: 1, frame: 0, alpha: true,
+    propsHash: packPropsHash(plan.find((file) => file.composition === 'BordaLoop')!),
   });
   const background = data.files.find((entry) => entry.file === 'backgrounds/FundoLoop.webm')!;
   assert.deepEqual(background.canvas, {width: 1920, height: 1080});
@@ -385,6 +386,73 @@ test('pack: an --only run prunes by the whole plan and keeps the entries of the 
   for (const entry of before.files.filter((file) => !file.file.startsWith('bordas/'))) {
     assert.deepEqual(after.find((file) => file.file === entry.file), entry);
   }
+});
+
+const MANIFEST = 'out/packs/teste/manifest.json';
+const savedFiles = (run: ReturnType<typeof fakeRun>) => (run.disk.get(MANIFEST) as {files: Record<string, unknown>[]}).files;
+
+test('pack: the props hash covers composition, parsed props, format and frame, whatever the key order', () => {
+  const png = samplePlan()[2]!;
+  assert.equal(png.format, 'png');
+  assert.match(packPropsHash(png), /^[0-9a-f]{64}$/);
+  const reordered = {...png, exportProps: Object.fromEntries(Object.entries(png.exportProps).reverse())};
+  assert.equal(packPropsHash(reordered), packPropsHash(png));
+  for (const other of [
+    {...png, composition: 'BlocoLoop'}, {...png, format: 'webm' as const}, {...png, frame: 1},
+    {...png, exportProps: {...png.exportProps, glow: 13}},
+  ]) assert.notEqual(packPropsHash(other), packPropsHash(png));
+});
+
+test('pack: a finished file whose item props changed since its render is planned again, with a warning', async () => {
+  const plan = samplePlan();
+  const first = fakeRun();
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
+  // One prop of the background (no sidecar) and of the chat item (sidecars) changes; every file name stays the same.
+  const changed = planPack(manifest([
+    {composition: 'FundoLoop', formats: ['webm'], props: {speed: 2}},
+    {composition: 'ChatLoop', sizes: ['chat-padrao'], formats: ['webm', 'png'], props: {glow: 20}},
+    {composition: 'BordaLoop', sizes: ['webcam-16x9'], formats: ['png']},
+  ]), fakeDeps);
+  assert.deepEqual(changed.map((file) => file.output), plan.map((file) => file.output));
+  const touched = changed.filter((file) => file.composition !== 'BordaLoop');
+  const run = fakeRun(Object.fromEntries(first.disk));
+  const result = await runPack({manifest: manifest([]), plan: changed, fullPlan: changed, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  assert.deepEqual(run.exported, touched.map((file) => file.output));
+  assert.deepEqual([result.rendered, result.skipped], [3, 1]);
+  for (const file of touched) {
+    assert.ok(run.logs.some((line) => line.endsWith(`${file.output}: Warning: its props changed since it was rendered; rendering it again.`)), file.output);
+    const entry = savedFiles(run).find((saved) => `out/packs/teste/${String(saved.file)}` === file.output)!;
+    assert.equal(entry.propsHash, packPropsHash(file));
+    assert.notEqual(entry.propsHash, packPropsHash(plan.find((old) => old.output === file.output)!));
+  }
+  // The new hash is on record: the same plan run again renders nothing.
+  const again = fakeRun(Object.fromEntries(run.disk));
+  await runPack({manifest: manifest([]), plan: changed, fullPlan: changed, overwrite: false, deps: fakeDeps, effects: again.effects, diskLabel: 'out'});
+  assert.deepEqual(again.exported, []);
+});
+
+test('pack: a finished file without a recorded props hash is skipped with a warning and gets no hash', async () => {
+  const plan = samplePlan();
+  const first = fakeRun();
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
+  const before = first.disk.get(MANIFEST) as {files: Record<string, unknown>[]};
+  const unhashed = before.files.map((entry) => Object.fromEntries(Object.entries(entry).filter(([key]) => key !== 'propsHash')));
+  // Two finished files lost their entries: the background has nothing else, the chat PNG left its sidecar behind.
+  const lost = ['backgrounds/FundoLoop.webm', 'chat/ChatLoop-chat-padrao.png'];
+  const png = unhashed.find((entry) => entry.file === lost[1])!;
+  const {canvas, box, content, hole, bleed, fps, frames, frame, format, alpha} = png;
+  const run = fakeRun({
+    ...Object.fromEntries(first.disk),
+    [MANIFEST]: {...before, files: unhashed.filter((entry) => !lost.includes(String(entry.file)))},
+    [`out/packs/teste/${lost[1]}.json`]: {canvas, box, content, hole, bleed, fps, frames, frame, format, alpha},
+  });
+  const result = await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  assert.deepEqual(run.exported, []);
+  assert.deepEqual([result.rendered, result.skipped], [0, 4]);
+  const warnings = run.logs.filter((line) => line.endsWith('already exists, skipping. Warning: no props hash is recorded for it, so it may not match the plan; run with --overwrite to render it again.'));
+  assert.equal(warnings.length, 4);
+  // Skipping never vouches for a file: the entry stays without a hash, for zip:pack to refuse.
+  assert.deepEqual(savedFiles(run), unhashed);
 });
 
 test('pack: as pastas temporárias de um export interrompido somem antes de tudo, inclusive da pasta vendida', async () => {

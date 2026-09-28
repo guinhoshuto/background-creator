@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {existsSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -275,6 +276,23 @@ export const dryRunText = (plan: readonly PlannedFile[], existing: ReadonlySet<s
   `Total: ${plan.length} ${plan.length === 1 ? 'file' : 'files'}.`,
 ].join('\n');
 
+/** Object keys sorted at every depth: the same props give the same JSON whatever order they were written in. */
+const canonical = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (!isPlainObject(value)) return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+};
+
+/**
+ * What a file was rendered from, as a sha256 of the canonical JSON of its composition, parsed props,
+ * format and PNG frame. The manifest records it per file, so a finished file whose item changed
+ * afterwards is told apart from one that still matches the plan (the name alone says neither).
+ */
+export const packPropsHash = (file: Pick<PlannedFile, 'composition' | 'exportProps' | 'format' | 'frame'>) =>
+  createHash('sha256').update(JSON.stringify(canonical({
+    composition: file.composition, exportProps: file.exportProps, format: file.format, frame: file.frame ?? null,
+  }))).digest('hex');
+
 /** Pack manifest entry for one file (keys in English/CSS style, for tools). */
 export type PackFileEntry = {
   file: string;
@@ -282,6 +300,11 @@ export type PackFileEntry = {
   kind: AssetKind;
   size: string | null;
   format: OutputFormat;
+  /**
+   * packPropsHash of what the file on disk was rendered from. Missing when the run cannot tell: an
+   * older manifest, or a finished file found without an entry.
+   */
+  propsHash?: string;
   canvas: {width: number; height: number};
   box: Rect;
   content: Rect;
@@ -312,11 +335,12 @@ type Sidecar = {
  * defaults); without one (backgrounds, or a file skipped on a resumed run) the planned layout is used.
  */
 export const packFileEntry = (
-  file: PlannedFile, packRoot: string, asset: PackAsset, sidecar: Sidecar | null,
+  file: PlannedFile, packRoot: string, asset: PackAsset, sidecar: Sidecar | null, propsHash?: string,
 ): PackFileEntry => {
   const base = {
     file: path.posix.relative(packRoot, file.output),
     composition: file.composition, kind: file.kind, size: file.size ?? null, format: file.format,
+    ...(propsHash === undefined ? {} : {propsHash}),
   };
   // The pack's own references win over the sidecar's: a mask is named per pack, not per export.
   const links = {
@@ -379,7 +403,8 @@ export type PackRunEffects = {
 
 /**
  * Renders the plan strictly one file at a time. Existing files are skipped unless `overwrite`,
- * so an interrupted build resumes where it stopped. The pack manifest is rewritten after every
+ * so an interrupted build resumes where it stopped. A file whose recorded props hash differs from
+ * the plan's renders again, with a warning; a file without a recorded hash is skipped with a warning. The pack manifest is rewritten after every
  * file: the per-file sidecars are deleted once read, so their data must already be on disk.
  * `plan` is what this run renders (an --only slice or all of it); `fullPlan` is the pack's whole
  * plan, before --only: manifest entries it no longer has are pruned before the first save.
@@ -413,22 +438,33 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
     const relative = path.posix.relative(packRoot, file.output);
     const sidecar = `${file.output}.json`;
     const asset = deps.getAsset(file.composition);
-    if (!overwrite && await effects.exists(file.output)) {
-      effects.log(`${counter} ${file.output}: already exists, skipping.`);
+    const known = previousFiles.get(relative);
+    const expected = packPropsHash(file);
+    const onDisk = !overwrite && await effects.exists(file.output);
+    // The name alone does not say the file matches the plan: a recorded hash that differs renders it again.
+    const changed = onDisk && known?.propsHash !== undefined && known.propsHash !== expected;
+    const renderNow = !onDisk || changed;
+    if (!renderNow) {
+      effects.log(known?.propsHash === undefined
+        ? `${counter} ${file.output}: already exists, skipping. Warning: no props hash is recorded for it, so it may not match the plan; run with --overwrite to render it again.`
+        : `${counter} ${file.output}: already exists, skipping.`);
       skipped += 1;
     } else {
       // Checked again per file: one pack can take many gigabytes.
       assertFreeSpace(await effects.freeBytes(), diskLabel);
-      effects.log(`${counter} ${file.output}`);
-      await effects.exportFile(file, overwrite);
+      effects.log(changed
+        ? `${counter} ${file.output}: Warning: its props changed since it was rendered; rendering it again.`
+        : `${counter} ${file.output}`);
+      await effects.exportFile(file, overwrite || changed);
       rendered += 1;
     }
+    // What the file on disk now comes from: the plan when it was just rendered, the old entry otherwise.
+    const propsHash = renderNow ? expected : known?.propsHash;
     // A leftover sidecar (fresh render or an interrupted run) wins over older data, then leaves the pack folder.
     const data = await effects.readJson(sidecar);
-    const known = previousFiles.get(relative);
     entries.set(relative, data !== null
-      ? packFileEntry(file, packRoot, asset, data as Sidecar)
-      : known ?? packFileEntry(file, packRoot, asset, null));
+      ? packFileEntry(file, packRoot, asset, data as Sidecar, propsHash)
+      : (renderNow ? null : known) ?? packFileEntry(file, packRoot, asset, null, propsHash));
     await save();
     if (data !== null) await effects.remove(sidecar);
   }
