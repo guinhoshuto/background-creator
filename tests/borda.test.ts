@@ -103,16 +103,16 @@ test('Borda: presets parseiam estritos em todos os tamanhos e não fixam tamanho
   }
 });
 
-test('Borda: recusas com a saída em pt-BR', () => {
+test('Borda: recusas com a saída em inglês', () => {
   const message = (input: object) => {
     const result = bordaLoopSchema.safeParse(input);
     assert.equal(result.success, false, JSON.stringify(input));
     return result.error!.issues.map((issue) => issue.message).join(' | ');
   };
-  assert.match(message({width: 641}), /width precisa ser par/);
-  assert.match(message({bleed: 47}), /bleed precisa ser par/);
-  assert.match(message({width: 3840, height: 2160}), /acima do limite/);
-  assert.match(message({strokeWidth: 12, thickness: 10}), /use strokeWidth ≤ 10 ou aumente thickness/);
+  assert.match(message({width: 641}), /width must be even/);
+  assert.match(message({bleed: 47}), /bleed must be even/);
+  assert.match(message({width: 3840, height: 2160}), /above the \d+×\d+ limit/);
+  assert.match(message({strokeWidth: 12, thickness: 10}), /use strokeWidth ≤ 10 or increase thickness/);
   assert.match(message({lines: 3}), /.+/);
   assert.match(message({corners: 'estrelas'}), /.+/);
 
@@ -121,15 +121,15 @@ test('Borda: recusas com a saída em pt-BR', () => {
     const input = {corners, glow: 40};
     const text = message({...input, bleed: 32});
     const wanted = Number(/bleed ≥ (\d+)/.exec(text)![1]);
-    assert.match(text, /^O brilho passa da margem: use bleed ≥ \d+ ou diminua o brilho\.$/);
+    assert.match(text, /^The glow goes past the margin: use bleed ≥ \d+ or reduce the glow\.$/);
     assert.equal(wanted, minBleedFor(getBordaGeometry(parse({...input, bleed: 256})).layout.outset));
     assert.equal(bordaLoopSchema.safeParse({...input, bleed: wanted}).success, true, `${corners}: bleed ${wanted}`);
     assert.equal(bordaLoopSchema.safeParse({...input, bleed: wanted - 2}).success, false);
   }
   // The corners alone reach past the bleed: their own message, same rule.
   for (const [input, pattern] of [
-    [{corners: 'colchetes', cornerGap: 40}, /^Os colchetes passam da margem: use bleed ≥ (\d+)/],
-    [{corners: 'joias', gemSize: 80}, /^As joias passam da margem: use bleed ≥ (\d+)/],
+    [{corners: 'colchetes', cornerGap: 40}, /^The brackets go past the margin: use bleed ≥ (\d+)/],
+    [{corners: 'joias', gemSize: 80}, /^The gems go past the margin: use bleed ≥ (\d+)/],
   ] as const) {
     const wanted = Number(pattern.exec(message(input))![1]);
     assert.equal(bordaLoopSchema.safeParse({...input, bleed: wanted}).success, true);
@@ -138,21 +138,21 @@ test('Borda: recusas com a saída em pt-BR', () => {
 
   // Full screen: nothing leaves the file; the corners must stay between the hole and the edge.
   const screen = sizeProps(getSize('tela-cheia'));
-  assert.match(message({...screen, thickness: 256, glow: 128, width: 400, height: 400}), /não deixa janela/);
+  assert.match(message({...screen, thickness: 256, glow: 128, width: 400, height: 400}), /leaves no window/);
   const bracketText = message({...screen, corners: 'colchetes', cornerGap: 60, glow: 0, lines: 1});
   const maxGap = Number(/cornerGap ≤ (\d+)/.exec(bracketText)![1]);
-  assert.match(bracketText, /Os colchetes entrariam na janela/);
+  assert.match(bracketText, /The brackets would enter the window/);
   assert.equal(bordaLoopSchema.safeParse({...screen, corners: 'colchetes', cornerGap: maxGap, glow: 0, lines: 1}).success, true);
-  assert.match(message({...screen, corners: 'joias', gemSize: 128, glow: 0, lines: 1, radius: 0}), /As joias não cabem/);
+  assert.match(message({...screen, corners: 'joias', gemSize: 128, glow: 0, lines: 1, radius: 0}), /The gems do not fit/);
 
   // Aliasing: refused with the highest usable speed, which is accepted.
   const fast = {strokeMotion: 'formigas', strokeColors: ['#FFFFFF'], dashLength: 2, gapLength: 2, strokeSpeed: 4000};
   const aliasText = message(fast);
-  const maxSpeed = Number(/Use strokeSpeed até ([\d.]+) px\/s/.exec(aliasText)![1]);
-  assert.match(aliasText, /Velocidade alta demais para o tracejado/);
+  const maxSpeed = Number(/Use strokeSpeed up to ([\d.]+) px\/s/.exec(aliasText)![1]);
+  assert.match(aliasText, /Speed too high for the dashes/);
   assert.equal(bordaLoopSchema.safeParse({...fast, strokeSpeed: maxSpeed}).success, true);
   const dots = {fill: 'pontos', fillScale: 8, fillSpeed: 480, durationSeconds: 1};
-  assert.match(message(dots), /Velocidade alta demais para os pontos/);
+  assert.match(message(dots), /Speed too high for the dots/);
 });
 
 test('Borda: o gradiente nas duas linhas é recusado uma vez só, com uma velocidade que resolve', () => {
@@ -164,7 +164,7 @@ test('Borda: o gradiente nas duas linhas é recusado uma vez só, com uma veloci
   };
   const issues = bordaLoopSchema.safeParse(input).error!.issues;
   assert.equal(issues.length, 1, issues.map((issue) => issue.message).join(' | '));
-  const limit = Number(/Use strokeSpeed até ([\d.]+) px\/s/.exec(issues[0]!.message)![1]);
+  const limit = Number(/Use strokeSpeed up to ([\d.]+) px\/s/.exec(issues[0]!.message)![1]);
   assert.equal(bordaLoopSchema.safeParse({...input, strokeSpeed: limit}).success, true);
   assert.equal(bordaLoopSchema.safeParse({...input, strokeSpeed: limit + 1}).success, false);
 });
@@ -215,7 +215,7 @@ test('Borda: no gradiente as duas linhas andam juntas, com as mesmas voltas da p
 test('Borda: em tela a caixa é o arquivo, então bleed diferente de 0 é recusado', () => {
   const issues = bordaLoopSchema.safeParse({fit: 'tela', width: 1920, height: 1080}).error!.issues;
   assert.deepEqual(issues.map((issue) => [issue.path, issue.message]), [
-    [['bleed'], 'Em tela a caixa é o arquivo inteiro: use bleed 0 (ou --size tela-cheia / tela-vertical).'],
+    [['bleed'], 'On a screen frame the box is the whole file: use bleed 0 (or --size tela-cheia / tela-vertical).'],
   ]);
   const screen = parse({fit: 'tela', width: 1920, height: 1080, bleed: 0});
   assert.deepEqual(getBordaLayout(screen).canvas, {width: 1920, height: 1080});
@@ -468,17 +468,17 @@ test('Máscara: a mesma em todos os temas para o mesmo tamanho e raio', () => {
   }
 });
 
-test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saída em pt-BR', () => {
+test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saída em inglês', () => {
   const mask = {...sizeProps(getSize('webcam-16x9')), mascara: true, bleed: 0, outputFormat: 'png'};
   assert.equal(bordaLoopSchema.safeParse(mask).success, true);
   const messages = (input: object) => bordaLoopSchema.safeParse(input).error!.issues.map((issue) => [issue.path.join('.'), issue.message]);
   assert.deepEqual(messages({...mask, bleed: 48}), [
-    ['bleed', 'Na máscara o arquivo é a própria janela, do tamanho da câmera: use bleed 0 (com --size, junte --bleed 0).'],
+    ['bleed', 'In the mask the file is the window itself, the size of the camera: use bleed 0 (with --size, add --bleed 0).'],
   ]);
-  assert.deepEqual(messages({...mask, outputFormat: 'webm'}), [['outputFormat', 'A máscara é uma imagem parada: exporte em PNG (--format png).']]);
-  assert.deepEqual(messages({...mask, transparent: false}), [['transparent', 'A máscara precisa de fundo transparente: use transparent true.']]);
+  assert.deepEqual(messages({...mask, outputFormat: 'webm'}), [['outputFormat', 'The mask is a still image: export it as PNG (--format png).']]);
+  assert.deepEqual(messages({...mask, transparent: false}), [['transparent', 'The mask needs a transparent background: use transparent true.']]);
   assert.deepEqual(messages({...sizeProps(getSize('tela-cheia')), mascara: true, outputFormat: 'png'}), [
-    ['fit', 'A máscara vale só para fit janela: numa moldura de tela a janela ocupa a tela inteira e não precisa de máscara.'],
+    ['fit', 'The mask only applies to fit janela: in a screen frame the window fills the whole screen and needs no mask.'],
   ]);
   // The frame's own refusals do not apply: nothing of it is drawn (a glow far past the missing bleed).
   assert.equal(bordaLoopSchema.safeParse({...mask, glow: 128, corners: 'colchetes', cornerGap: 128}).success, true);
@@ -606,7 +606,7 @@ test('Borda: o halo sai da borda externa para o bleed, só em volta de uma janel
   // Beyond the bleed it is refused with the bleed that holds it, which is accepted.
   const wide = {...sizeProps(size), corners: 'nenhum', halo: 40};
   const issues = bordaLoopSchema.safeParse(wide).error!.issues;
-  assert.deepEqual(issues.map((issue) => issue.message), [`O brilho passa da margem: use bleed ≥ ${totalThickness + 40} ou diminua o brilho.`]);
+  assert.deepEqual(issues.map((issue) => issue.message), [`The glow goes past the margin: use bleed ≥ ${totalThickness + 40} or reduce the glow.`]);
   assert.equal(bordaLoopSchema.safeParse({...wide, bleed: totalThickness + 40}).success, true);
   // A screen frame has no bleed to spread into: no halo, nothing outside the box.
   const screen = parse({...sizeProps(getSize('tela-cheia')), halo: 24});

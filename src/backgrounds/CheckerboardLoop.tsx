@@ -125,13 +125,13 @@ export const checkerboardLoopSchema = checkerboardFields.superRefine((props, con
   const maxSteps = Math.floor(MAX_FRAME_SHARE * durationInFrames + 1e-9);
   // Rounded, a share just past the limit would read as the limit itself.
   const limit = Math.round(MAX_FRAME_SHARE * 100);
-  const percentOf = (value: number) => (Math.round(value * 100) > limit ? `${Math.round(value * 100)}%` : `mais de ${limit}%`);
+  const percentOf = (value: number) => (Math.round(value * 100) > limit ? `${Math.round(value * 100)}%` : `more than ${limit}%`);
   context.addIssue({
     code: 'custom',
     path: ['speed'],
     message: maxSteps >= 1
-      ? `Velocidade alta demais para este tamanho de casa: a cada frame o tabuleiro andaria ${percentOf(share)} do caminho até a casa vizinha da mesma cor e pareceria ir para trás ou piscar. Use speed menor que ${Math.floor(((maxSteps + 0.5) * stepLength) / props.durationSeconds)} px/s ou aumente squareSize.`
-      : `Ciclo curto demais para o tabuleiro: mesmo um passo por ciclo faria o tabuleiro andar ${percentOf(1 / durationInFrames)} do caminho até a casa vizinha da mesma cor a cada frame, e ele pareceria ir para trás ou piscar. Aumente durationSeconds.`,
+      ? `Speed too high for this square size: each frame the board would move ${percentOf(share)} of the way to the neighbouring square of the same colour and would seem to go backwards or flicker. Use speed below ${Math.floor(((maxSteps + 0.5) * stepLength) / props.durationSeconds)} px/s or increase squareSize.`
+      : `Cycle too short for the board: even one step per cycle would make the board move ${percentOf(1 / durationInFrames)} of the way to the neighbouring square of the same colour each frame, and it would seem to go backwards or flicker. Increase durationSeconds.`,
   });
 }, {when: (payload) => payload.issues.length === 0});
 

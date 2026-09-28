@@ -127,7 +127,7 @@ export const refineRim = (
     context.addIssue({
       code: 'custom',
       path: ['rimLight'],
-      message: `O reflexo de cima encostaria na área ${name}: ${fix}, ou use rimLight até ${String(MAX_CONTENT_OPACITY).replace('.', ',')}.`,
+      message: `The top rim light would touch the ${name} area: ${fix}, or use rimLight up to ${MAX_CONTENT_OPACITY}.`,
     });
   }
 };

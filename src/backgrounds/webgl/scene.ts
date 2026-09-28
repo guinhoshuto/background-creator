@@ -53,7 +53,7 @@ export const wholeTurns = (turns: number) => (turns > 0 ? Math.max(1, Math.round
 export const parseColor = (color: string): [number, number, number, number] => {
   const normalized = interpolateColors(0, [0, 1], [color, color]);
   const match = /^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/.exec(normalized);
-  if (!match) throw new Error(`Cor não reconhecida: ${color}.`);
+  if (!match) throw new Error(`Unrecognized color: ${color}.`);
   return [Number(match[1]) / 255, Number(match[2]) / 255, Number(match[3]) / 255, Number(match[4])];
 };
 
@@ -64,13 +64,13 @@ export const srgbToLinear = (channel: number) =>
 export const pack = (scene: WebGLElement[], kind: string, fields: string[]) =>
   scene.filter((element) => element.kind === kind).flatMap((element) => fields.map((field) => {
     const value = element[field];
-    if (typeof value !== 'number') throw new Error(`O elemento ${kind} não tem o campo numérico ${field}.`);
+    if (typeof value !== 'number') throw new Error(`Element ${kind} has no numeric field ${field}.`);
     return value;
   }));
 
 /** The single element of a kind. */
 export const only = (scene: WebGLElement[], kind: string) => {
   const matches = scene.filter((element) => element.kind === kind);
-  if (matches.length !== 1) throw new Error(`A cena deveria ter um elemento ${kind}; tem ${matches.length}.`);
+  if (matches.length !== 1) throw new Error(`The scene should have one ${kind} element; it has ${matches.length}.`);
   return matches[0]!;
 };

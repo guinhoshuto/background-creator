@@ -160,14 +160,14 @@ const refineChatContent = (props: ChatLoopProps, layout: ChatLayout, context: z.
     context.addIssue({
       code: 'custom',
       path: ['headerHeight'],
-      message: 'O cabeçalho não deixa espaço para as mensagens: diminua headerHeight, padding ou strokeWidth, ou aumente a caixa.',
+      message: 'The header leaves no room for the messages: reduce headerHeight, padding or strokeWidth, or enlarge the box.',
     });
   }
   if (layout.header.width < 1 || layout.header.height < 1) {
     context.addIssue({
       code: 'custom',
       path: ['headerHeight'],
-      message: `O cabeçalho de ${props.headerHeight} px não deixa espaço para o título: aumente headerHeight ou diminua padding.`,
+      message: `A header of ${props.headerHeight} px leaves no room for the title: increase headerHeight or reduce padding.`,
     });
   }
 };
@@ -190,8 +190,8 @@ const refineLegibility = (props: ChatLoopProps, layout: ChatLayout, context: z.R
   if (!(props.glow > 0)) return;
   const sources = chatGlowSources(layout);
   const areas: [Rect | null, string, string][] = [
-    [layout.content, 'das mensagens', layout.divider ? 'aumente padding, ou diminua glow ou headerLineWidth' : 'aumente padding ou diminua glow'],
-    [layout.header, 'do título', layout.divider ? 'aumente headerHeight e padding, ou diminua glow ou headerLineWidth' : 'aumente headerHeight e padding, ou diminua glow'],
+    [layout.content, 'messages', layout.divider ? 'increase padding, or reduce glow or headerLineWidth' : 'increase padding or reduce glow'],
+    [layout.header, 'title', layout.divider ? 'increase headerHeight and padding, or reduce glow or headerLineWidth' : 'increase headerHeight and padding, or reduce glow'],
   ];
   for (const [area, name, fix] of areas) {
     if (!area || area.width < 1 || area.height < 1) continue;
@@ -200,7 +200,7 @@ const refineLegibility = (props: ChatLoopProps, layout: ChatLayout, context: z.R
     context.addIssue({
       code: 'custom',
       path: ['glow'],
-      message: `O brilho chegaria a ${Math.round(washed * 100)}% de opacidade sobre a área ${name} (o limite é ${Math.round(MAX_CONTENT_OPACITY * 100)}%): ${fix}.`,
+      message: `The glow would reach ${Math.round(washed * 100)}% opacity over the ${name} area (the limit is ${Math.round(MAX_CONTENT_OPACITY * 100)}%): ${fix}.`,
     });
   }
 };
@@ -217,8 +217,8 @@ export const chatLoopSchema = chatFields.superRefine((props, context) => {
   refineChatContent(props, layout, context);
   refineLegibility(props, layout, context);
   refineRim(props.rimLight, layout.inner, [
-    [layout.content, 'das mensagens', 'use padding de 1 px ou mais'],
-    [layout.header, 'do título', 'use padding de 1 px ou mais'],
+    [layout.content, 'messages', 'use a padding of 1 px or more'],
+    [layout.header, 'title', 'use a padding of 1 px or more'],
   ], context);
   refineStroke(props, layout.track, context, strokeOptions(props));
   refineFill(props, layout.box, context, fillOptions(layout));

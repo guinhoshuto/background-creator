@@ -29,47 +29,47 @@ export type NamedSize = {
 /** The product line: every size is sold, so ids are stable file-name tags. */
 const NAMED_SIZE_TABLE = [
   // chat: the box is the chat panel.
-  {id: 'chat-compacto', kind: 'chat', label: 'Chat compacto', use: 'canto da tela, layouts com câmera grande', width: 360, height: 480, bleed: 32},
-  {id: 'chat-padrao', kind: 'chat', label: 'Chat padrão', use: 'caixa de chat comum (OBS, StreamElements, Streamlabs)', width: 400, height: 600, bleed: 32},
-  {id: 'chat-alto', kind: 'chat', label: 'Chat alto', use: 'lateral alta ao lado do jogo', width: 400, height: 800, bleed: 32},
-  {id: 'chat-coluna', kind: 'chat', label: 'Chat em coluna', use: 'coluna de altura total; o arquivo tem exatamente a altura da tela', width: 448, height: 1016, bleed: 32},
-  {id: 'chat-vertical', kind: 'chat', label: 'Chat vertical', use: 'lives verticais (tela 1080×1920), metade de baixo', width: 960, height: 640, bleed: 32},
+  {id: 'chat-compacto', kind: 'chat', label: 'Compact chat', use: 'screen corner, layouts with a large camera', width: 360, height: 480, bleed: 32},
+  {id: 'chat-padrao', kind: 'chat', label: 'Standard chat', use: 'regular chat box (OBS, StreamElements, Streamlabs)', width: 400, height: 600, bleed: 32},
+  {id: 'chat-alto', kind: 'chat', label: 'Tall chat', use: 'tall side panel next to the game', width: 400, height: 800, bleed: 32},
+  {id: 'chat-coluna', kind: 'chat', label: 'Column chat', use: 'full-height column; the file is exactly as tall as the screen', width: 448, height: 1016, bleed: 32},
+  {id: 'chat-vertical', kind: 'chat', label: 'Vertical chat', use: 'vertical streams (1080×1920 screen), bottom half', width: 960, height: 640, bleed: 32},
   // bloco: the box is the text panel. `shape` is spelled out so a size id alone fixes the product.
-  {id: 'etiqueta-p', kind: 'bloco', label: 'Etiqueta pequena', use: 'selo curto: "AO VIVO", @usuário', width: 320, height: 64, bleed: 24, props: {shape: 'retangulo'}},
-  {id: 'etiqueta', kind: 'bloco', label: 'Etiqueta', use: 'rótulos: último seguidor, meta, redes', width: 480, height: 96, bleed: 24, props: {shape: 'retangulo'}},
-  {id: 'faixa', kind: 'bloco', label: 'Faixa', use: 'terço inferior: nome + título', width: 1200, height: 160, bleed: 32, props: {shape: 'retangulo'}},
-  {id: 'titulo', kind: 'bloco', label: 'Título', use: 'título das telas (Começando, Volto já, Encerrando)', width: 1200, height: 240, bleed: 32, props: {shape: 'retangulo'}},
-  {id: 'cartao', kind: 'bloco', label: 'Cartão', use: 'card 16:9: agenda, regras, patrocinador', width: 640, height: 360, bleed: 32, props: {shape: 'retangulo'}},
-  {id: 'quadrado', kind: 'bloco', label: 'Quadrado', use: 'QR code, avatar, destaque', width: 480, height: 480, bleed: 32, props: {shape: 'retangulo'}},
-  {id: 'lista', kind: 'bloco', label: 'Lista', use: 'lista vertical: agenda da semana, top apoiadores', width: 480, height: 720, bleed: 32, props: {shape: 'retangulo'}},
+  {id: 'etiqueta-p', kind: 'bloco', label: 'Small label', use: 'short badge: "LIVE", @user', width: 320, height: 64, bleed: 24, props: {shape: 'retangulo'}},
+  {id: 'etiqueta', kind: 'bloco', label: 'Label', use: 'labels: latest follower, goal, socials', width: 480, height: 96, bleed: 24, props: {shape: 'retangulo'}},
+  {id: 'faixa', kind: 'bloco', label: 'Banner', use: 'lower third: name + title', width: 1200, height: 160, bleed: 32, props: {shape: 'retangulo'}},
+  {id: 'titulo', kind: 'bloco', label: 'Title', use: 'screen titles (Starting, Be right back, Ending)', width: 1200, height: 240, bleed: 32, props: {shape: 'retangulo'}},
+  {id: 'cartao', kind: 'bloco', label: 'Card', use: '16:9 card: schedule, rules, sponsor', width: 640, height: 360, bleed: 32, props: {shape: 'retangulo'}},
+  {id: 'quadrado', kind: 'bloco', label: 'Square', use: 'QR code, avatar, highlight', width: 480, height: 480, bleed: 32, props: {shape: 'retangulo'}},
+  {id: 'lista', kind: 'bloco', label: 'List', use: 'vertical list: weekly schedule, top supporters', width: 480, height: 720, bleed: 32, props: {shape: 'retangulo'}},
   // Round blocks: the text goes in the square centred inside the circle.
-  {id: 'circulo-p', kind: 'bloco', label: 'Círculo pequeno', use: 'selo pequeno: ícone, rede social, "AO VIVO"', width: 160, height: 160, bleed: 24, props: {shape: 'circulo'}},
-  {id: 'circulo', kind: 'bloco', label: 'Círculo', use: 'avatar, logo, contador', width: 320, height: 320, bleed: 32, props: {shape: 'circulo'}},
-  {id: 'circulo-g', kind: 'bloco', label: 'Círculo grande', use: 'destaque, sorteio, meta', width: 480, height: 480, bleed: 32, props: {shape: 'circulo'}},
+  {id: 'circulo-p', kind: 'bloco', label: 'Small circle', use: 'small badge: icon, social network, "LIVE"', width: 160, height: 160, bleed: 24, props: {shape: 'circulo'}},
+  {id: 'circulo', kind: 'bloco', label: 'Circle', use: 'avatar, logo, counter', width: 320, height: 320, bleed: 32, props: {shape: 'circulo'}},
+  {id: 'circulo-g', kind: 'bloco', label: 'Large circle', use: 'highlight, giveaway, goal', width: 480, height: 480, bleed: 32, props: {shape: 'circulo'}},
   // No bleed: the panel is the whole file, so nothing may glow outside it.
-  {id: 'painel-twitch', kind: 'bloco', label: 'Painel da Twitch', use: 'painéis do perfil da Twitch (PNG/GIF, sem brilho externo)', width: 320, height: 160, bleed: 0, props: {shape: 'retangulo', glow: 0, halo: 0}},
+  {id: 'painel-twitch', kind: 'bloco', label: 'Twitch panel', use: 'Twitch profile panels (PNG/GIF, no outer glow)', width: 320, height: 160, bleed: 0, props: {shape: 'retangulo', glow: 0, halo: 0}},
   // borda: the box is the transparent window; frame and glow go outward into the bleed.
   // `fit` and `shape` are spelled out so a size id alone fixes the product, whatever a preset says.
-  {id: 'webcam-16x9', kind: 'borda', label: 'Webcam 16:9', use: 'câmera padrão', width: 640, height: 360, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
-  {id: 'webcam-16x9-g', kind: 'borda', label: 'Webcam 16:9 grande', use: 'câmera grande (Just Chatting)', width: 960, height: 540, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
-  {id: 'webcam-4x3', kind: 'borda', label: 'Webcam 4:3', use: 'câmeras 4:3', width: 480, height: 360, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
-  {id: 'webcam-quadrada', kind: 'borda', label: 'Webcam quadrada', use: 'câmera quadrada (para câmera redonda, use webcam-redonda)', width: 400, height: 400, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
+  {id: 'webcam-16x9', kind: 'borda', label: 'Webcam 16:9', use: 'standard camera', width: 640, height: 360, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
+  {id: 'webcam-16x9-g', kind: 'borda', label: 'Large webcam 16:9', use: 'large camera (Just Chatting)', width: 960, height: 540, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
+  {id: 'webcam-4x3', kind: 'borda', label: 'Webcam 4:3', use: '4:3 cameras', width: 480, height: 360, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
+  {id: 'webcam-quadrada', kind: 'borda', label: 'Square webcam', use: 'square camera (for a round camera, use webcam-redonda)', width: 400, height: 400, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
   // Round windows: the camera goes through the window's OBS mask (the white disc) to turn round.
-  {id: 'webcam-redonda-p', kind: 'borda', label: 'Webcam redonda pequena', use: 'câmera redonda pequena no canto', width: 280, height: 280, bleed: 48, props: {fit: 'janela', shape: 'circulo'}},
-  {id: 'webcam-redonda', kind: 'borda', label: 'Webcam redonda', use: 'câmera redonda padrão', width: 400, height: 400, bleed: 48, props: {fit: 'janela', shape: 'circulo'}},
-  {id: 'webcam-redonda-g', kind: 'borda', label: 'Webcam redonda grande', use: 'câmera redonda grande para Just Chatting', width: 560, height: 560, bleed: 48, props: {fit: 'janela', shape: 'circulo'}},
-  {id: 'webcam-vertical', kind: 'borda', label: 'Webcam vertical', use: 'câmera 9:16 em lives verticais', width: 360, height: 640, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
-  {id: 'jogo', kind: 'borda', label: 'Jogo', use: 'captura do jogo em layouts com coluna lateral', width: 1440, height: 810, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
+  {id: 'webcam-redonda-p', kind: 'borda', label: 'Small round webcam', use: 'small round camera in the corner', width: 280, height: 280, bleed: 48, props: {fit: 'janela', shape: 'circulo'}},
+  {id: 'webcam-redonda', kind: 'borda', label: 'Round webcam', use: 'standard round camera', width: 400, height: 400, bleed: 48, props: {fit: 'janela', shape: 'circulo'}},
+  {id: 'webcam-redonda-g', kind: 'borda', label: 'Large round webcam', use: 'large round camera for Just Chatting', width: 560, height: 560, bleed: 48, props: {fit: 'janela', shape: 'circulo'}},
+  {id: 'webcam-vertical', kind: 'borda', label: 'Vertical webcam', use: '9:16 camera in vertical streams', width: 360, height: 640, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
+  {id: 'jogo', kind: 'borda', label: 'Game', use: 'game capture in layouts with a side column', width: 1440, height: 810, bleed: 48, props: {fit: 'janela', shape: 'retangulo'}},
   // Full-screen frames: the box is the whole file, so the frame is drawn inward.
-  {id: 'tela-cheia', kind: 'borda', label: 'Tela cheia', use: 'moldura da tela inteira', width: 1920, height: 1080, bleed: 0, props: {fit: 'tela', shape: 'retangulo'}},
-  {id: 'tela-vertical', kind: 'borda', label: 'Tela vertical', use: 'moldura da tela inteira vertical', width: 1080, height: 1920, bleed: 0, props: {fit: 'tela', shape: 'retangulo'}},
+  {id: 'tela-cheia', kind: 'borda', label: 'Full screen', use: 'frame for the whole screen', width: 1920, height: 1080, bleed: 0, props: {fit: 'tela', shape: 'retangulo'}},
+  {id: 'tela-vertical', kind: 'borda', label: 'Vertical screen', use: 'frame for the whole vertical screen', width: 1080, height: 1920, bleed: 0, props: {fit: 'tela', shape: 'retangulo'}},
 ] as const satisfies readonly NamedSize[];
 
 export const NAMED_SIZES: readonly NamedSize[] = NAMED_SIZE_TABLE;
 
 export const getSize = (id: string): NamedSize => {
   const size = NAMED_SIZES.find((entry) => entry.id === id);
-  if (!size) throw new Error(`Tamanho desconhecido: ${id}. Opções: ${NAMED_SIZES.map((entry) => entry.id).join(', ')}.`);
+  if (!size) throw new Error(`Unknown size: ${id}. Options: ${NAMED_SIZES.map((entry) => entry.id).join(', ')}.`);
   return size;
 };
 
@@ -105,7 +105,7 @@ export const sizeTag = (kind: string, props: SizedProps): string => {
   const named = matchNamedSize(kind, props);
   if (named) return named.id;
   if (typeof props.width !== 'number' || typeof props.height !== 'number') {
-    throw new Error('Esta composição não tem width/height: use o nome sem tamanho.');
+    throw new Error('This composition has no width/height: use the name without a size.');
   }
   return `${props.width}x${props.height}${props.shape === 'circulo' ? '-circulo' : ''}`;
 };

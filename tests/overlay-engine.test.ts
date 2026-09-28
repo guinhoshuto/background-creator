@@ -224,7 +224,7 @@ test('Margem: refineOutset aceita o bleed par que a mensagem pede e recusa o de 
     assert.equal(refused.success, false);
     const message = refused.error!.issues[0]!.message;
     const wanted = Number(/bleed ≥ (\d+)/.exec(message)![1]);
-    assert.equal(message, `O brilho passa da margem: use bleed ≥ ${wanted} ou diminua o brilho.`);
+    assert.equal(message, `The glow goes past the margin: use bleed ≥ ${wanted} or reduce the glow.`);
     assert.equal(wanted % 2, 0);
     assert.equal(wanted, minBleedFor(outset));
     assert.equal(schema.safeParse({bleed: wanted, glow, thickness}).success, true, `${outset}: bleed ${wanted}`);
@@ -237,11 +237,11 @@ test('Recusas de layout: conteúdo sem espaço e moldura sem janela', () => {
   const content = z.object({padding: z.number()}).superRefine((props, context) =>
     refineContent(layoutPanel({width: 64, height: 32, bleed: 0, radius: 0, strokeWidth: 2, padding: props.padding}), context));
   assert.equal(content.safeParse({padding: 10}).success, true);
-  assert.match(content.safeParse({padding: 16}).error!.issues[0]!.message, /padding não deixa espaço/);
+  assert.match(content.safeParse({padding: 16}).error!.issues[0]!.message, /padding leaves no room/);
   const hole = z.object({thickness: z.number()}).superRefine((props, context) =>
     refineHole(layoutFrame({width: 200, height: 100, bleed: 0, radius: 0, thickness: props.thickness, glow: 10, fit: 'tela'}), context));
   assert.equal(hole.safeParse({thickness: 20}).success, true);
-  assert.match(hole.safeParse({thickness: 45}).error!.issues[0]!.message, /não deixa janela/);
+  assert.match(hole.safeParse({thickness: 45}).error!.issues[0]!.message, /leaves no window/);
 });
 
 // ── Scenes ──────────────────────────────────────────────────────────────────────────────────
@@ -405,8 +405,8 @@ const assertLimit = (schema: z.ZodType, input: Record<string, unknown>, field: s
   assert.equal(refused.success, false, JSON.stringify(input));
   const issue = refused.error!.issues[0]!;
   assert.deepEqual(issue.path, [field]);
-  const limit = Number(new RegExp(`Use ${field} até ([\\d.]+) px/s`).exec(issue.message)![1]);
-  assert.match(issue.message, /pareceria ir para trás ou piscar/);
+  const limit = Number(new RegExp(`Use ${field} up to ([\\d.]+) px/s`).exec(issue.message)![1]);
+  assert.match(issue.message, /seem to go backwards or flicker/);
   assert.equal(schema.safeParse({...input, [field]: limit}).success, true, `${field} ${limit} aceito`);
   assert.equal(schema.safeParse({...input, [field]: limit + 1}).success, false, `${field} ${limit + 1} recusado`);
   return limit;
@@ -429,7 +429,7 @@ test('Aliasing: contornos rápidos demais são recusados com a velocidade máxim
   // Motions that do not travel are never refused, and a cycle too short says so.
   assert.equal(strokeSchema(PANEL_TRACK).safeParse({strokeMotion: 'pulso', strokeSpeed: 4000, strokePulses: 16}).success, true);
   const short = strokeSchema(PANEL_TRACK).safeParse({...ants, durationSeconds: 0.03});
-  assert.match(short.error!.issues[0]!.message, /Ciclo curto demais para o tracejado/);
+  assert.match(short.error!.issues[0]!.message, /Cycle too short for the dashes/);
 });
 
 test('Aliasing: pontos e listras rápidos demais são recusados com a velocidade máxima, que é aceita', () => {
@@ -440,7 +440,7 @@ test('Aliasing: pontos e listras rápidos demais são recusados com a velocidade
   // The sparkles' orbits are periodic too: past the limit they crawl or turn backwards (the review
   // measured 1.06 turns per frame here, seen as a 0.06 turn crawl).
   const orbit = assertLimit(fillSchema, {fill: 'brilhos', fillScale: 8, fillSpeed: 480}, 'fillSpeed');
-  assert.match(fillSchema.safeParse({fill: 'brilhos', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /para os brilhos: .* ou aumente fillScale\./);
+  assert.match(fillSchema.safeParse({fill: 'brilhos', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /for the sparkles: .* or increase fillScale\./);
   assertLimit(fillSchema, {fill: 'brilhos', fillScale: 8, fillSpeed: 200, outputFormat: 'gif'}, 'fillSpeed');
   assertLimit(fillSchema, {fill: 'brilhos', fillScale: 16, fillSpeed: 400}, 'fillSpeed');
   const turns = getFillMotion(kit({fill: 'brilhos', fillScale: 8, fillSpeed: orbit}), {x: 0, y: 0, width: 100, height: 100});
@@ -800,7 +800,7 @@ test('Aliasing: o damasco rápido demais é recusado como os pontos; a névoa nu
   assertLimit(fillSchema, {fill: 'damasco', fillScale: 8, fillSpeed: 480, fillAngle: 0}, 'fillSpeed');
   assertLimit(fillSchema, {fill: 'damasco', fillScale: 8, fillSpeed: 480, fillAngle: 90, outputFormat: 'gif'}, 'fillSpeed');
   assertLimit(fillSchema, {fill: 'damasco', fillScale: 12, fillSpeed: 480, fillAngle: 45}, 'fillSpeed');
-  assert.match(fillSchema.safeParse({fill: 'damasco', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /para o damasco: .* ou aumente fillScale\./);
+  assert.match(fillSchema.safeParse({fill: 'damasco', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /for the damask: .* or increase fillScale\./);
   assert.equal(fillSchema.safeParse({fill: 'damasco', fillScale: 56, fillSpeed: 0}).success, true);
   // The fog's banks overlap into one soft band and wrap unseen: nothing to alias.
   assert.equal(fillSchema.safeParse({fill: 'nevoa', fillScale: 8, fillSpeed: 480, outputFormat: 'gif'}).success, true);
@@ -824,7 +824,7 @@ test('Aliasing: o gradiente balançando é recusado no ponto mais rápido, com a
   // Only a tiny box at a high speed gets there: 16 px wide, two colours, 480 px/s at 50 fps.
   const tiny = {fill: 'gradiente', fillColors: ['#000', '#FFF'], fillAngle: 0, width: 16, height: 16, fillSpeed: 480, outputFormat: 'gif'};
   const limit = assertLimit(fillSchema, tiny, 'fillSpeed');
-  assert.match(fillSchema.safeParse(tiny).error!.issues[0]!.message, /para o gradiente: .* ou aumente a caixa\./);
+  assert.match(fillSchema.safeParse(tiny).error!.issues[0]!.message, /for the gradient: .* or enlarge the box\./);
   const motion = getFillMotion(kit({...tiny, fillSpeed: limit}), panelOf(kit(tiny)).box);
   assert.ok(swayShare(motion, 400) <= MAX_FRAME_SHARE);
   // Every named size is far from it, even at the fastest speed and the slowest frame rate.
@@ -956,25 +956,25 @@ test('Acabamento: um reflexo forte colado no texto é recusado, e a saída da me
   const cases = [
     {
       label: 'chat sem padding', schema: chatLoopSchema, input: {padding: 0, glow: 0, rimLight: 1},
-      fixes: [{padding: 1}, {rimLight: 0.2}], areas: [/mensagens/, /título/],
+      fixes: [{padding: 1}, {rimLight: 0.2}], areas: [/messages/, /title/],
     },
     {
       label: 'chat sem título nem padding', schema: chatLoopSchema, input: {padding: 0, headerHeight: 0, glow: 0, rimLight: 1},
-      fixes: [{padding: 1}, {rimLight: 0.2}], areas: [/mensagens/],
+      fixes: [{padding: 1}, {rimLight: 0.2}], areas: [/messages/],
     },
     {
       label: 'bloco sem padding', schema: blocoLoopSchema, input: {paddingX: 0, paddingY: 0, glow: 0, halo: 0, rimLight: 1},
-      fixes: [{paddingX: 1, paddingY: 1}, {rimLight: 0.2}], areas: [/texto/],
+      fixes: [{paddingX: 1, paddingY: 1}, {rimLight: 0.2}], areas: [/text/],
     },
     {
       label: 'bloco sem padding dos lados', schema: blocoLoopSchema, input: {paddingX: 0, paddingY: 16, glow: 0, halo: 0, rimLight: 1},
-      fixes: [{paddingX: 1}, {rimLight: 0.2}], areas: [/texto/],
+      fixes: [{paddingX: 1}, {rimLight: 0.2}], areas: [/text/],
     },
   ] as const;
   for (const {label, schema, input, fixes, areas} of cases) {
     const issues = rimIssues(schema.safeParse(input));
     assert.equal(issues.length, areas.length, `${label}: recusado uma vez por área`);
-    for (const issue of issues) assert.match(issue.message, /^O reflexo de cima encostaria na área .*ou use rimLight até 0,2\.$/, label);
+    for (const issue of issues) assert.match(issue.message, /^The top rim light would touch the .*, or use rimLight up to 0\.2\.$/, label);
     for (const area of areas) assert.ok(issues.some((issue) => area.test(issue.message)), label);
     for (const fix of fixes) assert.equal(schema.safeParse({...input, ...fix}).success, true, `${label} com ${JSON.stringify(fix)}`);
   }

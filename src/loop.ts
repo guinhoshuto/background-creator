@@ -4,7 +4,7 @@ export const TAU = Math.PI * 2;
 /** Frame N is the conceptual repeat of frame 0; renders stop at N - 1. */
 export const loopPhase = (frame: number, durationInFrames: number): number => {
   if (!Number.isFinite(frame) || !Number.isInteger(durationInFrames) || durationInFrames < 1) {
-    throw new Error('O loop precisa de um frame finito e uma duração inteira positiva.');
+    throw new Error('The loop needs a finite frame and a positive integer duration.');
   }
 
   return (((frame % durationInFrames) + durationInFrames) % durationInFrames) / durationInFrames * TAU;

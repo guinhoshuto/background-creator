@@ -64,15 +64,15 @@ const variants = (adapter: OrnamentKindAdapter): Case[] => {
 const sampleFrames = (n: number) => [0, 1, 37, n * 0.137, n * 0.391, n * 0.618, n * 0.853, n - 1, 0.5, -1];
 
 /** The documented refusal; its way out depends on the kind (and on a border's fit): see ornamentWayOut. */
-export const REFUSAL = new RegExp(`^Os enfeites "(noite|mansao|interior|teia)" não cabem neste tamanho: (${[
-  'aumente bleed, padding ou radius ou use ornaments nenhum.',
-  'aumente bleed ou padding ou use ornaments nenhum.',
-  'aumente bleed, paddingX, paddingY ou radius ou use ornaments nenhum.',
-  'aumente bleed, paddingX ou paddingY ou use ornaments nenhum.',
-  'aumente bleed ou radius ou use ornaments nenhum.',
-  'aumente bleed ou use ornaments nenhum.',
-  'aumente thickness, glow ou radius ou use ornaments nenhum.',
-  'aumente thickness ou glow ou use ornaments nenhum.',
+export const REFUSAL = new RegExp(`^The "(noite|mansao|interior|teia)" ornaments do not fit this size: (${[
+  'increase bleed, padding or radius or use ornaments nenhum.',
+  'increase bleed or padding or use ornaments nenhum.',
+  'increase bleed, paddingX, paddingY or radius or use ornaments nenhum.',
+  'increase bleed, paddingX or paddingY or use ornaments nenhum.',
+  'increase bleed or radius or use ornaments nenhum.',
+  'increase bleed or use ornaments nenhum.',
+  'increase thickness, glow or radius or use ornaments nenhum.',
+  'increase thickness or glow or use ornaments nenhum.',
 ].map((text) => text.replaceAll('.', '\\.')).join('|')})$`);
 
 /** Placement bounds: inside the paint limit (edge), clear of the hole, and in front clear of the text. */
@@ -141,7 +141,7 @@ const checkCase = (
     const layout = adapter.ornamentLayout({...adapter.parse({...input, ornaments: 'nenhum'}), ornaments: set});
     assert.equal(layout.placements.length, 0, `${id}: recusado só quando nada cabe`);
     // The way out named is the one of this kind and fit (a border has no padding; tela, no bleed).
-    for (const issue of issues) assert.equal(issue.message, `Os enfeites "${set}" não cabem neste tamanho: ${ornamentWayOut(layout.frame)}`, id);
+    for (const issue of issues) assert.equal(issue.message, `The "${set}" ornaments do not fit this size: ${ornamentWayOut(layout.frame)}`, id);
     return false;
   }
   const props = adapter.parse(input);

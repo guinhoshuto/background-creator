@@ -62,13 +62,15 @@ test('tamanhos: ids únicos, tipos válidos, tudo par e arquivo = caixa + 2·ble
   }
 });
 
-test('tamanhos: rótulos e usos em português, sem campos vazios', () => {
+test('tamanhos: rótulos e usos em inglês, sem campos vazios', () => {
   for (const size of NAMED_SIZES) {
     assert.ok(size.label.trim().length > 2, `${size.id}: rótulo vazio`);
     assert.ok(size.use.trim().length > 5, `${size.id}: uso vazio`);
-    assert.doesNotMatch(`${size.label} ${size.use}`, /\b(the|with|and|screen|border)\b/i, `${size.id}: texto em inglês`);
+    // Size ids quoted in the text (webcam-redonda) stay Portuguese until the renaming round; the prose around them does not.
+    const prose = `${size.label} ${size.use}`.replace(/[a-z0-9]+(?:-[a-z0-9]+)+/g, '');
+    assert.doesNotMatch(prose, /[à-ú]|\b(de|da|do|das|dos|na|para|com|em|ou|um|uma|sem|alt[oa]|grande|pequen[oa]|redond[oa]|quadrad[oa]|cheia|tela|jogo|faixa|etiqueta|lista|painel|canto)\b/i, `${size.id}: texto em português`);
   }
-  assert.equal(getSize('chat-padrao').label, 'Chat padrão');
+  assert.equal(getSize('chat-padrao').label, 'Standard chat');
 });
 
 test('tamanhos: só as molduras de tela inteira usam fit tela, sempre sem bleed', () => {
@@ -90,8 +92,8 @@ test('tamanhos: só as molduras de tela inteira usam fit tela, sempre sem bleed'
 });
 
 test('tamanhos: getSize lista as opções em português; sizesForKind separa por tipo', () => {
-  assert.throws(() => getSize('gigante'), /Tamanho desconhecido: gigante\. Opções: chat-compacto, .*tela-vertical\./);
-  assert.throws(() => getSize('__proto__'), /Tamanho desconhecido/);
+  assert.throws(() => getSize('gigante'), /Unknown size: gigante\. Options: chat-compacto, .*tela-vertical\./);
+  assert.throws(() => getSize('__proto__'), /Unknown size/);
   for (const kind of ASSET_KINDS) {
     for (const size of sizesForKind(kind)) assert.equal(size.kind, kind);
   }
@@ -152,7 +154,7 @@ test('caixa: ímpares e arquivos acima de 4K são recusados em português', () =
   ] as const) {
     const result = schema.safeParse(input);
     assert(!result.success, field);
-    assert.equal(result.error.issues[0]?.message, `${field} precisa ser par: o H.264 corta 1 px de dimensões ímpares sem avisar.`);
+    assert.equal(result.error.issues[0]?.message, `${field} must be even: H.264 silently crops 1 px off odd dimensions.`);
   }
   for (const input of [{width: 14}, {width: 3842}, {bleed: -2}, {bleed: 258}, {width: 400.5}]) {
     assert.equal(schema.safeParse(input).success, false, JSON.stringify(input));
@@ -160,7 +162,7 @@ test('caixa: ímpares e arquivos acima de 4K são recusados em português', () =
   for (const input of [{width: 3840, height: 2160, bleed: 2}, {width: 3840, height: 16, bleed: 2}, {width: 3000, height: 3000, bleed: 0}]) {
     const result = schema.safeParse(input);
     assert(!result.success, JSON.stringify(input));
-    assert.match(result.error.issues[0]!.message, /acima do limite de 3840×2160: diminua width, height ou bleed\.$/);
+    assert.match(result.error.issues[0]!.message, /above the 3840×2160 limit: reduce width, height or bleed\.$/);
   }
 });
 

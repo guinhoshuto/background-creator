@@ -1,7 +1,7 @@
 import {zColor} from '@remotion/zod-types';
 import {z} from 'zod';
 
-z.config(z.locales.ptBR());
+z.config(z.locales.en());
 
 export const outputFormatSchema = z.enum(['mp4', 'webm', 'gif', 'mov', 'png']);
 export type OutputFormat = z.infer<typeof outputFormatSchema>;
@@ -40,7 +40,7 @@ export const evenPx = (field: string, {min, max}: {min: number; max: number}) =>
     .int()
     .min(min)
     .max(max)
-    .multipleOf(2, `${field} precisa ser par: o H.264 corta 1 px de dimensões ímpares sem avisar.`);
+    .multipleOf(2, `${field} must be even: H.264 silently crops 1 px off odd dimensions.`);
 
 export const getCompositionMetadata = (
   props: Pick<BaseBackgroundProps, 'durationSeconds' | 'outputFormat'>,
@@ -50,7 +50,7 @@ export const getCompositionMetadata = (
   const fps = props.outputFormat === 'gif' ? 50 : 60;
   const durationInFrames = Math.max(1, Math.round(props.durationSeconds * fps));
   if (!Number.isFinite(props.durationSeconds) || props.durationSeconds <= 0 || !Number.isSafeInteger(durationInFrames)) {
-    throw new Error('A duração deve ser positiva e produzir um número seguro de frames.');
+    throw new Error('The duration must be positive and give a safe number of frames.');
   }
   return {width: size.width, height: size.height, fps, durationInFrames};
 };

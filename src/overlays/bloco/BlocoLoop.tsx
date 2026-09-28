@@ -41,7 +41,7 @@ const ACCENT_SHEEN_OPACITY = 0.55;
 export const ACCENT_ARC_SPREAD = Math.PI / 3;
 
 /** The round sizes, for the refusal of a circle in a box that is not square. */
-const ROUND_SIZES = 'circulo-p, circulo ou circulo-g';
+const ROUND_SIZES = 'circulo-p, circulo or circulo-g';
 
 /**
  * The glass sheen crosses the text: as discreet as the chat's over its messages, so a theme's
@@ -190,7 +190,7 @@ export const blocoLoopSchema = blocoFields.superRefine((props, context) => {
   const layout = getBlocoLayout(props);
   refineOutset(props, layout.outset, context);
   refineContent(layout, context);
-  refineRim(props.rimLight, layout.inner, [[layout.content, 'do texto', 'use paddingX e paddingY de 1 px ou mais']], context);
+  refineRim(props.rimLight, layout.inner, [[layout.content, 'text', 'use paddingX and paddingY of 1 px or more']], context);
   refineStroke(props, layout.track, context);
   refineFill(props, layout.box, context);
   const washed = contentGlowOpacity({...layout, glow: props.glow, glowStrength: props.glowStrength});
@@ -198,7 +198,7 @@ export const blocoLoopSchema = blocoFields.superRefine((props, context) => {
     context.addIssue({
       code: 'custom',
       path: ['glow'],
-      message: `O brilho do contorno chegaria a ${Math.round(washed * 100)}% de opacidade sobre a área do texto (o limite é ${Math.round(MAX_CONTENT_OPACITY * 100)}%): aumente paddingX e paddingY ou diminua glow.`,
+      message: `The stroke's glow would reach ${Math.round(washed * 100)}% opacity over the text area (the limit is ${Math.round(MAX_CONTENT_OPACITY * 100)}%): increase paddingX and paddingY or reduce glow.`,
     });
   }
   refineLightning(props, context);

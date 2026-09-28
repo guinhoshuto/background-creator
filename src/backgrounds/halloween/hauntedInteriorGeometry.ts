@@ -97,7 +97,7 @@ export const flattenPath = (d: string, steps = 14): Subpath[] => {
   let current: Subpath | undefined;
   const read = () => Number(tokens[index++]);
   const push = (x: number, y: number) => {
-    if (!current) throw new Error(`Caminho sem M inicial: ${d}`);
+    if (!current) throw new Error(`Path without an initial M: ${d}`);
     current.points.push([x, y]);
     cx = x;
     cy = y;
@@ -159,7 +159,7 @@ export const flattenPath = (d: string, steps = 14): Subpath[] => {
         }
         break;
       default:
-        throw new Error(`Comando de caminho não suportado: ${command}`);
+        throw new Error(`Unsupported path command: ${command}`);
     }
   }
   return subpaths;
@@ -211,7 +211,7 @@ export const tudorArch = (cx: number, bottom: number, spec: TudorSpec, grow = 0)
   const c1: Point = [cx - half + r1, spring];
   const tangent: Point = [c1[0] - r1 * Math.cos(turn), spring + r1 * Math.sin(turn)];
   const c2: Point = [tangent[0] + r2 * Math.cos(turn), tangent[1] - r2 * Math.sin(turn)];
-  if (c2[0] <= cx) throw new Error('Arco Tudor sem ponta: aumente r2.');
+  if (c2[0] <= cx) throw new Error('Tudor arch without a point: increase r2.');
   const apexAngle = Math.acos((cx - c2[0]) / (r2 + grow));
   const left: Point[] = [
     [cx - half - grow, bottom],

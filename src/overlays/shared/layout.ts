@@ -197,7 +197,7 @@ export const refineOutset = (props: {bleed: number}, outset: number, context: z.
   context.addIssue({
     code: 'custom',
     path: ['bleed'],
-    message: `O brilho passa da margem: use bleed ≥ ${minBleedFor(outset)} ou diminua o brilho.`,
+    message: `The glow goes past the margin: use bleed ≥ ${minBleedFor(outset)} or reduce the glow.`,
   });
 };
 
@@ -207,7 +207,7 @@ export const refineContent = (layout: AssetLayout, context: z.RefinementCtx) => 
   context.addIssue({
     code: 'custom',
     path: ['padding'],
-    message: 'O padding não deixa espaço para o conteúdo: diminua padding ou strokeWidth, ou aumente a caixa.',
+    message: 'The padding leaves no room for the content: reduce padding or strokeWidth, or enlarge the box.',
   });
 };
 
@@ -217,6 +217,6 @@ export const refineHole = (layout: FrameLayout, context: z.RefinementCtx) => {
   context.addIssue({
     code: 'custom',
     path: ['strokeWidth'],
-    message: 'A moldura não deixa janela: diminua a espessura ou o brilho, ou aumente a tela.',
+    message: 'The frame leaves no window: reduce the thickness or the glow, or enlarge the screen.',
   });
 };

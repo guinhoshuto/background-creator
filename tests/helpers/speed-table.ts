@@ -24,7 +24,7 @@ export const SPEED_TOLERANCE = 0.35;
 export type SpeedRow = {
   preset: string;
   size: string;
-  layer: 'contorno' | 'segunda linha' | 'preenchimento';
+  layer: 'stroke' | 'second line' | 'fill';
   /** strokeMotion or fill, for the table. */
   motion: string;
   requested: number;
@@ -104,21 +104,21 @@ export const speedTable = (): SpeedRow[] => {
             rows.push({
               preset, size: size.id, layer, motion: props.strokeMotion, requested: props.strokeSpeed, effective: motion.speed,
               laps: motion.laps, atMinimum: motion.laps === 1 && props.strokeSpeed * seconds < lap,
-              reported: layer === 'contorno' ? reported.strokeSpeed : null,
+              reported: layer === 'stroke' ? reported.strokeSpeed : null,
             });
           };
           const main = adapter.track(props);
-          strokeRow('contorno', main);
+          strokeRow('stroke', main);
           const second = adapter.secondTrack?.(props) ?? null;
           // The second line only flows with the colour gradient; ants and comets leave it still.
-          if (second && props.strokeMotion === 'gradiente') strokeRow('segunda linha', second, colorRepeatsOf(props as never, main));
+          if (second && props.strokeMotion === 'gradiente') strokeRow('second line', second, colorRepeatsOf(props as never, main));
         }
         if (fillMoves(props)) {
           const {area, options} = adapter.fillArea(props);
           const motion = getFillMotion(props as never, area, options);
           const lap = motion.period * motion.unitsPerPeriod;
           rows.push({
-            preset, size: size.id, layer: 'preenchimento', motion: props.fillRise ? `${props.fill} subindo` : props.fill,
+            preset, size: size.id, layer: 'fill', motion: props.fillRise ? `${props.fill} rising` : props.fill,
             requested: props.fillSpeed, effective: motion.speed, laps: motion.laps,
             atMinimum: motion.laps === 1 && props.fillSpeed * seconds < lap - 1e-9,
             reported: reported.fillSpeed,

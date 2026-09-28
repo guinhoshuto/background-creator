@@ -91,7 +91,7 @@ test('Bloco: recusa valores inválidos e aceita os limites documentados', () => 
   ]) {
     assert.equal(blocoLoopSchema.strict().safeParse(input).success, false, JSON.stringify(input));
   }
-  assert.match(issuesOf({width: 641}).join(), /width precisa ser par/);
+  assert.match(issuesOf({width: 641}).join(), /width must be even/);
   for (const input of [
     {accent: 'esquerda', accentSize: 2, accentSheen: 4, strokeWidth: 0, glow: 0, halo: 0},
     {accent: 'topo', accentSize: 64, paddingY: 0, radius: 0, trackOpacity: 0, glow: 0},
@@ -103,7 +103,7 @@ test('Bloco: recusa valores inválidos e aceita os limites documentados', () => 
 });
 
 test('Bloco: arquivo acima de 4K é recusado com a saída', () => {
-  assert.match(issuesOf({width: 3840, height: 2160, bleed: 32}).join(), /acima do limite de 3840×2160: diminua width, height ou bleed/);
+  assert.match(issuesOf({width: 3840, height: 2160, bleed: 32}).join(), /above the 3840×2160 limit: reduce width, height or bleed/);
   assert.equal(blocoLoopSchema.safeParse({width: 3776, height: 2096, bleed: 32}).success, true);
 });
 
@@ -188,7 +188,7 @@ test('Bloco: a seed nunca move a caixa, o conteúdo nem a barra', () => {
 test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed que resolve', () => {
   // A box without bleed: the default neon glow is refused, and zero glow and halo are accepted.
   const twitch = {width: 320, height: 160, bleed: 0};
-  assert.match(issuesOf(twitch).join(), /O brilho passa da margem: use bleed ≥ 20 ou diminua o brilho\./);
+  assert.match(issuesOf(twitch).join(), /The glow goes past the margin: use bleed ≥ 20 or reduce the glow\./);
   assert.match(issuesOf({...twitch, halo: 0, glow: 14}).join(), /use bleed ≥ 14/);
   assert.match(issuesOf({...twitch, glow: 0, halo: 16}).join(), /use bleed ≥ 16/);
   assert.equal(blocoLoopSchema.safeParse({...twitch, glow: 0, halo: 0}).success, true);
@@ -209,8 +209,8 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
 
 test('Bloco: padding ou barra que não deixam espaço para o conteúdo são recusados', () => {
   const tiny = sizeProps(getSize('etiqueta-p'));
-  assert.match(issuesOf({...tiny, paddingY: 30}).join(), /O padding não deixa espaço para o conteúdo/);
-  assert.match(issuesOf({...tiny, accent: 'topo', accentSize: 64}).join(), /não deixa espaço/);
+  assert.match(issuesOf({...tiny, paddingY: 30}).join(), /The padding leaves no room for the content/);
+  assert.match(issuesOf({...tiny, accent: 'topo', accentSize: 64}).join(), /leaves no room/);
   assert.equal(blocoLoopSchema.safeParse({...tiny, paddingY: 12}).success, true);
 });
 
@@ -267,7 +267,7 @@ test('Legibilidade: nada acima do fill entra no conteúdo, e o brilho fica abaix
 test('Legibilidade: brilho grande com padding pequeno é recusado, e mais padding resolve', () => {
   const input = {glow: 48, bleed: 48, halo: 0, paddingX: 2, paddingY: 2, strokeWidth: 6};
   const [message] = issuesOf(input);
-  assert.match(message!, /O brilho do contorno chegaria a \d+% de opacidade sobre a área do texto \(o limite é 20%\): aumente paddingX e paddingY ou diminua glow\./);
+  assert.match(message!, /The stroke's glow would reach \d+% opacity over the text area \(the limit is 20%\): increase paddingX and paddingY or reduce glow\./);
   assert.equal(blocoLoopSchema.safeParse({...input, paddingX: 40, paddingY: 40}).success, true);
   assert.equal(blocoLoopSchema.safeParse({...input, glow: 2}).success, true);
   // The estimate falls with the distance and vanishes without a glow or a stroke.
@@ -283,7 +283,7 @@ test('Legibilidade: brilho grande com padding pequeno é recusado, e mais paddin
 test('Legibilidade: o brilho é medido em 2D, e nos cantos do texto dois lados do contorno somam', () => {
   // A one-sided estimate took this for 18%; at the corner of the text it is about 38%.
   const doubled = {radius: 16, paddingX: 8, paddingY: 8, strokeWidth: 8, glow: 20};
-  assert.match(issuesOf(doubled).join(), /O brilho do contorno chegaria a \d+% de opacidade sobre a área do texto .*aumente paddingX e paddingY ou diminua glow\./);
+  assert.match(issuesOf(doubled).join(), /The stroke's glow would reach \d+% opacity over the text area .*increase paddingX and paddingY or reduce glow\./);
   assert.equal(blocoLoopSchema.safeParse({...doubled, paddingX: 16, paddingY: 16}).success, true);
   // The fast measure agrees with brute force at square corners, round corners and a pill.
   for (const input of [
@@ -306,14 +306,14 @@ test('Legibilidade: o brilho é medido em 2D, e nos cantos do texto dois lados d
 test('Aliasing: contorno e preenchimento rápidos demais são recusados com a velocidade máxima, que é aceita', () => {
   const ants = {strokeMotion: 'formigas', dashLength: 4, gapLength: 4, strokeColors: ['#FFFFFF']};
   const [message] = issuesOf({...ants, strokeSpeed: 4000});
-  assert.match(message!, /Velocidade alta demais para o tracejado/);
-  const limit = Number(message!.match(/strokeSpeed até ([\d.]+) px\/s/)![1]);
+  assert.match(message!, /Speed too high for the dashes/);
+  const limit = Number(message!.match(/strokeSpeed up to ([\d.]+) px\/s/)![1]);
   assert.equal(blocoLoopSchema.safeParse({...ants, strokeSpeed: limit}).success, true);
   assert.equal(blocoLoopSchema.safeParse({...ants, strokeSpeed: limit + 1}).success, false);
   const dots = {fill: 'pontos', fillScale: 8, fillAngle: 0};
   const [fillMessage] = issuesOf({...dots, fillSpeed: 480});
-  assert.match(fillMessage!, /Velocidade alta demais para os pontos/);
-  const fillLimit = Number(fillMessage!.match(/fillSpeed até ([\d.]+) px\/s/)![1]);
+  assert.match(fillMessage!, /Speed too high for the dots/);
+  const fillLimit = Number(fillMessage!.match(/fillSpeed up to ([\d.]+) px\/s/)![1]);
   assert.equal(blocoLoopSchema.safeParse({...dots, fillSpeed: fillLimit}).success, true);
   // The effective speed is rounded to whole laps and exposed for the sidecar, on the bloco's own track.
   const comets = {strokeMotion: 'cometas', cometSpacing: 64, strokeColors: ['#FFFFFF'], ...sizeProps(getSize('etiqueta-p'))};

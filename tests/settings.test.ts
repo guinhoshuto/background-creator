@@ -113,7 +113,7 @@ test('evenPx recusa ímpares com a mensagem do H.264 e aceita pares no intervalo
   for (const value of [14, 3842, 1.5, Number.NaN, '640']) assert.equal(schema.safeParse(value).success, false, String(value));
   const odd = schema.safeParse(641);
   assert(!odd.success);
-  assert.equal(odd.error.issues[0]?.message, 'width precisa ser par: o H.264 corta 1 px de dimensões ímpares sem avisar.');
+  assert.equal(odd.error.issues[0]?.message, 'width must be even: H.264 silently crops 1 px off odd dimensions.');
 });
 
 test('shared schema rejects malformed user input', () => {
@@ -135,9 +135,9 @@ test('shared schema rejects malformed user input', () => {
   }
 });
 
-test('shared schema reports invalid input in Portuguese', () => {
+test('shared schema reports invalid input in English', () => {
   const result = baseBackgroundSchema.safeParse({seed: Number.NaN});
   assert(!result.success);
   assert.deepEqual(result.error.issues[0]?.path, ['seed']);
-  assert.equal(result.error.issues[0]?.message, 'Entrada inválida: esperava um número, recebeu um valor "NaN"');
+  assert.equal(result.error.issues[0]?.message, 'Invalid input: expected number, received NaN');
 });

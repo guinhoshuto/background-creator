@@ -185,7 +185,7 @@ test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em portug
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', sizes: ['gigante'], formats: ['webm']}]), fakeDeps),
-    /Tamanho desconhecido: gigante/,
+    /Unknown size: gigante/,
   );
 });
 

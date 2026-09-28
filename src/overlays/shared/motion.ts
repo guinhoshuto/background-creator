@@ -79,9 +79,9 @@ export type TravelCheck = {
   durationInFrames: number;
   /** The speed field, for the issue path and the message. */
   field: string;
-  /** pt-BR: what the pattern is ("o tracejado", "os cometas"…). */
+  /** What the pattern is ("the dashes", "the comets"…). */
   subject: string;
-  /** pt-BR: the other way out ("aumente dashLength ou gapLength"). */
+  /** The other way out ("increase dashLength or gapLength"). */
   otherFix: string;
 };
 
@@ -100,7 +100,7 @@ export const refineTravel = (check: TravelCheck, context: z.RefinementCtx) => {
     code: 'custom',
     path: [check.field],
     message: maxSpeed !== null && maxSpeed > 0
-      ? `Velocidade alta demais para ${check.subject}: a cada frame o padrão andaria ${percent}% do caminho até a peça seguinte e pareceria ir para trás ou piscar. Use ${check.field} até ${maxSpeed} px/s ou ${check.otherFix}.`
-      : `Ciclo curto demais para ${check.subject}: mesmo um período por ciclo faria o padrão andar ${percent}% do caminho até a peça seguinte a cada frame, e ele pareceria ir para trás ou piscar. Aumente durationSeconds ou ${check.otherFix}.`,
+      ? `Speed too high for ${check.subject}: each frame the pattern would move ${percent}% of the way to the next piece and would seem to go backwards or flicker. Use ${check.field} up to ${maxSpeed} px/s or ${check.otherFix}.`
+      : `Cycle too short for ${check.subject}: even one period per cycle would make the pattern move ${percent}% of the way to the next piece each frame, and it would seem to go backwards or flicker. Increase durationSeconds or ${check.otherFix}.`,
   });
 };

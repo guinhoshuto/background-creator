@@ -64,16 +64,16 @@ test('ornaments: quando nem o motivo principal cabe, a combinação é recusada 
   assert.deepEqual(issues[0]!.path, ['ornaments']);
   assert.match(issues[0]!.message, REFUSAL);
   assert.deepEqual(ORNAMENT_KINDS.bloco.issues({...input, ornaments: 'nenhum'}), []);
-  assert.equal(issues[0]!.message, 'Os enfeites "noite" não cabem neste tamanho: aumente bleed, paddingX, paddingY ou radius ou use ornaments nenhum.');
+  assert.equal(issues[0]!.message, 'The "noite" ornaments do not fit this size: increase bleed, paddingX, paddingY or radius or use ornaments nenhum.');
   assert.deepEqual(ORNAMENT_KINDS.bloco.issues({...input, paddingX: 40, paddingY: 30}), [], 'bloco: a saída indicada resolve');
   // A border has no padding, and a screen frame no bleed: each names its own way out, which works.
   const border = {width: 200, height: 120, radius: 0, thickness: 2, strokeWidth: 2, glow: 0, halo: 0, corners: 'nenhum', ornaments: 'noite'};
   for (const [input, wayOut, fixed] of [
-    [{...border, fit: 'tela', bleed: 0}, 'aumente thickness, glow ou radius ou use ornaments nenhum.', {radius: 60}],
-    [{...border, fit: 'janela', bleed: 8}, 'aumente bleed ou radius ou use ornaments nenhum.', {bleed: 24}],
+    [{...border, fit: 'tela', bleed: 0}, 'increase thickness, glow or radius or use ornaments nenhum.', {radius: 60}],
+    [{...border, fit: 'janela', bleed: 8}, 'increase bleed or radius or use ornaments nenhum.', {bleed: 24}],
   ] as const) {
     const refused = ORNAMENT_KINDS.borda.issues(input);
-    assert.deepEqual(refused.map((issue) => [issue.path, issue.message]), [[['ornaments'], `Os enfeites "noite" não cabem neste tamanho: ${wayOut}`]], input.fit);
+    assert.deepEqual(refused.map((issue) => [issue.path, issue.message]), [[['ornaments'], `The "noite" ornaments do not fit this size: ${wayOut}`]], input.fit);
     assert.deepEqual(ORNAMENT_KINDS.borda.issues({...input, ...fixed}), [], `${input.fit}: a saída indicada resolve`);
   }
   // A radius already at its maximum (a pill, a round screen frame) is not offered: raising it changes nothing.
@@ -82,10 +82,10 @@ test('ornaments: quando nem o motivo principal cabe, a combinação é recusada 
     width: 64, height: 64, fit: 'tela', shape: 'retangulo', bleed: 0, radius: 32, thickness: 4, glow: 0, strokeWidth: 0, lines: 1, corners: 'nenhum', ornaments: 'noite',
   };
   for (const [adapter, input, wayOut, fixes] of [
-    [ORNAMENT_KINDS.chat, pill, 'aumente bleed ou padding ou use ornaments nenhum.', [{bleed: 64}, {padding: 20}]],
-    [ORNAMENT_KINDS.borda, round, 'aumente thickness ou glow ou use ornaments nenhum.', [{thickness: 12}, {glow: 8}]],
+    [ORNAMENT_KINDS.chat, pill, 'increase bleed or padding or use ornaments nenhum.', [{bleed: 64}, {padding: 20}]],
+    [ORNAMENT_KINDS.borda, round, 'increase thickness or glow or use ornaments nenhum.', [{thickness: 12}, {glow: 8}]],
   ] as const) {
-    const message = [[['ornaments'], `Os enfeites "noite" não cabem neste tamanho: ${wayOut}`]];
+    const message = [[['ornaments'], `The "noite" ornaments do not fit this size: ${wayOut}`]];
     assert.deepEqual(adapter.issues(input).map((issue) => [issue.path, issue.message]), message, adapter.kind);
     assert.deepEqual(adapter.issues({...input, radius: 1920}).map((issue) => [issue.path, issue.message]), message, `${adapter.kind}: radius maior não muda nada`);
     for (const fixed of fixes) assert.deepEqual(adapter.issues({...input, ...fixed}), [], `${adapter.kind} ${JSON.stringify(fixed)}: a saída indicada resolve`);
@@ -93,7 +93,7 @@ test('ornaments: quando nem o motivo principal cabe, a combinação é recusada 
 });
 
 test('ornaments: relâmpago num ciclo curto demais para um raio é recusado com a saída', () => {
-  const message = 'Com durationSeconds abaixo de 1,5 s não há relâmpagos: use durationSeconds ≥ 1,5 ou lightning 0.';
+  const message = 'With durationSeconds below 1.5 s there is no lightning: use durationSeconds ≥ 1.5 or lightning 0.';
   for (const kindName of ORNAMENT_KIND_NAMES) {
     const adapter = ORNAMENT_KINDS[kindName];
     for (const ornaments of ['nenhum', 'noite']) {

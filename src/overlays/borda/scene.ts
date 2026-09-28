@@ -25,7 +25,7 @@ import {
 const SIZE = getSize(kindPolicies.borda.defaultSizeId!);
 
 /** The round window sizes, for the refusal of a circle in a box that is not square. */
-const ROUND_SIZES = 'webcam-redonda-p, webcam-redonda ou webcam-redonda-g';
+const ROUND_SIZES = 'webcam-redonda-p, webcam-redonda or webcam-redonda-g';
 
 export const CORNER_STYLES = ['nenhum', 'colchetes', 'joias'] as const;
 
@@ -337,8 +337,8 @@ const refineReach = (props: BordaLoopProps, geometry: BordaGeometry, context: z.
       code: 'custom',
       path: ['bleed'],
       message: props.corners === 'colchetes'
-        ? `Os colchetes passam da margem: use bleed ≥ ${minBleedFor(geometry.layout.outset)} ou diminua cornerGap ou o brilho.`
-        : `As joias passam da margem: use bleed ≥ ${minBleedFor(geometry.layout.outset)} ou diminua gemSize ou o brilho.`,
+        ? `The brackets go past the margin: use bleed ≥ ${minBleedFor(geometry.layout.outset)} or reduce cornerGap or the glow.`
+        : `The gems go past the margin: use bleed ≥ ${minBleedFor(geometry.layout.outset)} or reduce gemSize or the glow.`,
     });
     return;
   }
@@ -346,7 +346,7 @@ const refineReach = (props: BordaLoopProps, geometry: BordaGeometry, context: z.
     context.addIssue({
       code: 'custom',
       path: ['cornerGap'],
-      message: `Os colchetes entrariam na janela: em tela use cornerGap ≤ ${Math.max(0, geometry.totalThickness + props.glow - geometry.cornerWidth)} ou aumente thickness ou o brilho.`,
+      message: `The brackets would enter the window: on a screen frame use cornerGap ≤ ${Math.max(0, geometry.totalThickness + props.glow - geometry.cornerWidth)} or increase thickness or the glow.`,
     });
   }
   if (props.corners === 'joias') {
@@ -359,7 +359,7 @@ const refineReach = (props: BordaLoopProps, geometry: BordaGeometry, context: z.
       context.addIssue({
         code: 'custom',
         path: ['gemSize'],
-        message: 'As joias não cabem entre a janela e a borda do arquivo: diminua gemSize ou aumente thickness ou o brilho.',
+        message: 'The gems do not fit between the window and the edge of the file: reduce gemSize or increase thickness or the glow.',
       });
     }
   }
@@ -376,10 +376,10 @@ const secondMotion = (motion: StrokeMotionName): StrokeMotionName =>
  */
 const refineMask = (props: BordaLoopProps, context: z.RefinementCtx) => {
   const issue = (path: string, message: string) => context.addIssue({code: 'custom', path: [path], message});
-  if (props.fit !== 'janela') issue('fit', 'A máscara vale só para fit janela: numa moldura de tela a janela ocupa a tela inteira e não precisa de máscara.');
-  if (props.bleed !== 0) issue('bleed', 'Na máscara o arquivo é a própria janela, do tamanho da câmera: use bleed 0 (com --size, junte --bleed 0).');
-  if (props.outputFormat !== 'png') issue('outputFormat', 'A máscara é uma imagem parada: exporte em PNG (--format png).');
-  if (!props.transparent) issue('transparent', 'A máscara precisa de fundo transparente: use transparent true.');
+  if (props.fit !== 'janela') issue('fit', 'The mask only applies to fit janela: in a screen frame the window fills the whole screen and needs no mask.');
+  if (props.bleed !== 0) issue('bleed', 'In the mask the file is the window itself, the size of the camera: use bleed 0 (with --size, add --bleed 0).');
+  if (props.outputFormat !== 'png') issue('outputFormat', 'The mask is a still image: export it as PNG (--format png).');
+  if (!props.transparent) issue('transparent', 'The mask needs a transparent background: use transparent true.');
 };
 
 export const bordaLoopSchema = bordaFields.superRefine((props, context) => {
@@ -391,7 +391,7 @@ export const bordaLoopSchema = bordaFields.superRefine((props, context) => {
     context.addIssue({
       code: 'custom',
       path: ['shape'],
-      message: 'A moldura de tela acompanha a tela, que é retangular: use shape retangulo com fit tela, ou fit janela para uma câmera redonda (--size webcam-redonda).',
+      message: 'A screen frame follows the screen, which is rectangular: use shape retangulo with fit tela, or fit janela for a round camera (--size webcam-redonda).',
     });
     return;
   }
@@ -406,7 +406,7 @@ export const bordaLoopSchema = bordaFields.superRefine((props, context) => {
     context.addIssue({
       code: 'custom',
       path: ['bleed'],
-      message: 'Em tela a caixa é o arquivo inteiro: use bleed 0 (ou --size tela-cheia / tela-vertical).',
+      message: 'On a screen frame the box is the whole file: use bleed 0 (or --size tela-cheia / tela-vertical).',
     });
     return;
   }
@@ -414,7 +414,7 @@ export const bordaLoopSchema = bordaFields.superRefine((props, context) => {
     context.addIssue({
       code: 'custom',
       path: ['strokeWidth'],
-      message: `O contorno é mais largo que a faixa: use strokeWidth ≤ ${props.thickness} ou aumente thickness.`,
+      message: `The stroke is wider than the band: use strokeWidth ≤ ${props.thickness} or increase thickness.`,
     });
     return;
   }

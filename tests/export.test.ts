@@ -144,7 +144,7 @@ test('export: o JSON da borda avulsa não aponta uma máscara que o comando não
   assert.equal('mask' in screenSidecar, false);
   // Keeping the size's bleed is refused with the way out.
   assert.throws(() => resolveExport(buildExportOptions(parseRenderArgs(['BordaLoop', '--format', 'png', '--size', 'webcam-quadrada']), {mascara: true})),
-    /use bleed 0 \(com --size, junte --bleed 0\)/);
+    /use bleed 0 \(with --size, add --bleed 0\)/);
 });
 
 test('export: o JSON é publicado antes do vídeo e removido se o vídeo falhar', async () => {
@@ -243,7 +243,7 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
   assert.equal(sizeTag('borda', overPreset), 'webcam-16x9');
   assert.throws(() => expandSize('chat', 'webcam-16x9'), /Size webcam-16x9 is for borders and frames, not chat backgrounds\. Options: chat-compacto/);
   assert.throws(() => expandSize('bloco', 'chat-padrao'), /not text boxes/);
-  assert.throws(() => expandSize('borda', 'enorme'), /Tamanho desconhecido: enorme/);
+  assert.throws(() => expandSize('borda', 'enorme'), /Unknown size: enorme/);
   assert.throws(() => expandSize('background', 'cartao'), /Backgrounds have a fixed size \(1920×1080\)/);
   for (const flags of [['--size', 'cartao'], ['--width', '800'], ['--height', '600'], ['--bleed', '0']]) {
     assert.throws(() => buildExportOptions(cli('GradientLoop', ...flags)), /fixed size/, flags.join(' '));
@@ -255,5 +255,5 @@ test('CLI: --list agrupa por tipo com cabeçalhos em português', () => {
   const headers = text.split('\n').filter((line) => /^\S/.test(line));
   assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (bloco):', 'Borders and frames (borda):']);
   assert.match(text, /^ {2}GradientLoop$/m);
-  assert.match(text, /webcam-16x9: box 640×360, file 736×456; câmera padrão/);
+  assert.match(text, /webcam-16x9: box 640×360, file 736×456; standard camera/);
 });

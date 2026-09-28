@@ -117,9 +117,9 @@ export const refineStroke = (
   props: StrokeStyle & {outputFormat: OutputFormat}, track: RoundRect, context: z.RefinementCtx, options: StrokeOptions = {},
 ) => {
   const fixes: Partial<Record<StrokeMotionName, [string, string]>> = {
-    formigas: ['o tracejado', 'aumente dashLength ou gapLength'],
-    cometas: ['os cometas', 'aumente cometSpacing'],
-    gradiente: ['o gradiente do contorno', 'aumente gradientLength'],
+    formigas: ['the dashes', 'increase dashLength or gapLength'],
+    cometas: ['the comets', 'increase cometSpacing'],
+    gradiente: ['the stroke gradient', 'increase gradientLength'],
   };
   const fix = fixes[props.strokeMotion];
   if (!fix) return;

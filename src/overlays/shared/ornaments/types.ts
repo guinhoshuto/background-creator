@@ -154,6 +154,6 @@ export interface OrnamentSet<E extends OrnamentElement = OrnamentElement> {
   /** The elements of one frame (any real frame, fractional too), periodic in the cycle. */
   build(frame: OrnamentFrame, placements: readonly OrnamentPlacement[], style: OrnamentStyle, frameIndex: number, durationInFrames: number): E[];
   render(element: E, key: number, context: OrnamentRenderContext): ReactNode;
-  /** Extra refusals of the set (pt-BR, naming the way out). */
+  /** Extra refusals of the set (naming the way out). */
   refine?(frame: OrnamentFrame, placements: readonly OrnamentPlacement[], style: OrnamentStyle, context: z.RefinementCtx): void;
 }

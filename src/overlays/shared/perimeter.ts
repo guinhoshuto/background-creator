@@ -84,7 +84,7 @@ export const tangentAt = (track: RoundRect, s: number) => {
  * has no seam where it starts.
  */
 export const fitPeriod = (perimeter: number, wanted: number) => {
-  if (!(perimeter > 0) || !(wanted > 0)) throw new Error('O contorno e o período precisam ser positivos.');
+  if (!(perimeter > 0) || !(wanted > 0)) throw new Error('The outline and the period must be positive.');
   const n = Math.max(1, Math.round(perimeter / wanted));
   return {n, period: perimeter / n};
 };

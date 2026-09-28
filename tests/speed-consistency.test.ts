@@ -49,14 +49,14 @@ test('Velocidade: os casos que andavam várias vezes mais rápido nos tamanhos g
   // The neon comets asked 160 px/s and ran ~735 on tela-cheia, ~362 on chat-coluna; the chat's
   // gradient asked 16 and ran ~414. Their periods are fixed px now (or a sway, for the gradient).
   for (const [preset, size, layer] of [
-    ['borda-neon', 'tela-cheia', 'contorno'], ['borda-neon', 'webcam-16x9', 'contorno'], ['chat-neon', 'chat-coluna', 'contorno'],
-    ['chat-neon', 'chat-coluna', 'preenchimento'], ['bloco-vidro', 'faixa', 'contorno'], ['borda-halloween', 'tela-vertical', 'preenchimento'],
+    ['borda-neon', 'tela-cheia', 'stroke'], ['borda-neon', 'webcam-16x9', 'stroke'], ['chat-neon', 'chat-coluna', 'stroke'],
+    ['chat-neon', 'chat-coluna', 'fill'], ['bloco-vidro', 'faixa', 'stroke'], ['borda-halloween', 'tela-vertical', 'fill'],
   ] as const) {
     const row = at(preset, size, layer);
     assert.ok(Math.abs(speedError(row)) <= SPEED_TOLERANCE, `${rowId(row)}: ${reportSpeed(row.effective)} px/s`);
   }
   // The gradient's sway and the embers are exact; the glass sheens too unless they would merge.
-  assert.equal(at('chat-neon', 'chat-coluna', 'preenchimento').effective, 16);
-  assert.equal(at('borda-halloween', 'tela-vertical', 'preenchimento').effective, 40);
-  assert.equal(at('chat-vidro', 'chat-vertical', 'preenchimento').effective, 60);
+  assert.equal(at('chat-neon', 'chat-coluna', 'fill').effective, 16);
+  assert.equal(at('borda-halloween', 'tela-vertical', 'fill').effective, 40);
+  assert.equal(at('chat-vidro', 'chat-vertical', 'fill').effective, 60);
 });

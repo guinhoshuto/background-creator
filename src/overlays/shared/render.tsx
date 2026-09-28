@@ -123,7 +123,7 @@ const coreOf = (context: ElementContext, width: number, color: string) => {
 
 const trackOf = (context: ElementContext, index: number) => {
   const track = context.tracks[index];
-  if (!track) throw new Error(`Elemento pede o trilho ${index}, mas só há ${context.tracks.length}.`);
+  if (!track) throw new Error(`An element asks for track ${index}, but there are only ${context.tracks.length}.`);
   return track;
 };
 

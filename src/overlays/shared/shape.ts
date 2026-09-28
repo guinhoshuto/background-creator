@@ -19,7 +19,7 @@ export const shapeRadius = ({shape, radius, width, height}: ShapeProps) =>
 
 /**
  * A circle needs a square box: a 400×300 "circle" would be a pill, a different product. Refused
- * with the way out, naming the kind's round sizes (`sizes`, pt-BR, e.g. "circulo-p, circulo ou
+ * with the way out, naming the kind's round sizes (`sizes`, e.g. "circulo-p, circulo or
  * circulo-g"). Returns whether the shape is valid, so the kind can stop before laying it out.
  */
 export const refineShape = (props: ShapeProps, sizes: string, context: z.RefinementCtx) => {
@@ -27,7 +27,7 @@ export const refineShape = (props: ShapeProps, sizes: string, context: z.Refinem
   context.addIssue({
     code: 'custom',
     path: ['shape'],
-    message: `O círculo precisa de largura igual à altura (a caixa tem ${props.width}×${props.height}): use --size ${sizes}, iguale width e height ou use shape retangulo.`,
+    message: `A circle needs equal width and height (the box is ${props.width}×${props.height}): use --size ${sizes}, make width and height equal or use shape retangulo.`,
   });
   return false;
 };

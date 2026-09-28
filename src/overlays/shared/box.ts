@@ -51,7 +51,7 @@ export const refineCanvas = (props: BoxProps, context: z.RefinementCtx) => {
     context.addIssue({
       code: 'custom',
       path: ['width'],
-      message: `O arquivo final teria ${canvas.width}×${canvas.height} px (caixa + 2·bleed), acima do limite de ${MAX_CANVAS.width}×${MAX_CANVAS.height}: diminua width, height ou bleed.`,
+      message: `The final file would be ${canvas.width}×${canvas.height} px (box + 2·bleed), above the ${MAX_CANVAS.width}×${MAX_CANVAS.height} limit: reduce width, height or bleed.`,
     });
   }
 };

@@ -174,29 +174,29 @@ test('Legibilidade: o brilho do contorno e da linha fica fraco sobre as mensagen
   // What the review found accepted, now refused with the way out: glow over the messages from the
   // edge, and over the title from the line 4 px below it.
   for (const [input, where] of [
-    [{padding: 4, strokeWidth: 8, glow: 48, bleed: 48}, 'das mensagens'],
-    [{padding: 6, strokeWidth: 6, glow: 30, bleed: 32}, 'das mensagens'],
-    [{headerHeight: 16, headerLineWidth: 4}, 'do título'],
+    [{padding: 4, strokeWidth: 8, glow: 48, bleed: 48}, 'messages'],
+    [{padding: 6, strokeWidth: 6, glow: 30, bleed: 32}, 'messages'],
+    [{headerHeight: 16, headerLineWidth: 4}, 'title'],
   ] as const) {
     const props = chatLoopSchema.parse({...input, glow: 0});
     const layout = getChatLayout(props);
-    const area = where === 'do título' ? layout.header! : layout.content;
+    const area = where === 'title' ? layout.header! : layout.content;
     // The brute-force measure agrees that these really are too bright.
     assert.ok(bruteOver({...props, glow: input.glow ?? parse({}).glow}, area) > MAX_CONTENT_OPACITY, JSON.stringify(input));
     const messages = issuesOf(input).map((issue) => issue.message);
-    assert.ok(messages.some((message) => message.includes(`sobre a área ${where} (o limite é 20%)`)), `${JSON.stringify(input)}: ${messages}`);
+    assert.ok(messages.some((message) => message.includes(`over the ${where} area (the limit is 20%)`)), `${JSON.stringify(input)}: ${messages}`);
     assert.ok(issuesOf(input).every((issue) => issue.path[0] === 'glow'));
   }
   assert.match(issuesOf({padding: 4, strokeWidth: 8, glow: 48, bleed: 48})[0]!.message,
-    /^O brilho chegaria a \d+% de opacidade sobre a área das mensagens \(o limite é 20%\): aumente padding, ou diminua glow ou headerLineWidth\.$/);
+    /^The glow would reach \d+% opacity over the messages area \(the limit is 20%\): increase padding, or reduce glow or headerLineWidth\.$/);
   // Following the message works.
   // More padding clears the messages; a glow that wide then reaches the title from the line, and a
   // taller header (so more room between the title and the line) clears that too. At the plain
   // strength: the neon's triple gain needs more room still, which the same messages ask for.
   const wide = {padding: 40, strokeWidth: 8, glow: 48, bleed: 48, glowStrength: 1};
-  assert.match(issuesOf(wide)[0]!.message, /sobre a área do título/);
+  assert.match(issuesOf(wide)[0]!.message, /over the title area/);
   assert.equal(chatLoopSchema.safeParse({...wide, headerHeight: 64}).success, true);
-  assert.match(issuesOf({...wide, headerHeight: 64, glowStrength: 3})[0]!.message, /sobre a área do título/);
+  assert.match(issuesOf({...wide, headerHeight: 64, glowStrength: 3})[0]!.message, /over the title area/);
   assert.equal(chatLoopSchema.safeParse({headerHeight: 48, headerLineWidth: 4}).success, true);
   assert.equal(chatLoopSchema.safeParse({headerHeight: 16, headerLineWidth: 4, glow: 4}).success, true);
 
@@ -234,9 +234,9 @@ test('Legibilidade: numa pílula, mensagens e título guardam o padding da curva
 // ── Refusals ────────────────────────────────────────────────────────────────────────────────
 
 test('Recusas: tamanho ímpar, arquivo acima de 4K e tamanho livre par aceito', () => {
-  assert.match(issuesOf({width: 401})[0]!.message, /width precisa ser par/);
-  assert.match(issuesOf({bleed: 33})[0]!.message, /bleed precisa ser par/);
-  assert.match(issuesOf({width: 3840, height: 2160, bleed: 32})[0]!.message, /acima do limite de 3840×2160/);
+  assert.match(issuesOf({width: 401})[0]!.message, /width must be even/);
+  assert.match(issuesOf({bleed: 33})[0]!.message, /bleed must be even/);
+  assert.match(issuesOf({width: 3840, height: 2160, bleed: 32})[0]!.message, /above the 3840×2160 limit/);
   assert.equal(chatLoopSchema.safeParse({width: 520, height: 900, bleed: 40}).success, true);
 });
 
@@ -248,7 +248,7 @@ test('Recusas: brilho ou halo além do bleed pedem o bleed par que cabe, que é 
     assert.equal(issues.length, 1, JSON.stringify(input));
     assert.deepEqual(issues[0]!.path, ['bleed']);
     const outset = Math.max(parse({...input, bleed: 256}).glow, parse({...input, bleed: 256}).halo);
-    assert.equal(issues[0]!.message, `O brilho passa da margem: use bleed ≥ ${minBleedFor(outset)} ou diminua o brilho.`);
+    assert.equal(issues[0]!.message, `The glow goes past the margin: use bleed ≥ ${minBleedFor(outset)} or reduce the glow.`);
     assert.equal(chatLoopSchema.safeParse({...input, bleed: minBleedFor(outset)}).success, true);
   }
   // With no bleed, a chat panel without glow or halo is fine (a Twitch-style flat export).
@@ -259,16 +259,16 @@ test('Recusas: cabeçalho alto demais para as mensagens, ou baixo demais para o 
   const tall = issuesOf({height: 200, headerHeight: 170});
   assert.equal(tall.length, 1);
   assert.deepEqual(tall[0]!.path, ['headerHeight']);
-  assert.match(tall[0]!.message, /não deixa espaço para as mensagens: diminua headerHeight/);
+  assert.match(tall[0]!.message, /leaves no room for the messages: reduce headerHeight/);
   const short = issuesOf({headerHeight: 2});
   assert.equal(short.length, 1);
-  assert.match(short[0]!.message, /cabeçalho de 2 px não deixa espaço para o título: aumente headerHeight/);
+  assert.match(short[0]!.message, /header of 2 px leaves no room for the title: increase headerHeight/);
   // An 8 px band leaves a 4 px title 2 px from the line: without a glow that is fine, with the
   // default glow the line's light would cover it (see the legibility test).
   assert.equal(chatLoopSchema.safeParse({headerHeight: 8, glow: 0}).success, true);
-  assert.match(issuesOf({headerHeight: 8}).map((issue) => issue.message).join(), /sobre a área do título/);
+  assert.match(issuesOf({headerHeight: 8}).map((issue) => issue.message).join(), /over the title area/);
   // Without a header the engine's own refusal speaks.
-  assert.match(issuesOf({headerHeight: 0, width: 64, height: 32, padding: 40})[0]!.message, /O padding não deixa espaço/);
+  assert.match(issuesOf({headerHeight: 0, width: 64, height: 32, padding: 40})[0]!.message, /The padding leaves no room/);
 });
 
 test('Aliasing: contorno rápido demais é recusado com a velocidade máxima, que é aceita', () => {
@@ -277,7 +277,7 @@ test('Aliasing: contorno rápido demais é recusado com a velocidade máxima, qu
     const issues = issuesOf({...input, strokeSpeed: 4000});
     assert.equal(issues.length, 1);
     assert.deepEqual(issues[0]!.path, ['strokeSpeed']);
-    const max = Number(/até ([\d.]+) px\/s/.exec(issues[0]!.message)![1]);
+    const max = Number(/up to ([\d.]+) px\/s/.exec(issues[0]!.message)![1]);
     assert.ok(max > 0);
     assert.equal(chatLoopSchema.safeParse({...input, strokeSpeed: max}).success, true, `${outputFormat}: ${max} px/s`);
     assert.equal(chatLoopSchema.safeParse({...input, strokeSpeed: max + 1}).success, false);
@@ -293,7 +293,7 @@ test('Aliasing: pontos rápidos demais no fundo são recusados com a saída', ()
   const issues = issuesOf({fill: 'pontos', fillScale: 8, fillSpeed: 480, fillAngle: 0, outputFormat: 'gif'});
   assert.equal(issues.length, 1);
   assert.deepEqual(issues[0]!.path, ['fillSpeed']);
-  assert.match(issues[0]!.message, /Velocidade alta demais para os pontos: .* Use fillSpeed até \d+ px\/s ou aumente fillScale\./);
+  assert.match(issues[0]!.message, /Speed too high for the dots: .* Use fillSpeed up to \d+ px\/s or increase fillScale\./);
 });
 
 // ── Scene details ───────────────────────────────────────────────────────────────────────────

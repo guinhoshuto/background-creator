@@ -202,16 +202,16 @@ test('Pontos: velocidade alta demais para o espaçamento é recusada, nunca exib
               refused++;
               const issue = result.error.issues[0]!;
               assert.deepEqual(issue.path, ['speed'], name);
-              assert.match(issue.message, /pareceria ir para trás ou piscar/, name);
+              assert.match(issue.message, /seem to go backwards or flicker/, name);
               // The way out the message offers really is accepted, and just past it is not.
-              const limit = /menor que (\d+) px\/s/.exec(issue.message);
+              const limit = /below (\d+) px\/s/.exec(issue.message);
               if (limit) {
                 const below = Number(limit[1]) - 0.5;
                 if (below > 0) assert.equal(dotGridLoopSchema.safeParse({...input, speed: below}).success, true, `${name}: ${below}`);
                 const above = Number(limit[1]) + 1;
                 if (above <= 480) assert.equal(dotGridLoopSchema.safeParse({...input, speed: above}).success, false, `${name}: ${above}`);
               } else {
-                assert.match(issue.message, /Aumente durationSeconds/, name);
+                assert.match(issue.message, /Increase durationSeconds/, name);
               }
             }
           }

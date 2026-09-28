@@ -6,7 +6,7 @@ import {overlayBoxFields, type BoxDefaults} from './box';
 /**
  * Zod field groups shared by the overlay kinds. Each group is a factory of plain shape objects,
  * so a kind spreads the ones it needs into its own `z.object({...})` and overrides the defaults
- * that suit it (a border wants a thicker stroke than a label). User-facing text is pt-BR.
+ * that suit it (a border wants a thicker stroke than a label). User-facing text is English.
  */
 
 export const FILL_STYLES = ['solido', 'gradiente', 'pontos', 'listras', 'brilhos', 'vidro', 'nevoa', 'damasco'] as const;

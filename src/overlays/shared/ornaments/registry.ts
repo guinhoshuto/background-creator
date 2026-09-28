@@ -110,14 +110,14 @@ export const ornamentWayOut = (frame: Pick<OrnamentFrame, 'kind' | 'fit' | 'circ
   const {outline} = frame;
   const rounder = !frame.circle
     && clampRadius(outline.radius, outline.width, outline.height) < Math.min(outline.width, outline.height) / 2 - 1e-9;
-  if (frame.kind === 'chat') return rounder ? 'aumente bleed, padding ou radius ou use ornaments nenhum.' : 'aumente bleed ou padding ou use ornaments nenhum.';
+  if (frame.kind === 'chat') return rounder ? 'increase bleed, padding or radius or use ornaments nenhum.' : 'increase bleed or padding or use ornaments nenhum.';
   if (frame.kind === 'bloco') {
     return rounder
-      ? 'aumente bleed, paddingX, paddingY ou radius ou use ornaments nenhum.'
-      : 'aumente bleed, paddingX ou paddingY ou use ornaments nenhum.';
+      ? 'increase bleed, paddingX, paddingY or radius or use ornaments nenhum.'
+      : 'increase bleed, paddingX or paddingY or use ornaments nenhum.';
   }
-  if (frame.fit === 'tela') return rounder ? 'aumente thickness, glow ou radius ou use ornaments nenhum.' : 'aumente thickness ou glow ou use ornaments nenhum.';
-  return rounder ? 'aumente bleed ou radius ou use ornaments nenhum.' : 'aumente bleed ou use ornaments nenhum.';
+  if (frame.fit === 'tela') return rounder ? 'increase thickness, glow or radius or use ornaments nenhum.' : 'increase thickness or glow or use ornaments nenhum.';
+  return rounder ? 'increase bleed or radius or use ornaments nenhum.' : 'increase bleed or use ornaments nenhum.';
 };
 
 /**
@@ -131,7 +131,7 @@ export const refineOrnaments = (layout: OrnamentLayout, style: OrnamentStyle, co
     context.addIssue({
       code: 'custom',
       path: ['ornaments'],
-      message: `Os enfeites "${set.name}" não cabem neste tamanho: ${ornamentWayOut(layout.frame)}`,
+      message: `The "${set.name}" ornaments do not fit this size: ${ornamentWayOut(layout.frame)}`,
     });
     return;
   }
@@ -145,10 +145,10 @@ export const refineOrnaments = (layout: OrnamentLayout, style: OrnamentStyle, co
  */
 export const refineLightning = (style: Pick<OrnamentStyle, 'lightning' | 'seed' | 'durationSeconds'>, context: z.RefinementCtx) => {
   if (!(style.lightning > 0) || getLightningStrikes(style).length > 0) return;
-  const least = String(LIGHTNING.oneFrom).replace('.', ',');
+  const least = String(LIGHTNING.oneFrom);
   context.addIssue({
     code: 'custom',
     path: ['lightning'],
-    message: `Com durationSeconds abaixo de ${least} s não há relâmpagos: use durationSeconds ≥ ${least} ou lightning 0.`,
+    message: `With durationSeconds below ${least} s there is no lightning: use durationSeconds ≥ ${least} or lightning 0.`,
   });
 };

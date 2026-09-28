@@ -328,21 +328,21 @@ test('Xadrez: velocidade alta demais para o tamanho da casa é recusada, nunca e
             refused++;
             const issue = result.error.issues[0]!;
             assert.deepEqual(issue.path, ['speed'], name);
-            assert.match(issue.message, /pareceria ir para trás ou piscar/, name);
+            assert.match(issue.message, /seem to go backwards or flicker/, name);
             // The share quoted is the one refused, and never reads as the limit that is accepted.
-            const quoted = /andar(?:ia)? (mais de 40|\d+)% do caminho/.exec(issue.message)![1]!;
-            const quotedShare = /Aumente durationSeconds/.test(issue.message) ? 1 / durationInFrames : getFrameShare(props, durationInFrames);
-            if (quoted === 'mais de 40') assert.ok(Math.round(quotedShare * 100) <= 40, name);
+            const quoted = /move (more than 40|\d+)% of the way/.exec(issue.message)![1]!;
+            const quotedShare = /Increase durationSeconds/.test(issue.message) ? 1 / durationInFrames : getFrameShare(props, durationInFrames);
+            if (quoted === 'more than 40') assert.ok(Math.round(quotedShare * 100) <= 40, name);
             else assert.ok(Number(quoted) === Math.round(quotedShare * 100) && Number(quoted) > 40, `${name}: ${quoted}%`);
             // The way out the message offers really is accepted, and just past it is not.
-            const limit = /menor que (\d+) px\/s/.exec(issue.message);
+            const limit = /below (\d+) px\/s/.exec(issue.message);
             if (limit) {
               const below = Number(limit[1]) - 0.5;
               if (below > 0) assert.equal(checkerboardLoopSchema.safeParse({...input, speed: below}).success, true, `${name}: ${below}`);
               const above = Number(limit[1]) + 1;
               if (above <= 960) assert.equal(checkerboardLoopSchema.safeParse({...input, speed: above}).success, false, `${name}: ${above}`);
             } else {
-              assert.match(issue.message, /Aumente durationSeconds/, name);
+              assert.match(issue.message, /Increase durationSeconds/, name);
             }
           }
         }
@@ -353,7 +353,7 @@ test('Xadrez: velocidade alta demais para o tamanho da casa é recusada, nunca e
   // The limits the README quotes for 16 px squares: rows and columns, then diagonals.
   const limitFor = (direction: string, outputFormat: string) => {
     const issue = checkerboardLoopSchema.safeParse({direction, outputFormat, squareSize: 16, speed: 960}).error!.issues[0]!;
-    return Number(/menor que (\d+) px\/s/.exec(issue.message)![1]);
+    return Number(/below (\d+) px\/s/.exec(issue.message)![1]);
   };
   assert.equal(limitFor('right', 'webm'), 770);
   assert.equal(limitFor('up', 'gif'), 642);
@@ -361,15 +361,15 @@ test('Xadrez: velocidade alta demais para o tamanho da casa é recusada, nunca e
   assert.equal(limitFor('up-left', 'gif'), 453);
   // The messages as a user reads them: the share per frame, or one step's share in a two-frame cycle.
   const messageFor = (input: object) => checkerboardLoopSchema.safeParse(input).error!.issues[0]!.message;
-  assert.match(messageFor({squareSize: 16, speed: 960, direction: 'right'}), /andaria 50% do caminho/);
-  assert.match(messageFor({squareSize: 16, speed: 960, direction: 'down-right', outputFormat: 'gif'}), /andaria 85% do caminho/);
-  assert.match(messageFor({squareSize: 16, speed: 770, direction: 'right'}), /andaria mais de 40% do caminho/);
-  assert.match(messageFor({durationSeconds: 0.03, direction: 'left'}), /mesmo um passo por ciclo faria o tabuleiro andar 50% do caminho/);
+  assert.match(messageFor({squareSize: 16, speed: 960, direction: 'right'}), /would move 50% of the way/);
+  assert.match(messageFor({squareSize: 16, speed: 960, direction: 'down-right', outputFormat: 'gif'}), /would move 85% of the way/);
+  assert.match(messageFor({squareSize: 16, speed: 770, direction: 'right'}), /would move more than 40% of the way/);
+  assert.match(messageFor({durationSeconds: 0.03, direction: 'left'}), /even one step per cycle would make the board move 50% of the way/);
   // Two frames, two steps asked: the message still quotes what one step would do.
   const twoFrames = {durationSeconds: 0.04, squareSize: 16, speed: 960, direction: 'down-right'} as const;
   assert.equal(getCompositionMetadata({...twoFrames, outputFormat: 'webm'}).durationInFrames, 2);
   assert.equal(getCheckerTravel(twoFrames).steps, 2);
-  assert.match(messageFor({durationSeconds: 0.04, squareSize: 16, speed: 960, direction: 'down-right'}), /andar 50% do caminho/);
+  assert.match(messageFor({durationSeconds: 0.04, squareSize: 16, speed: 960, direction: 'down-right'}), /move 50% of the way/);
   // The fastest accepted setting on the smallest squares is still read in its own direction.
   for (const direction of CHECKER_DIRECTIONS) {
     for (const outputFormat of ['webm', 'gif'] as const) {

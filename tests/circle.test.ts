@@ -67,10 +67,10 @@ test('Forma: bloco e borda começam retangulares; circulo é uma opção do sche
 
 test('Forma: o círculo pede largura igual à altura, com a saída na mensagem', () => {
   assert.deepEqual(messagesOf(blocoLoopSchema, {shape: 'circulo'}), [[
-    'shape', 'O círculo precisa de largura igual à altura (a caixa tem 640×360): use --size circulo-p, circulo ou circulo-g, iguale width e height ou use shape retangulo.',
+    'shape', 'A circle needs equal width and height (the box is 640×360): use --size circulo-p, circulo or circulo-g, make width and height equal or use shape retangulo.',
   ]]);
   assert.deepEqual(messagesOf(bordaLoopSchema, {shape: 'circulo'}), [[
-    'shape', 'O círculo precisa de largura igual à altura (a caixa tem 640×360): use --size webcam-redonda-p, webcam-redonda ou webcam-redonda-g, iguale width e height ou use shape retangulo.',
+    'shape', 'A circle needs equal width and height (the box is 640×360): use --size webcam-redonda-p, webcam-redonda or webcam-redonda-g, make width and height equal or use shape retangulo.',
   ]]);
   // Each way out is accepted.
   assert.equal(blocoLoopSchema.safeParse({shape: 'circulo', width: 360}).success, true);
@@ -84,7 +84,7 @@ test('Forma: o círculo pede largura igual à altura, com a saída na mensagem',
 test('Forma: moldura de tela não pode ser círculo; a mensagem aponta a câmera redonda', () => {
   const screen = {...sized('tela-cheia'), width: 1080, height: 1080, shape: 'circulo'};
   assert.deepEqual(messagesOf(bordaLoopSchema, screen), [[
-    'shape', 'A moldura de tela acompanha a tela, que é retangular: use shape retangulo com fit tela, ou fit janela para uma câmera redonda (--size webcam-redonda).',
+    'shape', 'A screen frame follows the screen, which is rectangular: use shape retangulo with fit tela, or fit janela for a round camera (--size webcam-redonda).',
   ]]);
   assert.equal(bordaLoopSchema.safeParse({...screen, shape: 'retangulo'}).success, true);
   assert.equal(bordaLoopSchema.safeParse({...sized('webcam-redonda')}).success, true);
@@ -138,7 +138,7 @@ test('Tamanhos redondos: caixa quadrada, bleed, arquivo = caixa + 2·bleed e for
     if (size.props.shape === 'circulo') assert.equal(size.width, size.height, size.id);
   }
   assert.match(getSize('webcam-quadrada').use, /webcam-redonda/);
-  assert.doesNotMatch(getSize('webcam-quadrada').use, /raio 200/);
+  assert.doesNotMatch(getSize('webcam-quadrada').use, /radius 200/);
 });
 
 test('Tamanhos redondos: um tamanho retangular desenha retângulo mesmo sobre um preset redondo, e vice-versa', () => {
@@ -207,13 +207,13 @@ test('Bloco redondo: o texto vai no quadrado centralizado, em px inteiros, com o
 test('Bloco redondo: padding ou barra que não deixam espaço são recusados com a saída', () => {
   const small = sized('circulo-p');
   assert.deepEqual(messagesOf(blocoLoopSchema, {...small, paddingX: 80}), [
-    ['padding', 'O padding não deixa espaço para o conteúdo: diminua padding ou strokeWidth, ou aumente a caixa.'],
+    ['padding', 'The padding leaves no room for the content: reduce padding or strokeWidth, or enlarge the box.'],
   ]);
   assert.equal(blocoLoopSchema.safeParse({...small, paddingX: 60}).success, true);
   // A bright rim light needs a pixel between the text and the line, as on a rectangle. With a 3 px
   // stroke and no padding the whole-pixel square comes within 0.64 px of it.
   const rim = {...small, paddingX: 0, paddingY: 0, strokeWidth: 3, glow: 0, halo: 0, rimLight: 1};
-  assert.match(messagesOf(blocoLoopSchema, rim).map(([, message]) => message).join(), /O reflexo de cima encostaria na área do texto/);
+  assert.match(messagesOf(blocoLoopSchema, rim).map(([, message]) => message).join(), /The top rim light would touch the text area/);
   assert.equal(blocoLoopSchema.safeParse({...rim, paddingX: 1}).success, true);
 });
 
@@ -427,8 +427,8 @@ test('Borda redonda: formigas, cometas e gradiente em P = 2πr, voltas inteiras,
     // Aliasing: the limit the message names is accepted, one px/s more is refused.
     const ants = {...sized(id), strokeMotion: 'formigas', dashLength: 4, gapLength: 4, strokeColors: ['#FFFFFF']};
     const [, message] = messagesOf(bordaLoopSchema, {...ants, strokeSpeed: 4000})[0]!;
-    assert.match(message!, /Velocidade alta demais para o tracejado/);
-    const limit = Number(/strokeSpeed até ([\d.]+) px\/s/.exec(message!)![1]);
+    assert.match(message!, /Speed too high for the dashes/);
+    const limit = Number(/strokeSpeed up to ([\d.]+) px\/s/.exec(message!)![1]);
     assert.equal(bordaLoopSchema.safeParse({...ants, strokeSpeed: limit}).success, true, id);
     assert.equal(bordaLoopSchema.safeParse({...ants, strokeSpeed: limit + 1}).success, false, id);
   }
@@ -515,7 +515,7 @@ test('CLI: --size webcam-redonda e circulo nomeiam o arquivo, e a máscara sai c
   assert.equal((mask.props as {radius: number}).radius, 16, 'o radius pedido fica nas props…');
   assert.equal(getBordaMaskElement(mask.props as BordaLoopProps).corner, 200, '…mas a máscara é o disco');
   assert.throws(() => resolveExport(buildExportOptions(cli('BordaLoop', '--size', 'webcam-redonda', '--format', 'png'), {mascara: true})),
-    /use bleed 0 \(com --size, junte --bleed 0\)/);
+    /use bleed 0 \(with --size, add --bleed 0\)/);
 });
 
 // ── Packs ───────────────────────────────────────────────────────────────────────────────────

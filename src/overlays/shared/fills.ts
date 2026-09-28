@@ -238,9 +238,9 @@ export const getFillMotion = (style: FillStyle, area: Rect, options: FillOptions
 
 export type FillMotion = ReturnType<typeof getFillMotion>;
 
-/** pt-BR: what the aliasing refusal calls each travelling fill. */
+/** What the aliasing refusal calls each travelling fill. */
 const FILL_SUBJECTS: Partial<Record<FillStyleName, string>> = {
-  pontos: 'os pontos', listras: 'as listras', brilhos: 'os brilhos', nevoa: 'a névoa', damasco: 'o damasco',
+  pontos: 'the dots', listras: 'the stripes', brilhos: 'the sparkles', nevoa: 'the fog', damasco: 'the damask',
 };
 
 /**
@@ -280,7 +280,7 @@ export const refineFill = (
     context.addIssue({
       code: 'custom',
       path: ['fillSpeed'],
-      message: `Velocidade alta demais para o gradiente: a cada frame ele andaria ${Math.round(share * 100)}% do caminho até a repetição seguinte e pareceria ir para trás ou piscar. Use fillSpeed até ${maxSwaySpeed(motion.period, props.durationSeconds, durationInFrames)} px/s ou aumente a caixa.`,
+      message: `Speed too high for the gradient: each frame it would move ${Math.round(share * 100)}% of the way to the next repeat and would seem to go backwards or flicker. Use fillSpeed up to ${maxSwaySpeed(motion.period, props.durationSeconds, durationInFrames)} px/s or enlarge the box.`,
     });
     return;
   }
@@ -291,8 +291,8 @@ export const refineFill = (
     durationSeconds: props.durationSeconds,
     durationInFrames,
     field: 'fillSpeed',
-    subject: FILL_SUBJECTS[props.fill] ?? 'o padrão',
-    otherFix: 'aumente fillScale',
+    subject: FILL_SUBJECTS[props.fill] ?? 'the pattern',
+    otherFix: 'increase fillScale',
   }, context);
 };
 
