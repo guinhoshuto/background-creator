@@ -10,7 +10,7 @@ import type {FlashElement, OrnamentElement, OrnamentLayerName, OrnamentLayout, O
  * sibling before the band's fill, never inside its clip), clipped to the paint limit minus the
  * frame's cover, so no fill or band opacity ever lets it show through. `front` goes after the
  * stroke, unclipped (placement already keeps it off the text and the window). Both render null
- * when empty: with ornaments 'nenhum' the markup is exactly what it was. No filters, no blend
+ * when empty: with ornaments 'none' the markup is exactly what it was. No filters, no blend
  * modes; every def lives inside the layer's group. A scaled layout (ornamentScale) draws the whole
  * layer, clip included, in its own space inside one scale transform.
  */
@@ -18,7 +18,7 @@ export const OrnamentLayer = ({elements, layout, style, layer}: {
   elements: readonly OrnamentElement[]; layout: OrnamentLayout; style: OrnamentStyle; layer: OrnamentLayerName;
 }) => {
   const {idPrefix} = useStage();
-  if (elements.length === 0 || style.ornaments === 'nenhum') return null;
+  if (elements.length === 0 || style.ornaments === 'none') return null;
   const set = ORNAMENT_REGISTRY[style.ornaments];
   const idBase = `${idPrefix}-ornament-${layer}`;
   const context = {idBase, frame: layout.frame, style};

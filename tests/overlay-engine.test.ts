@@ -276,41 +276,41 @@ const strokeCase = (id: string, input: object, track: RoundRect, flags: Partial<
 });
 
 const CASES: Case[] = [
-  fillCase('sólido', {fill: 'solido'}, {moving: false, seeded: false}),
-  fillCase('gradiente de 2 cores', {fill: 'gradiente', fillColors: ['#101020', '#F472B6']}),
-  fillCase('gradiente de 3 cores, inclinado', {fill: 'gradiente', fillAngle: -30, fillSpeed: 90}),
-  fillCase('gradiente de uma cor', {fill: 'gradiente', fillColors: ['#101020']}, {moving: false, seeded: false}),
-  fillCase('pontos de uma cor', {fill: 'pontos', fillColors: ['#FFFFFF'], fillAngle: 0}),
-  fillCase('pontos na diagonal', {fill: 'pontos', fillAngle: -135, fillSpeed: 40, fillScale: 20}),
-  fillCase('listras de 2 cores', {fill: 'listras', fillColors: ['#101020', '#F472B6']}),
-  fillCase('listras de 3 cores', {fill: 'listras', fillAngle: 100, fillSpeed: 70}),
-  fillCase('brilhos', {fill: 'brilhos'}),
-  fillCase('brilhos parados no lugar', {fill: 'brilhos', fillSpeed: 0}),
-  fillCase('brasas subindo', {fill: 'brilhos', fillRise: true, fillSpeed: 60, fillColors: ['#1A0B2E', '#FB923C', '#FDE68A']}),
-  fillCase('vidro', {fill: 'vidro', fillColors: ['#FFFFFF'], fillOpacity: 0.16, fillSpeed: 120}),
-  fillCase('vidro parado', {fill: 'vidro', fillSpeed: 0}, {moving: false, seeded: false}),
-  fillCase('nevoa', {fill: 'nevoa', fillColors: ['#0E1520', '#688789', '#D6DDC7'], fillScale: 48, fillSpeed: 27}),
-  fillCase('nevoa para a esquerda, 2 cores', {fill: 'nevoa', fillColors: ['#0E1520', '#688789'], fillAngle: 135, fillScale: 24, fillSpeed: 40}),
-  fillCase('nevoa de uma cor', {fill: 'nevoa', fillColors: ['#FFFFFF']}),
-  fillCase('nevoa parada', {fill: 'nevoa', fillSpeed: 0, fillScale: 64}, {moving: false}),
-  fillCase('damasco', {fill: 'damasco', fillColors: ['#0C1412', '#1F2B25'], fillAngle: 0, fillSpeed: 20}),
-  fillCase('damasco na diagonal, 3 cores', {fill: 'damasco', fillAngle: 135, fillScale: 24, fillSpeed: 40}),
-  fillCase('damasco de uma cor', {fill: 'damasco', fillColors: ['#9FB095'], fillAngle: 90}),
-  fillCase('damasco parado', {fill: 'damasco', fillColors: ['#0C1412', '#1F2B25'], fillScale: 56, fillSpeed: 0}, {moving: false}),
-  strokeCase('parado', {strokeMotion: 'parado', strokeColors: ['#67E8F9'], glow: 0}, PANEL_TRACK, {moving: false, seeded: false}),
-  strokeCase('parado com cores', {strokeMotion: 'parado', glow: 0}, PANEL_TRACK, {moving: false}),
-  strokeCase('pulso', {strokeMotion: 'pulso', strokeColors: ['#67E8F9'], strokePulses: 2}, PANEL_TRACK, {}, {pulseWidth: 0.3}),
-  strokeCase('pulso com cores e halo', {strokeMotion: 'pulso', strokeColors: ['#67E8F9', '#F472B6', '#FDE68A'], halo: 20, glowPulses: 2}, PILL_TRACK),
-  strokeCase('formigas', {strokeMotion: 'formigas', strokeColors: ['#FFFFFF']}, PANEL_TRACK, {}, {trackOpacity: 0.25}),
-  strokeCase('formigas de 3 cores na moldura', {strokeMotion: 'formigas', strokeColors: ['#F00', '#0F0', '#00F'], strokeSpeed: 200, strokeWidth: 8}, FRAME.track),
-  strokeCase('cometas a cada 600 px, 2 cores', {strokeMotion: 'cometas', cometSpacing: 600, cometTail: 900}, PANEL_TRACK),
-  strokeCase('cometas a cada 180 px na pílula, 3 cores', {strokeMotion: 'cometas', cometSpacing: 180, strokeSpeed: 300, strokeColors: ['#67E8F9', '#F472B6', '#FDE68A']}, PILL_TRACK),
-  strokeCase('gradiente', {strokeMotion: 'gradiente', strokeColors: ['#67E8F9', '#818CF8', '#F472B6'], glowPulses: 3}, FRAME.track, {}, {colorRepeats: 2}),
-  strokeCase('gradiente parado no lugar', {strokeMotion: 'gradiente', strokeSpeed: 0, glow: 0}, PANEL_TRACK, {moving: false}),
+  fillCase('solid', {fill: 'solid'}, {moving: false, seeded: false}),
+  fillCase('gradient de 2 cores', {fill: 'gradient', fillColors: ['#101020', '#F472B6']}),
+  fillCase('gradient de 3 cores, inclinado', {fill: 'gradient', fillAngle: -30, fillSpeed: 90}),
+  fillCase('gradient de uma cor', {fill: 'gradient', fillColors: ['#101020']}, {moving: false, seeded: false}),
+  fillCase('dots de uma cor', {fill: 'dots', fillColors: ['#FFFFFF'], fillAngle: 0}),
+  fillCase('dots na diagonal', {fill: 'dots', fillAngle: -135, fillSpeed: 40, fillScale: 20}),
+  fillCase('stripes de 2 cores', {fill: 'stripes', fillColors: ['#101020', '#F472B6']}),
+  fillCase('stripes de 3 cores', {fill: 'stripes', fillAngle: 100, fillSpeed: 70}),
+  fillCase('sparkles', {fill: 'sparkles'}),
+  fillCase('sparkles parados no lugar', {fill: 'sparkles', fillSpeed: 0}),
+  fillCase('brasas subindo', {fill: 'sparkles', fillRise: true, fillSpeed: 60, fillColors: ['#1A0B2E', '#FB923C', '#FDE68A']}),
+  fillCase('glass', {fill: 'glass', fillColors: ['#FFFFFF'], fillOpacity: 0.16, fillSpeed: 120}),
+  fillCase('glass parado', {fill: 'glass', fillSpeed: 0}, {moving: false, seeded: false}),
+  fillCase('fog', {fill: 'fog', fillColors: ['#0E1520', '#688789', '#D6DDC7'], fillScale: 48, fillSpeed: 27}),
+  fillCase('fog para a esquerda, 2 cores', {fill: 'fog', fillColors: ['#0E1520', '#688789'], fillAngle: 135, fillScale: 24, fillSpeed: 40}),
+  fillCase('fog de uma cor', {fill: 'fog', fillColors: ['#FFFFFF']}),
+  fillCase('fog parada', {fill: 'fog', fillSpeed: 0, fillScale: 64}, {moving: false}),
+  fillCase('damask', {fill: 'damask', fillColors: ['#0C1412', '#1F2B25'], fillAngle: 0, fillSpeed: 20}),
+  fillCase('damask na diagonal, 3 cores', {fill: 'damask', fillAngle: 135, fillScale: 24, fillSpeed: 40}),
+  fillCase('damask de uma cor', {fill: 'damask', fillColors: ['#9FB095'], fillAngle: 90}),
+  fillCase('damask parado', {fill: 'damask', fillColors: ['#0C1412', '#1F2B25'], fillScale: 56, fillSpeed: 0}, {moving: false}),
+  strokeCase('still', {strokeMotion: 'still', strokeColors: ['#67E8F9'], glow: 0}, PANEL_TRACK, {moving: false, seeded: false}),
+  strokeCase('still com cores', {strokeMotion: 'still', glow: 0}, PANEL_TRACK, {moving: false}),
+  strokeCase('pulse', {strokeMotion: 'pulse', strokeColors: ['#67E8F9'], strokePulses: 2}, PANEL_TRACK, {}, {pulseWidth: 0.3}),
+  strokeCase('pulse com cores e halo', {strokeMotion: 'pulse', strokeColors: ['#67E8F9', '#F472B6', '#FDE68A'], halo: 20, glowPulses: 2}, PILL_TRACK),
+  strokeCase('dashes', {strokeMotion: 'dashes', strokeColors: ['#FFFFFF']}, PANEL_TRACK, {}, {trackOpacity: 0.25}),
+  strokeCase('dashes de 3 cores na moldura', {strokeMotion: 'dashes', strokeColors: ['#F00', '#0F0', '#00F'], strokeSpeed: 200, strokeWidth: 8}, FRAME.track),
+  strokeCase('comets a cada 600 px, 2 cores', {strokeMotion: 'comets', cometSpacing: 600, cometTail: 900}, PANEL_TRACK),
+  strokeCase('comets a cada 180 px na pílula, 3 cores', {strokeMotion: 'comets', cometSpacing: 180, strokeSpeed: 300, strokeColors: ['#67E8F9', '#F472B6', '#FDE68A']}, PILL_TRACK),
+  strokeCase('gradient', {strokeMotion: 'gradient', strokeColors: ['#67E8F9', '#818CF8', '#F472B6'], glowPulses: 3}, FRAME.track, {}, {colorRepeats: 2}),
+  strokeCase('gradient parado no lugar', {strokeMotion: 'gradient', strokeSpeed: 0, glow: 0}, PANEL_TRACK, {moving: false}),
 ];
 
 test('Cenas: cada fill e cada movimento de contorno é coberto', () => {
-  for (const fill of FILL_STYLES) assert.ok(CASES.some((entry) => entry.id.includes(fill === 'solido' ? 'sólido' : fill)), fill);
+  for (const fill of FILL_STYLES) assert.ok(CASES.some((entry) => entry.id.includes(fill)), fill);
   for (const motion of STROKE_MOTIONS) assert.ok(CASES.some((entry) => entry.id.startsWith(`contorno ${motion}`)), motion);
 });
 
@@ -323,7 +323,7 @@ for (const {id, sample, moving = true, seeded = true} of CASES) {
 
 test('Cenas: tamanhos nomeados fecham o ciclo com fill e contorno em movimento', () => {
   for (const size of NAMED_SIZES) {
-    const props = kit({...sizeProps(size), fill: 'listras', strokeMotion: 'cometas', strokeSpeed: 240, fillSpeed: 30});
+    const props = kit({...sizeProps(size), fill: 'stripes', strokeMotion: 'comets', strokeSpeed: 240, fillSpeed: 30});
     const layout = panelOf(props);
     for (const outputFormat of ['webm', 'gif'] as const) {
       const {durationInFrames} = getCompositionMetadata({durationSeconds: 7.3, outputFormat});
@@ -337,14 +337,14 @@ test('Cenas: tamanhos nomeados fecham o ciclo com fill e contorno em movimento',
 });
 
 test('Movimento: a velocidade real é arredondada para períodos inteiros e exposta', () => {
-  const props = kit({strokeMotion: 'formigas', strokeColors: ['#FFF', '#000'], strokeSpeed: 100, durationSeconds: 8});
+  const props = kit({strokeMotion: 'dashes', strokeColors: ['#FFF', '#000'], strokeSpeed: 100, durationSeconds: 8});
   const motion = getStrokeMotion(props, PANEL_TRACK);
   assert.equal(motion.count % 2, 0, 'as cores alternadas fecham o contorno');
   assert.ok(Math.abs(motion.count * motion.period - perimeterLength(PANEL_TRACK)) < 1e-9);
   assert.ok(Number.isInteger(motion.laps) && motion.laps >= 1);
   assert.ok(Math.abs(motion.speed - (motion.laps * motion.period * 2) / 8) < 1e-9);
   assert.ok(Math.abs(motion.speed - 100) <= (motion.period * 2) / 8 / 2 + 1e-9, 'arredonda para o período mais próximo');
-  const fill = getFillMotion(kit({fill: 'pontos', fillAngle: 0, fillScale: 30, fillSpeed: 50, durationSeconds: 8}), {x: 0, y: 0, width: 100, height: 100});
+  const fill = getFillMotion(kit({fill: 'dots', fillAngle: 0, fillScale: 30, fillSpeed: 50, durationSeconds: 8}), {x: 0, y: 0, width: 100, height: 100});
   assert.deepEqual(fill, {period: 30, laps: 13, unitsPerPeriod: 1, speed: 48.75, sway: 0});
 });
 
@@ -354,38 +354,38 @@ test('Movimento: cometas, gradientes, vidro e brasas têm períodos em px fixos,
   for (const track of [small, PANEL_TRACK, large]) {
     const perimeter = perimeterLength(track);
     // Comets: as many as fit cometSpacing (at least one), travelling whole spacings.
-    const comets = getStrokeMotion(kit({strokeMotion: 'cometas', cometSpacing: 300, strokeSpeed: 160, durationSeconds: 8}), track);
+    const comets = getStrokeMotion(kit({strokeMotion: 'comets', cometSpacing: 300, strokeSpeed: 160, durationSeconds: 8}), track);
     assert.equal(comets.count, Math.max(1, Math.round(perimeter / 300)));
     assert.equal(comets.unitsPerPeriod, 1);
     assert.equal(comets.laps, Math.max(1, Math.round((160 * 8) / comets.period)));
     // The colour flow: the palette repeats about every gradientLength px.
-    const flow = getStrokeMotion(kit({strokeMotion: 'gradiente', gradientLength: 400, strokeSpeed: 60, durationSeconds: 8}), track);
+    const flow = getStrokeMotion(kit({strokeMotion: 'gradient', gradientLength: 400, strokeSpeed: 60, durationSeconds: 8}), track);
     assert.equal(flow.count, Math.max(1, Math.round(perimeter / 400)));
     assert.ok(Math.abs(flow.period - perimeter / flow.count) < 1e-9);
   }
   // A comet wears the colour of its place: neighbours differ, and one spacing later a comet has
   // the colour its neighbour had, so the places can wrap unseen.
-  const props = kit({strokeMotion: 'cometas', cometSpacing: 200, strokeColors: ['#FF0000', '#00FF00', '#0000FF'], strokeSpeed: 100});
+  const props = kit({strokeMotion: 'comets', cometSpacing: 200, strokeColors: ['#FF0000', '#00FF00', '#0000FF'], strokeSpeed: 100});
   const cometsAt = (frame: number) => buildStrokeScene(props, PANEL_TRACK, frame, 480).filter((element) => element.type === 'comet');
   const first = cometsAt(0);
   assert.ok(new Set(first.map((comet) => comet.color)).size >= 3);
   // The fills: the gradient sways by fillSpeed·T/4 (exact mean speed), whatever the area.
   for (const area of [{x: 0, y: 0, width: 320, height: 64}, {x: 0, y: 0, width: 960, height: 640}]) {
-    const gradient = getFillMotion(kit({fill: 'gradiente', fillSpeed: 16, durationSeconds: 8}), area);
+    const gradient = getFillMotion(kit({fill: 'gradient', fillSpeed: 16, durationSeconds: 8}), area);
     assert.deepEqual([gradient.laps, gradient.sway, gradient.speed], [0, 32, 16]);
-    const glass = getFillMotion(kit({fill: 'vidro', fillSpeed: 60, durationSeconds: 10}), area);
+    const glass = getFillMotion(kit({fill: 'glass', fillSpeed: 60, durationSeconds: 10}), area);
     assert.deepEqual([glass.period, glass.laps, glass.speed], [600, 1, 60]);
-    const embers = getFillMotion(kit({fill: 'brilhos', fillRise: true, fillSpeed: 20, durationSeconds: 12}), area);
+    const embers = getFillMotion(kit({fill: 'sparkles', fillRise: true, fillSpeed: 20, durationSeconds: 12}), area);
     assert.equal(embers.speed, 20);
   }
   // Sheens closer than two widths would merge: the spacing stays, the speed goes up (documented minimum).
-  const glass = getFillMotion(kit({fill: 'vidro', fillSpeed: 10, durationSeconds: 8}), {x: 0, y: 0, width: 1920, height: 1080});
+  const glass = getFillMotion(kit({fill: 'glass', fillSpeed: 10, durationSeconds: 8}), {x: 0, y: 0, width: 1920, height: 1080});
   assert.deepEqual([glass.period, glass.speed], [2 * 324, (2 * 324) / 8]);
 });
 
 test('Movimento: cada brasa sobe exatamente fillSpeed × o seu ritmo, em caixas baixas e altas', () => {
   for (const area of [{x: 10, y: 20, width: 320, height: 64}, {x: 0, y: 0, width: 448, height: 1016}]) {
-    const props = kit({fill: 'brilhos', fillRise: true, fillSpeed: 20, fillScale: 40, durationSeconds: 12});
+    const props = kit({fill: 'sparkles', fillRise: true, fillSpeed: 20, fillScale: 40, durationSeconds: 12});
     const at = (frame: number) => buildFillScene(props, area, frame, 720).filter((element) => element.type === 'spark');
     const a = at(100);
     const b = at(100.01);
@@ -413,12 +413,12 @@ const assertLimit = (schema: z.ZodType, input: Record<string, unknown>, field: s
 };
 
 test('Aliasing: contornos rápidos demais são recusados com a velocidade máxima, que é aceita', () => {
-  const ants = {strokeMotion: 'formigas', dashLength: 4, gapLength: 4, strokeSpeed: 4000};
+  const ants = {strokeMotion: 'dashes', dashLength: 4, gapLength: 4, strokeSpeed: 4000};
   for (const outputFormat of ['webm', 'gif'] as const) {
     for (const durationSeconds of [3.7, 8]) {
       assertLimit(strokeSchema(PANEL_TRACK), {...ants, strokeColors: ['#FFF'], outputFormat, durationSeconds}, 'strokeSpeed');
       assertLimit(strokeSchema(PANEL_TRACK), {...ants, strokeColors: ['#FFF', '#000', '#F00'], outputFormat, durationSeconds}, 'strokeSpeed');
-      assertLimit(strokeSchema(PILL_TRACK), {strokeMotion: 'cometas', cometSpacing: 32, strokeSpeed: 4000, outputFormat, durationSeconds}, 'strokeSpeed');
+      assertLimit(strokeSchema(PILL_TRACK), {strokeMotion: 'comets', cometSpacing: 32, strokeSpeed: 4000, outputFormat, durationSeconds}, 'strokeSpeed');
     }
   }
   // At the limit the share is at most MAX_FRAME_SHARE of the way to the next dash.
@@ -427,29 +427,29 @@ test('Aliasing: contornos rápidos demais são recusados com a velocidade máxim
   assert.ok((motion.laps * motion.unitsPerPeriod) / 480 <= MAX_FRAME_SHARE);
   assert.equal(maxSpeedFor(motion.period * motion.unitsPerPeriod, 8, 480, motion.unitsPerPeriod), limit);
   // Motions that do not travel are never refused, and a cycle too short says so.
-  assert.equal(strokeSchema(PANEL_TRACK).safeParse({strokeMotion: 'pulso', strokeSpeed: 4000, strokePulses: 16}).success, true);
+  assert.equal(strokeSchema(PANEL_TRACK).safeParse({strokeMotion: 'pulse', strokeSpeed: 4000, strokePulses: 16}).success, true);
   const short = strokeSchema(PANEL_TRACK).safeParse({...ants, durationSeconds: 0.03});
   assert.match(short.error!.issues[0]!.message, /Cycle too short for the dashes/);
 });
 
 test('Aliasing: pontos e listras rápidos demais são recusados com a velocidade máxima, que é aceita', () => {
-  assertLimit(fillSchema, {fill: 'pontos', fillScale: 8, fillSpeed: 480, fillAngle: 45}, 'fillSpeed');
-  assertLimit(fillSchema, {fill: 'pontos', fillScale: 8, fillSpeed: 480, fillAngle: 0, outputFormat: 'gif'}, 'fillSpeed');
-  assertLimit(fillSchema, {fill: 'listras', fillScale: 8, fillSpeed: 480}, 'fillSpeed');
-  assertLimit(fillSchema, {fill: 'listras', fillScale: 8, fillSpeed: 480, fillColors: ['#000', '#FFF']}, 'fillSpeed');
+  assertLimit(fillSchema, {fill: 'dots', fillScale: 8, fillSpeed: 480, fillAngle: 45}, 'fillSpeed');
+  assertLimit(fillSchema, {fill: 'dots', fillScale: 8, fillSpeed: 480, fillAngle: 0, outputFormat: 'gif'}, 'fillSpeed');
+  assertLimit(fillSchema, {fill: 'stripes', fillScale: 8, fillSpeed: 480}, 'fillSpeed');
+  assertLimit(fillSchema, {fill: 'stripes', fillScale: 8, fillSpeed: 480, fillColors: ['#000', '#FFF']}, 'fillSpeed');
   // The sparkles' orbits are periodic too: past the limit they crawl or turn backwards (the review
   // measured 1.06 turns per frame here, seen as a 0.06 turn crawl).
-  const orbit = assertLimit(fillSchema, {fill: 'brilhos', fillScale: 8, fillSpeed: 480}, 'fillSpeed');
-  assert.match(fillSchema.safeParse({fill: 'brilhos', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /for the sparkles: .* or increase fillScale\./);
-  assertLimit(fillSchema, {fill: 'brilhos', fillScale: 8, fillSpeed: 200, outputFormat: 'gif'}, 'fillSpeed');
-  assertLimit(fillSchema, {fill: 'brilhos', fillScale: 16, fillSpeed: 400}, 'fillSpeed');
-  const turns = getFillMotion(kit({fill: 'brilhos', fillScale: 8, fillSpeed: orbit}), {x: 0, y: 0, width: 100, height: 100});
+  const orbit = assertLimit(fillSchema, {fill: 'sparkles', fillScale: 8, fillSpeed: 480}, 'fillSpeed');
+  assert.match(fillSchema.safeParse({fill: 'sparkles', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /for the sparkles: .* or increase fillScale\./);
+  assertLimit(fillSchema, {fill: 'sparkles', fillScale: 8, fillSpeed: 200, outputFormat: 'gif'}, 'fillSpeed');
+  assertLimit(fillSchema, {fill: 'sparkles', fillScale: 16, fillSpeed: 400}, 'fillSpeed');
+  const turns = getFillMotion(kit({fill: 'sparkles', fillScale: 8, fillSpeed: orbit}), {x: 0, y: 0, width: 100, height: 100});
   assert.deepEqual([turns.period, turns.laps / 480 <= MAX_FRAME_SHARE], [2 * Math.PI * 0.15 * 8, true]);
   // A bigger pattern has a wider orbit, so it may go faster.
-  assert.equal(fillSchema.safeParse({fill: 'brilhos', fillScale: 64, fillSpeed: 480}).success, true);
+  assert.equal(fillSchema.safeParse({fill: 'sparkles', fillScale: 64, fillSpeed: 480}).success, true);
   // Rising embers and the glass sheen are not periodic lattices: never refused for speed.
-  assert.equal(fillSchema.safeParse({fill: 'brilhos', fillRise: true, fillScale: 8, fillSpeed: 480}).success, true);
-  assert.equal(fillSchema.safeParse({fill: 'vidro', fillScale: 8, fillSpeed: 480}).success, true);
+  assert.equal(fillSchema.safeParse({fill: 'sparkles', fillRise: true, fillScale: 8, fillSpeed: 480}).success, true);
+  assert.equal(fillSchema.safeParse({fill: 'glass', fillScale: 8, fillSpeed: 480}).success, true);
 });
 
 // ── Holes and invisible jumps ───────────────────────────────────────────────────────────────
@@ -503,7 +503,7 @@ const jumps = (sample: (frame: number) => Scene, key: string, threshold: number)
 };
 
 test('Vidro: o reflexo só salta quando está todo fora da caixa, longe da emenda', () => {
-  const props = kit({fill: 'vidro', fillSpeed: 300, fillAngle: 30});
+  const props = kit({fill: 'glass', fillSpeed: 300, fillAngle: 30});
   const layout = panelOf(props);
   const box = layout.box;
   const sample = (frame: number) => buildFillScene(props, box, frame, 480);
@@ -523,7 +523,7 @@ test('Vidro: o reflexo só salta quando está todo fora da caixa, longe da emend
 
 test('Brasas: só saltam invisíveis (apagadas, ou fora da caixa) e fora da emenda', () => {
   for (const fillSpeed of [80, 12]) {
-    const props = kit({fill: 'brilhos', fillRise: true, fillSpeed, fillColors: ['#FB923C']});
+    const props = kit({fill: 'sparkles', fillRise: true, fillSpeed, fillColors: ['#FB923C']});
     const box = panelOf(props).box;
     const found = jumps((frame) => buildFillScene(props, box, frame, 480), 'y', 4);
     assert.ok(found.length > 10);
@@ -549,7 +549,7 @@ test('Brasas: só saltam invisíveis (apagadas, ou fora da caixa) e fora da emen
 
 test('Vidro: com vários reflexos na caixa, a volta das posições não muda a imagem', () => {
   // 40 px/s over 8 s: sheens 320 px apart, so a 640 px panel shows two or three at once.
-  const props = kit({fill: 'vidro', fillSpeed: 40, fillAngle: 0});
+  const props = kit({fill: 'glass', fillSpeed: 40, fillAngle: 0});
   const box = panelOf(props).box;
   const visible = (scene: Scene) => scene.filter((element) => element.type === 'sheen')
     .map((sheen) => ({cx: sheen.cx as number, width: sheen.width as number}))
@@ -569,7 +569,7 @@ test('Vidro: com vários reflexos na caixa, a volta das posições não muda a i
 
 // ── Fog and damask ──────────────────────────────────────────────────────────────────────────
 
-const MANSION_FOG = {fill: 'nevoa', fillColors: ['#0E1520', '#688789', '#D6DDC7']} as const;
+const MANSION_FOG = {fill: 'fog', fillColors: ['#0E1520', '#688789', '#D6DDC7']} as const;
 const fogBanks = (scene: Scene) => scene.filter((element) => element.type === 'fog');
 
 test('Névoa: anda S·voltas por ciclo (S = 2,25 × fillScale), igual em toda caixa e sem depender das opções', () => {
@@ -626,9 +626,9 @@ test('Névoa: dois bancos por lugar, na parte de baixo da área, a mesma quantid
   }
   // One colour: no base, the fog in that colour, its core too; two: the core is the fog's colour.
   const box = {x: 0, y: 0, width: 640, height: 360};
-  const one = buildFillScene(kit({fill: 'nevoa', fillColors: ['#ABCDEF']}), box, 0, 480);
+  const one = buildFillScene(kit({fill: 'fog', fillColors: ['#ABCDEF']}), box, 0, 480);
   assert.ok(one.every((element) => element.type === 'fog' && element.color === '#ABCDEF' && element.coreColor === '#ABCDEF'));
-  const two = buildFillScene(kit({fill: 'nevoa', fillColors: ['#000000', '#ABCDEF']}), box, 0, 480);
+  const two = buildFillScene(kit({fill: 'fog', fillColors: ['#000000', '#ABCDEF']}), box, 0, 480);
   assert.ok(fogBanks(two).every((element) => element.coreColor === '#ABCDEF'));
 });
 
@@ -762,7 +762,7 @@ test('Névoa: legibilidade: no pior pixel o corpo cobre ≤ 0,30 e o miolo ≤ 0
 
 test('Damasco: um só padrão sobre a base, ladrilho fillScale × 1,5·fillScale, andando como os pontos', () => {
   const area = {x: 32, y: 32, width: 640, height: 360};
-  const props = kit({fill: 'damasco', fillColors: ['#0C1412', '#1F2B25', '#FF0000'], fillScale: 56, fillSpeed: 0});
+  const props = kit({fill: 'damask', fillColors: ['#0C1412', '#1F2B25', '#FF0000'], fillScale: 56, fillSpeed: 0});
   const scene = buildFillScene(props, area, 0, 480);
   // One element: the base is inside the tile, so ink and ground share one alpha (fillOpacity).
   assert.equal(scene.length, 1);
@@ -773,63 +773,63 @@ test('Damasco: um só padrão sobre a base, ladrilho fillScale × 1,5·fillScale
   );
   assert.deepEqual(buildFillScene(props, area, 313, 480), scene, 'parado quando fillSpeed é 0');
   // One colour: no base ('none'). A 1920×1080 area is still one element.
-  const single = buildFillScene(kit({fill: 'damasco', fillColors: ['#9FB095']}), {x: 0, y: 0, width: 1920, height: 1080}, 0, 480);
+  const single = buildFillScene(kit({fill: 'damask', fillColors: ['#9FB095']}), {x: 0, y: 0, width: 1920, height: 1080}, 0, 480);
   assert.deepEqual(single.map((element) => [element.type, (element as Scene[number]).baseColor, (element as Scene[number]).color]), [['damask', 'none', '#9FB095']]);
   // The period: one tile per axis along the nearest axis or diagonal.
-  const at = (fillAngle: number) => getFillMotion(kit({fill: 'damasco', fillScale: 40, fillAngle, fillSpeed: 30, durationSeconds: 8}), area);
+  const at = (fillAngle: number) => getFillMotion(kit({fill: 'damask', fillScale: 40, fillAngle, fillSpeed: 30, durationSeconds: 8}), area);
   assert.deepEqual([at(0).period, at(0).unitsPerPeriod], [40, 1]);
   assert.deepEqual([at(90).period, at(90).unitsPerPeriod], [60, 2]);
   assert.deepEqual([at(-45).period, at(-45).unitsPerPeriod], [Math.hypot(40, 60), 2]);
   assert.equal(at(0).speed, (at(0).laps * 40) / 8);
   // Moving right and down: the offsets grow (between wraps) by the reported speed per axis.
-  const moving = kit({fill: 'damasco', fillScale: 40, fillAngle: 45, fillSpeed: 30, durationSeconds: 8});
+  const moving = kit({fill: 'damask', fillScale: 40, fillAngle: 45, fillSpeed: 30, durationSeconds: 8});
   const [a, b] = [100, 100.01].map((frame) => buildFillScene(moving, area, frame, 480).at(-1)! as Scene[number]);
   const {laps} = getFillMotion(moving, area);
   assert.ok(Math.abs(((b!.offsetX as number) - (a!.offsetX as number)) / (0.01 / 60) - (laps * 40) / 8) < 1e-6);
   assert.ok(Math.abs(((b!.offsetY as number) - (a!.offsetY as number)) / (0.01 / 60) - (laps * 60) / 8) < 1e-6);
-  const markup = renderPanel({fill: 'damasco', fillColors: ['#0C1412', '#1F2B25'], fillScale: 56, fillSpeed: 0});
+  const markup = renderPanel({fill: 'damask', fillColors: ['#0C1412', '#1F2B25'], fillScale: 56, fillSpeed: 0});
   assert.equal(markup.match(/<pattern /g)?.length, 1);
-  assert.match(markup, /<pattern id="ov-fill-damasco-0" patternUnits="userSpaceOnUse" x="0" y="0" width="56" height="84" patternTransform="translate\([\d.]+ [\d.]+\)">/);
-  assert.match(markup, /fill="url\(#ov-fill-damasco-0\)"/);
+  assert.match(markup, /<pattern id="ov-fill-damask-0" patternUnits="userSpaceOnUse" x="0" y="0" width="56" height="84" patternTransform="translate\([\d.]+ [\d.]+\)">/);
+  assert.match(markup, /fill="url\(#ov-fill-damask-0\)"/);
   // The base fills the tile under the ink; only the area rect carries the opacity.
   assert.match(markup, /patternTransform="translate\([\d.]+ [\d.]+\)"><rect x="0" y="0" width="56" height="84" fill="#0C1412"><\/rect><g transform="scale\([\d.]+ [\d.]+\)" fill="#1F2B25">/);
   assert.equal(markup.match(/fill="#0C1412"/g)?.length, 1, 'sem retângulo de base fora do ladrilho');
 });
 
 test('Aliasing: o damasco rápido demais é recusado como os pontos; a névoa nunca', () => {
-  assertLimit(fillSchema, {fill: 'damasco', fillScale: 8, fillSpeed: 480, fillAngle: 0}, 'fillSpeed');
-  assertLimit(fillSchema, {fill: 'damasco', fillScale: 8, fillSpeed: 480, fillAngle: 90, outputFormat: 'gif'}, 'fillSpeed');
-  assertLimit(fillSchema, {fill: 'damasco', fillScale: 12, fillSpeed: 480, fillAngle: 45}, 'fillSpeed');
-  assert.match(fillSchema.safeParse({fill: 'damasco', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /for the damask: .* or increase fillScale\./);
-  assert.equal(fillSchema.safeParse({fill: 'damasco', fillScale: 56, fillSpeed: 0}).success, true);
+  assertLimit(fillSchema, {fill: 'damask', fillScale: 8, fillSpeed: 480, fillAngle: 0}, 'fillSpeed');
+  assertLimit(fillSchema, {fill: 'damask', fillScale: 8, fillSpeed: 480, fillAngle: 90, outputFormat: 'gif'}, 'fillSpeed');
+  assertLimit(fillSchema, {fill: 'damask', fillScale: 12, fillSpeed: 480, fillAngle: 45}, 'fillSpeed');
+  assert.match(fillSchema.safeParse({fill: 'damask', fillScale: 8, fillSpeed: 480}).error!.issues[0]!.message, /for the damask: .* or increase fillScale\./);
+  assert.equal(fillSchema.safeParse({fill: 'damask', fillScale: 56, fillSpeed: 0}).success, true);
   // The fog's banks overlap into one soft band and wrap unseen: nothing to alias.
-  assert.equal(fillSchema.safeParse({fill: 'nevoa', fillScale: 8, fillSpeed: 480, outputFormat: 'gif'}).success, true);
-  assert.equal(fillSchema.safeParse({fill: 'nevoa', fillScale: 8, fillSpeed: 480, durationSeconds: 0.5}).success, true);
+  assert.equal(fillSchema.safeParse({fill: 'fog', fillScale: 8, fillSpeed: 480, outputFormat: 'gif'}).success, true);
+  assert.equal(fillSchema.safeParse({fill: 'fog', fillScale: 8, fillSpeed: 480, durationSeconds: 0.5}).success, true);
 });
 
 test('Névoa e damasco: poucos elementos numa tela 1920×1080, com fillScale mínimo', () => {
   const screen = {x: 0, y: 0, width: 1920, height: 1080};
-  const fog = buildFillScene(kit({fill: 'nevoa', fillScale: 8, fillSpeed: 40}), screen, 77, 480);
+  const fog = buildFillScene(kit({fill: 'fog', fillScale: 8, fillSpeed: 40}), screen, 77, 480);
   // Two rows of (1920 + a reach on each side) / S banks, plus two places each, plus the base.
   const reach = (FOG_SHAPE.width * 8 * FOG_MAX_SIZE) / 2;
   assert.equal(fog.length, 1 + 2 * (Math.ceil((1920 + 2 * reach) / 18) + 2));
   assert.ok(fog.length < 250);
   const started = performance.now();
-  for (let frame = 0; frame < 60; frame++) buildFillScene(kit({fill: 'nevoa', fillScale: 8, fillSpeed: 40}), screen, frame, 480);
+  for (let frame = 0; frame < 60; frame++) buildFillScene(kit({fill: 'fog', fillScale: 8, fillSpeed: 40}), screen, frame, 480);
   assert.ok(performance.now() - started < 1000, 'monta 60 frames da tela em menos de 1 s');
-  assert.equal(buildFillScene(kit({fill: 'damasco', fillScale: 8}), screen, 77, 480).length, 1);
+  assert.equal(buildFillScene(kit({fill: 'damask', fillScale: 8}), screen, 77, 480).length, 1);
 });
 
 test('Aliasing: o gradiente balançando é recusado no ponto mais rápido, com a velocidade máxima, que é aceita', () => {
   // Only a tiny box at a high speed gets there: 16 px wide, two colours, 480 px/s at 50 fps.
-  const tiny = {fill: 'gradiente', fillColors: ['#000', '#FFF'], fillAngle: 0, width: 16, height: 16, fillSpeed: 480, outputFormat: 'gif'};
+  const tiny = {fill: 'gradient', fillColors: ['#000', '#FFF'], fillAngle: 0, width: 16, height: 16, fillSpeed: 480, outputFormat: 'gif'};
   const limit = assertLimit(fillSchema, tiny, 'fillSpeed');
   assert.match(fillSchema.safeParse(tiny).error!.issues[0]!.message, /for the gradient: .* or enlarge the box\./);
   const motion = getFillMotion(kit({...tiny, fillSpeed: limit}), panelOf(kit(tiny)).box);
   assert.ok(swayShare(motion, 400) <= MAX_FRAME_SHARE);
   // Every named size is far from it, even at the fastest speed and the slowest frame rate.
   for (const size of NAMED_SIZES) {
-    assert.equal(fillSchema.safeParse({...sizeProps(size), fill: 'gradiente', fillSpeed: 480, outputFormat: 'gif'}).success, true, size.id);
+    assert.equal(fillSchema.safeParse({...sizeProps(size), fill: 'gradient', fillSpeed: 480, outputFormat: 'gif'}).success, true, size.id);
   }
 });
 
@@ -865,9 +865,9 @@ test('Render: SVG do tamanho do arquivo, brilho sobre o canvas inteiro, sem blen
   assert.match(renderPanel({}), /background-color:transparent/);
   assert.match(renderPanel({outputFormat: 'mp4', backgroundColor: '#123456'}), /background-color:#123456/);
   assert.match(renderPanel({guides: true}), /data-guides/);
-  assert.match(renderPanel({strokeMotion: 'formigas'}), /stroke-linecap="butt"/);
-  assert.match(renderPanel({fill: 'gradiente'}), /spreadMethod="repeat"/);
-  assert.match(renderPanel({fill: 'gradiente'}), /gradientUnits="userSpaceOnUse"/);
+  assert.match(renderPanel({strokeMotion: 'dashes'}), /stroke-linecap="butt"/);
+  assert.match(renderPanel({fill: 'gradient'}), /spreadMethod="repeat"/);
+  assert.match(renderPanel({fill: 'gradient'}), /gradientUnits="userSpaceOnUse"/);
 });
 
 test('Render: a moldura mascara o buraco e, em tela, recorta na caixa', () => {
@@ -875,7 +875,7 @@ test('Render: a moldura mascara o buraco e, em tela, recorta na caixa', () => {
     const layout = layoutFrame(fit === 'window'
       ? {width: 640, height: 360, bleed: 48, radius: 24, thickness: 8, glow: 16, fit}
       : {width: 1920, height: 1080, bleed: 0, radius: 24, thickness: 12, glow: 16, fit});
-    const props = kit({strokeMotion: 'cometas', strokeWidth: layout.thickness, width: layout.box.width, height: layout.box.height, bleed: layout.box.x});
+    const props = kit({strokeMotion: 'comets', strokeWidth: layout.thickness, width: layout.box.width, height: layout.box.height, bleed: layout.box.x});
     const markup = renderToStaticMarkup(createElement(OverlayCanvas, {
       props, width: layout.canvas.width, height: layout.canvas.height, layout, guides: true,
       children: createElement(FrameGroup, {layout, children: createElement(StrokeLayer, {
@@ -1007,10 +1007,10 @@ test('Acabamento: o miolo claro só pinta por dentro de traços largos, e a cena
   }
   const coreStrokes = (input: object) => (renderPanel(input).match(/data-core="true"/g) ?? []).length;
   // A 4 px tube gets a core; below CORE_MIN_WIDTH it stays a plain line (a 1 px white line would whiten it).
-  assert.ok(coreStrokes({strokeMotion: 'parado', strokeColors: ['#22D3EE'], strokeWidth: 4, strokeCore: 0.9}) > 0);
+  assert.ok(coreStrokes({strokeMotion: 'still', strokeColors: ['#22D3EE'], strokeWidth: 4, strokeCore: 0.9}) > 0);
   assert.ok(CORE_MIN_WIDTH > 2);
-  assert.equal(coreStrokes({strokeMotion: 'parado', strokeColors: ['#22D3EE'], strokeWidth: 2, strokeCore: 0.9}), 0);
-  assert.equal(coreStrokes({strokeMotion: 'parado', strokeColors: ['#22D3EE'], strokeWidth: 4, strokeCore: 0}), 0);
+  assert.equal(coreStrokes({strokeMotion: 'still', strokeColors: ['#22D3EE'], strokeWidth: 2, strokeCore: 0.9}), 0);
+  assert.equal(coreStrokes({strokeMotion: 'still', strokeColors: ['#22D3EE'], strokeWidth: 4, strokeCore: 0}), 0);
 });
 
 test('Acabamento: a força do brilho multiplica só o ganho; o alcance e a pulsação não mudam', () => {

@@ -12,13 +12,13 @@ export const ORNAMENT_SIZE_RANGE = {min: 12, max: 256, default: 48} as const;
 export const ORNAMENT_SCALE_RANGE = {min: 1, max: 4, default: 1} as const;
 
 /**
- * The ornament field group, shared by chat, block and border. The defaults ('nenhum', lightning 0)
+ * The ornament field group, shared by chat, block and border. The defaults ('none', lightning 0)
  * draw nothing, so every existing theme stays exactly as it was.
  */
 export const ornamentFields = () => ({
   ornaments: z.enum(ORNAMENT_CHOICES)
-    .describe('Themed ornaments around the panel or the border: nenhum; midnight (bats, pumpkins, stars and embers); haunted-mansion (iron lanterns, spear railing, rose window, lancets, sconces and gate); haunted-interior (brass candelabras with candles, sconces and velvet valances); cobweb (dewy webs, thread garlands and a spider). Each motif fits the free space of its slot (bleed, padding pockets, band) and never covers the text or the window')
-    .default('nenhum'),
+    .describe('Themed ornaments around the panel or the border: none; midnight (bats, pumpkins, stars and embers); haunted-mansion (iron lanterns, spear railing, rose window, lancets, sconces and gate); haunted-interior (brass candelabras with candles, sconces and velvet valances); cobweb (dewy webs, thread garlands and a spider). Each motif fits the free space of its slot (bleed, padding pockets, band) and never covers the text or the window')
+    .default('none'),
   ornamentColors: z.array(zColor()).min(1).max(3)
     .describe('Ornament colors: fog or silk (cool), moonlight (light) and warm light (candles, pumpkins, lanterns); the third is optional and falls back to the first')
     .default([...ORNAMENT_DEFAULT_COLORS]),

@@ -30,7 +30,7 @@ const chatFields = z.object({
   // A deep indigo night, a touch lighter at the top, under a neon tube: its hot core, a bright
   // bloom (glowStrength) and a violet halo are what make it read as light on any backdrop.
   ...fillFields({
-    fill: 'gradiente',
+    fill: 'gradient',
     fillColors: ['#120A38', '#26105C', '#0A1C4E'],
     fillOpacity: 0.9,
     fillScale: 32,
@@ -39,7 +39,7 @@ const chatFields = z.object({
     fillLight: 0.05,
   }),
   ...strokeFields({
-    strokeMotion: 'cometas',
+    strokeMotion: 'comets',
     strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'],
     strokeWidth: 3,
     cometSpacing: 640,
@@ -90,7 +90,7 @@ export type ChatLayout = PanelLayout & {
   headerBand: Rect | null;
   /** The dividing line's rect (full width inside the stroke); null without a line. */
   divider: Rect | null;
-  /** Where the ornaments go (none with ornaments 'nenhum'); their reach beyond the box is folded into outset. */
+  /** Where the ornaments go (none with ornaments 'none'); their reach beyond the box is folded into outset. */
   ornamentLayout: OrnamentLayout;
 };
 

@@ -6,12 +6,12 @@
   "outputFormat": "webm",
   "radius": 24,
   "thickness": 14,
-  "fill": "brilhos",
+  "fill": "sparkles",
   "fillColors": ["#FFF7F4", "#F48FB8", "#6FCDB8"],
   "fillOpacity": 0.94,
   "fillScale": 10,
   "fillSpeed": 12,
-  "strokeMotion": "formigas",
+  "strokeMotion": "dashes",
   "strokeColors": ["#F48FB8", "#6FCDB8", "#FFBA70"],
   "strokeWidth": 4,
   "dashLength": 18,
@@ -23,7 +23,7 @@
   "halo": 16,
   "haloColor": "#E8A0C2",
   "lines": 1,
-  "corners": "joias",
+  "corners": "jewels",
   "gemSize": 16,
   "cornerPulses": 2
 }

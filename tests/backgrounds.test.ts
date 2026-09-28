@@ -190,8 +190,8 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'ChatLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getChatScene(chatLoopSchema.parse({
-        fill: 'brilhos', fillRise: true, fillColors: ['#150B24', '#F97316', '#FACC15'],
-        strokeMotion: 'gradiente', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA', '#FACC15'], strokeWidth: 3,
+        fill: 'sparkles', fillRise: true, fillColors: ['#150B24', '#F97316', '#FACC15'],
+        strokeMotion: 'gradient', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA', '#FACC15'], strokeWidth: 3,
         glow: 24, glowStrength: 2, glowPulses: 4, halo: 32, ...(input as object),
       }), frame, length),
   },
@@ -206,7 +206,7 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'BlockLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBlockScene(blockLoopSchema.parse({
-        fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
+        fill: 'stripes', fillSpeed: 48, strokeMotion: 'dashes', accent: 'left', accentSheen: 4,
         glowPulses: 4, halo: 32, ...(input as object),
       }), frame, length),
   },
@@ -221,8 +221,8 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'BorderLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBorderScene(borderLoopSchema.parse({
-        fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
-        corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
+        fill: 'dots', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradient', lines: 2,
+        corners: 'jewels', cornerPulses: 4, glowPulses: 4, ...(input as object),
       }), frame, length),
   },
   {
@@ -235,7 +235,7 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'BlockLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBlockScene(blockLoopSchema.parse({
-        ...sizeProps(getSize('circle')), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
+        ...sizeProps(getSize('circle')), fill: 'stripes', fillSpeed: 48, strokeMotion: 'dashes', accent: 'left', accentSheen: 4,
         glowPulses: 4, halo: 32, ...(input as object),
       }), frame, length),
   },
@@ -248,8 +248,8 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'BorderLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBorderScene(borderLoopSchema.parse({
-        ...sizeProps(getSize('webcam-round')), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
-        corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
+        ...sizeProps(getSize('webcam-round')), fill: 'dots', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradient', lines: 2,
+        corners: 'jewels', cornerPulses: 4, glowPulses: 4, ...(input as object),
       }), frame, length),
   },
   // BorderLoop's mask mode (mask) is left out on purpose: it is one still PNG, so the scans'

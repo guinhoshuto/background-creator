@@ -37,9 +37,9 @@ export type StrokeOptions = {
   width?: number;
   /** Opacity of a dim full outline under the ants or the comets; 0 draws none. */
   trackOpacity?: number;
-  /** 'pulso': share of the width lost at the low point of a breath; 0 keeps the width. */
+  /** 'pulse': share of the width lost at the low point of a breath; 0 keeps the width. */
   pulseWidth?: number;
-  /** 'pulso': opacity at the low point of a breath. */
+  /** 'pulse': opacity at the low point of a breath. */
   pulseFloor?: number;
   /** Target length of the pieces of a colour flow, in px. */
   segmentLength?: number;
@@ -88,18 +88,18 @@ export const getStrokeMotion = (style: StrokeStyle, track: RoundRect, options: S
     };
   };
   switch (style.strokeMotion) {
-    case 'formigas': {
+    case 'dashes': {
       // Colours alternate dash by dash, so the loop holds a whole number of colour groups.
       const groups = fitPeriod(perimeter, colors * (style.dashLength + style.gapLength)).n;
       return moving(groups * colors, perimeter / (groups * colors), colors);
     }
-    case 'cometas': {
+    case 'comets': {
       // Comets wear the colour of the place they pass (see cometColor), so moving by one spacing
       // leaves the picture as it was: the speed rounds to whole spacings, not whole colour groups.
       const count = fitPeriod(perimeter, style.cometSpacing).n;
       return moving(count, perimeter / count, 1);
     }
-    case 'gradiente': {
+    case 'gradient': {
       if (colors < 2) return {perimeter, count: 1, period: perimeter, unitsPerPeriod: 1, laps: 0, speed: 0};
       const repeats = colorRepeatsOf(style, track, options);
       return moving(repeats, perimeter / repeats, 1);
@@ -117,9 +117,9 @@ export const refineStroke = (
   props: StrokeStyle & {outputFormat: OutputFormat}, track: RoundRect, context: z.RefinementCtx, options: StrokeOptions = {},
 ) => {
   const fixes: Partial<Record<StrokeMotionName, [string, string]>> = {
-    formigas: ['the dashes', 'increase dashLength or gapLength'],
-    cometas: ['the comets', 'increase cometSpacing'],
-    gradiente: ['the stroke gradient', 'increase gradientLength'],
+    dashes: ['the dashes', 'increase dashLength or gapLength'],
+    comets: ['the comets', 'increase cometSpacing'],
+    gradient: ['the stroke gradient', 'increase gradientLength'],
   };
   const fix = fixes[props.strokeMotion];
   if (!fix) return;
@@ -169,14 +169,14 @@ type Common = {track: number; width: number; opacity: number};
 const colorFlow = (
   style: StrokeStyle, track: RoundRect, cycle: number, shift: number, common: Common, options: StrokeOptions,
 ): SegmentElement[] => {
-  const motion = getStrokeMotion({...style, strokeMotion: 'gradiente'}, track, options);
+  const motion = getStrokeMotion({...style, strokeMotion: 'gradient'}, track, options);
   const perimeter = motion.perimeter;
   const repeats = motion.count;
   const colorPeriod = perimeter / repeats;
   const perPeriod = Math.max(2, Math.round(colorPeriod / (options.segmentLength ?? 8)));
   const count = perPeriod * repeats;
   const length = perimeter / count;
-  const laps = style.strokeMotion === 'gradiente' ? motion.laps : 0;
+  const laps = style.strokeMotion === 'gradient' ? motion.laps : 0;
   const {offset, step} = placeTravel(shift, laps * perPeriod, cycle);
   const palette = Array.from({length: perPeriod}, (_, index) => paletteAt(style.strokeColors, (index + 0.5) / perPeriod));
   return Array.from({length: count}, (_, index) => {
@@ -201,11 +201,11 @@ const underTrack = (style: StrokeStyle, common: Common, options: StrokeOptions):
 
 /**
  * Every stroke motion of the engine along one track, as a flat list of elements listed by place:
- * - parado: the outline (or the palette spread along it);
- * - pulso: the same, breathing `strokePulses` whole times per cycle (opacity, optionally width);
- * - formigas: `n` dashes of one global period P/n, colours alternating, travelling whole periods;
- * - cometas: heads about cometSpacing apart (P/m, m whole) with fading tails, in the palette's colour where they are;
- * - gradiente: the palette flowing along the track by arc length.
+ * - still: the outline (or the palette spread along it);
+ * - pulse: the same, breathing `strokePulses` whole times per cycle (opacity, optionally width);
+ * - dashes: `n` dashes of one global period P/n, colours alternating, travelling whole periods;
+ * - comets: heads about cometSpacing apart (P/m, m whole) with fading tails, in the palette's colour where they are;
+ * - gradient: the palette flowing along the track by arc length.
  * Pure: the frame, the props and the seed decide it all. An empty list when strokeWidth is 0.
  */
 export const buildStrokeScene = (
@@ -221,11 +221,11 @@ export const buildStrokeScene = (
   const colors = style.strokeColors;
 
   switch (style.strokeMotion) {
-    case 'parado':
+    case 'still':
       return still(style, track, cycle, shift, common, options);
-    case 'gradiente':
+    case 'gradient':
       return still(style, track, cycle, shift, common, options);
-    case 'pulso': {
+    case 'pulse': {
       const level = breath(style.strokePulses, cycle, pulsePhase);
       const floor = options.pulseFloor ?? 0.45;
       return still(style, track, cycle, shift, {
@@ -234,7 +234,7 @@ export const buildStrokeScene = (
         opacity: floor + (1 - floor) * level,
       }, options);
     }
-    case 'formigas': {
+    case 'dashes': {
       const motion = getStrokeMotion(style, track, options);
       const {offset, step} = placeTravel(shift, motion.laps * motion.unitsPerPeriod, cycle);
       const length = (style.dashLength * motion.period) / (style.dashLength + style.gapLength);
@@ -244,7 +244,7 @@ export const buildStrokeScene = (
       }));
       return [...underTrack(style, common, options), ...dashes];
     }
-    case 'cometas': {
+    case 'comets': {
       const motion = getStrokeMotion(style, track, options);
       const {offset} = placeTravel(shift, motion.laps, cycle);
       const tail = Math.min(style.cometTail, motion.period);

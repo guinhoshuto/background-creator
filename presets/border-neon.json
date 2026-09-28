@@ -6,10 +6,10 @@
   "outputFormat": "webm",
   "radius": 16,
   "thickness": 10,
-  "fill": "solido",
+  "fill": "solid",
   "fillColors": ["#120A38"],
   "fillOpacity": 0.9,
-  "strokeMotion": "cometas",
+  "strokeMotion": "comets",
   "strokeColors": ["#22D3EE", "#E879F9", "#A78BFA"],
   "strokeWidth": 4,
   "cometSpacing": 640,
@@ -22,6 +22,6 @@
   "halo": 24,
   "haloColor": "#A855F7",
   "lines": 2,
-  "corners": "colchetes",
+  "corners": "brackets",
   "cornerPulses": 1
 }

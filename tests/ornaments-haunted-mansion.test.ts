@@ -184,8 +184,8 @@ test('haunted-mansion: onde cada motivo fica (braços, rosácea, lancetas, cerca
     assert.equal(fences(placements).length, 0, id);
   }
   // Round blocks with an accent: the lanterns take the slots the arc leaves free (a bottom slot hangs from a wall arm).
-  assert.deepEqual(lanterns(layoutAt('circle', {accent: 'esquerda'}).placements).map((placement) => placement.slot), ['TR', 'BR']);
-  assert.deepEqual(lanterns(layoutAt('circle', {accent: 'topo'}).placements).map((placement) => placement.slot), ['BR', 'BL']);
+  assert.deepEqual(lanterns(layoutAt('circle', {accent: 'left'}).placements).map((placement) => placement.slot), ['TR', 'BR']);
+  assert.deepEqual(lanterns(layoutAt('circle', {accent: 'top'}).placements).map((placement) => placement.slot), ['BR', 'BL']);
   // Painel da Twitch e telas: lanternas penduradas da borda de cima (sem braço, sem bleed).
   for (const id of ['twitch-panel', 'fullscreen', 'fullscreen-vertical']) {
     const {placements} = layoutAt(id);
@@ -481,9 +481,9 @@ test('haunted-mansion: o suporte (gancho ou braço) nunca atravessa a lanterna, 
   for (const id of ['circle-sm', 'circle', 'circle-lg', ...ROUND_CAMS, 'chat-standard', 'card', 'webcam-16x9', 'label-sm']) {
     for (const ornamentSize of [36, 128, 256]) cases.push([id, {ornamentSize}]);
   }
-  cases.push(['webcam-16x9', {radius: 200}], ['card', {radius: 200}], ['circle', {accent: 'esquerda'}], ['circle', {accent: 'topo'}],
+  cases.push(['webcam-16x9', {radius: 200}], ['card', {radius: 200}], ['circle', {accent: 'left'}], ['circle', {accent: 'top'}],
     ['chat-standard', {bleed: 16, glow: 8, halo: 0}]);
-  for (const id of ['gameplay', 'webcam-16x9-lg', 'fullscreen', 'fullscreen-vertical']) cases.push([id, {radius: 48, thickness: 24, corners: 'nenhum'}], [id, {corners: 'nenhum'}]);
+  for (const id of ['gameplay', 'webcam-16x9-lg', 'fullscreen', 'fullscreen-vertical']) cases.push([id, {radius: 48, thickness: 24, corners: 'none'}], [id, {corners: 'none'}]);
   let armed = 0;
   for (const [id, extra] of cases) {
     const {frame, placements, props} = layoutAt(id, extra);
@@ -587,7 +587,7 @@ test('haunted-mansion: as cercas BL e BR ficam ao menos um passo afastadas (cant
   const panels = ['chat-compact', 'chat-standard', 'square', 'list'];
   const frames = ['webcam-4x3', 'webcam-square', 'webcam-vertical', 'fullscreen-vertical'];
   for (const id of [...panels, ...frames]) {
-    const extras: Record<string, unknown>[] = panels.includes(id) ? [{}, {bleed: 16, glow: 8, halo: 0}, {bleed: 24, glow: 12, halo: 0}] : [{corners: 'nenhum'}, {corners: 'nenhum', thickness: 24}];
+    const extras: Record<string, unknown>[] = panels.includes(id) ? [{}, {bleed: 16, glow: 8, halo: 0}, {bleed: 24, glow: 12, halo: 0}] : [{corners: 'none'}, {corners: 'none', thickness: 24}];
     for (const radius of [10, 120, 160, 200, 300, 1000]) for (const ornamentSize of [36, 48, 80]) for (const extra of extras) {
       cases.push([id, {radius, ornamentSize, ...extra}]);
     }

@@ -177,7 +177,7 @@ test('Tamanhos redondos: quadrado e círculo da mesma caixa são produtos difere
 // ── The text area in a circle ───────────────────────────────────────────────────────────────
 
 test('Bloco redondo: o texto vai no quadrado centralizado, em px inteiros, com o maior padding até o contorno', () => {
-  const inputs = [{}, ...THEMES.map((theme) => presetOf('block', theme)), {accent: 'topo', accentSize: 20, paddingX: 4, paddingY: 30}];
+  const inputs = [{}, ...THEMES.map((theme) => presetOf('block', theme)), {accent: 'top', accentSize: 20, paddingX: 4, paddingY: 30}];
   for (const input of inputs) {
     for (const id of ROUND_BLOCKS) {
       const props = parseBlock({...input, ...sized(id)});
@@ -190,7 +190,7 @@ test('Bloco redondo: o texto vai no quadrado centralizado, em px inteiros, com o
       assert.equal(content.width % 2, 0, `${label}: lado par, centrado em px inteiros`);
       assert.deepEqual([content.x + content.width / 2, content.y + content.height / 2], [centre.x, centre.y], `${label}: centralizado`);
       // Every corner keeps the accent and the larger padding from the inside of the stroke…
-      const inset = (props.accent === 'nenhum' ? 0 : props.accentSize) + Math.max(props.paddingX, props.paddingY);
+      const inset = (props.accent === 'none' ? 0 : props.accentSize) + Math.max(props.paddingX, props.paddingY);
       assert.ok(contentClearance(inner, content) >= inset - 1e-9, `${label}: folga até o contorno`);
       assert.ok(rectContains(layout.box, content));
       // …and it is the largest such square: two more pixels would cross that line.
@@ -222,14 +222,14 @@ test('Bloco redondo: padding ou barra que não deixam espaço são recusados com
 test('Bloco redondo: o destaque é um arco de 120° por dentro do contorno, à esquerda ou no topo, fora do texto', () => {
   assert.equal(ACCENT_ARC_SPREAD, Math.PI / 3);
   for (const id of ROUND_BLOCKS) {
-    for (const accent of ['esquerda', 'topo'] as const) {
+    for (const accent of ['left', 'top'] as const) {
       for (const accentSize of [2, 6, 24]) {
         const props = parseBlock({...sized(id), accent, accentSize});
         const layout = getBlockLayout(props);
         const label = `${id} ${accent} ${accentSize}`;
         const arc = layout.accentArc!;
         assert.equal(layout.accent, null, label);
-        assert.deepEqual([arc.nx, arc.ny], accent === 'esquerda' ? [-1, 0] : [0, -1], label);
+        assert.deepEqual([arc.nx, arc.ny], accent === 'left' ? [-1, 0] : [0, -1], label);
         assert.equal(arc.width, accentSize, `${label}: espessura fixa em px`);
         // Its outer edge is the inside of the stroke, concentric with the panel.
         assert.equal(arc.outer, layout.inner.width / 2);
@@ -248,7 +248,7 @@ test('Bloco redondo: o destaque é um arco de 120° por dentro do contorno, à e
     }
   }
   // The rendered layer is clipped to the arc band, not to the panel.
-  const props = parseBlock({...sized('circle'), accent: 'esquerda', accentSheen: 1});
+  const props = parseBlock({...sized('circle'), accent: 'left', accentSheen: 1});
   const markup = renderToStaticMarkup(createElement(BlockFrame, {props, frame: 0, durationInFrames: 480}));
   const clip = /<clipPath id="block-accent-clip"[^>]*><path d="([^"]+)"/.exec(markup)!;
   assert.equal(clip[1], arcBandPath(getBlockLayout(props).accentArc!));
@@ -256,7 +256,7 @@ test('Bloco redondo: o destaque é um arco de 120° por dentro do contorno, à e
 });
 
 test('Bloco redondo: o reflexo do destaque dá voltas inteiras pelo meio do arco, tangente a ele, sem pulo', () => {
-  for (const accent of ['esquerda', 'topo'] as const) {
+  for (const accent of ['left', 'top'] as const) {
     for (const seed of [-7, 1, 2026]) {
       const props = parseBlock({...sized('circle'), accent, accentSize: 10, accentSheen: 2, seed});
       const arc = getBlockLayout(props).accentArc!;
@@ -324,7 +324,7 @@ test('Bloco redondo: fundo, halo e reflexo do vidro seguem o círculo (recorte e
 test('Borda redonda: a janela é um disco transparente, e tudo o que sai da caixa cabe no bleed', () => {
   for (const theme of THEMES) {
     for (const id of ROUND_BORDERS) {
-      for (const corners of ['nenhum', 'colchetes', 'joias'] as const) {
+      for (const corners of ['none', 'brackets', 'jewels'] as const) {
         const props = parseBorder({...presetOf('border', theme), corners, ...sized(id)});
         const geometry = getBorderGeometry(props);
         const {layout} = geometry;
@@ -337,7 +337,7 @@ test('Borda redonda: a janela é um disco transparente, e tudo o que sai da caix
         assert.ok(layout.outset <= props.bleed, `${label}: outset ${layout.outset} ≤ bleed ${props.bleed}`);
         // Brackets: four arcs outside the band, centred on the diagonals, their outer edge within the outset.
         const centre = {x: layout.box.x + side / 2, y: layout.box.y + side / 2};
-        for (const {s, half} of corners === 'colchetes' ? geometry.brackets : []) {
+        for (const {s, half} of corners === 'brackets' ? geometry.brackets : []) {
           const track = geometry.tracks[2];
           const mid = pointAt(track, s);
           const angle = Math.atan2(mid.y - centre.y, mid.x - centre.x);
@@ -352,7 +352,7 @@ test('Borda redonda: a janela é um disco transparente, e tudo o que sai da caix
           }
         }
         // Gems: on the ring at the diagonals, never touching the hole.
-        for (const gem of corners === 'joias' ? geometry.gems : []) {
+        for (const gem of corners === 'jewels' ? geometry.gems : []) {
           const angle = Math.atan2(gem.y - centre.y, gem.x - centre.x);
           assert.ok(Math.abs(Math.abs(Math.cos(angle)) - Math.SQRT1_2) < 1e-9, `${label}: joia na diagonal`);
           assert.ok(roundRectSdf(layout.holeShape, gem.x, gem.y) >= props.gemSize / 2 - 1e-9, `${label}: joia fora do buraco`);
@@ -365,7 +365,7 @@ test('Borda redonda: a janela é um disco transparente, e tudo o que sai da caix
 
 test('Borda redonda: os colchetes têm o mesmo comprimento em px em todo tamanho redondo, e cornerSize o controla', () => {
   const bracketLength = (id: string, cornerSize: number) => {
-    const geometry = getBorderGeometry(parseBorder({...presetOf('border', 'neon'), corners: 'colchetes', cornerSize, ...sized(id)}));
+    const geometry = getBorderGeometry(parseBorder({...presetOf('border', 'neon'), corners: 'brackets', cornerSize, ...sized(id)}));
     const lengths = geometry.brackets.map(({half}) => 2 * half);
     assert.ok(lengths.every((length) => length === lengths[0]));
     return lengths[0]!;
@@ -377,12 +377,12 @@ test('Borda redonda: os colchetes têm o mesmo comprimento em px em todo tamanho
   assert.ok(bracketLength('webcam-round', 40) > bracketLength('webcam-round', 28), 'cornerSize muda o colchete redondo');
   // A long bracket stops at 70% of a quarter, so the four never close into a ring.
   for (const id of ROUND_BORDERS) {
-    const geometry = getBorderGeometry(parseBorder({...presetOf('border', 'neon'), corners: 'colchetes', cornerSize: 512, ...sized(id)}));
+    const geometry = getBorderGeometry(parseBorder({...presetOf('border', 'neon'), corners: 'brackets', cornerSize: 512, ...sized(id)}));
     const quarter = perimeterLength(geometry.tracks[2]) / 4;
     for (const {half} of geometry.brackets) assert.ok(Math.abs(2 * half - 0.7 * quarter) < 1e-9, id);
   }
   // A square box with the radius trick is a circle too, and so are its brackets.
-  const trick = getBorderGeometry(parseBorder({...sized('webcam-square'), radius: 200, corners: 'colchetes', cornerSize: 28}));
+  const trick = getBorderGeometry(parseBorder({...sized('webcam-square'), radius: 200, corners: 'brackets', cornerSize: 28}));
   assert.ok(trick.brackets.every(({half}) => Math.abs(2 * half - 112) < 1e-9));
   // A rectangular window keeps its arms: the corner's curve plus cornerSize on each side.
   assert.ok(Math.abs(bracketLength('webcam-square', 40) - bracketLength('webcam-square', 28) - 24) < 1e-9);
@@ -414,7 +414,7 @@ test('Borda redonda: formigas, cometas e gradiente em P = 2πr, voltas inteiras,
     const [start, end] = [pointAt(track, 0), pointAt(track, perimeter)];
     assert.ok(Math.hypot(start.x - end.x, start.y - end.y) < 1e-9, id);
     for (const [strokeMotion, extra] of [
-      ['formigas', {dashLength: 18, gapLength: 12}], ['cometas', {cometSpacing: 640}], ['gradiente', {gradientLength: 480}],
+      ['dashes', {dashLength: 18, gapLength: 12}], ['comets', {cometSpacing: 640}], ['gradient', {gradientLength: 480}],
     ] as const) {
       const props = parseBorder({...sized(id), strokeMotion, strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], ...extra});
       const motion = getStrokeMotion(props, track);
@@ -425,7 +425,7 @@ test('Borda redonda: formigas, cometas e gradiente em P = 2πr, voltas inteiras,
     }
     assert.equal(fitPeriod(perimeter, 640).n, Math.max(1, Math.round(perimeter / 640)));
     // Aliasing: the limit the message names is accepted, one px/s more is refused.
-    const ants = {...sized(id), strokeMotion: 'formigas', dashLength: 4, gapLength: 4, strokeColors: ['#FFFFFF']};
+    const ants = {...sized(id), strokeMotion: 'dashes', dashLength: 4, gapLength: 4, strokeColors: ['#FFFFFF']};
     const [, message] = messagesOf(borderLoopSchema, {...ants, strokeSpeed: 4000})[0]!;
     assert.match(message!, /Speed too high for the dashes/);
     const limit = Number(/strokeSpeed up to ([\d.]+) px\/s/.exec(message!)![1]);
@@ -455,19 +455,19 @@ test('Redondos: a velocidade continua na emenda também no círculo grande, com 
   // The glint turns round the biggest circle four times a cycle; near the top of its circle one
   // coordinate barely moves while it accelerates hard, which the scan must not take for a seam.
   const blockSample: Sampler = (input, frame, length) => getBlockScene(parseBlock({
-    ...sized('circle-lg'), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
+    ...sized('circle-lg'), fill: 'stripes', fillSpeed: 48, strokeMotion: 'dashes', accent: 'left', accentSheen: 4,
     glowPulses: 4, halo: 32, ...input,
   }), frame, length);
   assertSeamVelocity('BlockLoop (círculo-g, máximos)', blockSample);
   for (const theme of THEMES) {
-    for (const accent of ['esquerda', 'topo'] as const) {
+    for (const accent of ['left', 'top'] as const) {
       assertSeamVelocity(`BlockLoop ${theme} circle-lg ${accent}`, (input, frame, length) =>
         getBlockScene(parseBlock({...presetOf('block', theme), ...sized('circle-lg'), accent, accentSheen: 4, ...input}), frame, length));
     }
   }
   assertSeamVelocity('BorderLoop (webcam-round-lg, máximos)', (input, frame, length) => getBorderScene(parseBorder({
-    ...sized('webcam-round-lg'), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
-    corners: 'joias', cornerPulses: 4, glowPulses: 4, ...input,
+    ...sized('webcam-round-lg'), fill: 'dots', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradient', lines: 2,
+    corners: 'jewels', cornerPulses: 4, glowPulses: 4, ...input,
   }), frame, length));
   // The scan still catches a real seam: a point turning round a circle whose speed jumps there.
   const kinked: Sampler = (_input, frame, length) => {

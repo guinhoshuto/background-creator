@@ -6,13 +6,13 @@
   "outputFormat": "webm",
   "radius": 20,
   "thickness": 12,
-  "fill": "vidro",
+  "fill": "glass",
   "fillColors": ["#FFFFFF"],
   "fillOpacity": 0.1,
   "fillSpeed": 60,
   "fillAngle": 30,
   "fillLight": 0.16,
-  "strokeMotion": "gradiente",
+  "strokeMotion": "gradient",
   "strokeColors": ["#FFFFFF", "#C7D2FE", "#A5B4FC"],
   "strokeWidth": 2,
   "gradientLength": 600,
@@ -22,6 +22,6 @@
   "haloColor": "#0F172AB3",
   "rimLight": 0.9,
   "lines": 1,
-  "corners": "nenhum",
+  "corners": "none",
   "cornerPulses": 0
 }

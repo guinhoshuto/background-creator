@@ -27,7 +27,7 @@ const SIZE = getSize(kindPolicies.border.defaultSizeId!);
 /** The round window sizes, for the refusal of a circle in a box that is not square. */
 const ROUND_SIZES = 'webcam-round-sm, webcam-round or webcam-round-lg';
 
-export const CORNER_STYLES = ['nenhum', 'colchetes', 'joias'] as const;
+export const CORNER_STYLES = ['none', 'brackets', 'jewels'] as const;
 
 const borderFields = z.object({
   ...overlayBaseFields({width: SIZE.width, height: SIZE.height, bleed: SIZE.bleed}),
@@ -45,10 +45,10 @@ const borderFields = z.object({
     .describe('Thickness of the border band, in px; the outline runs along its middle')
     .default(10),
   ...fillFields({
-    fill: 'solido', fillColors: ['#120A38'], fillOpacity: 0.9, fillScale: 12, fillSpeed: 24, fillAngle: 45,
+    fill: 'solid', fillColors: ['#120A38'], fillOpacity: 0.9, fillScale: 12, fillSpeed: 24, fillAngle: 45,
   }),
   ...strokeFields({
-    strokeMotion: 'cometas', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], strokeWidth: 4, strokeWidthMin: 0,
+    strokeMotion: 'comets', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], strokeWidth: 4, strokeWidthMin: 0,
     dashLength: 18, gapLength: 12, cometSpacing: 640, cometTail: 320, strokeSpeed: 160, strokePulses: 1, strokeCore: 0.9,
   }),
   trackOpacity: trackOpacityField(0.45),
@@ -56,7 +56,7 @@ const borderFields = z.object({
   ...haloFields({halo: 0, haloColor: '#A78BFA'}),
   rimLight: rimLightField(0),
   lines: z.number().int().min(1).max(2)
-    .describe('1: the band only; 2: plus a thin line outside it, separated by lineGap (with formigas and cometas it stays still)')
+    .describe('1: the band only; 2: plus a thin line outside it, separated by lineGap (with dashes and comets it stays still)')
     .default(2),
   lineGap: z.number().finite().min(1).max(64)
     .describe('Space between the band and the second line, in px')
@@ -65,16 +65,16 @@ const borderFields = z.object({
     .describe('Thickness of the second line, in px; 2 or more avoids color loss in WebM')
     .default(2),
   corners: z.enum(CORNER_STYLES)
-    .describe('Corner ornament: nenhum, colchetes (brackets around the border) or joias (diamonds on the band)')
-    .default('colchetes'),
+    .describe('Corner ornament: none, brackets (around the border) or jewels (diamonds on the band)')
+    .default('brackets'),
   cornerSize: z.number().finite().min(4).max(512)
-    .describe('colchetes: length of each arm after the corner curve, in px; in the circle, each bracket is an arc of 4×cornerSize px')
+    .describe('brackets: length of each arm after the corner curve, in px; in the circle, each bracket is an arc of 4×cornerSize px')
     .default(28),
   cornerGap: z.number().finite().min(0).max(128)
-    .describe('colchetes: distance from the outer edge of the border, in px; with screen they sit inward, from the edge of the file')
+    .describe('brackets: distance from the outer edge of the border, in px; with screen they sit inward, from the edge of the file')
     .default(6),
   gemSize: z.number().finite().min(4).max(128)
-    .describe('joias: width of each diamond, in px')
+    .describe('jewels: width of each diamond, in px')
     .default(14),
   cornerPulses: z.number().int().min(0).max(16)
     .describe('How many times the corners pulse per cycle, lighting up one after another; 0 keeps them steady')
@@ -112,7 +112,7 @@ export type BorderGeometry = {
   /** How far the corner ornaments reach beyond the box, glow excluded ('window'). */
   cornerOutset: number;
   /**
-   * Where the themed ornaments go (none with ornaments 'nenhum'), on the frame's outer edge; around
+   * Where the themed ornaments go (none with ornaments 'none'), on the frame's outer edge; around
    * a window their reach beyond the box is folded into the layout's outset (a screen keeps 0).
    */
   ornamentLayout: OrnamentLayout;
@@ -196,9 +196,9 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
   const beyond = ({x, y}: {x: number; y: number}) => Math.max(
     box.x - (x - reach), (x + reach) - (box.x + box.width), box.y - (y - reach), (y + reach) - (box.y + box.height), 0,
   );
-  const cornerOutset = props.corners === 'colchetes'
+  const cornerOutset = props.corners === 'brackets'
     ? totalThickness + props.cornerGap + cornerWidth
-    : props.corners === 'joias' ? Math.max(...gems.map(beyond)) : 0;
+    : props.corners === 'jewels' ? Math.max(...gems.map(beyond)) : 0;
   // Around a window the halo spreads out from the frame's outer edge, and the corners carry the
   // glow further out; on a screen nothing leaves the box.
   // The themed ornaments hang on the base frame (its outer edge includes the second line) and
@@ -209,7 +209,7 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
     ? {
       ...base,
       outset: Math.max(
-        base.outset, totalThickness + props.halo, props.corners === 'nenhum' ? 0 : cornerOutset + props.glow,
+        base.outset, totalThickness + props.halo, props.corners === 'none' ? 0 : cornerOutset + props.glow,
         layoutOutset(ornamentLayout),
       ),
     }
@@ -336,20 +336,20 @@ const refineReach = (props: BorderLoopProps, geometry: BorderGeometry, context: 
     context.addIssue({
       code: 'custom',
       path: ['bleed'],
-      message: props.corners === 'colchetes'
+      message: props.corners === 'brackets'
         ? `The brackets go past the margin: use bleed ≥ ${minBleedFor(geometry.layout.outset)} or reduce cornerGap or the glow.`
         : `The gems go past the margin: use bleed ≥ ${minBleedFor(geometry.layout.outset)} or reduce gemSize or the glow.`,
     });
     return;
   }
-  if (props.corners === 'colchetes' && props.cornerGap + geometry.cornerWidth > geometry.totalThickness + props.glow + 1e-9) {
+  if (props.corners === 'brackets' && props.cornerGap + geometry.cornerWidth > geometry.totalThickness + props.glow + 1e-9) {
     context.addIssue({
       code: 'custom',
       path: ['cornerGap'],
       message: `The brackets would enter the window: on a screen frame use cornerGap ≤ ${Math.max(0, geometry.totalThickness + props.glow - geometry.cornerWidth)} or increase thickness or the glow.`,
     });
   }
-  if (props.corners === 'joias') {
+  if (props.corners === 'jewels') {
     const {box, holeShape} = geometry.layout;
     const reach = props.gemSize / 2;
     const fits = geometry.gems.every((gem) => gem.x - reach >= box.x - 1e-9 && gem.x + reach <= box.x + box.width + 1e-9
@@ -367,7 +367,7 @@ const refineReach = (props: BorderLoopProps, geometry: BorderGeometry, context: 
 
 /** What the second line draws: it never carries travelling pieces, only the colours and the breath. */
 const secondMotion = (motion: StrokeMotionName): StrokeMotionName =>
-  (motion === 'formigas' || motion === 'cometas' ? 'parado' : motion);
+  (motion === 'dashes' || motion === 'comets' ? 'still' : motion);
 
 /**
  * A mask is only the window, as big as the camera: it needs a window ('window'), no bleed, a PNG
@@ -447,14 +447,14 @@ export type CornerElement = BracketElement | GemElement;
 export const buildCornerScene = (
   props: BorderLoopProps, geometry: BorderGeometry, frame: number, durationInFrames: number,
 ): CornerElement[] => {
-  if (props.corners === 'nenhum') return [];
+  if (props.corners === 'none') return [];
   const cycle = cycleOf(frame, durationInFrames);
   const phase = createSeededRandom(props.seed + 401)() * TAU;
   const colors = props.strokeColors;
   const level = (index: number) => (props.cornerPulses > 0
     ? 0.5 + 0.5 * Math.cos(props.cornerPulses * cycle * TAU + phase - (index * TAU) / 4)
     : 1);
-  if (props.corners === 'colchetes') {
+  if (props.corners === 'brackets') {
     return geometry.brackets.map(({s, half}, index): BracketElement => ({
       type: 'bracket', track: TRACK_BRACKETS, s: s - half, length: 2 * half, width: geometry.cornerWidth,
       color: colors[index % colors.length]!, opacity: 0.5 + 0.5 * level(index),

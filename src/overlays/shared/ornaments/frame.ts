@@ -16,7 +16,7 @@ const areas = (keepOut: readonly (Rect | null | undefined)[]): Rect[] =>
  */
 export const panelOrnamentFrame = (input: {
   kind: 'chat' | 'block'; layout: PanelLayout; keepOut: readonly (Rect | null | undefined)[];
-  accent?: 'esquerda' | 'topo' | null; glow: number;
+  accent?: 'left' | 'top' | null; glow: number;
 }): OrnamentFrame => {
   const {layout} = input;
   const canvas = canvasRect(layout.canvas);

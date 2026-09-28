@@ -35,8 +35,8 @@ type Case = {label: string; input: Record<string, unknown>; mustFit?: boolean};
 
 /** Small round screen frames (a square screen with radius ≥ side/2): the outline is a circle, but the frame is still a screen. */
 const ROUND_SCREENS: readonly Record<string, unknown>[] = [
-  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'nenhum'},
-  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'nenhum'},
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'none'},
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'none'},
 ];
 
 /** Every named size, the border's radii 0/16/200 on each and small round screen frames, and the round blocks with each accent. */
@@ -50,7 +50,7 @@ const variants = (adapter: OrnamentKindAdapter): Case[] => {
   }
   if (adapter.kind === 'block') {
     for (const size of adapter.sizes.filter((entry) => entry.props?.shape === 'circle')) {
-      for (const accent of ['esquerda', 'topo']) cases.push({label: `${size.id} accent ${accent}`, input: {...sizeProps(size), accent}, mustFit: true});
+      for (const accent of ['left', 'top']) cases.push({label: `${size.id} accent ${accent}`, input: {...sizeProps(size), accent}, mustFit: true});
     }
   }
   return cases;
@@ -65,14 +65,14 @@ const sampleFrames = (n: number) => [0, 1, 37, n * 0.137, n * 0.391, n * 0.618, 
 
 /** The documented refusal; its way out depends on the kind (and on a border's fit): see ornamentWayOut. */
 export const REFUSAL = new RegExp(`^The "(midnight|haunted-mansion|haunted-interior|cobweb)" ornaments do not fit this size: (${[
-  'increase bleed, padding or radius or use ornaments nenhum.',
-  'increase bleed or padding or use ornaments nenhum.',
-  'increase bleed, paddingX, paddingY or radius or use ornaments nenhum.',
-  'increase bleed, paddingX or paddingY or use ornaments nenhum.',
-  'increase bleed or radius or use ornaments nenhum.',
-  'increase bleed or use ornaments nenhum.',
-  'increase thickness, glow or radius or use ornaments nenhum.',
-  'increase thickness or glow or use ornaments nenhum.',
+  'increase bleed, padding or radius or use ornaments none.',
+  'increase bleed or padding or use ornaments none.',
+  'increase bleed, paddingX, paddingY or radius or use ornaments none.',
+  'increase bleed, paddingX or paddingY or use ornaments none.',
+  'increase bleed or radius or use ornaments none.',
+  'increase bleed or use ornaments none.',
+  'increase thickness, glow or radius or use ornaments none.',
+  'increase thickness or glow or use ornaments none.',
 ].map((text) => text.replaceAll('.', '\\.')).join('|')})$`);
 
 /** Placement bounds: inside the paint limit (edge), clear of the hole, and in front clear of the text. */
@@ -138,7 +138,7 @@ const checkCase = (
       assert.deepEqual(issue.path, ['ornaments'], `${id}: só a recusa documentada (${issue.message})`);
       assert.match(issue.message, REFUSAL, id);
     }
-    const layout = adapter.ornamentLayout({...adapter.parse({...input, ornaments: 'nenhum'}), ornaments: set});
+    const layout = adapter.ornamentLayout({...adapter.parse({...input, ornaments: 'none'}), ornaments: set});
     assert.equal(layout.placements.length, 0, `${id}: recusado só quando nada cabe`);
     // The way out named is the one of this kind and fit (a border has no padding; screen, no bleed).
     for (const issue of issues) assert.equal(issue.message, `The "${set}" ornaments do not fit this size: ${ornamentWayOut(layout.frame)}`, id);
@@ -432,7 +432,7 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
       const preset = adapter.preset(theme);
       const props = adapter.parse(preset);
       assert.equal(props.ornaments, set, `${theme}: ornaments ${set}`);
-      if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'nenhum', `${theme}: com enfeites, corners nenhum`);
+      if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'none', `${theme}: com enfeites, corners none`);
       for (const size of adapter.sizes) {
         checkCase(adapter, set, `[${theme}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
         // And as the pack renders it, where its item adds props (the telas' band, the Twitch panel's padding).

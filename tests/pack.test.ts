@@ -555,7 +555,7 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
       for (const kind of ['chat', 'block', 'border'] as const) {
         const items = byPreset(`${kind}-${name}`, 'plain');
         assert.deepEqual(items.flatMap((item) => item.sizes).sort(), ids(kind).sort(), `${name}: ${kind} sem enfeites`);
-        for (const item of items) assert.deepEqual(item.props, {ornaments: 'nenhum'}, `${name}: ${kind} sem enfeites`);
+        for (const item of items) assert.deepEqual(item.props, {ornaments: 'none'}, `${name}: ${kind} sem enfeites`);
       }
       const plainTwitch = byPreset(`block-${name}`, 'plain').find((item) => item.sizes?.includes('twitch-panel'))!;
       assert.deepEqual([plainTwitch.sizes, plainTwitch.formats], [['twitch-panel'], ['gif', 'png']]);

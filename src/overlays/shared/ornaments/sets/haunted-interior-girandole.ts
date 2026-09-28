@@ -9,20 +9,20 @@ import {cubicAt, ellipsePoints, FLICKER, type Cubic, type Point} from './haunted
  * fixture rises into negative y, from 0 to −1. `dir` mirrors x (−1: fixtures on the left, whose
  * sconce arm reaches out to the left); the moonlit highlight stays on the right like the hall's moon.
  *
- *   - 'candelabro-3' (the hero): a stem with a knop, one symmetric curved arm to two outer cups at
+ *   - 'candelabra-3' (the hero): a stem with a knop, one symmetric curved arm to two outer cups at
  *     ±0.26 and a centre cup at the stem's top, three candles (the centre one the tallest).
- *   - 'candelabro-2': the same parts with two candles at ±0.17 on a U-arm and a ball finial.
- *   - 'arandela': a symmetric two-light wall girandole (AD round 3: the single candle on an S-arm
- *     read as a hook): candelabro-2's knop, U-arm, cups and candles on a vertical oval wall plate
+ *   - 'candelabra-2': the same parts with two candles at ±0.17 on a U-arm and a ball finial.
+ *   - 'sconce': a symmetric two-light wall girandole (AD round 3: the single candle on an S-arm
+ *     read as a hook): candelabra-2's knop, U-arm, cups and candles on a vertical oval wall plate
  *     (0.20 × 0.40, from 0.04 to 0.44) with a boss (Ø0.09) at 0.24, and a small drop under the stem.
  *
  * Mount: a rosette on the frame's line ('rosette') or a domed foot standing on a rail ('foot').
  * Everything here is plain arithmetic on constants; bounds are memoised.
  */
 
-export type FixtureKind = 'candelabro-3' | 'candelabro-2' | 'arandela';
+export type FixtureKind = 'candelabra-3' | 'candelabra-2' | 'sconce';
 export type FixtureMount = 'rosette' | 'foot';
-export const FIXTURE_KINDS: readonly FixtureKind[] = ['candelabro-3', 'candelabro-2', 'arandela'];
+export const FIXTURE_KINDS: readonly FixtureKind[] = ['candelabra-3', 'candelabra-2', 'sconce'];
 
 /** One candle on a fixture: the cup's axis x, its bobeche's centre y, the wax length and the flame's scale (H per flame-path unit). */
 export type FixtureCup = {x: number; bobeche: number; wax: number; flame: number};
@@ -54,7 +54,7 @@ export type FixtureShape = {
   cups: readonly FixtureCup[];
   /** The stem, from the mount up to `top` (y, negative). */
   stemTop: number;
-  /** A thinner neck above the stem (candelabro-2's finial) and its ball: y from, y to, ball centre, ball radius; null for none. */
+  /** A thinner neck above the stem (candelabra-2's finial) and its ball: y from, y to, ball centre, ball radius; null for none. */
   finial: {from: number; to: number; ball: number; radius: number} | null;
   /** Knops on the stem: centre y and radii. */
   knops: readonly {y: number; rx: number; ry: number}[];
@@ -89,7 +89,7 @@ const CANDELABRO_2_ARM: Cubic[] = [
 ];
 
 export const FIXTURES: Record<FixtureKind, FixtureShape> = {
-  'candelabro-3': {
+  'candelabra-3': {
     cups: [
       {x: -0.26, bobeche: -0.52, wax: 0.165, flame: FLAME_OUTER},
       {x: 0, bobeche: -0.575, wax: 0.185, flame: FLAME_CENTRE},
@@ -101,7 +101,7 @@ export const FIXTURES: Record<FixtureKind, FixtureShape> = {
     arms: [CANDELABRO_3_ARM, mirror(CANDELABRO_3_ARM)],
     rosette: 0.08,
   },
-  'candelabro-2': {
+  'candelabra-2': {
     cups: [
       {x: -0.17, bobeche: -0.57, wax: 0.19, flame: FLAME_CENTRE},
       {x: 0.17, bobeche: -0.57, wax: 0.19, flame: FLAME_CENTRE},
@@ -112,8 +112,8 @@ export const FIXTURES: Record<FixtureKind, FixtureShape> = {
     arms: [CANDELABRO_2_ARM, mirror(CANDELABRO_2_ARM)],
     rosette: 0.08,
   },
-  // candelabro-2 on a wall plate (AD round 3): the same cups, arm and knop; no rosette, no finial.
-  arandela: {
+  // candelabra-2 on a wall plate (AD round 3): the same cups, arm and knop; no rosette, no finial.
+  sconce: {
     cups: [
       {x: -0.17, bobeche: -0.57, wax: 0.19, flame: FLAME_CENTRE},
       {x: 0.17, bobeche: -0.57, wax: 0.19, flame: FLAME_CENTRE},

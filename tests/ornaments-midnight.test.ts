@@ -188,10 +188,10 @@ test('[midnight] luz nunca come o espaço do corpo: light ≤ reach + max(4, 0,2
 
 test('[midnight] blocos redondos: a lua fica no céu (TR) e nada da frente toca o arco de destaque', () => {
   // The arc (BlockLoop: 60° to each side of the top or the left), in degrees counter-clockwise from the right, y up.
-  const arcSpan = {topo: [30, 150], esquerda: [120, 240]} as const;
+  const arcSpan = {top: [30, 150], left: [120, 240]} as const;
   for (const id of ['circle-sm', 'circle', 'circle-lg']) {
     const size = NAMED_SIZES.find((entry) => entry.id === id)!;
-    for (const accent of ['esquerda', 'topo', 'nenhum'] as const) {
+    for (const accent of ['left', 'top', 'none'] as const) {
       for (const glow of [0, 14]) {
         const where = `${id} ${accent} glow ${glow}`;
         const {frame, placements} = layoutAt(size, {accent, glow});
@@ -201,7 +201,7 @@ test('[midnight] blocos redondos: a lua fica no céu (TR) e nada da frente toca 
         assert.equal(placements[0]!.slot, 'TR', `${where}: canto da lua`);
         assert.ok(placements[0]!.y < cy, `${where}: lua acima do centro`);
         assert.ok(count(placements, 'bat') >= 1, `${where}: morcegos`);
-        if (accent === 'nenhum') continue;
+        if (accent === 'none') continue;
         const [from, to] = arcSpan[accent];
         for (const placement of placements) {
           if (placement.layer !== 'front') continue;

@@ -25,7 +25,7 @@ import {
 import {MAX_CONTENT_OPACITY} from '../shared/legibility';
 import {contentGlowOpacity} from './legibility';
 
-export const BLOCK_ACCENTS = ['nenhum', 'esquerda', 'topo'] as const;
+export const BLOCK_ACCENTS = ['none', 'left', 'top'] as const;
 
 /** The kind's default named size ('card', 640×360 with a 32 px bleed): the schema's defaults. */
 const DEFAULT_SIZE = getSize(kindPolicies.block.defaultSizeId!);
@@ -68,10 +68,10 @@ const blockFields = z.object({
     .describe('Vertical space between the outline (or the accent bar) and the content, in px; in the circle the larger of paddingX and paddingY applies all the way around')
     .default(16),
   ...fillFields({
-    fill: 'gradiente', fillColors: ['#120A38', '#26105C', '#0A1C4E'], fillOpacity: 0.9, fillAngle: 60, fillLight: 0.05,
+    fill: 'gradient', fillColors: ['#120A38', '#26105C', '#0A1C4E'], fillOpacity: 0.9, fillAngle: 60, fillLight: 0.05,
   }),
   ...strokeFields({
-    strokeMotion: 'cometas', strokeColors: ['#22D3EE', '#E879F9'], strokeWidth: 4, strokeWidthMin: 0,
+    strokeMotion: 'comets', strokeColors: ['#22D3EE', '#E879F9'], strokeWidth: 4, strokeWidthMin: 0,
     cometSpacing: 640, cometTail: 320, strokeSpeed: 160, strokeCore: 0.9,
   }),
   trackOpacity: trackOpacityField(0.45),
@@ -79,8 +79,8 @@ const blockFields = z.object({
   ...haloFields({halo: 20, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
   accent: z.enum(BLOCK_ACCENTS)
-    .describe('Accent bar inside the outline: nenhum, esquerda or topo; the content starts after it. In the circle it is a 120° arc against the outline, centered on the left or the top')
-    .default('nenhum'),
+    .describe('Accent bar inside the outline: none, left or top; the content starts after it. In the circle it is a 120° arc against the outline, centered on the left or the top')
+    .default('none'),
   accentColor: zColor().default('#E879F9'),
   accentSize: z.number().finite().min(2).max(64)
     .describe('Thickness of the accent bar, in px')
@@ -111,7 +111,7 @@ export type AccentArc = {cx: number; cy: number; outer: number; width: number; n
 export type BlockLayout = PanelLayout & {
   accent: Rect | null;
   accentArc: AccentArc | null;
-  /** Where the ornaments go (none with ornaments 'nenhum'); their reach beyond the box is folded into outset. */
+  /** Where the ornaments go (none with ornaments 'none'); their reach beyond the box is folded into outset. */
   ornamentLayout: OrnamentLayout;
 };
 
@@ -135,14 +135,14 @@ export const getBlockLayout = (props: LayoutProps): BlockLayout => withOrnaments
  * block tells them its accent side, whose arc covers two of the corner slots.
  */
 const withOrnaments = (base: Omit<BlockLayout, 'ornamentLayout'>, props: LayoutProps): BlockLayout => {
-  const accent = props.accent === 'nenhum' ? null : props.accent;
+  const accent = props.accent === 'none' ? null : props.accent;
   const frame = panelOrnamentFrame({kind: 'block', layout: base, keepOut: [base.content], accent, glow: props.glow});
   const ornamentLayout = layoutOrnaments(frame, props);
   return {...base, outset: Math.max(base.outset, layoutOutset(ornamentLayout)), ornamentLayout};
 };
 
 const getPanelLayout = (props: LayoutProps): Omit<BlockLayout, 'ornamentLayout'> => {
-  const size = props.accent === 'nenhum' ? 0 : props.accentSize;
+  const size = props.accent === 'none' ? 0 : props.accentSize;
   const panel = layoutPanel({
     width: props.width,
     height: props.height,
@@ -158,21 +158,21 @@ const getPanelLayout = (props: LayoutProps): Omit<BlockLayout, 'ornamentLayout'>
   if (panel.circle) {
     const outer = inner.width / 2;
     const content = fitCircleContent(inner, size + Math.max(props.paddingX, props.paddingY));
-    const accentArc = props.accent === 'nenhum' ? null : {
+    const accentArc = props.accent === 'none' ? null : {
       cx: inner.x + outer, cy: inner.y + outer, outer, width: Math.min(size, outer),
-      nx: props.accent === 'esquerda' ? -1 : 0, ny: props.accent === 'topo' ? -1 : 0, spread: ACCENT_ARC_SPREAD,
+      nx: props.accent === 'left' ? -1 : 0, ny: props.accent === 'top' ? -1 : 0, spread: ACCENT_ARC_SPREAD,
     };
     return {...panel, content, accent: null, accentArc};
   }
   const content = fitClearContent(inner, {
-    top: props.paddingY + (props.accent === 'topo' ? size : 0),
+    top: props.paddingY + (props.accent === 'top' ? size : 0),
     right: props.paddingX,
     bottom: props.paddingY,
-    left: props.paddingX + (props.accent === 'esquerda' ? size : 0),
+    left: props.paddingX + (props.accent === 'left' ? size : 0),
   }, Math.min(props.paddingX, props.paddingY));
-  const accent = props.accent === 'esquerda'
+  const accent = props.accent === 'left'
     ? {x: inner.x, y: inner.y, width: Math.min(size, inner.width), height: inner.height}
-    : props.accent === 'topo'
+    : props.accent === 'top'
       ? {x: inner.x, y: inner.y, width: inner.width, height: Math.min(size, inner.height)}
       : null;
   return {...panel, content, accent, accentArc: null};
@@ -236,7 +236,7 @@ const buildAccentScene = (
     type: 'rect', x: bar.x, y: bar.y, width: bar.width, height: bar.height, corner: 0, color: props.accentColor, opacity: 1,
   };
   if (!(props.accentSheen > 0)) return [rect];
-  const vertical = props.accent === 'esquerda';
+  const vertical = props.accent === 'left';
   const u = vertical ? {x: 0, y: 1} : {x: 1, y: 0};
   const length = vertical ? bar.height : bar.width;
   const width = accentGlintWidth(length);

@@ -51,7 +51,7 @@ test('Bloco: defaults são o neon no tamanho cartão, transparente, em WebM', ()
   assert.equal(props.guides, false);
   assert.deepEqual(props.strokeColors, ['#22D3EE', '#E879F9']);
   assert.equal(props.fillColors[0], '#120A38');
-  assert.equal(props.strokeMotion, 'cometas');
+  assert.equal(props.strokeMotion, 'comets');
   assert.ok(props.glow > 0 && props.glowPulses > 0, 'neon brilha e pulsa');
   assert.deepEqual(getBlockLayout(props).canvas, {width: 704, height: 424});
 });
@@ -93,8 +93,8 @@ test('Bloco: recusa valores inválidos e aceita os limites documentados', () => 
   }
   assert.match(issuesOf({width: 641}).join(), /width must be even/);
   for (const input of [
-    {accent: 'esquerda', accentSize: 2, accentSheen: 4, strokeWidth: 0, glow: 0, halo: 0},
-    {accent: 'topo', accentSize: 64, paddingY: 0, radius: 0, trackOpacity: 0, glow: 0},
+    {accent: 'left', accentSize: 2, accentSheen: 4, strokeWidth: 0, glow: 0, halo: 0},
+    {accent: 'top', accentSize: 64, paddingY: 0, radius: 0, trackOpacity: 0, glow: 0},
     {radius: 1920, trackOpacity: 1},
   ]) {
     assert.equal(blockLoopSchema.strict().safeParse(input).success, true, JSON.stringify(input));
@@ -134,7 +134,7 @@ test('Bloco: os 11 tamanhos nomeados, inclusive as proporções extremas e os c�
         }
         // Even in a pill, the text keeps the smaller padding from the curve.
         assert.ok(contentClearance(layout.inner, layout.content) >= Math.min(props.paddingX, props.paddingY) - 1e-9, `${id}: folga na curva`);
-        if (accent === 'nenhum') {
+        if (accent === 'none') {
           assert.equal(layout.accent, null);
           assert.equal(layout.accentArc, null);
         } else if (layout.circle) {
@@ -154,8 +154,8 @@ test('Bloco: os 11 tamanhos nomeados, inclusive as proporções extremas e os c�
 
 test('Bloco: a barra de destaque desloca o conteúdo pela sua espessura, com o padding depois dela', () => {
   const plain = getBlockLayout(parse({radius: 0}));
-  const left = getBlockLayout(parse({radius: 0, accent: 'esquerda', accentSize: 10}));
-  const top = getBlockLayout(parse({radius: 0, accent: 'topo', accentSize: 10}));
+  const left = getBlockLayout(parse({radius: 0, accent: 'left', accentSize: 10}));
+  const top = getBlockLayout(parse({radius: 0, accent: 'top', accentSize: 10}));
   assert.equal(left.content.x - plain.content.x, 10);
   assert.equal(left.content.x - (left.accent!.x + left.accent!.width), parse({}).paddingX);
   assert.equal(top.content.y - plain.content.y, 10);
@@ -178,9 +178,9 @@ test('Bloco: num círculo o conteúdo é o quadrado inscrito, com a folga do pad
 
 test('Bloco: a seed nunca move a caixa, o conteúdo nem a barra', () => {
   for (const size of sizesForKind('block')) {
-    const layout = getBlockLayout(parse({...sized(size.id), accent: 'esquerda', seed: 1}));
+    const layout = getBlockLayout(parse({...sized(size.id), accent: 'left', seed: 1}));
     for (const seed of [-7, 42, 2026]) {
-      assert.deepEqual(getBlockLayout(parse({...sized(size.id), accent: 'esquerda', seed})), layout, size.id);
+      assert.deepEqual(getBlockLayout(parse({...sized(size.id), accent: 'left', seed})), layout, size.id);
     }
   }
 });
@@ -210,7 +210,7 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
 test('Bloco: padding ou barra que não deixam espaço para o conteúdo são recusados', () => {
   const tiny = sizeProps(getSize('label-sm'));
   assert.match(issuesOf({...tiny, paddingY: 30}).join(), /The padding leaves no room for the content/);
-  assert.match(issuesOf({...tiny, accent: 'topo', accentSize: 64}).join(), /leaves no room/);
+  assert.match(issuesOf({...tiny, accent: 'top', accentSize: 64}).join(), /leaves no room/);
   assert.equal(blockLoopSchema.safeParse({...tiny, paddingY: 12}).success, true);
 });
 
@@ -225,8 +225,8 @@ test('Bloco: erf confere com valores de tabela', () => {
 test('Legibilidade: nada acima do fill entra no conteúdo, e o brilho fica abaixo do limite sobre ele', () => {
   const inputs = [
     {}, ...THEMES.map(preset),
-    {strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 3},
-    {strokeMotion: 'gradiente', accent: 'topo', accentSheen: 2, strokeWidth: 8, glow: 24, bleed: 24},
+    {strokeMotion: 'dashes', accent: 'left', accentSheen: 3},
+    {strokeMotion: 'gradient', accent: 'top', accentSheen: 2, strokeWidth: 8, glow: 24, bleed: 24},
   ];
   for (const input of inputs) {
     for (const size of sizesForKind('block')) {
@@ -304,19 +304,19 @@ test('Legibilidade: o brilho é medido em 2D, e nos cantos do texto dois lados d
 // ── Motion ──────────────────────────────────────────────────────────────────────────────────
 
 test('Aliasing: contorno e preenchimento rápidos demais são recusados com a velocidade máxima, que é aceita', () => {
-  const ants = {strokeMotion: 'formigas', dashLength: 4, gapLength: 4, strokeColors: ['#FFFFFF']};
+  const ants = {strokeMotion: 'dashes', dashLength: 4, gapLength: 4, strokeColors: ['#FFFFFF']};
   const [message] = issuesOf({...ants, strokeSpeed: 4000});
   assert.match(message!, /Speed too high for the dashes/);
   const limit = Number(message!.match(/strokeSpeed up to ([\d.]+) px\/s/)![1]);
   assert.equal(blockLoopSchema.safeParse({...ants, strokeSpeed: limit}).success, true);
   assert.equal(blockLoopSchema.safeParse({...ants, strokeSpeed: limit + 1}).success, false);
-  const dots = {fill: 'pontos', fillScale: 8, fillAngle: 0};
+  const dots = {fill: 'dots', fillScale: 8, fillAngle: 0};
   const [fillMessage] = issuesOf({...dots, fillSpeed: 480});
   assert.match(fillMessage!, /Speed too high for the dots/);
   const fillLimit = Number(fillMessage!.match(/fillSpeed up to ([\d.]+) px\/s/)![1]);
   assert.equal(blockLoopSchema.safeParse({...dots, fillSpeed: fillLimit}).success, true);
   // The effective speed is rounded to whole laps and exposed for the sidecar, on the block's own track.
-  const comets = {strokeMotion: 'cometas', cometSpacing: 64, strokeColors: ['#FFFFFF'], ...sizeProps(getSize('label-sm'))};
+  const comets = {strokeMotion: 'comets', cometSpacing: 64, strokeColors: ['#FFFFFF'], ...sizeProps(getSize('label-sm'))};
   const motion = getStrokeMotion(parse({...comets, strokeSpeed: 100}), getBlockLayout(parse(comets)).track);
   assert.ok(motion.laps >= 1 && motion.speed > 0);
 });
@@ -326,11 +326,11 @@ type Case = {id: string; input: Record<string, unknown>};
 const CASES: Case[] = [
   {id: 'BlockLoop (padrão neon)', input: {}},
   ...THEMES.map((theme) => ({id: `BlockLoop (${theme})`, input: preset(theme)})),
-  {id: 'BlockLoop (formigas, barra à esquerda com reflexo)', input: {strokeMotion: 'formigas', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'esquerda', accentSheen: 2}},
-  {id: 'BlockLoop (faixa, gradiente, barra no topo com reflexo)', input: {...sizeProps(getSize('lower-third')), strokeMotion: 'gradiente', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'topo', accentSheen: 3, fill: 'listras'}},
+  {id: 'BlockLoop (formigas, barra à esquerda com reflexo)', input: {strokeMotion: 'dashes', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'left', accentSheen: 2}},
+  {id: 'BlockLoop (faixa, gradiente, barra no topo com reflexo)', input: {...sizeProps(getSize('lower-third')), strokeMotion: 'gradient', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'top', accentSheen: 3, fill: 'stripes'}},
   {id: 'BlockLoop (label-sm em pílula, cometas)', input: {...sizeProps(getSize('label-sm')), radius: 999, cometSpacing: 240, strokeSpeed: 300}},
-  {id: 'BlockLoop (lista, brilhos, halo pulsando)', input: {...sizeProps(getSize('list')), fill: 'brilhos', halo: 24, glowPulses: 3}},
-  {id: 'BlockLoop (painel da Twitch, sem bleed)', input: {...sizeProps(getSize('twitch-panel')), glow: 0, halo: 0, fill: 'gradiente', accent: 'topo', accentSheen: 1}},
+  {id: 'BlockLoop (lista, brilhos, halo pulsando)', input: {...sizeProps(getSize('list')), fill: 'sparkles', halo: 24, glowPulses: 3}},
+  {id: 'BlockLoop (painel da Twitch, sem bleed)', input: {...sizeProps(getSize('twitch-panel')), glow: 0, halo: 0, fill: 'gradient', accent: 'top', accentSheen: 1}},
 ];
 
 for (const {id, input} of CASES) {
@@ -361,16 +361,16 @@ test('Bloco: o ciclo fecha em todos os tamanhos nomeados, em WebM e GIF, com tud
 });
 
 test('Bloco: o reflexo da barra só dá a volta fora dela, longe da emenda', () => {
-  for (const accent of ['esquerda', 'topo'] as const) {
+  for (const accent of ['left', 'top'] as const) {
     for (const seed of [-7, 1, 2026]) {
       const props = parse({accent, accentSheen: 1, seed});
       const bar = getBlockLayout(props).accent!;
-      const length = accent === 'esquerda' ? bar.height : bar.width;
-      const start = accent === 'esquerda' ? bar.y : bar.x;
+      const length = accent === 'left' ? bar.height : bar.width;
+      const start = accent === 'left' ? bar.y : bar.x;
       const positions = Array.from({length: 481}, (_, frame) => {
         const sheen = getBlockLayers(props, frame, 480).accent[1]!;
         assert.equal(sheen.type, 'sheen');
-        return sheen.type === 'sheen' ? {at: accent === 'esquerda' ? sheen.cy : sheen.cx, width: sheen.width} : {at: 0, width: 0};
+        return sheen.type === 'sheen' ? {at: accent === 'left' ? sheen.cy : sheen.cx, width: sheen.width} : {at: 0, width: 0};
       });
       let wraps = 0;
       for (let frame = 1; frame < positions.length; frame++) {
@@ -406,7 +406,7 @@ test('Render: SVG do tamanho do arquivo, sem blend mode, camadas na ordem', () =
       assert.match(markup, /clip-path="url\(#block-fill-clip\)"/);
     }
   }
-  const markup = render({accent: 'esquerda', accentSheen: 1});
+  const markup = render({accent: 'left', accentSheen: 1});
   const fill = markup.indexOf('block-fill-clip');
   const accent = markup.indexOf('block-accent-clip');
   const stroke = markup.indexOf('block-stroke-glow');

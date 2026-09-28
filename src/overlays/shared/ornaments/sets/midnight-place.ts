@@ -165,11 +165,11 @@ const placement = (motif: string, slot: OrnamentPlacement['slot'], spot: Spot, s
 
 /**
  * The accent arc's angular span on a round block, [from, to] in radians (counter-clockwise from
- * the right, y up): 30°–150° for topo, 120°–240° for esquerda. Null without one.
+ * the right, y up): 30°–150° for top, 120°–240° for left. Null without one.
  */
 export const accentSpan = (frame: Pick<OrnamentFrame, 'circle' | 'accent'>): readonly [number, number] | null => {
   if (!frame.circle || !frame.accent) return null;
-  const middle = frame.accent === 'topo' ? Math.PI / 2 : Math.PI;
+  const middle = frame.accent === 'top' ? Math.PI / 2 : Math.PI;
   return [middle - ACCENT_SPREAD, middle + ACCENT_SPREAD];
 };
 
@@ -245,7 +245,7 @@ const placeBats = (
   // the accent arc is on top, so the bats fly away from it. A bat that would meet the arc moves on
   // along the ring (up to BAT_ARC_SEARCH) until it clears it, and is left out if it never does.
   const ring = frame.outline.width / 2;
-  const turn = frame.accent === 'topo' ? -1 : 1;
+  const turn = frame.accent === 'top' ? -1 : 1;
   const rhos = scanAround(ring - 24, ring + 72, ring + 10);
   const moonAngle = angleOf(frame, moon.x, moon.y);
   let angle = moonAngle;

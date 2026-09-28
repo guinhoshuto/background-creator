@@ -28,8 +28,8 @@ import {assertPeriodic, assertSeamVelocity, type Sampler, type Scene} from './he
 /** The kit's look (SPEC §3 cobweb), so the rooms are the ones the presets will see. */
 const KIT: Record<string, Record<string, unknown>> = {
   chat: {strokeWidth: 2, glow: 10, halo: 8, headerHeight: 48, radius: 20},
-  block: {strokeWidth: 2, glow: 10, halo: 8, radius: 20, accent: 'nenhum'},
-  border: {thickness: 16, lines: 2, lineGap: 5, strokeWidth: 3, corners: 'nenhum', glow: 10, halo: 8, radius: 38},
+  block: {strokeWidth: 2, glow: 10, halo: 8, radius: 20, accent: 'none'},
+  border: {thickness: 16, lines: 2, lineGap: 5, strokeWidth: 3, corners: 'none', glow: 10, halo: 8, radius: 38},
 };
 const BASE = {ornaments: 'cobweb', durationSeconds: 12, seed: 47, ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C']};
 
@@ -82,11 +82,11 @@ test('cobweb: quais motivos cada tamanho mantém', () => {
       continue;
     }
     assert.ok(kept.has('cobweb-counterweight'), `${id}: contrapeso`);
-    assert.ok(kept.has('luar') && kept.has('brasa'), `${id}: luar e brasa`);
+    assert.ok(kept.has('moonlight') && kept.has('brasa'), `${id}: luar e brasa`);
     // The spider hangs beside a panel, or sits in a border's (or a screen's) corner pocket.
     // (A screen's corner pocket holds it only with a larger radius, as the kit's pack gives it.)
-    assert.ok(kept.has('aranha') || frame.fit === 'screen', `${id}: a aranha`);
-    const spider = placements.find((placement) => placement.motif === 'aranha');
+    assert.ok(kept.has('spider') || frame.fit === 'screen', `${id}: a aranha`);
+    const spider = placements.find((placement) => placement.motif === 'spider');
     if (spider) assert.ok(spider.size >= SPIDER_MIN_SCALE - 1e-9 && spider.layer === 'front', id);
     // Chat and blocks keep the background's diagonal pair; a border frames all four corners.
     assert.equal(kept.has('cobweb-corner'), adapter.kind === 'border', `${id}: cantos quietos só na borda`);
@@ -426,7 +426,7 @@ test('cobweb: tamanhos do kit (a sala, não o preset, limita a teia; aranha leg�
     assert.ok(sizeOf(placements, 'cobweb') >= hero, `${id}: teia ${sizeOf(placements, 'cobweb')} ≥ ${hero}`);
     assert.ok(sizeOf(placements, 'cobweb-counterweight') >= counter, `${id}: contrapeso ${sizeOf(placements, 'cobweb-counterweight')} ≥ ${counter}`);
     assert.ok(sizeOf(placements, 'cobweb-corner') >= quiet, `${id}: cantos ${sizeOf(placements, 'cobweb-corner')} ≥ ${quiet}`);
-    assert.ok(sizeOf(placements, 'aranha') >= spider - 1e-9, `${id}: aranha ${sizeOf(placements, 'aranha')} ≥ ${spider}`);
+    assert.ok(sizeOf(placements, 'spider') >= spider - 1e-9, `${id}: aranha ${sizeOf(placements, 'spider')} ≥ ${spider}`);
     const runs = cobwebGarlandsOf(frame, props.ornamentSize);
     const swags = (slot: string) => runs.find((run) => run.slot === slot)?.swags.length ?? 0;
     assert.equal(swags('top'), top, `${id}: guirlandas no alto`);
@@ -551,7 +551,7 @@ const garlandPoints = (element: OrnamentElement) => {
 test('cobweb: cada peça da guirlanda segura o que desenha na sua faixa, longe do texto, da janela, da borda do arquivo e da aranha', () => {
   for (const {id, props, frame, placements} of kitRuns()) {
     const n = framesOf(props);
-    const spider = placements.filter((placement) => placement.motif === 'aranha' || placement.motif === 'aranha-fio');
+    const spider = placements.filter((placement) => placement.motif === 'spider' || placement.motif === 'spider-thread');
     for (const at of [0, n * 0.13, n * 0.37, n * 0.61, n * 0.89]) {
       for (const element of cobwebSet.build(frame, placements, props, at, n).filter((element) => element.type === 'cobweb-garland')) {
         const placement = placements[element.anchor]!;
@@ -682,8 +682,8 @@ test('cobweb: a aranha do chat pendura num fio longo, abaixo da divisória do ca
     const {props, frame, placements} = kitLayout(id);
     const n = framesOf(props);
     const divider = props.bleed + (props.headerHeight as number);
-    const spider = placements.findIndex((placement) => placement.motif === 'aranha');
-    const line = placements.findIndex((placement) => placement.motif === 'aranha-fio');
+    const spider = placements.findIndex((placement) => placement.motif === 'spider');
+    const line = placements.findIndex((placement) => placement.motif === 'spider-thread');
     assert.ok(spider >= 0 && line >= 0, `${id}: aranha e fio`);
     const edge = frame.outline.x + frame.outline.width;
     const hero = cobwebPieceOf(frame, props.ornamentSize, 0)!.fan;
@@ -720,7 +720,7 @@ test('cobweb: orvalho visível (≥ 3 contas acesas na principal no frame 0) e o
     };
     const beads = webThreads(spec, web.billow as number).dew;
     assert.ok(beads.length >= 3, `${id}: ${beads.length} contas`);
-    const moon = placements.find((placement) => placement.motif === 'luar')!;
+    const moon = placements.find((placement) => placement.motif === 'moonlight')!;
     const {fan} = piece;
     assert.ok(Math.abs(Math.hypot(moon.x - fan.hubX, moon.y - fan.hubY) - COBWEB_MOON.at * fan.radius) < 1e-6, `${id}: luar a 0,35 R`);
     assert.ok(moon.extent <= COBWEB_MOON.ratio * fan.radius + 1e-9, `${id}: luar ≤ 0,7 R`);

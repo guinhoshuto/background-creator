@@ -19,9 +19,9 @@ export const ORNAMENT_REGISTRY: Record<OrnamentSetId, OrnamentSet> = {
   cobweb: cobwebSet,
 };
 
-/** The set a style names, or null for 'nenhum'. */
+/** The set a style names, or null for 'none'. */
 export const ornamentSetOf = (style: Pick<OrnamentStyle, 'ornaments'>): OrnamentSet | null =>
-  (style.ornaments === 'nenhum' ? null : ORNAMENT_REGISTRY[style.ornaments]);
+  (style.ornaments === 'none' ? null : ORNAMENT_REGISTRY[style.ornaments]);
 
 /** Layouts run several times per frame (schema, layers, component, motion): placements are memoised. */
 const PLACEMENT_CACHE_LIMIT = 256;
@@ -31,7 +31,7 @@ const NONE: readonly OrnamentPlacement[] = Object.freeze([]);
 
 /**
  * Where the style's set puts its motifs on this frame: a pure function of the frame, the set and
- * ornamentSize (no seed, no frame index), memoised. [] for 'nenhum' and when the hero fits nowhere.
+ * ornamentSize (no seed, no frame index), memoised. [] for 'none' and when the hero fits nowhere.
  */
 export const placeOrnaments = (
   frame: OrnamentFrame, style: Pick<OrnamentStyle, 'ornaments' | 'ornamentSize'>,
@@ -56,7 +56,7 @@ export const layoutOrnaments = (
   frame: OrnamentFrame, style: Pick<OrnamentStyle, 'ornaments' | 'ornamentSize' | 'ornamentScale'>,
 ): OrnamentLayout => {
   const scale = style.ornamentScale;
-  if (scale === 1 || style.ornaments === 'nenhum') return {frame, placements: placeOrnaments(frame, style)};
+  if (scale === 1 || style.ornaments === 'none') return {frame, placements: placeOrnaments(frame, style)};
   const scaled = scaleOrnamentFrame(frame, 1 / scale);
   return {frame: scaled, placements: placeOrnaments(scaled, style), scale};
 };
@@ -64,7 +64,7 @@ export const layoutOrnaments = (
 /** How far the layout's motifs reach beyond the box, in the kind's px. */
 export const layoutOutset = (layout: OrnamentLayout) => ornamentOutset(layout.frame, layout.placements) * (layout.scale ?? 1);
 
-/** The ornament elements of one frame, split by layer, each in placement order. Empty for 'nenhum'. */
+/** The ornament elements of one frame, split by layer, each in placement order. Empty for 'none'. */
 export const buildOrnamentScene = (
   layout: OrnamentLayout, style: OrnamentStyle, frameIndex: number, durationInFrames: number,
 ): {back: OrnamentElement[]; front: OrnamentElement[]} => {
@@ -110,19 +110,19 @@ export const ornamentWayOut = (frame: Pick<OrnamentFrame, 'kind' | 'fit' | 'circ
   const {outline} = frame;
   const rounder = !frame.circle
     && clampRadius(outline.radius, outline.width, outline.height) < Math.min(outline.width, outline.height) / 2 - 1e-9;
-  if (frame.kind === 'chat') return rounder ? 'increase bleed, padding or radius or use ornaments nenhum.' : 'increase bleed or padding or use ornaments nenhum.';
+  if (frame.kind === 'chat') return rounder ? 'increase bleed, padding or radius or use ornaments none.' : 'increase bleed or padding or use ornaments none.';
   if (frame.kind === 'block') {
     return rounder
-      ? 'increase bleed, paddingX, paddingY or radius or use ornaments nenhum.'
-      : 'increase bleed, paddingX or paddingY or use ornaments nenhum.';
+      ? 'increase bleed, paddingX, paddingY or radius or use ornaments none.'
+      : 'increase bleed, paddingX or paddingY or use ornaments none.';
   }
-  if (frame.fit === 'screen') return rounder ? 'increase thickness, glow or radius or use ornaments nenhum.' : 'increase thickness or glow or use ornaments nenhum.';
-  return rounder ? 'increase bleed or radius or use ornaments nenhum.' : 'increase bleed or use ornaments nenhum.';
+  if (frame.fit === 'screen') return rounder ? 'increase thickness, glow or radius or use ornaments none.' : 'increase thickness or glow or use ornaments none.';
+  return rounder ? 'increase bleed or radius or use ornaments none.' : 'increase bleed or use ornaments none.';
 };
 
 /**
  * Refuses a set whose hero fits nowhere (the placement is then empty), naming the way out for the
- * kind (ornamentWayOut), then runs the set's own refusals. Nothing for 'nenhum'.
+ * kind (ornamentWayOut), then runs the set's own refusals. Nothing for 'none'.
  */
 export const refineOrnaments = (layout: OrnamentLayout, style: OrnamentStyle, context: z.RefinementCtx) => {
   const set = ornamentSetOf(style);

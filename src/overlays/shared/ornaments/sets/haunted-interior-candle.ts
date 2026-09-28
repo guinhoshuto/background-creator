@@ -13,7 +13,7 @@ import {enclosingCircle} from '../place';
  * once and memoised, so placement and the per-frame build stay cheap.
  */
 
-export type CandleKind = 'alta' | 'media' | 'baixa';
+export type CandleKind = 'tall' | 'medium' | 'short';
 /** 'edge': standing on a surface (the top edge, a Twitch panel's sill, a screen frame's rail); 'bracket': on an arm from a ring. */
 export type CandleMount = 'edge' | 'bracket';
 export type Point = {x: number; y: number};
@@ -23,7 +23,7 @@ export type Point = {x: number; y: number};
  * of the hero's height is its flame (visual.md: a 16 px flame on 14 px of wax at ~33 px), so the
  * flame, the part that reads as a candle, stays identifiable at 50 % zoom.
  */
-export const WAX_LENGTH: Record<CandleKind, number> = {alta: 10.8, media: 8.3, baixa: 5.4};
+export const WAX_LENGTH: Record<CandleKind, number> = {tall: 10.8, medium: 8.3, short: 5.4};
 
 /** The dish: its top face (an ellipse) and the foot it stands on. */
 export const DISH = {rx: 7, ry: 1.7, top: -2, foot: 0} as const;
@@ -97,7 +97,7 @@ export const lightCentre = (kind: CandleKind): Point => {
   const origin = flameOrigin(kind);
   return {x: 0, y: origin.y - LIGHT_RISE * FLAME_TIP * FLAME_SCALE * FLICKER.scaleMean};
 };
-/** A kind's full height: the dish's foot to the flame's tip at its tallest, in units (ornamentSize is this, in px, for 'alta'). */
+/** A kind's full height: the dish's foot to the flame's tip at its tallest, in units (ornamentSize is this, in px, for 'tall'). */
 export const candleHeight = (kind: CandleKind) => -(flameOrigin(kind).y - FLAME_TIP * FLAME_SCALE * SCALE_MAX);
 
 /** The cubic Bezier of the flame's outline, sampled, at a given lean and vertical scale, in candle units. */

@@ -30,13 +30,13 @@ const presetOf = (theme: string): Record<string, unknown> =>
 /** The literal Root.tsx registers: the composition's defaults, spelled out. */
 const ROOT_DEFAULT_PROPS = {
   durationSeconds: 8, seed: 1, transparent: true, backgroundColor: '#0B0620', outputFormat: 'webm', width: 640, height: 360,
-  bleed: 48, guides: false, fit: 'window', shape: 'rectangle', mask: false, radius: 16, thickness: 10, fill: 'solido', fillColors: ['#120A38'], fillOpacity: 0.9,
-  fillScale: 12, fillSpeed: 24, fillAngle: 45, fillRise: false, fillLight: 0, strokeMotion: 'cometas',
+  bleed: 48, guides: false, fit: 'window', shape: 'rectangle', mask: false, radius: 16, thickness: 10, fill: 'solid', fillColors: ['#120A38'], fillOpacity: 0.9,
+  fillScale: 12, fillSpeed: 24, fillAngle: 45, fillRise: false, fillLight: 0, strokeMotion: 'comets',
   strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], strokeWidth: 4, dashLength: 18, gapLength: 12, cometSpacing: 640, cometTail: 320, gradientLength: 480,
   strokeSpeed: 160, strokePulses: 1, strokeCore: 0.9, trackOpacity: 0.45, glow: 16, glowPulses: 0, glowStrength: 2.6, halo: 0, haloColor: '#A78BFA',
   rimLight: 0, lines: 2, lineGap: 4, outerLineWidth: 2,
-  corners: 'colchetes', cornerSize: 28, cornerGap: 6, gemSize: 14, cornerPulses: 1,
-  ornaments: 'nenhum', ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C'], ornamentSize: 48, ornamentScale: 1, lightning: 0,
+  corners: 'brackets', cornerSize: 28, cornerGap: 6, gemSize: 14, cornerPulses: 1,
+  ornaments: 'none', ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C'], ornamentSize: 48, ornamentScale: 1, lightning: 0,
 };
 
 // ── Schema, sizes and registration ─────────────────────────────────────────────────────────
@@ -128,8 +128,8 @@ test('Borda: recusas com a saída em inglês', () => {
   }
   // The corners alone reach past the bleed: their own message, same rule.
   for (const [input, pattern] of [
-    [{corners: 'colchetes', cornerGap: 40}, /^The brackets go past the margin: use bleed ≥ (\d+)/],
-    [{corners: 'joias', gemSize: 80}, /^The gems go past the margin: use bleed ≥ (\d+)/],
+    [{corners: 'brackets', cornerGap: 40}, /^The brackets go past the margin: use bleed ≥ (\d+)/],
+    [{corners: 'jewels', gemSize: 80}, /^The gems go past the margin: use bleed ≥ (\d+)/],
   ] as const) {
     const wanted = Number(pattern.exec(message(input))![1]);
     assert.equal(borderLoopSchema.safeParse({...input, bleed: wanted}).success, true);
@@ -139,19 +139,19 @@ test('Borda: recusas com a saída em inglês', () => {
   // Full screen: nothing leaves the file; the corners must stay between the hole and the edge.
   const screen = sizeProps(getSize('fullscreen'));
   assert.match(message({...screen, thickness: 256, glow: 128, width: 400, height: 400}), /leaves no window/);
-  const bracketText = message({...screen, corners: 'colchetes', cornerGap: 60, glow: 0, lines: 1});
+  const bracketText = message({...screen, corners: 'brackets', cornerGap: 60, glow: 0, lines: 1});
   const maxGap = Number(/cornerGap ≤ (\d+)/.exec(bracketText)![1]);
   assert.match(bracketText, /The brackets would enter the window/);
-  assert.equal(borderLoopSchema.safeParse({...screen, corners: 'colchetes', cornerGap: maxGap, glow: 0, lines: 1}).success, true);
-  assert.match(message({...screen, corners: 'joias', gemSize: 128, glow: 0, lines: 1, radius: 0}), /The gems do not fit/);
+  assert.equal(borderLoopSchema.safeParse({...screen, corners: 'brackets', cornerGap: maxGap, glow: 0, lines: 1}).success, true);
+  assert.match(message({...screen, corners: 'jewels', gemSize: 128, glow: 0, lines: 1, radius: 0}), /The gems do not fit/);
 
   // Aliasing: refused with the highest usable speed, which is accepted.
-  const fast = {strokeMotion: 'formigas', strokeColors: ['#FFFFFF'], dashLength: 2, gapLength: 2, strokeSpeed: 4000};
+  const fast = {strokeMotion: 'dashes', strokeColors: ['#FFFFFF'], dashLength: 2, gapLength: 2, strokeSpeed: 4000};
   const aliasText = message(fast);
   const maxSpeed = Number(/Use strokeSpeed up to ([\d.]+) px\/s/.exec(aliasText)![1]);
   assert.match(aliasText, /Speed too high for the dashes/);
   assert.equal(borderLoopSchema.safeParse({...fast, strokeSpeed: maxSpeed}).success, true);
-  const dots = {fill: 'pontos', fillScale: 8, fillSpeed: 480, durationSeconds: 1};
+  const dots = {fill: 'dots', fillScale: 8, fillSpeed: 480, durationSeconds: 1};
   assert.match(message(dots), /Speed too high for the dots/);
 });
 
@@ -159,7 +159,7 @@ test('Borda: o gradiente nas duas linhas é recusado uma vez só, com uma veloci
   // The second line is longer than the main one, so it never aliases first; a second refusal
   // would only name a speed the main line still refuses.
   const input = {
-    width: 16, height: 16, bleed: 48, strokeMotion: 'gradiente', strokeColors: ['#F00', '#0F0'], lines: 2, corners: 'nenhum',
+    width: 16, height: 16, bleed: 48, strokeMotion: 'gradient', strokeColors: ['#F00', '#0F0'], lines: 2, corners: 'none',
     strokeSpeed: 4000, durationSeconds: 8,
   };
   const issues = borderLoopSchema.safeParse(input).error!.issues;
@@ -180,7 +180,7 @@ test('Borda: no gradiente as duas linhas andam juntas, com as mesmas voltas da p
   };
   for (const size of BORDER_SIZES) {
     for (const strokeSpeed of [60, 120, 160]) {
-      const props = parse({...sizeProps(size), strokeMotion: 'gradiente', lines: 2, strokeSpeed});
+      const props = parse({...sizeProps(size), strokeMotion: 'gradient', lines: 2, strokeSpeed});
       const geometry = getBorderGeometry(props);
       const tracks = [geometry.tracks[TRACK_MAIN]!, geometry.tracks[TRACK_SECOND]!];
       const [mainTrack, secondTrack] = tracks as [RoundRect, RoundRect];
@@ -294,7 +294,7 @@ test('Borda: nada entra no buraco e nada sai do bleed, em todo tamanho nomeado e
 });
 
 test('Borda: webcam-square com raio 200 vira redonda, com joias e colchetes fora do círculo', () => {
-  for (const corners of ['colchetes', 'joias'] as const) {
+  for (const corners of ['brackets', 'jewels'] as const) {
     const props = parse({...sizeProps(getSize('webcam-square')), radius: 200, corners});
     const {layout, tracks} = getBorderGeometry(props);
     assert.equal(layout.window.radius, 200);
@@ -308,7 +308,7 @@ test('Borda: webcam-square com raio 200 vira redonda, com joias e colchetes fora
     }
   }
   // Four quarter arcs would close into a ring: the brackets leave gaps between them.
-  const round = getBorderGeometry(parse({...sizeProps(getSize('webcam-square')), radius: 200, corners: 'colchetes'}));
+  const round = getBorderGeometry(parse({...sizeProps(getSize('webcam-square')), radius: 200, corners: 'brackets'}));
   const spacing = perimeterLength(round.tracks[2]) / 4;
   for (const bracket of round.brackets) assert.ok(2 * bracket.half <= 0.7 * spacing + 1e-9);
 });
@@ -335,7 +335,7 @@ test('Borda: a máscara do buraco cobre tudo o que é desenhado, em todo tamanho
     for (const strokeMotion of STROKE_MOTIONS) {
       for (const radius of [0, 200]) {
         // With a halo too: it spreads outwards, still inside the masked group.
-        const props = parse({...sizeProps(size), strokeMotion, radius, fill: 'brilhos', corners: radius ? 'joias' : 'colchetes', halo: 16});
+        const props = parse({...sizeProps(size), strokeMotion, radius, fill: 'sparkles', corners: radius ? 'jewels' : 'brackets', halo: 16});
         const {layout, band} = getBorderGeometry(props);
         const markup = render(props, 211);
         const svg = /<svg width="(\d+)" height="(\d+)" viewBox="0 0 \d+ \d+"[^>]*>([\s\S]*)<\/svg>/.exec(markup);
@@ -481,7 +481,7 @@ test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saí
     ['fit', 'The mask only applies to fit window: in a screen frame the window fills the whole screen and needs no mask.'],
   ]);
   // The frame's own refusals do not apply: nothing of it is drawn (a glow far past the missing bleed).
-  assert.equal(borderLoopSchema.safeParse({...mask, glow: 128, corners: 'colchetes', cornerGap: 128}).success, true);
+  assert.equal(borderLoopSchema.safeParse({...mask, glow: 128, corners: 'brackets', cornerGap: 128}).success, true);
 });
 
 // A mask is one still PNG: nothing moves, so the generic scans run with `moving: false` (frame N is
@@ -508,7 +508,7 @@ test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saí
 test('Borda: o vão entre a faixa e a segunda linha fica vazio, na janela e na tela', () => {
   for (const size of [getSize('webcam-16x9'), getSize('fullscreen')]) {
     for (const radius of [0, 24]) {
-      const props = parse({...sizeProps(size), radius, lines: 2, lineGap: 8, fill: 'solido'});
+      const props = parse({...sizeProps(size), radius, lines: 2, lineGap: 8, fill: 'solid'});
       const {layout, band} = getBorderGeometry(props);
       // The fill's clip is the band ring (plus filletPath on a screen): a point in the middle of the gap is in neither.
       const gap = {x: layout.box.x + layout.box.width / 2, y: layout.window.y - props.thickness - props.lineGap / 2};
@@ -564,15 +564,15 @@ const CASES: Case[] = [
   {id: 'padrão (neon)', input: {}},
   ...THEMES.map((theme) => ({id: `preset ${theme}`, input: presetOf(theme)})),
   ...THEMES.map((theme) => ({id: `preset ${theme} em fullscreen`, input: {...presetOf(theme), ...sizeProps(getSize('fullscreen'))}})),
-  {id: 'webcam-square redonda com joias', input: {...sizeProps(getSize('webcam-square')), radius: 200, corners: 'joias'}},
-  {id: 'fullscreen-vertical com colchetes', input: {...sizeProps(getSize('fullscreen-vertical')), corners: 'colchetes', lines: 2}},
+  {id: 'webcam-square redonda com joias', input: {...sizeProps(getSize('webcam-square')), radius: 200, corners: 'jewels'}},
+  {id: 'fullscreen-vertical com colchetes', input: {...sizeProps(getSize('fullscreen-vertical')), corners: 'brackets', lines: 2}},
   ...STROKE_MOTIONS.map((strokeMotion) => ({id: `movimento ${strokeMotion}`, input: {strokeMotion, lines: 2, strokePulses: 3}})),
-  {id: 'formigas de 3 cores, sem cantos', input: {strokeMotion: 'formigas', corners: 'nenhum', lines: 1, strokeSpeed: 300}},
-  {id: 'gradiente nas duas linhas', input: {strokeMotion: 'gradiente', corners: 'nenhum', lines: 2, glowPulses: 2}},
-  {id: 'listras na faixa grossa', input: {fill: 'listras', fillColors: ['#0B0620', '#22D3EE'], thickness: 24, glow: 8}},
+  {id: 'formigas de 3 cores, sem cantos', input: {strokeMotion: 'dashes', corners: 'none', lines: 1, strokeSpeed: 300}},
+  {id: 'gradiente nas duas linhas', input: {strokeMotion: 'gradient', corners: 'none', lines: 2, glowPulses: 2}},
+  {id: 'listras na faixa grossa', input: {fill: 'stripes', fillColors: ['#0B0620', '#22D3EE'], thickness: 24, glow: 8}},
   {
     id: 'parada',
-    input: {strokeMotion: 'parado', strokeColors: ['#22D3EE'], corners: 'nenhum', lines: 1, glowPulses: 0},
+    input: {strokeMotion: 'still', strokeColors: ['#22D3EE'], corners: 'none', lines: 1, glowPulses: 0},
     moving: false,
     seeded: false,
   },
@@ -596,7 +596,7 @@ test('Borda: a cena padrão passa na mesma varredura do registro genérico (fram
 
 test('Borda: o halo sai da borda externa para o bleed, só em volta de uma janela', () => {
   const size = getSize('webcam-16x9');
-  const props = parse({...sizeProps(size), corners: 'nenhum', halo: 24});
+  const props = parse({...sizeProps(size), corners: 'none', halo: 24});
   const {layout, totalThickness} = getBorderGeometry(props);
   assert.equal(layout.outset, totalThickness + 24);
   const markup = render(props, 60);
@@ -604,7 +604,7 @@ test('Borda: o halo sai da borda externa para o bleed, só em volta de uma janel
   assert.ok(markup.includes(`d="${roundRectPath(layout.outer)}" fill="#000000"`), 'o halo é mascarado fora da moldura');
   assert.equal(getBorderSceneParts(props, 60, 480).halo.length, 1);
   // Beyond the bleed it is refused with the bleed that holds it, which is accepted.
-  const wide = {...sizeProps(size), corners: 'nenhum', halo: 40};
+  const wide = {...sizeProps(size), corners: 'none', halo: 40};
   const issues = borderLoopSchema.safeParse(wide).error!.issues;
   assert.deepEqual(issues.map((issue) => issue.message), [`The glow goes past the margin: use bleed ≥ ${totalThickness + 40} or reduce the glow.`]);
   assert.equal(borderLoopSchema.safeParse({...wide, bleed: totalThickness + 40}).success, true);

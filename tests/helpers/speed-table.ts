@@ -79,11 +79,11 @@ const ADAPTERS: Record<(typeof SPEED_KINDS)[number], KindAdapter> = {
 };
 
 const travelsAlongStroke = (props: Parsed) => props.strokeSpeed > 0
-  && (props.strokeMotion === 'formigas' || props.strokeMotion === 'cometas'
-    || (props.strokeMotion === 'gradiente' && props.strokeColors.length > 1));
+  && (props.strokeMotion === 'dashes' || props.strokeMotion === 'comets'
+    || (props.strokeMotion === 'gradient' && props.strokeColors.length > 1));
 
-const fillMoves = (props: Parsed) => props.fillSpeed > 0 && props.fill !== 'solido'
-  && !(props.fill === 'gradiente' && props.fillColors.length < 2);
+const fillMoves = (props: Parsed) => props.fillSpeed > 0 && props.fill !== 'solid'
+  && !(props.fill === 'gradient' && props.fillColors.length < 2);
 
 /** Every moving layer of every theme preset on every named size of its kind, at the preset's duration. */
 export const speedTable = (): SpeedRow[] => {
@@ -111,7 +111,7 @@ export const speedTable = (): SpeedRow[] => {
           strokeRow('stroke', main);
           const second = adapter.secondTrack?.(props) ?? null;
           // The second line only flows with the colour gradient; ants and comets leave it still.
-          if (second && props.strokeMotion === 'gradiente') strokeRow('second line', second, colorRepeatsOf(props as never, main));
+          if (second && props.strokeMotion === 'gradient') strokeRow('second line', second, colorRepeatsOf(props as never, main));
         }
         if (fillMoves(props)) {
           const {area, options} = adapter.fillArea(props);

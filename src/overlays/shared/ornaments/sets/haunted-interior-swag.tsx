@@ -11,7 +11,7 @@ import {num, type Point} from './haunted-interior-candle';
  * frame's bottom line into the bleed (a screen frame: from a rail inside its top band, like a
  * window valance), a gold boss at every join and a small gold tassel under every second join.
  *
- * Every festoon is one placement ('sanefa') and one element ('haunted-interior-swag'): fixed px (pitch,
+ * Every festoon is one placement ('valance') and one element ('haunted-interior-swag'): fixed px (pitch,
  * depth, tassel) per frame kind, a constant count per size, seed- and frame-free; festoons abut, so
  * two of them are exempt from the set's pairwise gap (against fixtures the gap holds). Only the
  * tassels move (±3°, 2 cycles per 16 s); at a strike the velvet's ridge, the hem cord and the bosses
@@ -24,7 +24,7 @@ import {num, type Point} from './haunted-interior-candle';
  * too (the fold at a share f of the depth: y = f + (5 + f(D − 6))(1 − s²)).
  */
 
-export const SWAG_MOTIF = 'sanefa';
+export const SWAG_MOTIF = 'valance';
 
 /** A run's fixed px: pitch P, hem depth D, the circle's centre below the join line, the tassel's length. */
 export type SwagSpec = {pitch: number; depth: number; centre: number; tassel: number};

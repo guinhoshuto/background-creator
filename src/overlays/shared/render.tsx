@@ -347,7 +347,7 @@ export const renderOverlayElement = (element: OverlayElement | {type: string}, k
     case 'fog':
       return <FogBank key={key} element={known} id={`${context.idBase}-fog-${key}`} />;
     case 'damask':
-      return <Damask key={key} element={known} id={`${context.idBase}-damasco-${key}`} />;
+      return <Damask key={key} element={known} id={`${context.idBase}-damask-${key}`} />;
     case 'rim':
       return <Rim key={key} element={known} id={`${context.idBase}-rim-${key}`} />;
     case 'arc':

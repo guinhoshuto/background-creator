@@ -50,7 +50,7 @@
       "preset": "chat-halloween-haunted-mansion",
       "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
       "formats": ["webm", "png"],
-      "props": {"ornaments": "nenhum"},
+      "props": {"ornaments": "none"},
       "variant": "plain"
     },
     {
@@ -58,7 +58,7 @@
       "preset": "block-halloween-haunted-mansion",
       "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
       "formats": ["webm", "png"],
-      "props": {"ornaments": "nenhum"},
+      "props": {"ornaments": "none"},
       "variant": "plain"
     },
     {
@@ -66,7 +66,7 @@
       "preset": "block-halloween-haunted-mansion",
       "sizes": ["twitch-panel"],
       "formats": ["gif", "png"],
-      "props": {"ornaments": "nenhum"},
+      "props": {"ornaments": "none"},
       "variant": "plain"
     },
     {
@@ -74,7 +74,7 @@
       "preset": "border-halloween-haunted-mansion",
       "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
       "formats": ["webm", "png"],
-      "props": {"ornaments": "nenhum"},
+      "props": {"ornaments": "none"},
       "variant": "plain"
     }
   ]

@@ -34,13 +34,13 @@ const CHAT_SIZES = sizesForKind('chat');
 const ROOT_DEFAULT_PROPS = {
   durationSeconds: 8, seed: 1, transparent: true, backgroundColor: '#0B0620', outputFormat: 'webm' as const,
   width: 400, height: 600, bleed: 32, guides: false, radius: 16, padding: 16,
-  fill: 'gradiente' as const, fillColors: ['#120A38', '#26105C', '#0A1C4E'], fillOpacity: 0.9, fillScale: 32,
+  fill: 'gradient' as const, fillColors: ['#120A38', '#26105C', '#0A1C4E'], fillOpacity: 0.9, fillScale: 32,
   fillSpeed: 16, fillAngle: 60, fillRise: false, fillLight: 0.05,
-  strokeMotion: 'cometas' as const, strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], strokeWidth: 3,
+  strokeMotion: 'comets' as const, strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], strokeWidth: 3,
   dashLength: 16, gapLength: 12, cometSpacing: 640, cometTail: 320, gradientLength: 480, strokeSpeed: 160, strokePulses: 1,
   strokeCore: 0.9, trackOpacity: 0.45, glow: 20, glowPulses: 1, glowStrength: 3, halo: 24, haloColor: '#A855F7', rimLight: 0,
   headerHeight: 48, headerColor: '#E879F9', headerOpacity: 0.1, headerLineWidth: 2,
-  ornaments: 'nenhum' as const, ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C'], ornamentSize: 48, ornamentScale: 1, lightning: 0,
+  ornaments: 'none' as const, ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C'], ornamentSize: 48, ornamentScale: 1, lightning: 0,
 };
 
 const parse = (input: object): ChatLoopProps => chatLoopSchema.parse(input);
@@ -59,11 +59,11 @@ const CASES: {id: string; input: object}[] = [
   {id: 'padrão (neon)', input: {}},
   ...THEMES.map((theme) => ({id: `preset ${theme}`, input: PRESETS[theme]})),
   ...CHAT_SIZES.map((size) => ({id: `tamanho ${size.id}`, input: sizeProps(size)})),
-  {id: 'sem cabeçalho, formigas', input: {headerHeight: 0, strokeMotion: 'formigas', strokeColors: ['#FFFFFF', '#22D3EE']}},
-  {id: 'pílula com cabeçalho, gradiente no contorno', input: {radius: 999, strokeMotion: 'gradiente', padding: 24, headerHeight: 64}},
-  {id: 'listras, pulso, halo pulsando', input: {fill: 'listras', strokeMotion: 'pulso', strokePulses: 3, glowPulses: 2, halo: 24}},
-  {id: 'brilhos no lugar, cantos retos', input: {fill: 'brilhos', radius: 0, strokeWidth: 4, headerLineWidth: 0}},
-  {id: 'vertical com vidro', input: {...sizeProps(CHAT_SIZES.find((size) => size.id === 'chat-vertical')!), fill: 'vidro', fillColors: ['#FFFFFF']}},
+  {id: 'sem cabeçalho, formigas', input: {headerHeight: 0, strokeMotion: 'dashes', strokeColors: ['#FFFFFF', '#22D3EE']}},
+  {id: 'pílula com cabeçalho, gradiente no contorno', input: {radius: 999, strokeMotion: 'gradient', padding: 24, headerHeight: 64}},
+  {id: 'listras, pulso, halo pulsando', input: {fill: 'stripes', strokeMotion: 'pulse', strokePulses: 3, glowPulses: 2, halo: 24}},
+  {id: 'brilhos no lugar, cantos retos', input: {fill: 'sparkles', radius: 0, strokeWidth: 4, headerLineWidth: 0}},
+  {id: 'vertical com vidro', input: {...sizeProps(CHAT_SIZES.find((size) => size.id === 'chat-vertical')!), fill: 'glass', fillColors: ['#FFFFFF']}},
 ];
 
 for (const {id, input} of CASES) {
@@ -273,7 +273,7 @@ test('Recusas: cabeçalho alto demais para as mensagens, ou baixo demais para o 
 
 test('Aliasing: contorno rápido demais é recusado com a velocidade máxima, que é aceita', () => {
   for (const outputFormat of ['webm', 'gif'] as const) {
-    const input = {strokeMotion: 'formigas', strokeColors: ['#FFFFFF'], dashLength: 4, gapLength: 4, durationSeconds: 3.7, outputFormat};
+    const input = {strokeMotion: 'dashes', strokeColors: ['#FFFFFF'], dashLength: 4, gapLength: 4, durationSeconds: 3.7, outputFormat};
     const issues = issuesOf({...input, strokeSpeed: 4000});
     assert.equal(issues.length, 1);
     assert.deepEqual(issues[0]!.path, ['strokeSpeed']);
@@ -290,7 +290,7 @@ test('Aliasing: contorno rápido demais é recusado com a velocidade máxima, qu
 });
 
 test('Aliasing: pontos rápidos demais no fundo são recusados com a saída', () => {
-  const issues = issuesOf({fill: 'pontos', fillScale: 8, fillSpeed: 480, fillAngle: 0, outputFormat: 'gif'});
+  const issues = issuesOf({fill: 'dots', fillScale: 8, fillSpeed: 480, fillAngle: 0, outputFormat: 'gif'});
   assert.equal(issues.length, 1);
   assert.deepEqual(issues[0]!.path, ['fillSpeed']);
   assert.match(issues[0]!.message, /Speed too high for the dots: .* Use fillSpeed up to \d+ px\/s or increase fillScale\./);
@@ -334,7 +334,7 @@ const render = (input: object, frame = 123) => {
 };
 
 test('Render: SVG do tamanho do arquivo, sem blend mode, alpha só nos formatos com alpha', () => {
-  for (const input of [{}, ...Object.values(PRESETS), {headerHeight: 0}, {fill: 'listras', strokeMotion: 'formigas'}]) {
+  for (const input of [{}, ...Object.values(PRESETS), {headerHeight: 0}, {fill: 'stripes', strokeMotion: 'dashes'}]) {
     const markup = render(input);
     assert.match(markup, /<svg width="464" height="664" viewBox="0 0 464 664"/);
     assert.match(markup, /<filter id="chat-stroke-glow" filterUnits="userSpaceOnUse" x="0" y="0" width="464" height="664"/);
@@ -357,7 +357,7 @@ test('Render: SVG do tamanho do arquivo, sem blend mode, alpha só nos formatos 
 });
 
 test('Cena: o contorno apagado sob formigas e cometas é a prop trackOpacity, como no bloco e na borda', () => {
-  const outlines = (input: object) => getChatLayers(parse({strokeMotion: 'formigas', ...input}), 50, 480).stroke
+  const outlines = (input: object) => getChatLayers(parse({strokeMotion: 'dashes', ...input}), 50, 480).stroke
     .filter((element) => element.type === 'outline');
   assert.deepEqual(outlines({}).map((element) => element.opacity), [0.45]);
   assert.deepEqual(outlines({trackOpacity: 0.5}).map((element) => element.opacity), [0.5]);
@@ -401,5 +401,5 @@ test('Presets: cada tema passa no schema estrito, sem tamanho, e o padrão é o 
   }
   assert.deepEqual(parse(PRESETS.halloween).strokeColors.slice(0, 2), ['#F97316', '#A855F7']);
   assert.deepEqual(parse(PRESETS.pastel).strokeColors, ['#F48FB8', '#6FCDB8', '#FFBA70']);
-  assert.equal(parse(PRESETS.glass).fill, 'vidro');
+  assert.equal(parse(PRESETS.glass).fill, 'glass');
 });

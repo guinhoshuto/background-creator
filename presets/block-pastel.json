@@ -5,13 +5,13 @@
   "backgroundColor": "#EADCF0",
   "outputFormat": "webm",
   "radius": 24,
-  "fill": "pontos",
+  "fill": "dots",
   "fillColors": ["#FFF7F4", "#F6C6D8"],
   "fillOpacity": 0.94,
   "fillScale": 28,
   "fillSpeed": 12,
   "fillAngle": 45,
-  "strokeMotion": "pulso",
+  "strokeMotion": "pulse",
   "strokeColors": ["#F48FB8", "#6FCDB8", "#FFBA70"],
   "strokeWidth": 3,
   "strokePulses": 1,
@@ -20,6 +20,6 @@
   "glowStrength": 1.4,
   "halo": 16,
   "haloColor": "#E8A0C2",
-  "accent": "topo",
+  "accent": "top",
   "accentColor": "#6FCDB8"
 }

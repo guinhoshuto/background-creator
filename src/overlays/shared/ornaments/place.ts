@@ -271,11 +271,11 @@ export const ornamentRandom = (seed: number, set: {seedOffset: number}) => creat
 
 /**
  * The corner slots a round block's accent arc leaves free: the arc spans 120° around the left
- * ('esquerda': TL and BL) or the top ('topo': TL and TR). Every slot elsewhere.
+ * ('left': TL and BL) or the top ('top': TL and TR). Every slot elsewhere.
  */
 export const slotsOffAccent = (frame: Pick<OrnamentFrame, 'outline' | 'circle' | 'accent'>): OrnamentCorner[] => {
   const corners = cornerSlots(frame);
   if (!frame.circle || !frame.accent) return corners;
-  const free = frame.accent === 'esquerda' ? ['TR', 'BR'] : ['BR', 'BL'];
+  const free = frame.accent === 'left' ? ['TR', 'BR'] : ['BR', 'BL'];
   return corners.filter((corner) => free.includes(corner.slot));
 };

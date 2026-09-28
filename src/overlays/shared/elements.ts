@@ -53,7 +53,7 @@ export type ShadeElement = {
 };
 
 /**
- * A fog bank ('nevoa'): a soft ellipse `width` × `height` centred on (cx, cy), `color` at
+ * A fog bank ('fog'): a soft ellipse `width` × `height` centred on (cx, cy), `color` at
  * `opacity` in the middle fading out to nothing at its rim, with a smaller, lighter core in
  * `coreColor` at `coreOpacity` just above its centre (the moonlit top of the bank). Radial
  * gradients only, no blur filter. The core's box is a fixed share of the bank's (see the
@@ -65,7 +65,7 @@ export type FogElement = {
 };
 
 /**
- * A damask wallpaper ('damasco') over the area x/y/width/height: one SVG pattern whose tile is
+ * A damask wallpaper ('damask') over the area x/y/width/height: one SVG pattern whose tile is
  * `tileWidth` × `tileHeight` px (a half-drop lattice of the interior's DAMASK motif), inked in
  * `color` over `baseColor` ('none' with one colour) inside the tile, the whole area drawn at
  * `opacity` so ink and ground have the same alpha; its lattice shifted by (offsetX, offsetY) px

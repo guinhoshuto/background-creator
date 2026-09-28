@@ -29,18 +29,18 @@ export type FillStyle = {
 export type FillOptions = {
   /** Corner radius of the base rect; the layer's clip draws the real shape anyway. */
   corner?: number;
-  /** Dot diameter as a share of the spacing ('pontos'). */
+  /** Dot diameter as a share of the spacing ('dots'). */
   dotRatio?: number;
-  /** Radius of the small closed orbits of the sparkles, in px ('brilhos'); 0 keeps them still. */
+  /** Radius of the small closed orbits of the sparkles, in px ('sparkles'); 0 keeps them still. */
   sparkOrbit?: number;
-  /** Peak opacity of the glass sheen ('vidro'). */
+  /** Peak opacity of the glass sheen ('glass'). */
   sheenOpacity?: number;
-  /** Width of the glass sheen band, in px ('vidro'). */
+  /** Width of the glass sheen band, in px ('glass'). */
   sheenWidth?: number;
   /** Most sparkles one fill may list, however large the box. */
   maxSparks?: number;
   /**
-   * 'brilhos' without fillRise: keeps only the sparkles whose soft disc, `reach` px around their
+   * 'sparkles' without fillRise: keeps only the sparkles whose soft disc, `reach` px around their
    * resting place, can touch what the layer's clip shows. A frame's band is a thin ring around a
    * large bounding box, so most of a grid over that box would be clipped away. Decided by place,
    * never by frame, so every frame lists the same sparkles.
@@ -76,7 +76,7 @@ const splitColors = (colors: readonly string[]) => ({
 const sheenWidthOf = (area: Rect, options: FillOptions) =>
   options.sheenWidth ?? Math.max(24, Math.min(480, 0.3 * Math.min(area.width, area.height)));
 
-/** Radius of the sparkles' small closed orbits ('brilhos' in place). */
+/** Radius of the sparkles' small closed orbits ('sparkles' in place). */
 const sparkOrbitOf = (style: Pick<FillStyle, 'fillScale'>, options: FillOptions) => options.sparkOrbit ?? 0.15 * style.fillScale;
 
 /** Largest sparkle core, and how far past the area the embers start and end (their whole soft disc). */
@@ -87,7 +87,7 @@ const emberMargin = (style: Pick<FillStyle, 'fillScale'>) => 2.5 * sparkMaxRadiu
 const SHEEN_MIN_SPACING = 2;
 
 /**
- * 'nevoa': the shape of a fog bank, as shares of its height H = fillScale (px). Banks are 5.8 H
+ * 'fog': the shape of a fog bank, as shares of its height H = fillScale (px). Banks are 5.8 H
  * wide (the mansion's banks, 1390 × 240), one spacing S = 2.25 H apart in each of two rows, so a
  * row overlaps itself about 2.6 times over and reads as one rolling band, not a string of blobs.
  * The core is a lighter ellipse, `coreWidth` × `coreHeight` of the bank, `coreRise` H above its
@@ -105,7 +105,7 @@ export const FOG_SHAPE = {
 };
 
 /**
- * Legibility cap of 'nevoa' (text sits on the fill): wherever banks pile up, the body colour
+ * Legibility cap of 'fog' (text sits on the fill): wherever banks pile up, the body colour
  * (fillColors[1]) covers at most FOG_BODY_CAP and the light core (fillColors[2]) at most
  * FOG_CORE_CAP of the pixel, composited over the base. On the mansão kit (#688789 and #D6DDC7
  * over #0E1520) the worst pixel is then no lighter than #39474B over dark footage (or at
@@ -160,7 +160,7 @@ export const fogSpacing = (style: Pick<FillStyle, 'fillScale'>) => FOG_SHAPE.spa
 /** The fog drifts sideways only: right when fillAngle points right of vertical (cos ≥ 0), else left. */
 export const fogDirection = (angle: number) => (Math.cos(angle * RADIAN) >= 0 ? 1 : -1);
 
-/** 'damasco': the tile is fillScale px wide and 1.5 times as tall (the background's 90.3 × 135.5). */
+/** 'damask': the tile is fillScale px wide and 1.5 times as tall (the background's 90.3 × 135.5). */
 export const DAMASK_TILE_RATIO = 1.5;
 
 /** The damask lattice's step along the snapped direction d, in px (one tile per axis). */
@@ -189,7 +189,7 @@ export const getFillMotion = (style: FillStyle, area: Rect, options: FillOptions
   };
   const travel = style.fillSpeed * style.durationSeconds;
   switch (style.fill) {
-    case 'gradiente': {
+    case 'gradient': {
       if (style.fillColors.length < 2) return still;
       // One period holds every colour once, each about as wide as the area: the area shows a
       // single blend at a time instead of a squeezed rainbow. Travelling a whole period per cycle
@@ -198,13 +198,13 @@ export const getFillMotion = (style: FillStyle, area: Rect, options: FillOptions
       const period = extentAlong(area, fillDirection(style.fillAngle)) * style.fillColors.length;
       return {period, laps: 0, unitsPerPeriod: 1, speed: style.fillSpeed, sway: travel / 4};
     }
-    case 'pontos': {
+    case 'dots': {
       const {x, y} = dotDirection(style.fillAngle);
       return measure(style.fillScale * Math.hypot(x, y));
     }
-    case 'listras':
+    case 'stripes':
       return measure(style.fillScale * pattern.length, pattern.length);
-    case 'vidro': {
+    case 'glass': {
       // Sheens follow each other as far apart as they go in one cycle, so each place sees one
       // pass per cycle at the asked speed; closer than two widths they would merge, so a speed
       // too slow for that keeps the spacing and goes a little faster.
@@ -212,17 +212,17 @@ export const getFillMotion = (style: FillStyle, area: Rect, options: FillOptions
       const spacing = Math.max(travel, SHEEN_MIN_SPACING * sheenWidthOf(area, options));
       return {period: spacing, laps: 1, unitsPerPeriod: 1, speed: spacing / style.durationSeconds, sway: 0};
     }
-    case 'nevoa':
+    case 'fog':
       // The banks drift one spacing S per lap, both rows alike (see fogFill).
       return measure(fogSpacing(style));
-    case 'damasco': {
+    case 'damask': {
       // Like the dots: along an axis or a diagonal, one tile per axis per lap. Moving down (or on
       // a diagonal) the half-drop motif half a period on looks like the next one: two look-alike
       // steps per period for the aliasing rule.
       const {y} = dotDirection(style.fillAngle);
       return measure(damaskPeriod(style), y === 0 ? 1 : 2);
     }
-    case 'brilhos': {
+    case 'sparkles': {
       // Each ember rises at exactly fillSpeed × its seeded pace (0.7–1.3, so fillSpeed on
       // average), a whole number of lives per cycle (see sparkFill); the period is how far the
       // average ember rises in one cycle. In place, each sparkle circles its orbit, one period
@@ -240,7 +240,7 @@ export type FillMotion = ReturnType<typeof getFillMotion>;
 
 /** What the aliasing refusal calls each travelling fill. */
 const FILL_SUBJECTS: Partial<Record<FillStyleName, string>> = {
-  pontos: 'the dots', listras: 'the stripes', brilhos: 'the sparkles', nevoa: 'the fog', damasco: 'the damask',
+  dots: 'the dots', stripes: 'the stripes', sparkles: 'the sparkles', fog: 'the fog', damask: 'the damask',
 };
 
 /**
@@ -269,12 +269,12 @@ const maxSwaySpeed = (period: number, durationSeconds: number, durationInFrames:
 export const refineFill = (
   props: FillStyle & {outputFormat: OutputFormat}, area: Rect, context: z.RefinementCtx, options: FillOptions = {},
 ) => {
-  const orbiting = props.fill === 'brilhos' && !props.fillRise;
-  if (!['pontos', 'damasco', 'listras', 'gradiente'].includes(props.fill) && !orbiting) return;
+  const orbiting = props.fill === 'sparkles' && !props.fillRise;
+  if (!['dots', 'damask', 'stripes', 'gradient'].includes(props.fill) && !orbiting) return;
   const durationInFrames = framesOf(props);
   if (durationInFrames === null) return;
   const motion = getFillMotion(props, area, options);
-  if (props.fill === 'gradiente') {
+  if (props.fill === 'gradient') {
     const share = swayShare(motion, durationInFrames);
     if (!(motion.sway > 0) || share <= MAX_FRAME_SHARE + 1e-12) return;
     context.addIssue({
@@ -488,7 +488,7 @@ const glassFill = (style: FillStyle, area: Rect, cycle: number, random: () => nu
 };
 
 /**
- * Fog banks rolling sideways along the bottom of the area ('nevoa'): two staggered rows of soft
+ * Fog banks rolling sideways along the bottom of the area ('fog'): two staggered rows of soft
  * ellipses (see FOG_SHAPE) over the base colour, one spacing S apart, drifting S·laps per cycle
  * (the same in both rows), listed by place like the glass sheens: from one place wholly before
  * the area (its whole soft reach) to one wholly past it, so when the places wrap by one spacing,
@@ -544,7 +544,7 @@ const fogFill = (style: FillStyle, area: Rect, cycle: number, random: () => numb
 };
 
 /**
- * Damask wallpaper ('damasco'): one pattern element over the area, the interior's motif on a
+ * Damask wallpaper ('damask'): one pattern element over the area, the interior's motif on a
  * half-drop lattice (tile fillScale × 1.5·fillScale), inked in the second colour over the base.
  * The base is drawn inside the tile and the whole area at fillOpacity, so ink and ground share
  * one alpha: a base rect under ink at fillOpacity would leave the gaps more see-through than the
@@ -592,21 +592,21 @@ const buildPattern = (
   // The seed stream starts fresh for every call, so render order never matters.
   const random = createSeededRandom(style.seed + 101 + (options.seedOffset ?? 0));
   switch (style.fill) {
-    case 'solido':
+    case 'solid':
       return [baseRect(area, style.fillColors[0]!, style.fillOpacity, options)];
-    case 'gradiente':
+    case 'gradient':
       return gradientFill(style, area, cycle, random, options);
-    case 'pontos':
+    case 'dots':
       return dotFill(style, area, cycle, random, options);
-    case 'listras':
+    case 'stripes':
       return stripeFill(style, area, cycle, random, options);
-    case 'brilhos':
+    case 'sparkles':
       return sparkFill(style, area, cycle, random, options);
-    case 'vidro':
+    case 'glass':
       return glassFill(style, area, cycle, random, options);
-    case 'nevoa':
+    case 'fog':
       return fogFill(style, area, cycle, random, options);
-    case 'damasco':
+    case 'damask':
       return damaskFill(style, area, cycle, random);
   }
 };

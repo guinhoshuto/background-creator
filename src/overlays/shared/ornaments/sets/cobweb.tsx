@@ -139,7 +139,7 @@ const planOf = (frame: OrnamentFrame, ornamentSize: number): Plan | null => {
   const even = frame.kind === 'border' && !frame.circle;
   const counter = counterCorner ? fitFan(frame, counterCorner, layer, (even ? 1 : COBWEB_COUNTER_RATIO) * hero.radius, COBWEB_COUNTER_MIN) : null;
   // Soft lights need glow (a Twitch panel has none): moonlight behind the hero, the ember behind the counterweight.
-  const moon = frame.glow > 0 ? lightOn(frame, hero, layer, 'luar', heroSlot, COBWEB_MOON.at, COBWEB_MOON.ratio * hero.radius, COBWEB_MOON.min) : null;
+  const moon = frame.glow > 0 ? lightOn(frame, hero, layer, 'moonlight', heroSlot, COBWEB_MOON.at, COBWEB_MOON.ratio * hero.radius, COBWEB_MOON.min) : null;
   const ember = counter && counterSlot && frame.glow > 0
     ? fitLight(frame, counter, layer, 'brasa', counterSlot, COBWEB_EMBER.ratio * counter.radius, COBWEB_EMBER.min) : null;
   // A border frames a camera or the game as the background frames the screen: all four corners.
@@ -193,14 +193,14 @@ const planOf = (frame: OrnamentFrame, ornamentSize: number): Plan | null => {
   const spiderIndex: number[] = [];
   if (spider) {
     spiderIndex.push(placements.length);
-    placements.push({motif: 'aranha', slot: heroSlot, layer: 'front', x: spider.cx, y: spider.cy, extent: spider.extent, size: spider.scale});
+    placements.push({motif: 'spider', slot: heroSlot, layer: 'front', x: spider.cx, y: spider.cy, extent: spider.extent, size: spider.scale});
     items.push({kind: 'spider', plan: spider});
   }
   // A long resting line's upper part (the dangle beside a chat) in a circle of its own.
   const lineIndex: number[] = [];
   if (spider?.line) {
     lineIndex.push(placements.length);
-    placements.push({motif: 'aranha-fio', slot: heroSlot, layer: 'front', x: spider.line.cx, y: spider.line.cy, extent: spider.line.extent, size: spider.topY - spider.knotY});
+    placements.push({motif: 'spider-thread', slot: heroSlot, layer: 'front', x: spider.line.cx, y: spider.line.cy, extent: spider.line.extent, size: spider.topY - spider.knotY});
     items.push({kind: 'line', plan: spider});
   }
   // Garlands first in the drawing order: the webs' rims cover their end knots.

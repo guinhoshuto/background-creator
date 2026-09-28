@@ -17,9 +17,9 @@ import {swagRun} from './haunted-interior-swag';
  * sits at the best spot of its slot (roomAt), so the room, not the preset, limits it.
  *
  * Fallback (a slot too small for a girandole: the Twitch panel, tiny custom bleeds): the
- * chamberstick candles below. ornamentSize is then the hero's full height in px: the tall candle ('alta') from its dish's foot to
+ * chamberstick candles below. ornamentSize is then the hero's full height in px: the tall candle ('tall') from its dish's foot to
  * the tip of its flame at the tallest flicker. The other candles share the hero's scale (the same
- * flame and dish) with shorter wax: 'media' is MEDIA_RATIO and 'baixa' BAIXA_RATIO of the hero's
+ * flame and dish) with shorter wax: 'medium' is MEDIUM_RATIO and 'short' SHORT_RATIO of the hero's
  * height. Each candle is one placement: a circle holding its body, its flickering flame and its
  * light; the light shrinks (down to LIGHT.min) before the candle does.
  *
@@ -27,8 +27,8 @@ import {swagRun} from './haunted-interior-swag';
  *     top edge like on a mantel: the hero and the short one at TR, a medium one at TL; a wide
  *     window (gameplay) adds three at the top centre, the chandelier's echo.
  *   - Rings (round blocks and webcams): on brass brackets from the ±45° upper diagonals (TR hero, TL
- *     medium). A round block's accent arc takes its slots: 'esquerda' keeps TR and moves the second
- *     to the right side (0°); 'topo' moves both to the sides (0° and 180°).
+ *     medium). A round block's accent arc takes its slots: 'left' keeps TR and moves the second
+ *     to the right side (0°); 'top' moves both to the sides (0° and 180°).
  *   - A panel with no room above (the Twitch panel): on the inner sill, in the side padding pockets
  *     (BR hero and its twin at BL, unless the left accent bar is there), like the hall's floor
  *     candelabra at both lower corners.
@@ -43,12 +43,12 @@ import {swagRun} from './haunted-interior-swag';
  */
 
 /** Shares of the hero's height (the three kinds' full heights at the same scale). */
-export const MEDIA_RATIO = candleHeight('media') / candleHeight('alta');
-export const BAIXA_RATIO = candleHeight('baixa') / candleHeight('alta');
+export const MEDIUM_RATIO = candleHeight('medium') / candleHeight('tall');
+export const SHORT_RATIO = candleHeight('short') / candleHeight('tall');
 /** The hero's least height, px (its extent is then ≥ the set's minExtent). */
 export const HERO_MIN = 15;
 /** Secondaries' least heights, px: under these the candle is left out. */
-export const SECONDARY_MIN: Record<CandleKind, number> = {alta: 22, media: 24, baixa: 22};
+export const SECONDARY_MIN: Record<CandleKind, number> = {tall: 22, medium: 24, short: 22};
 /** A secondary may shrink to this share of the hero's scale before it is dropped. */
 const SECONDARY_SCALE = 0.85;
 /**
@@ -84,7 +84,7 @@ const onBrackets = (frame: Pick<OrnamentFrame, 'circle' | 'fit'>) => frame.circl
 
 /** The candle a placement holds: its kind (the motif), its side (dir) and its bracket, from the slot and the frame. */
 export const candleOf = (frame: OrnamentFrame, placement: Pick<OrnamentPlacement, 'motif' | 'slot' | 'x'>): CandleSpec => {
-  const kind = (['alta', 'media', 'baixa'] as const).find((name) => placement.motif === `vela-${name}`) ?? 'alta';
+  const kind = (['tall', 'medium', 'short'] as const).find((name) => placement.motif === `candle-${name}`) ?? 'tall';
   const left = placement.slot === 'TL' || placement.slot === 'BL' || placement.slot === 'left'
     || (placement.slot === 'top' && placement.x < frame.outline.x + frame.outline.width / 2 - 1);
   const bracket: BracketId | null = onBrackets(frame) ? (placement.slot === 'left' || placement.slot === 'right' ? 'side' : 'diagonal') : null;
@@ -160,7 +160,7 @@ const tryStand = (frame: OrnamentFrame, stand: Stand, u: number, taken: readonly
         return {
           u,
           placement: {
-            motif: `vela-${stand.kind}`, slot: stand.slot, layer: 'front', x: centre.x, y: centre.y, extent,
+            motif: `candle-${stand.kind}`, slot: stand.slot, layer: 'front', x: centre.x, y: centre.y, extent,
             size: u * candleHeight(stand.kind),
           },
         };
@@ -206,24 +206,24 @@ const topEdge = (frame: OrnamentFrame) => {
  */
 const topStands = (frame: OrnamentFrame, ornamentSize: number) => {
   const edge = topEdge(frame);
-  const nominal = ornamentSize / candleHeight('alta');
+  const nominal = ornamentSize / candleHeight('tall');
   if (edge.right - edge.left < (2 * CORNER_INSET + PAIR_GAP + 2 * DISH.rx + 2) * nominal) {
     return {
-      hero: {slot: 'top', kind: 'alta', dir: 1, bracket: null, feet: () => [{x: edge.centre, y: edge.y}]} as Stand,
+      hero: {slot: 'top', kind: 'tall', dir: 1, bracket: null, feet: () => [{x: edge.centre, y: edge.y}]} as Stand,
       secondaries: [
-        {slot: 'top', kind: 'baixa', dir: -1, bracket: null, feet: (u) => [{x: edge.centre - PAIR_GAP * u, y: edge.y}]},
-        {slot: 'top', kind: 'media', dir: 1, bracket: null, feet: (u) => [{x: edge.centre + PAIR_GAP * u, y: edge.y}]},
+        {slot: 'top', kind: 'short', dir: -1, bracket: null, feet: (u) => [{x: edge.centre - PAIR_GAP * u, y: edge.y}]},
+        {slot: 'top', kind: 'medium', dir: 1, bracket: null, feet: (u) => [{x: edge.centre + PAIR_GAP * u, y: edge.y}]},
       ] as Stand[],
       cluster: [] as Stand[],
     };
   }
-  const hero: Stand = {slot: 'TR', kind: 'alta', dir: 1, bracket: null, feet: (u) => [{x: edge.right - CORNER_INSET * u, y: edge.y}]};
-  const partner: Stand = {slot: 'TR', kind: 'baixa', dir: 1, bracket: null, feet: (u) => [{x: edge.right - (CORNER_INSET + PAIR_GAP) * u, y: edge.y}]};
-  const single: Stand = {slot: 'TL', kind: 'media', dir: -1, bracket: null, feet: (u) => [{x: edge.left + CORNER_INSET * u, y: edge.y}]};
+  const hero: Stand = {slot: 'TR', kind: 'tall', dir: 1, bracket: null, feet: (u) => [{x: edge.right - CORNER_INSET * u, y: edge.y}]};
+  const partner: Stand = {slot: 'TR', kind: 'short', dir: 1, bracket: null, feet: (u) => [{x: edge.right - (CORNER_INSET + PAIR_GAP) * u, y: edge.y}]};
+  const single: Stand = {slot: 'TL', kind: 'medium', dir: -1, bracket: null, feet: (u) => [{x: edge.left + CORNER_INSET * u, y: edge.y}]};
   const cluster: Stand[] = [
-    {slot: 'top', kind: 'baixa', dir: -1, bracket: null, feet: (u) => [{x: edge.centre - PAIR_GAP * u, y: edge.y}]},
-    {slot: 'top', kind: 'alta', dir: 1, bracket: null, feet: () => [{x: edge.centre, y: edge.y}]},
-    {slot: 'top', kind: 'baixa', dir: 1, bracket: null, feet: (u) => [{x: edge.centre + PAIR_GAP * u, y: edge.y}]},
+    {slot: 'top', kind: 'short', dir: -1, bracket: null, feet: (u) => [{x: edge.centre - PAIR_GAP * u, y: edge.y}]},
+    {slot: 'top', kind: 'tall', dir: 1, bracket: null, feet: () => [{x: edge.centre, y: edge.y}]},
+    {slot: 'top', kind: 'short', dir: 1, bracket: null, feet: (u) => [{x: edge.centre + PAIR_GAP * u, y: edge.y}]},
   ];
   return {hero, secondaries: [partner, single], cluster: frame.fit === 'window' && frame.outline.width >= CLUSTER_MIN_WIDTH ? cluster : []};
 };
@@ -247,12 +247,12 @@ const sillStands = (frame: OrnamentFrame) => {
   const reach = Math.max(8, Math.min(64, outline.width / 4));
   const pocket = (side: 1 | -1) => (side > 0 ? (text.right + inner.right) / 2 : (inner.left + text.left) / 2);
   const hero: Stand = {
-    slot: 'BR', kind: 'alta', dir: 1, bracket: null, feet: () => feetAlong(inner.right, inner.right - reach, y, pocket(1)),
+    slot: 'BR', kind: 'tall', dir: 1, bracket: null, feet: () => feetAlong(inner.right, inner.right - reach, y, pocket(1)),
   };
   const single: Stand = {
-    slot: 'BL', kind: 'alta', dir: -1, bracket: null, twin: true, feet: () => feetAlong(inner.left, inner.left + reach, y, pocket(-1)),
+    slot: 'BL', kind: 'tall', dir: -1, bracket: null, twin: true, feet: () => feetAlong(inner.left, inner.left + reach, y, pocket(-1)),
   };
-  return {hero, secondaries: frame.accent === 'esquerda' ? [] : [single], sill: true};
+  return {hero, secondaries: frame.accent === 'left' ? [] : [single], sill: true};
 };
 
 /** On the sill, the hero's short partner stands this far (px) left of the hero's foot: the two dishes stay apart. */
@@ -296,8 +296,8 @@ const telaStands = (frame: OrnamentFrame) => {
     }
     return feet;
   };
-  const hero: Stand = {slot: 'BR', kind: 'alta', dir: 1, bracket: null, feet: corner(1), footOk};
-  const single: Stand = {slot: 'BL', kind: 'alta', dir: -1, bracket: null, feet: corner(-1), footOk, twin: true};
+  const hero: Stand = {slot: 'BR', kind: 'tall', dir: 1, bracket: null, feet: corner(1), footOk};
+  const single: Stand = {slot: 'BL', kind: 'tall', dir: -1, bracket: null, feet: corner(-1), footOk, twin: true};
   return {hero, secondaries: [single]};
 };
 
@@ -313,10 +313,10 @@ const ringStands = (frame: OrnamentFrame) => {
     const {root: offset} = BRACKETS[bracket];
     return {slot, kind, dir, bracket, feet: (u) => [{x: root.x - dir * u * offset.x, y: root.y - u * offset.y}]};
   };
-  if (frame.accent === 'topo') return {hero: stand('right', 'alta', 0, 1, 'side'), secondaries: [stand('left', 'media', 180, -1, 'side')]};
-  const hero = stand('TR', 'alta', 45, 1, 'diagonal');
+  if (frame.accent === 'top') return {hero: stand('right', 'tall', 0, 1, 'side'), secondaries: [stand('left', 'medium', 180, -1, 'side')]};
+  const hero = stand('TR', 'tall', 45, 1, 'diagonal');
   // The left accent arc takes TL (and the left side): the second sconce goes to the right side instead.
-  return {hero, secondaries: [frame.accent === 'esquerda' ? stand('right', 'baixa', 0, 1, 'side') : stand('TL', 'media', 135, -1, 'diagonal')]};
+  return {hero, secondaries: [frame.accent === 'left' ? stand('right', 'short', 0, 1, 'side') : stand('TL', 'medium', 135, -1, 'diagonal')]};
 };
 
 /** The haunted-interior's placements: the hero first; [] when it fits nowhere (the schema then refuses). */
@@ -343,7 +343,7 @@ const placeChambersticks = (frame: OrnamentFrame, ornamentSize: number): Ornamen
     // The sill's pair (AD round 2): a short candle SILL_PAIR_GAP px left of the hero, at the hero's
     // scale or a little smaller (a twin: it keeps any size the hero has), in the same pocket.
     const foot = footOf(hero.placement, candleOf(frame, hero.placement), hero.u);
-    const partner: Stand = {slot: 'BR', kind: 'baixa', dir: 1, bracket: null, twin: true, feet: () => [{x: foot.x - SILL_PAIR_GAP, y: foot.y}]};
+    const partner: Stand = {slot: 'BR', kind: 'short', dir: 1, bracket: null, twin: true, feet: () => [{x: foot.x - SILL_PAIR_GAP, y: foot.y}]};
     const placement = secondary(frame, partner, hero.u, spansOf(frame, placements));
     if (placement) placements.push(placement);
   }
@@ -366,19 +366,19 @@ const placeChambersticks = (frame: OrnamentFrame, ornamentSize: number): Ornamen
 /**
  * The girandoles' layout (ART DIRECTION round 1):
  *
- *   - Rect panels and windows: the hero 'candelabro-3' at TR, a 'candelabro-2' mirrored at TL, both
+ *   - Rect panels and windows: the hero 'candelabra-3' at TR, a 'candelabra-2' mirrored at TL, both
  *     on rosettes on the frame's side line at the corner, centred at the slot's best spot (roomAt).
- *     Short labels (a block ≤ COMPACT_HEIGHT tall): one 'candelabro-2' at TR only.
- *   - Wide windows (gameplay, webcam-16x9-lg: width ≥ CLUSTER_MIN_WIDTH): a 'candelabro-3' standing on
- *     the band at the top centre (the chandelier's echo), and wall sconces ('arandela') on both
+ *     Short labels (a block ≤ COMPACT_HEIGHT tall): one 'candelabra-2' at TR only.
+ *   - Wide windows (gameplay, webcam-16x9-lg: width ≥ CLUSTER_MIN_WIDTH): a 'candelabra-3' standing on
+ *     the band at the top centre (the chandelier's echo), and wall sconces ('sconce') on both
  *     sides, SIDE_SPACING px apart, centred on the side's straight stretch.
  *   - Wide blocks and windows (lower-third, title, gameplay, webcam-16x9-lg: width ≥ CLUSTER_MIN_WIDTH): the
  *     hall's red-velvet swag valance hanging from the bottom line into the bleed (haunted-interior-swag.tsx),
  *     a festoon per fixed pitch along the straight stretch.
- *   - Rings: the hero at the 45° upper right, a 'candelabro-2' at the upper left; a round block's
+ *   - Rings: the hero at the 45° upper right, a 'candelabra-2' at the upper left; a round block's
  *     accent arc moves them to the sides (0°, 180°).
- *   - Screen frames (screen): 'candelabro-3' standing on the bottom rail in both bottom band corners,
- *     'candelabro-2' in the top ones, sconces up both side bands (SIDE_SPACING px apart), and the
+ *   - Screen frames (screen): 'candelabra-3' standing on the bottom rail in both bottom band corners,
+ *     'candelabra-2' in the top ones, sconces up both side bands (SIDE_SPACING px apart), and the
  *     swag valance across the top band between the top corners' fixtures.
  *
  * Every size is fixed px from ornamentSize (the fixture's full height) or the room of its slot,
@@ -391,7 +391,7 @@ const placeChambersticks = (frame: OrnamentFrame, ornamentSize: number): Ornamen
 export const GIRANDOLE_HERO_MIN = 16;
 /** A secondary fixture's least extent, px (H ≈ 22). */
 export const GIRANDOLE_MIN = 12;
-/** Blocks at most this tall (etiquetas) carry one 'candelabro-2' only. */
+/** Blocks at most this tall (etiquetas) carry one 'candelabra-2' only. */
 export const COMPACT_HEIGHT = 96;
 /** Sconces along a long side: px between them; each stays ≥ half of it from the side's corner slots. */
 export const SIDE_SPACING = 320;
@@ -408,14 +408,14 @@ export const TOP_CORNER = 240;
 /** How far (px) a screen frame's corner girandole may move to keep its drawing off the picture. */
 const WINDOW_SLIDE = 32;
 
-/** The motif id of a fixture on a mount ('-pe': standing on its domed foot). */
-export const fixtureMotif = (kind: FixtureKind, mount: FixtureMount) => (mount === 'foot' ? `${kind}-pe` : kind);
+/** The motif id of a fixture on a mount ('-foot': standing on its domed foot). */
+export const fixtureMotif = (kind: FixtureKind, mount: FixtureMount) => (mount === 'foot' ? `${kind}-foot` : kind);
 
 /** A placement's fixture (null: a chamberstick candle or a festoon), its mount and its side. */
 export const fixtureOf = (placement: Pick<OrnamentPlacement, 'motif' | 'slot'>): {kind: FixtureKind; mount: FixtureMount; dir: 1 | -1} | null => {
-  const foot = placement.motif.endsWith('-pe');
-  const kind = (foot ? placement.motif.slice(0, -3) : placement.motif) as FixtureKind;
-  if (kind !== 'candelabro-3' && kind !== 'candelabro-2' && kind !== 'arandela') return null;
+  const foot = placement.motif.endsWith('-foot');
+  const kind = (foot ? placement.motif.slice(0, -'-foot'.length) : placement.motif) as FixtureKind;
+  if (kind !== 'candelabra-3' && kind !== 'candelabra-2' && kind !== 'sconce') return null;
   const left = placement.slot === 'TL' || placement.slot === 'BL' || placement.slot === 'left';
   return {kind, mount: foot ? 'foot' : 'rosette', dir: left ? -1 : 1};
 };
@@ -585,7 +585,7 @@ const sideSconces = (frame: OrnamentFrame, ornamentSize: number): OrnamentPlacem
       const spot = side === 'right'
         ? bestOnSegment(frame, {x: outline.x + outline.width - reach, y}, {x: limit.x + limit.width, y})
         : bestOnSegment(frame, {x: outline.x + reach, y}, {x: limit.x, y});
-      const placement = fixtureOnSpot(spot, side, 'arandela', 'rosette', ornamentSize, GIRANDOLE_MIN);
+      const placement = fixtureOnSpot(spot, side, 'sconce', 'rosette', ornamentSize, GIRANDOLE_MIN);
       if (placement) placements.push(placement);
     }
   }
@@ -597,7 +597,7 @@ const topCentre = (frame: OrnamentFrame, ornamentSize: number): OrnamentPlacemen
   const {outline} = frame;
   const x = outline.x + outline.width / 2;
   const spot = bestOnSegment(frame, {x, y: outline.y + 64}, {x, y: frame.paintLimit.y});
-  return fixtureOnSpot(spot, 'top', 'candelabro-3', 'foot', ornamentSize, GIRANDOLE_MIN);
+  return fixtureOnSpot(spot, 'top', 'candelabra-3', 'foot', ornamentSize, GIRANDOLE_MIN);
 };
 
 /** A wide window's standing girandoles on its top rail, TOP_SPACING px apart from the centre one; kept only near its height. */
@@ -609,7 +609,7 @@ const topRail = (frame: OrnamentFrame, ornamentSize: number, centre: OrnamentPla
   for (let offset = TOP_SPACING; offset <= outline.width / 2 - TOP_CORNER + 1e-9; offset += TOP_SPACING) {
     for (const x of [middle + offset, middle - offset]) {
       const spot = bestOnSegment(frame, {x, y: outline.y + 64}, {x, y: frame.paintLimit.y});
-      const placement = fixtureOnSpot(spot, 'top', 'candelabro-2', 'foot', ornamentSize, GIRANDOLE_MIN);
+      const placement = fixtureOnSpot(spot, 'top', 'candelabra-2', 'foot', ornamentSize, GIRANDOLE_MIN);
       if (placement && placement.size >= PARTNER_SHARE * centre.size - 1e-9) placements.push(placement);
     }
   }
@@ -666,15 +666,15 @@ export const placeGirandoles = (frame: OrnamentFrame, ornamentSize: number): Orn
   };
   if (frame.fit === 'screen') {
     // The standing corner girandoles keep their flames and halos off the picture (AD round 2).
-    const found = heroAt(cornerSlot(frame, 'BR'), 'BR', 'candelabro-3', 'foot');
+    const found = heroAt(cornerSlot(frame, 'BR'), 'BR', 'candelabra-3', 'foot');
     if (!found) return null;
     const hero = offThePicture(frame, found, 1, ornamentSize, Math.min(GIRANDOLE_HERO_MIN, found.extent));
     placements.push(hero);
-    const twin = partnerAt(cornerSlot(frame, 'BL'), 'BL', 'candelabro-3', 'foot');
+    const twin = partnerAt(cornerSlot(frame, 'BL'), 'BL', 'candelabra-3', 'foot');
     const left = twin ? offThePicture(frame, twin, -1, ornamentSize, GIRANDOLE_MIN) : null;
     add(left && left.size >= PARTNER_SHARE * hero.size - 1e-9 ? left : null);
-    add(partnerAt(cornerSlot(frame, 'TR'), 'TR', 'candelabro-2', 'rosette'));
-    add(partnerAt(cornerSlot(frame, 'TL'), 'TL', 'candelabro-2', 'rosette'));
+    add(partnerAt(cornerSlot(frame, 'TR'), 'TR', 'candelabra-2', 'rosette'));
+    add(partnerAt(cornerSlot(frame, 'TL'), 'TL', 'candelabra-2', 'rosette'));
     for (const sconce of sideSconces(frame, ornamentSize)) add(sconce);
     // The valance across the top band, between the top corners' fixtures (AD round 3; it replaces
     // the small two-light stands on the bottom band, which read as forks).
@@ -682,26 +682,26 @@ export const placeGirandoles = (frame: OrnamentFrame, ornamentSize: number): Orn
     return placements;
   }
   if (frame.circle) {
-    const [heroSlot, secondSlot] = frame.accent === 'topo'
+    const [heroSlot, secondSlot] = frame.accent === 'top'
       ? [[ringSlot(frame, 0), 'right'], [ringSlot(frame, 180), 'left']] as const
-      : frame.accent === 'esquerda'
+      : frame.accent === 'left'
         ? [[cornerSlot(frame, 'TR'), 'TR'], [ringSlot(frame, 0), 'right']] as const
         : [[cornerSlot(frame, 'TR'), 'TR'], [cornerSlot(frame, 'TL'), 'TL']] as const;
-    const hero = heroAt(heroSlot[0], heroSlot[1], 'candelabro-3', 'rosette');
+    const hero = heroAt(heroSlot[0], heroSlot[1], 'candelabra-3', 'rosette');
     if (!hero) return null;
     placements.push(hero);
     // A partner in the other upper corner keeps near the hero's height; one on the ring's side
     // (the left accent arc takes TL) has only the side's bleed, so it stays at its own room there
     // (a smaller two-light under the hero) rather than being dropped.
-    add(secondSlot[1] === 'TL' ? partnerAt(secondSlot[0], secondSlot[1], 'candelabro-2', 'rosette') : secondaryAt(secondSlot[0], secondSlot[1], 'candelabro-2', 'rosette'));
+    add(secondSlot[1] === 'TL' ? partnerAt(secondSlot[0], secondSlot[1], 'candelabra-2', 'rosette') : secondaryAt(secondSlot[0], secondSlot[1], 'candelabra-2', 'rosette'));
     return placements;
   }
   const compact = frame.kind === 'block' && frame.outline.height <= COMPACT_HEIGHT;
-  const hero = heroAt(cornerSlot(frame, 'TR'), 'TR', compact ? 'candelabro-2' : 'candelabro-3', 'rosette');
+  const hero = heroAt(cornerSlot(frame, 'TR'), 'TR', compact ? 'candelabra-2' : 'candelabra-3', 'rosette');
   if (!hero) return null;
   placements.push(hero);
   if (compact) return placements;
-  add(partnerAt(cornerSlot(frame, 'TL'), 'TL', 'candelabro-2', 'rosette'));
+  add(partnerAt(cornerSlot(frame, 'TL'), 'TL', 'candelabra-2', 'rosette'));
   if (frame.outline.width >= CLUSTER_MIN_WIDTH) {
     if (frame.fit === 'window') {
       const centre = topCentre(frame, ornamentSize);

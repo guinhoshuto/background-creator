@@ -17,10 +17,10 @@ import type {RoundRect} from '../geometry';
  * dropped, and a set whose hero fits nowhere places nothing, which the schema refuses.
  */
 
-export const ORNAMENT_CHOICES = ['nenhum', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb'] as const;
+export const ORNAMENT_CHOICES = ['none', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb'] as const;
 export type OrnamentChoice = (typeof ORNAMENT_CHOICES)[number];
-export type OrnamentSetId = Exclude<OrnamentChoice, 'nenhum'>;
-export const ORNAMENT_SET_IDS = ORNAMENT_CHOICES.filter((choice): choice is OrnamentSetId => choice !== 'nenhum');
+export type OrnamentSetId = Exclude<OrnamentChoice, 'none'>;
+export const ORNAMENT_SET_IDS = ORNAMENT_CHOICES.filter((choice): choice is OrnamentSetId => choice !== 'none');
 
 export type OrnamentKind = 'chat' | 'block' | 'border';
 /** 'panel': chat and block; 'window' and 'screen': the border's fits. */
@@ -57,7 +57,7 @@ export type OrnamentFrame = {
    */
   cover: {path: string; fillRule: 'nonzero' | 'evenodd'};
   /** A block's accent side (round blocks: sets keep the hero off the accent arc's slots); null elsewhere. */
-  accent: 'esquerda' | 'topo' | null;
+  accent: 'left' | 'top' | null;
   /** The kind's glow reach; 0 (a Twitch panel) means crisp motifs, no soft lights. */
   glow: number;
 };

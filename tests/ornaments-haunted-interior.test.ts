@@ -57,7 +57,7 @@ const neutralLayout = (size: NamedSize, extra: Record<string, unknown> = {}) => 
 };
 
 const motifs = (placements: readonly OrnamentPlacement[]) => placements.map((placement) => `${placement.motif}@${placement.slot}`);
-const HEROES = ['candelabro-3', 'candelabro-2', 'candelabro-3-pe', 'vela-alta'];
+const HEROES = ['candelabra-3', 'candelabra-2', 'candelabra-3-foot', 'candle-tall'];
 
 test('ornaments haunted-interior: o herói está em todos os 27 tamanhos, com o kit, sem ele e nos ornamentSize extremos', () => {
   assert.equal(NAMED_SIZES.length, 27);
@@ -73,7 +73,7 @@ test('ornaments haunted-interior: o herói está em todos os 27 tamanhos, com o 
 test('ornaments haunted-interior: quais peças ficam onde em cada classe de tamanho (kit)', () => {
   const expect = (id: string, expected: string[], extra: Record<string, unknown> = {}) =>
     assert.deepEqual(motifs(kitLayout(getSize(id), extra).placements), expected, `${id} ${JSON.stringify(extra)}`);
-  const corners = ['candelabro-3@TR', 'candelabro-2@TL'];
+  const corners = ['candelabra-3@TR', 'candelabra-2@TL'];
   for (const id of ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical', 'card', 'square', 'list']) expect(id, corners);
   for (const id of ['webcam-16x9', 'webcam-4x3', 'webcam-square', 'webcam-vertical', 'webcam-round-sm', 'webcam-round', 'webcam-round-lg']) expect(id, corners);
   // Wide blocks and windows (AD round 3): the red-velvet swag valance along the bottom, a festoon
@@ -82,27 +82,27 @@ test('ornaments haunted-interior: quais peças ficam onde em cada classe de tama
   for (const id of ['lower-third', 'title']) expect(id, [...corners, ...swags(28)]);
   // Wide windows: the top-centre girandole on its foot, two-light wall girandoles 320 px apart up
   // both sides, and on the gameplay two-light girandoles on the top rail at ±400 px.
-  expect('webcam-16x9-lg', [...corners, 'candelabro-3-pe@top', 'arandela@right', 'arandela@left', ...swags(24)]);
+  expect('webcam-16x9-lg', [...corners, 'candelabra-3-foot@top', 'sconce@right', 'sconce@left', ...swags(24)]);
   expect('gameplay', [
-    ...corners, 'candelabro-3-pe@top', 'arandela@right', 'arandela@left', 'arandela@right', 'arandela@left',
-    'candelabro-2-pe@top', 'candelabro-2-pe@top', ...swags(36),
+    ...corners, 'candelabra-3-foot@top', 'sconce@right', 'sconce@left', 'sconce@right', 'sconce@left',
+    'candelabra-2-foot@top', 'candelabra-2-foot@top', ...swags(36),
   ]);
   // Labels: one two-light girandole.
-  for (const id of ['label-sm', 'label']) expect(id, ['candelabro-2@TR']);
+  for (const id of ['label-sm', 'label']) expect(id, ['candelabra-2@TR']);
   // Round blocks: the left accent arc sends the partner to the right side; circle-sm is too small for two.
-  expect('circle-sm', ['candelabro-3@TR']);
+  expect('circle-sm', ['candelabra-3@TR']);
   for (const id of ['circle', 'circle-lg']) {
-    expect(id, ['candelabro-3@TR', 'candelabro-2@right']);
-    expect(id, corners, {accent: 'nenhum'});
-    expect(id, ['candelabro-3@right', 'candelabro-2@left'], {accent: 'topo'});
+    expect(id, ['candelabra-3@TR', 'candelabra-2@right']);
+    expect(id, corners, {accent: 'none'});
+    expect(id, ['candelabra-3@right', 'candelabra-2@left'], {accent: 'top'});
   }
   // The Twitch panel keeps its sill candle (no room for a girandole, and no glow).
-  expect('twitch-panel', ['vela-alta@BR']);
+  expect('twitch-panel', ['candle-tall@BR']);
   // Screen frames (the pack's radius 48, thickness 24): standing girandoles below, two-light ones
   // above, wall girandoles up the sides, the swag valance across the top band between the top ones.
-  const telaCorners = ['candelabro-3-pe@BR', 'candelabro-3-pe@BL', 'candelabro-2@TR', 'candelabro-2@TL'];
-  expect('fullscreen', [...telaCorners, ...Array(3).fill(['arandela@right', 'arandela@left']).flat(), ...swags(54, 'top')]);
-  expect('fullscreen-vertical', [...telaCorners, ...Array(5).fill(['arandela@right', 'arandela@left']).flat(), ...swags(28, 'top')]);
+  const telaCorners = ['candelabra-3-foot@BR', 'candelabra-3-foot@BL', 'candelabra-2@TR', 'candelabra-2@TL'];
+  expect('fullscreen', [...telaCorners, ...Array(3).fill(['sconce@right', 'sconce@left']).flat(), ...swags(54, 'top')]);
+  expect('fullscreen-vertical', [...telaCorners, ...Array(5).fill(['sconce@right', 'sconce@left']).flat(), ...swags(28, 'top')]);
 });
 
 test('ornaments haunted-interior: no pack, jogo e webcam-16x9-lg escalam o kit (×2 e ×1,5): o herói usa o quarto e cresce junto', () => {
@@ -174,14 +174,14 @@ test('ornaments haunted-interior: o quarto é o limite (herói ≥ 85 %, parceir
   assert.equal(height('twitch-panel'), 22.5);
   // Where the rows stand.
   const gameplay = at('gameplay').placements;
-  assert.deepEqual(gameplay.filter((placement) => placement.motif === 'arandela').map((placement) => Math.round(placement.y)), [293, 293, 613, 613]);
-  assert.deepEqual(at('fullscreen').placements.filter((placement) => placement.motif === 'arandela').map((placement) => Math.round(placement.y)), [220, 220, 540, 540, 860, 860]);
+  assert.deepEqual(gameplay.filter((placement) => placement.motif === 'sconce').map((placement) => Math.round(placement.y)), [293, 293, 613, 613]);
+  assert.deepEqual(at('fullscreen').placements.filter((placement) => placement.motif === 'sconce').map((placement) => Math.round(placement.y)), [220, 220, 540, 540, 860, 860]);
   const offsets = (id: string, keep: (placement: OrnamentPlacement) => boolean, of = (placement: OrnamentPlacement) => placement.x) => {
     const {frame, placements} = at(id);
     const centre = frame.outline.x + frame.outline.width / 2;
     return placements.filter(keep).map((placement) => Math.round((of(placement) - centre) * 1000) / 1000).sort((a, b) => a - b);
   };
-  assert.deepEqual(offsets('gameplay', (placement) => placement.motif === 'candelabro-2-pe'), [-TOP_SPACING, TOP_SPACING]);
+  assert.deepEqual(offsets('gameplay', (placement) => placement.motif === 'candelabra-2-foot'), [-TOP_SPACING, TOP_SPACING]);
   // The valance: festoons abutting at their pitch, centred on the frame, hanging from the bottom
   // line's centreline (a border's outer line: 1 px inside the outline; a block's stroke), their
   // circles centred 6.5 / 8 px below it; its ends ≥ 16 px past the corner curve. On a screen frame
@@ -333,7 +333,7 @@ test('ornaments haunted-interior: ritmos, chama e cores vêm do fundo (HauntedIn
   assert.equal(flamePathOf(1.5), 'M0 2 C-11-5-7-14 1.5-28 C5.5-16 11-5 0 2Z');
   assert.equal(flamePath(1.5), flamePathOf(1.5, num));
   // The sampled bounds come from the same segments: the envelope's top is the tallest flame's tip.
-  for (const kind of ['alta', 'media', 'baixa'] as const) {
+  for (const kind of ['tall', 'medium', 'short'] as const) {
     const top = Math.min(...candlePoints(kind, null).flame.map((point) => point.y));
     assert.ok(Math.abs(top + candleHeight(kind)) < 1e-9, `${kind}: ponta da chama ${top}`);
   }
@@ -383,7 +383,7 @@ const drawnOf = (frame: OrnamentFrame, placement: OrnamentPlacement): {x: number
 test('ornaments haunted-interior: nada do desenho sai do lugar, entra no texto ou na janela, nos ornamentSize extremos', () => {
   for (const size of NAMED_SIZES) {
     for (const ornamentSize of [12, 48, 96, 256]) {
-      for (const extra of [{}, {accent: 'topo'}, {radius: 0}]) {
+      for (const extra of [{}, {accent: 'top'}, {radius: 0}]) {
         if (size.kind !== 'block' && 'accent' in extra) continue;
         for (const {frame, placements} of [kitLayout(size, {ornamentSize, ...extra}), neutralLayout(size, {ornamentSize, ...extra})]) {
           const label = `${size.id} ${ornamentSize} ${JSON.stringify(extra)}`;
@@ -466,8 +466,8 @@ test('ornaments haunted-interior: no relâmpago o latão acende do lado da janel
 
 /** Small round screen frames (a square screen with radius ≥ side/2): the girandoles do not fit, so the chambersticks stand on the band. */
 const ROUND_SCREENS = [
-  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'nenhum', ornamentSize: 48},
-  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'nenhum', ornamentSize: 96},
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 24, glow: 4, lines: 1, strokeWidth: 2, corners: 'none', ornamentSize: 48},
+  {width: 96, height: 96, bleed: 0, fit: 'screen', shape: 'rectangle', radius: 1920, thickness: 32, glow: 8, lines: 2, strokeWidth: 2, corners: 'none', ornamentSize: 96},
 ];
 
 test('ornaments haunted-interior: numa tela redonda as velas ficam na faixa, sem braço, e o desenho cabe no lugar e no arquivo', () => {
@@ -477,7 +477,7 @@ test('ornaments haunted-interior: numa tela redonda as velas ficam na faixa, sem
     const {frame, placements} = adapter.ornamentLayout(props);
     const label = JSON.stringify(input);
     assert.ok(frame.circle && frame.fit === 'screen', `${label}: tela redonda`);
-    assert.ok(placements.length > 0 && placements.every((placement) => placement.motif.startsWith('vela-')), `${label}: castiçais (${motifs(placements)})`);
+    assert.ok(placements.length > 0 && placements.every((placement) => placement.motif.startsWith('candle-')), `${label}: castiçais (${motifs(placements)})`);
     for (const placement of placements) {
       assert.equal(candleOf(frame, placement).bracket, null, `${label} ${placement.motif}@${placement.slot}: sem braço na tela`);
       for (const point of drawnOf(frame, placement)) {
@@ -525,7 +525,7 @@ test('ornaments haunted-interior: tela em qualquer raio e espessura nunca recusa
     for (const extra of [{}, {radius: 0}, {radius: 16}, {radius: 96}, {radius: 200}, {radius: 300}, {thickness: 20}, {thickness: 32, radius: 0}, {thickness: 22, glow: 20}, {glow: 24}]) {
       const {props, frame, placements} = kitLayout(size, extra);
       const {window} = getBorderGeometry(props as never).layout;
-      for (const placement of placements.filter((entry) => entry.motif.endsWith('-pe') || entry.motif === SWAG_MOTIF)) {
+      for (const placement of placements.filter((entry) => entry.motif.endsWith('-foot') || entry.motif === SWAG_MOTIF)) {
         for (const point of drawnOf(frame, placement)) {
           assert.ok(roundRectSdf(window, point.x, point.y) - point.margin >= 1 - 1e-6, `${id} ${JSON.stringify(extra)} ${placement.motif}@${placement.slot}: fora da imagem`);
         }
