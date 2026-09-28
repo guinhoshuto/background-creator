@@ -24,7 +24,7 @@ Overlays: decorative measurements are fixed px (they do not scale with the box; 
 
 - One render at a time on the machine, counting other sessions and other repos (`pgrep -fl` first). `render:pack` and `validate:exports` never run alongside another render.
 - `df -h /` before rendering; do not start with less than 3 GB free. The regenerable space is `node_modules/.cache/webpack` (up to ~5 GB; once deleted, it comes back on the next render).
-- Verification stills: one bundle, one browser and many frames in a single process. Never one `render:png --frame` per frame, nor in parallel. Today's tool is `.cache/halloween-kits/stills.mts` (outside git; `npx tsx`).
+- Visual verification is `npm run stills -- <job.json>` (one bundle, one browser, many frames; format in `scripts/stills-job.ts`): stills, contact sheets, stream mockups, loop-seam checks (`seams`), determinism (`sequences`) and before/after against a git ref (`baseline: {ref: "HEAD"}`), plus `report.json`. It waits for other renders, holds a lock and refuses to leave less than 3 GB free. A whole pack: `npm run qa:kit -- <pack>`. Do not write another stills script, and never one `render:png --frame` per frame. Output defaults to `out/review/<date>-<job>/`, which the owner opens.
 - Full FFmpeg and FFprobe live in `/opt/homebrew/bin`. Do not use the ffmpeg from `@remotion/compositor-*` (no `rawvideo`) nor the wrapper in `.cache/webgl-tools/bin` (obsolete).
 - `validate:exports` samples 0.4 s with `defaultProps` per kind: run `--kind`/`--only` on what changed. It does not validate packs.
 - A custom script that renders WebGL passes `gl: 'angle'`, like `src/catalog.tsx:80`.
