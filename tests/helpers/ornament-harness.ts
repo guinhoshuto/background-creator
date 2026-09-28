@@ -19,8 +19,8 @@ import {
  * The ornament harness: a set on every kind and named size (plus border radii, small round screen
  * frames and the round blocks' accents), with a neutral base and with its kit's presets (also as
  * the pack renders them). One small test file per set calls registerOrnamentHarness, so the sets
- * run in parallel (`npx tsx --test tests/ornaments-harness-noite.test.ts` runs one); test names
- * carry the set ([noite]…) and the theme ([halloween-noite]…).
+ * run in parallel (`npx tsx --test tests/ornaments-harness-midnight.test.ts` runs one); test names
+ * carry the set ([midnight]…) and the theme ([halloween-midnight]…).
  */
 
 export const NEUTRAL = {ornamentSize: 48, lightning: 0.7, durationSeconds: 12, seed: 7};
@@ -64,7 +64,7 @@ const variants = (adapter: OrnamentKindAdapter): Case[] => {
 const sampleFrames = (n: number) => [0, 1, 37, n * 0.137, n * 0.391, n * 0.618, n * 0.853, n - 1, 0.5, -1];
 
 /** The documented refusal; its way out depends on the kind (and on a border's fit): see ornamentWayOut. */
-export const REFUSAL = new RegExp(`^The "(noite|mansao|interior|teia)" ornaments do not fit this size: (${[
+export const REFUSAL = new RegExp(`^The "(midnight|haunted-mansion|haunted-interior|cobweb)" ornaments do not fit this size: (${[
   'increase bleed, padding or radius or use ornaments nenhum.',
   'increase bleed or padding or use ornaments nenhum.',
   'increase bleed, paddingX, paddingY or radius or use ornaments nenhum.',

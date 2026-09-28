@@ -303,7 +303,7 @@ test('Redondo: o reflexo de cima acende só o arco de cima do círculo, sumindo 
   const [flat] = getBlockLayers(parseBlock({rimLight: 0.9}), 0, 480).rim;
   assert.ok(flat && flat.hold === flat.corner && flat.hold > 0);
   // The border's glass rim follows its round band the same way.
-  const round = parseBorder({...presetOf('border', 'vidro'), ...sized('webcam-round')});
+  const round = parseBorder({...presetOf('border', 'glass'), ...sized('webcam-round')});
   const [bandRim] = getBorderSceneParts(round, 0, 480).rim;
   assert.ok(bandRim && bandRim.hold === 0 && bandRim.corner === bandRim.width / 2);
 });

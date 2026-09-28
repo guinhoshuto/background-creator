@@ -57,35 +57,35 @@ test('ornaments: o clarão segue as janelas do fundo Salão assombrado (mesma se
 test('ornaments: quando nem o motivo principal cabe, a combinação é recusada com a saída', () => {
   // A block whose text fills the whole file: no corner has room in front of it.
   const input = {
-    width: 320, height: 100, bleed: 0, radius: 0, strokeWidth: 0, paddingX: 0, paddingY: 0, glow: 0, halo: 0, ornaments: 'noite',
+    width: 320, height: 100, bleed: 0, radius: 0, strokeWidth: 0, paddingX: 0, paddingY: 0, glow: 0, halo: 0, ornaments: 'midnight',
   };
   const issues = ORNAMENT_KINDS.block.issues(input);
   assert.equal(issues.length, 1);
   assert.deepEqual(issues[0]!.path, ['ornaments']);
   assert.match(issues[0]!.message, REFUSAL);
   assert.deepEqual(ORNAMENT_KINDS.block.issues({...input, ornaments: 'nenhum'}), []);
-  assert.equal(issues[0]!.message, 'The "noite" ornaments do not fit this size: increase bleed, paddingX, paddingY or radius or use ornaments nenhum.');
+  assert.equal(issues[0]!.message, 'The "midnight" ornaments do not fit this size: increase bleed, paddingX, paddingY or radius or use ornaments nenhum.');
   assert.deepEqual(ORNAMENT_KINDS.block.issues({...input, paddingX: 40, paddingY: 30}), [], 'bloco: a saída indicada resolve');
   // A border has no padding, and a screen frame no bleed: each names its own way out, which works.
-  const border = {width: 200, height: 120, radius: 0, thickness: 2, strokeWidth: 2, glow: 0, halo: 0, corners: 'nenhum', ornaments: 'noite'};
+  const border = {width: 200, height: 120, radius: 0, thickness: 2, strokeWidth: 2, glow: 0, halo: 0, corners: 'nenhum', ornaments: 'midnight'};
   for (const [input, wayOut, fixed] of [
     [{...border, fit: 'screen', bleed: 0}, 'increase thickness, glow or radius or use ornaments nenhum.', {radius: 60}],
     [{...border, fit: 'window', bleed: 8}, 'increase bleed or radius or use ornaments nenhum.', {bleed: 24}],
   ] as const) {
     const refused = ORNAMENT_KINDS.border.issues(input);
-    assert.deepEqual(refused.map((issue) => [issue.path, issue.message]), [[['ornaments'], `The "noite" ornaments do not fit this size: ${wayOut}`]], input.fit);
+    assert.deepEqual(refused.map((issue) => [issue.path, issue.message]), [[['ornaments'], `The "midnight" ornaments do not fit this size: ${wayOut}`]], input.fit);
     assert.deepEqual(ORNAMENT_KINDS.border.issues({...input, ...fixed}), [], `${input.fit}: a saída indicada resolve`);
   }
   // A radius already at its maximum (a pill, a round screen frame) is not offered: raising it changes nothing.
-  const pill = {width: 240, height: 64, radius: 32, bleed: 0, padding: 8, headerHeight: 0, glow: 0, halo: 0, ornaments: 'noite'};
+  const pill = {width: 240, height: 64, radius: 32, bleed: 0, padding: 8, headerHeight: 0, glow: 0, halo: 0, ornaments: 'midnight'};
   const round = {
-    width: 64, height: 64, fit: 'screen', shape: 'rectangle', bleed: 0, radius: 32, thickness: 4, glow: 0, strokeWidth: 0, lines: 1, corners: 'nenhum', ornaments: 'noite',
+    width: 64, height: 64, fit: 'screen', shape: 'rectangle', bleed: 0, radius: 32, thickness: 4, glow: 0, strokeWidth: 0, lines: 1, corners: 'nenhum', ornaments: 'midnight',
   };
   for (const [adapter, input, wayOut, fixes] of [
     [ORNAMENT_KINDS.chat, pill, 'increase bleed or padding or use ornaments nenhum.', [{bleed: 64}, {padding: 20}]],
     [ORNAMENT_KINDS.border, round, 'increase thickness or glow or use ornaments nenhum.', [{thickness: 12}, {glow: 8}]],
   ] as const) {
-    const message = [[['ornaments'], `The "noite" ornaments do not fit this size: ${wayOut}`]];
+    const message = [[['ornaments'], `The "midnight" ornaments do not fit this size: ${wayOut}`]];
     assert.deepEqual(adapter.issues(input).map((issue) => [issue.path, issue.message]), message, adapter.kind);
     assert.deepEqual(adapter.issues({...input, radius: 1920}).map((issue) => [issue.path, issue.message]), message, `${adapter.kind}: radius maior não muda nada`);
     for (const fixed of fixes) assert.deepEqual(adapter.issues({...input, ...fixed}), [], `${adapter.kind} ${JSON.stringify(fixed)}: a saída indicada resolve`);
@@ -96,7 +96,7 @@ test('ornaments: relâmpago num ciclo curto demais para um raio é recusado com 
   const message = 'With durationSeconds below 1.5 s there is no lightning: use durationSeconds ≥ 1.5 or lightning 0.';
   for (const kindName of ORNAMENT_KIND_NAMES) {
     const adapter = ORNAMENT_KINDS[kindName];
-    for (const ornaments of ['nenhum', 'noite']) {
+    for (const ornaments of ['nenhum', 'midnight']) {
       for (const durationSeconds of [0.5, 1, 1.4]) {
         const input = {durationSeconds, lightning: 0.8, ornaments};
         assert.deepEqual(adapter.issues(input).map((issue) => [issue.path, issue.message]), [[['lightning'], message]], `${kindName} ${durationSeconds}s`);
@@ -109,7 +109,7 @@ test('ornaments: relâmpago num ciclo curto demais para um raio é recusado com 
 
 test('ornaments: lugares nos cantos, espaço livre e deslize ao longo da diagonal', () => {
   const adapter = ORNAMENT_KINDS.block;
-  const round = adapter.ornamentLayout(adapter.parse({...sizeProps(getSize('circle')), ornaments: 'noite', accent: 'esquerda'})).frame;
+  const round = adapter.ornamentLayout(adapter.parse({...sizeProps(getSize('circle')), ornaments: 'midnight', accent: 'esquerda'})).frame;
   const {outline} = round;
   const [cx, cy, r] = [outline.x + outline.width / 2, outline.y + outline.height / 2, outline.width / 2];
   // A circle's slots are its 45° points, in the order TR, BR, BL, TL.
@@ -123,7 +123,7 @@ test('ornaments: lugares nos cantos, espaço livre e deslize ao longo da diagona
   assert.equal(slotsOffAccent({...round, circle: false}).length, 4);
 
   const chat = ORNAMENT_KINDS.chat;
-  const frame = chat.ornamentLayout(chat.parse({ornaments: 'noite'})).frame;
+  const frame = chat.ornamentLayout(chat.parse({ornaments: 'midnight'})).frame;
   const tr = cornerSlots(frame)[0]!;
   const room = roomAt(frame, tr, 'front');
   assert.ok(room.extent > 20 && room.extent < 40, `espaço do canto do chat: ${room.extent}`);
@@ -153,7 +153,7 @@ test('ornaments: lugares nos cantos, espaço livre e deslize ao longo da diagona
   const borderKind = ORNAMENT_KINDS.border;
   for (const size of ['fullscreen', 'fullscreen-vertical']) {
     for (const extra of [{}, {radius: 48}]) {
-      const screen = borderKind.ornamentLayout(borderKind.parse({...sizeProps(getSize(size)), ...extra, ornaments: 'noite'}));
+      const screen = borderKind.ornamentLayout(borderKind.parse({...sizeProps(getSize(size)), ...extra, ornaments: 'midnight'}));
       for (const corner of cornerSlots(screen.frame)) {
         assert.equal(roomAt(screen.frame, corner, 'back').extent, 0, `${size} ${corner.slot}`);
         assert.equal(fitMotif(screen.frame, corner, {motif: 'x', layer: 'back', nominal: 500, min: 0.5}), null, `${size} ${corner.slot}`);

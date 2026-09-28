@@ -1,0 +1,35 @@
+{
+  "name": "glass",
+  "items": [
+    {
+      "composition": "GradientLoop",
+      "preset": "gradient-aurora",
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-glass",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-glass",
+      "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-glass",
+      "props": {"transparent": false},
+      "sizes": ["twitch-panel"],
+      "formats": ["gif", "png"]
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-glass",
+      "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
+      "formats": ["webm", "png"]
+    }
+  ]
+}

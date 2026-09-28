@@ -37,9 +37,9 @@ test('stills job: outDir is relative to the job file, else out/review/<date>-<jo
 
 test('stills job: props merge like a pack, with PNG output and transparent overlays', () => {
   const merged = mergeStillProps({
-    preset: {theme: 'noite', bleed: 24, width: 1}, props: {width: 2, bleed: 72}, sizeProps: {width: 400, bleed: 32}, overlay: true,
+    preset: {theme: 'midnight', bleed: 24, width: 1}, props: {width: 2, bleed: 72}, sizeProps: {width: 400, bleed: 32}, overlay: true,
   });
-  assert.deepEqual(merged, {theme: 'noite', bleed: 72, width: 400, outputFormat: 'png', transparent: true});
+  assert.deepEqual(merged, {theme: 'midnight', bleed: 72, width: 400, outputFormat: 'png', transparent: true});
   assert.deepEqual(mergeStillProps({preset: {}, props: undefined, sizeProps: {}, overlay: false}), {outputFormat: 'png'});
   assert.equal(wrapFrame(-1, 720), 719);
   assert.equal(wrapFrame(720, 720), 0);
@@ -73,7 +73,7 @@ test('stills job: a mockup places overlays by their box, bleed subtracted', () =
 });
 
 test('qa:kit: the Halloween night pack becomes one job with sheets and mockups', () => {
-  const manifest = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/halloween-noite.json'), 'utf8')));
+  const manifest = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/halloween-midnight.json'), 'utf8')));
   const job = parseJob(buildKitJob(planPack(manifest, realPackDeps), {frames: [0, 309]}));
   const names = job.stills.map((still) => still.name);
   assert.ok(names.includes('bg-HalloweenLoop-0'));

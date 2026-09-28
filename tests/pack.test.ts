@@ -489,22 +489,22 @@ const PACKS = OVERLAY_THEMES;
  * The twitch-panel item's props per pack; every other pack gives the panel none. The glass keeps
  * an opaque PNG, which would vanish on Twitch's light theme (GIF is always flattened on
  * backgroundColor anyway). Two kits widen the padding so the panel's pockets hold their motifs
- * (noite: the moon, a bat and the pumpkins; mansão: the two hung lanterns); the other kits fit the
+ * (midnight: the moon, a bat and the pumpkins; mansão: the two hung lanterns); the other kits fit the
  * panel with the preset's own padding.
  */
 const TWITCH_PROPS: Readonly<Record<string, Record<string, unknown>>> = {
-  vidro: {transparent: false},
-  'halloween-noite': {paddingX: 48, paddingY: 36},
-  'halloween-mansao': {paddingX: 32, paddingY: 24},
+  glass: {transparent: false},
+  'halloween-midnight': {paddingX: 48, paddingY: 36},
+  'halloween-haunted-mansion': {paddingX: 32, paddingY: 24},
 };
 const readPack = (name: string): unknown => JSON.parse(readFileSync(path.join(root, 'packs', `${name}.json`), 'utf8'));
 
 /** Each Halloween kit's background (composition, preset): its presets follow that background's duration and seed. */
 const KITS: Readonly<Record<(typeof KIT_THEMES)[number], readonly [string, string]>> = {
-  'halloween-noite': ['HalloweenLoop', 'halloween-midnight'],
-  'halloween-mansao': ['HauntedMansionLoop', 'halloween-haunted-mansion'],
-  'halloween-interior': ['HauntedInteriorLoop', 'halloween-haunted-interior'],
-  'halloween-teia': ['CobwebLoop', 'halloween-cobweb'],
+  'halloween-midnight': ['HalloweenLoop', 'halloween-midnight'],
+  'halloween-haunted-mansion': ['HauntedMansionLoop', 'halloween-haunted-mansion'],
+  'halloween-haunted-interior': ['HauntedInteriorLoop', 'halloween-haunted-interior'],
+  'halloween-cobweb': ['CobwebLoop', 'halloween-cobweb'],
 };
 const presetJson = (name: string): Record<string, unknown> => JSON.parse(readFileSync(path.join(root, 'presets', `${name}.json`), 'utf8'));
 

@@ -129,7 +129,7 @@ const Bat = ({x, y, scale, rotation, flap, opacity}: HauntedMansionElement) => (
 
 /**
  * The lamp-post lantern's drawing, in its own units (origin at the housing's centre; the post
- * hangs below): exported so the overlay kit (the 'mansao' ornaments) draws the same lantern.
+ * hangs below): exported so the overlay kit (the 'haunted-mansion' ornaments) draws the same lantern.
  */
 export const MANSION_LANTERN = {
   post: 'M-4 29 H4 V160 H-4Z M-16 158 H16 V165 H-16Z',

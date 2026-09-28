@@ -319,7 +319,7 @@ test('Cena: o cabeçalho e a linha são fixos, só a borda, o brilho e o fundo a
 });
 
 test('Cena: o reflexo do vidro fica mais discreto que o padrão do motor, pelas mensagens', () => {
-  const props = parse(PRESETS.vidro);
+  const props = parse(PRESETS.glass);
   for (const frame of [0, 100, 300]) {
     const sheen = getChatLayers(props, frame, 480).fill.find((element) => element.type === 'sheen');
     assert.ok(sheen && sheen.opacity <= 0.2);
@@ -401,5 +401,5 @@ test('Presets: cada tema passa no schema estrito, sem tamanho, e o padrão é o 
   }
   assert.deepEqual(parse(PRESETS.halloween).strokeColors.slice(0, 2), ['#F97316', '#A855F7']);
   assert.deepEqual(parse(PRESETS.pastel).strokeColors, ['#F48FB8', '#6FCDB8', '#FFBA70']);
-  assert.equal(parse(PRESETS.vidro).fill, 'vidro');
+  assert.equal(parse(PRESETS.glass).fill, 'vidro');
 });

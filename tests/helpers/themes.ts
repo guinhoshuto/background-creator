@@ -5,8 +5,8 @@
  * ornament set.
  */
 
-export const CLASSIC_THEMES = ['neon', 'pastel', 'vidro', 'halloween'] as const;
-export const KIT_THEMES = ['halloween-noite', 'halloween-mansao', 'halloween-interior', 'halloween-teia'] as const;
+export const CLASSIC_THEMES = ['neon', 'pastel', 'glass', 'halloween'] as const;
+export const KIT_THEMES = ['halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior', 'halloween-cobweb'] as const;
 export type ClassicTheme = (typeof CLASSIC_THEMES)[number];
 export type KitTheme = (typeof KIT_THEMES)[number];
 export type OverlayTheme = ClassicTheme | KitTheme;

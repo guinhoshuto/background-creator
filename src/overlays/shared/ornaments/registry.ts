@@ -3,20 +3,20 @@ import {getLightningStrikes, getWindowFlash, LIGHTNING, LIGHTNING_COLOR} from '.
 import {clampRadius} from '../geometry';
 import {scaleOrnamentFrame} from './frame';
 import {ornamentOutset} from './place';
-import {interiorSet} from './sets/interior';
-import {mansaoSet} from './sets/mansao';
-import {noiteSet} from './sets/noite';
-import {teiaSet} from './sets/teia';
+import {hauntedInteriorSet} from './sets/haunted-interior';
+import {hauntedMansionSet} from './sets/haunted-mansion';
+import {midnightSet} from './sets/midnight';
+import {cobwebSet} from './sets/cobweb';
 import type {
   FlashElement, OrnamentElement, OrnamentFrame, OrnamentLayout, OrnamentPlacement, OrnamentSet, OrnamentSetId, OrnamentStyle,
 } from './types';
 
 /** Every set by name. Sets never import this file (nor render.tsx or index.ts): no import cycles. */
 export const ORNAMENT_REGISTRY: Record<OrnamentSetId, OrnamentSet> = {
-  noite: noiteSet,
-  mansao: mansaoSet,
-  interior: interiorSet,
-  teia: teiaSet,
+  midnight: midnightSet,
+  'haunted-mansion': hauntedMansionSet,
+  'haunted-interior': hauntedInteriorSet,
+  cobweb: cobwebSet,
 };
 
 /** The set a style names, or null for 'nenhum'. */

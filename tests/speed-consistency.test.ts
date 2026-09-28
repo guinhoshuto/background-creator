@@ -50,7 +50,7 @@ test('Velocidade: os casos que andavam várias vezes mais rápido nos tamanhos g
   // gradient asked 16 and ran ~414. Their periods are fixed px now (or a sway, for the gradient).
   for (const [preset, size, layer] of [
     ['border-neon', 'fullscreen', 'stroke'], ['border-neon', 'webcam-16x9', 'stroke'], ['chat-neon', 'chat-column', 'stroke'],
-    ['chat-neon', 'chat-column', 'fill'], ['block-vidro', 'lower-third', 'stroke'], ['border-halloween', 'fullscreen-vertical', 'fill'],
+    ['chat-neon', 'chat-column', 'fill'], ['block-glass', 'lower-third', 'stroke'], ['border-halloween', 'fullscreen-vertical', 'fill'],
   ] as const) {
     const row = at(preset, size, layer);
     assert.ok(Math.abs(speedError(row)) <= SPEED_TOLERANCE, `${rowId(row)}: ${reportSpeed(row.effective)} px/s`);
@@ -58,5 +58,5 @@ test('Velocidade: os casos que andavam várias vezes mais rápido nos tamanhos g
   // The gradient's sway and the embers are exact; the glass sheens too unless they would merge.
   assert.equal(at('chat-neon', 'chat-column', 'fill').effective, 16);
   assert.equal(at('border-halloween', 'fullscreen-vertical', 'fill').effective, 40);
-  assert.equal(at('chat-vidro', 'chat-vertical', 'fill').effective, 60);
+  assert.equal(at('chat-glass', 'chat-vertical', 'fill').effective, 60);
 });

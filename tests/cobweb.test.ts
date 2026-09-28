@@ -443,9 +443,9 @@ test('Teias: a teia desenhada é a que a brisa enverga, com as contas nas pontas
     const markup = renderToStaticMarkup(createElement('svg', null, createElement(OrbWeb, {
       geometry, x: web.x, y: web.y, scale: web.scale, rotation: web.rotation, opacity: web.opacity, glow: web.glow,
       glint: web.glint, billow: web.billow, silk: '#CFC6E4', moonlight: '#F6EFD8', accent: '#E8963C', moon: MOON,
-      warm: index === 1 ? EMBER : null, outline: true, beadHalo: '#FFFFFF', id: 'teia',
+      warm: index === 1 ? EMBER : null, outline: true, beadHalo: '#FFFFFF', id: 'cobweb',
     })));
-    assert.equal(markup.includes('url(#teia-ember)'), index === 1, 'só a teia de baixo à esquerda tem a borda âmbar');
+    assert.equal(markup.includes('url(#cobweb-ember)'), index === 1, 'só a teia de baixo à esquerda tem a borda âmbar');
     const bent = flexWeb(geometry, web.billow);
     const paths = [...bent.spokes, ...bent.rings, ...bent.tearStubs].map(({d}) => d).filter((d) => d !== '');
     // No pass, the ember rim included, may draw a thread at rest.

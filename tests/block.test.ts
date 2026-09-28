@@ -70,7 +70,7 @@ test('Bloco: presets dos oito temas passam com strict e nunca fixam o tamanho', 
   assert.equal(preset('neon').haloColor, '#A855F7');
   assert.deepEqual(preset('pastel').strokeColors, ['#F48FB8', '#6FCDB8', '#FFBA70']);
   assert.deepEqual(preset('halloween').strokeColors, ['#F97316', '#A855F7']);
-  assert.equal(preset('vidro').strokeWidth, 2);
+  assert.equal(preset('glass').strokeWidth, 2);
 });
 
 test('Bloco: presets servem em todos os tamanhos (painel da Twitch sem brilho externo)', () => {
@@ -421,7 +421,7 @@ test('Render: SVG do tamanho do arquivo, sem blend mode, camadas na ordem', () =
 });
 
 test('Bloco: o reflexo do vidro é tão discreto quanto o do chat, porque passa sobre o texto', () => {
-  const props = parse(preset('vidro'));
+  const props = parse(preset('glass'));
   let seen = 0;
   for (const frame of [0, 100, 300, 450]) {
     for (const element of getBlockLayers(props, frame, 480).fill) {
