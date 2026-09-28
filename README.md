@@ -399,12 +399,12 @@ O diálogo de exportação manual do Studio permite configurações diferentes. 
 
 Um pack é o conjunto que se vende de um tema: os fundos que combinam com ele, o chat nos cinco tamanhos, os blocos nos onze (os três redondos incluídos; o painel da Twitch em GIF e PNG) e as bordas nos onze (as três câmeras redondas incluídas), cada arquivo em WebM (o loop) e PNG (a versão parada), mais as máscaras das nove janelas das bordas. Os packs `neon`, `pastel` e `vidro` têm 65 arquivos cada; o `halloween`, com três fundos, tem 69; os quatro kits de Halloween, com a versão sem enfeites, têm 115. Cada pack é descrito por um manifesto em `packs/<tema>.json`; há um para cada um dos oito [temas](#temas): `neon`, `pastel`, `vidro`, `halloween` e os kits:
 
-| Pack | Título | Fundo | Props dos itens |
-| --- | --- | --- | --- |
-| `halloween-noite` | Pack Halloween — Noite de lua | `HalloweenLoop` (`halloween-midnight`) | painel `{"paddingX": 48, "paddingY": 36}`; `jogo` e `webcam-16x9-g` ampliados |
-| `halloween-mansao` | Pack Halloween — Mansão assombrada | `HauntedMansionLoop` (`halloween-haunted-mansion`) | painel `{"paddingX": 32, "paddingY": 24}`; `jogo` e `webcam-16x9-g` ampliados |
-| `halloween-interior` | Pack Halloween — Salão assombrado | `HauntedInteriorLoop` (`halloween-haunted-interior`) | `jogo` e `webcam-16x9-g` ampliados |
-| `halloween-teia` | Pack Halloween — Teias de aranha | `CobwebLoop` (`halloween-cobweb`) | `jogo` e `webcam-16x9-g` ampliados |
+| Pack | Fundo | Props dos itens |
+| --- | --- | --- |
+| `halloween-noite` | `HalloweenLoop` (`halloween-midnight`) | painel `{"paddingX": 48, "paddingY": 36}`; `jogo` e `webcam-16x9-g` ampliados |
+| `halloween-mansao` | `HauntedMansionLoop` (`halloween-haunted-mansion`) | painel `{"paddingX": 32, "paddingY": 24}`; `jogo` e `webcam-16x9-g` ampliados |
+| `halloween-interior` | `HauntedInteriorLoop` (`halloween-haunted-interior`) | `jogo` e `webcam-16x9-g` ampliados |
+| `halloween-teia` | `CobwebLoop` (`halloween-cobweb`) | `jogo` e `webcam-16x9-g` ampliados |
 
 Cada kit sai em duas versões. **Com enfeites:** o fundo, o chat nos cinco tamanhos, os blocos nos dez tamanhos e o painel da Twitch à parte, e as bordas das oito câmeras e do `jogo`; as molduras de tela ficam de fora, porque ali os enfeites só cresceriam engrossando a faixa sobre a tela. **Sem enfeites:** todos os tamanhos de chat, blocos, painel e bordas, as duas telas incluídas, com o preset e `"ornaments": "nenhum"`, nos arquivos `<Id>-<tamanho>-sem-enfeites.<ext>`. As máscaras das câmeras valem para as duas versões e seguem o `radius` do preset.
 
