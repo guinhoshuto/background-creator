@@ -250,7 +250,7 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
   }
 });
 
-test('CLI: --list agrupa por tipo com cabeçalhos em português', () => {
+test('CLI: --list agrupa por tipo com cabeçalhos em inglês', () => {
   const text = listText();
   const headers = text.split('\n').filter((line) => /^\S/.test(line));
   assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (bloco):', 'Borders and frames (borda):']);

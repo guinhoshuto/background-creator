@@ -17,7 +17,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 
 /** A strict fake schema: known keys with defaults, unknown keys refused like `.strict()`. */
 const fakeParse = (defaults: Record<string, unknown>) => (props: Record<string, unknown>) => {
-  for (const key of Object.keys(props)) if (!(key in defaults)) throw new Error(`Chave não reconhecida: "${key}"`);
+  for (const key of Object.keys(props)) if (!(key in defaults)) throw new Error(`Unrecognized key: "${key}"`);
   return {...defaults, ...props};
 };
 
@@ -62,7 +62,7 @@ const fakeDeps: PackDeps = {
 
 const manifest = (items: PackManifest['items'], name = 'teste'): PackManifest => ({name, title: 'Pack de teste', items});
 
-test('pack: o manifesto é estrito e recusa campos desconhecidos com mensagem em português', () => {
+test('pack: o manifesto é estrito e recusa campos desconhecidos com mensagem em inglês', () => {
   const valid = {name: 'neon', title: 'Neon', items: [{composition: 'ChatLoop', formats: ['webm']}]};
   assert.deepEqual(parsePackManifest(valid), valid);
   assert.throws(() => parsePackManifest({...valid, extra: 1}), /Invalid pack manifest/);
@@ -174,7 +174,7 @@ test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nom
   assert.deepEqual(plan[1]!.canvas, {width: 732, height: 132});
 });
 
-test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em português', () => {
+test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em inglês', () => {
   assert.throws(
     () => planPack(manifest([{composition: 'FundoLoop', sizes: ['cartao'], formats: ['webm']}]), fakeDeps),
     /Item 1 \(FundoLoop\): .*with a fixed size \(1920×1080\): remove "sizes"/,

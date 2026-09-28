@@ -141,3 +141,10 @@ test('shared schema reports invalid input in English', () => {
   assert.deepEqual(result.error.issues[0]?.path, ['seed']);
   assert.equal(result.error.issues[0]?.message, 'Invalid input: expected number, received NaN');
 });
+
+test('backgroundColor refuses a colour with alpha, in English', () => {
+  const result = baseBackgroundSchema.safeParse({backgroundColor: '#0B0F1980'});
+  assert(!result.success);
+  assert.deepEqual(result.error.issues[0]?.path, ['backgroundColor']);
+  assert.equal(result.error.issues[0]?.message, 'Use an opaque colour in the #RRGGBB format.');
+});

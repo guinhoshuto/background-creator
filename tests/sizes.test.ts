@@ -91,7 +91,7 @@ test('tamanhos: só as molduras de tela inteira usam fit tela, sempre sem bleed'
   assert.equal(sizeTag('borda', {width: 1920, height: 1080, bleed: 0}), '1920x1080');
 });
 
-test('tamanhos: getSize lista as opções em português; sizesForKind separa por tipo', () => {
+test('tamanhos: getSize lista as opções em inglês; sizesForKind separa por tipo', () => {
   assert.throws(() => getSize('gigante'), /Unknown size: gigante\. Options: chat-compacto, .*tela-vertical\./);
   assert.throws(() => getSize('__proto__'), /Unknown size/);
   for (const kind of ASSET_KINDS) {
@@ -147,7 +147,7 @@ test('nomes de arquivo: fundos sem tamanho, tamanhos do catálogo pelo id, livre
   assert.throws(() => sizeTag('chat', {}), /width\/height/);
 });
 
-test('caixa: ímpares e arquivos acima de 4K são recusados em português', () => {
+test('caixa: ímpares e arquivos acima de 4K são recusados em inglês', () => {
   const schema = overlayBoxSchema({width: 400, height: 600, bleed: 32});
   for (const [field, input] of [
     ['width', {width: 401}], ['height', {height: 599}], ['bleed', {bleed: 33}],
