@@ -98,7 +98,7 @@ test('Vaporwave: Studio, catálogo, schema e preset abrem o mesmo horizonte de d
   const metadata = getCompositionMetadata(defaults);
   assert.deepEqual(metadata, {width: 1920, height: 1080, fps: 60, durationInFrames: 960});
   assert.deepEqual(backgroundCatalog.VaporwaveLoop.defaultProps, defaults);
-  assert.deepEqual(vaporwaveLoopSchema.strict().parse(readPreset('vaporwave-horizonte.json')), defaults);
+  assert.deepEqual(vaporwaveLoopSchema.strict().parse(readPreset('vaporwave-horizon.json')), defaults);
 
   type CompositionProps = typeof metadata & {
     id: string;
@@ -530,7 +530,7 @@ test('Vaporwave: o sol padrão fica fora da área de conteúdo e o clássico se 
   assert.equal(sun!.y, 598);
   assert.equal(sun!.opacity, 1, 'fora da placa o sol não escurece');
   assert.equal(sun!.warmth, 1);
-  const classic = vaporwaveLoopSchema.strict().parse(readPreset('vaporwave-classico.json'));
+  const classic = vaporwaveLoopSchema.strict().parse(readPreset('vaporwave-classic.json'));
   for (const frame of [0, 320, 640]) {
     const items = getVaporwaveScene(classic, frame, LENGTH);
     const [centred] = pick(items, 'sun');
@@ -550,7 +550,7 @@ test('Vaporwave: o sol padrão fica fora da área de conteúdo e o clássico se 
 });
 
 test('Vaporwave: os cortes mostram o céu através do sol e o halo para no horizonte', () => {
-  for (const input of [{}, {transparent: true}, readPreset('vaporwave-classico.json') as Record<string, unknown>]) {
+  for (const input of [{}, {transparent: true}, readPreset('vaporwave-classic.json') as Record<string, unknown>]) {
     const props = vaporwaveLoopSchema.parse(input);
     const transparent = hasTransparentBackground(props);
     const bloomRadius = SUN_RADIUS * (transparent ? 2.1 : 2.6);
@@ -882,7 +882,7 @@ test('Vaporwave: os números do README batem com as constantes', () => {
 
 test('Vaporwave: os três presets passam no schema e cumprem o que prometem', () => {
   const defaults = vaporwaveLoopSchema.parse({});
-  const [horizon, classic, alpha] = ['vaporwave-horizonte.json', 'vaporwave-classico.json', 'vaporwave-alpha.json']
+  const [horizon, classic, alpha] = ['vaporwave-horizon.json', 'vaporwave-classic.json', 'vaporwave-alpha.json']
     .map((filename) => vaporwaveLoopSchema.strict().parse(readPreset(filename)));
   assert.deepEqual(horizon, defaults);
   assert.equal(classic!.sunPosition, 0.5);

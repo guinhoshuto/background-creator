@@ -8,7 +8,7 @@ import {
 } from '../src/backgrounds/DotGridLoop';
 import {getCompositionMetadata, hasTransparentBackground} from '../src/settings';
 
-const PRESETS = ['dots-classico.json', 'dots-alternados.json', 'dots-alpha.json'];
+const PRESETS = ['dots-classic.json', 'dots-alternating.json', 'dots-alpha.json'];
 
 /** What each direction means on screen, written out here so the table in the code is checked, not copied. */
 const SCREEN_SIGNS: Record<string, [number, number]> = {
@@ -160,8 +160,8 @@ test('Pontos: cada direção move o padrão para o lado que o nome diz, na tela'
     const props = dotGridLoopSchema.parse(JSON.parse(readFileSync(new URL(`../presets/${filename}`, import.meta.url), 'utf8')));
     return [filename, seenStep(props, 10, getCompositionMetadata(props).durationInFrames)];
   }));
-  assert.ok(moves['dots-classico.json']!.x > 0 && moves['dots-classico.json']!.y > 0, 'clássico: para baixo e para a direita');
-  assert.ok(moves['dots-alternados.json']!.x < 0 && Math.abs(moves['dots-alternados.json']!.y) < 1e-9, 'alternados: para a esquerda');
+  assert.ok(moves['dots-classic.json']!.x > 0 && moves['dots-classic.json']!.y > 0, 'clássico: para baixo e para a direita');
+  assert.ok(moves['dots-alternating.json']!.x < 0 && Math.abs(moves['dots-alternating.json']!.y) < 1e-9, 'alternados: para a esquerda');
   assert.ok(moves['dots-alpha.json']!.y < 0 && Math.abs(moves['dots-alpha.json']!.x) < 1e-9, 'alpha: subindo');
 });
 

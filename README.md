@@ -66,36 +66,36 @@ Um arquivo de parâmetros pode conter somente as opções que você quer alterar
 - `halloween-haunted-interior.json`: salão gótico em perspectiva, cortinas de veludo carmim, luar esverdeado e velas âmbar nas laterais, com um grande arco escuro exatamente atrás da área de conteúdo.
 - `halloween-cobweb.json`: teias enluaradas em seda prateada, orvalho brilhante e um calor âmbar no rodapé.
 - `christmas-gilded-garland.json`: evergreen, burgundy and gold Christmas frame with a gilded garland, swaying glass baubles and slow snow around a dark, calm center, in a 20-second loop.
-- `kawaii-constelacao.json`: nuvens, corações e estrelas em grupos, sobre leite morno, em ritmo lento.
+- `kawaii-constellation.json`: nuvens, corações e estrelas em grupos, sobre leite morno, em ritmo lento.
 - `sunburst-crimson.json`: leque de vermelho sobre vermelho escuro, o contraste mais baixo da série.
 - `sunburst-sand.json`: raios largos de areia sobre creme, em ritmo mais lento.
 - `sunburst-ocean.json`: raios finos de azul sobre azul-noite, com o miolo mais fechado.
 - `sunburst-moss.json`: verde musgo sobre verde escuro, no ciclo mais longo.
-- `vaporwave-horizonte.json`: horizonte neon para stream, com o sol na borda direita atrás das palmeiras e o centro escuro para títulos, câmera e jogo.
-- `vaporwave-classico.json`: o cartão-postal vaporwave, com o sol meio posto no centro do horizonte, três palmeiras por lado, quatro sólidos e uma placa mais forte atrás do conteúdo.
+- `vaporwave-horizon.json`: horizonte neon para stream, com o sol na borda direita atrás das palmeiras e o centro escuro para títulos, câmera e jogo.
+- `vaporwave-classic.json`: o cartão-postal vaporwave, com o sol meio posto no centro do horizonte, três palmeiras por lado, quatro sólidos e uma placa mais forte atrás do conteúdo.
 - `vaporwave-alpha.json`: WebM transparente para sobrepor ao jogo, com uma palmeira por lado e nenhum sólido, para deixar os cantos livres para o HUD, montanhas translúcidas, a grade dissolvendo antes do horizonte e perto da borda de baixo, e o miolo limpo.
-- `dots-classico.json`: grade de pontos lilás sobre azul-noite, rolando na diagonal para baixo e para a direita.
-- `dots-alternados.json`: fileiras alternadas de pontos pêssego sobre creme, andando para a esquerda.
+- `dots-classic.json`: grade de pontos lilás sobre azul-noite, rolando na diagonal para baixo e para a direita.
+- `dots-alternating.json`: fileiras alternadas de pontos pêssego sobre creme, andando para a esquerda.
 - `dots-alpha.json`: WebM transparente com pontos brancos translúcidos em fileiras alternadas, subindo devagar, para sobrepor a outros vídeos.
-- `xadrez-classico.json`: tabuleiro clássico em quase preto e creme, com casas de 120 px, rolando devagar na diagonal para baixo e para a direita.
-- `xadrez-losangos.json`: tabuleiro girado a 45°, com losangos rosa sobre rosa-claro, andando para a direita.
-- `xadrez-inclinado.json`: tabuleiro verde-escuro inclinado 15° no sentido anti-horário, deslizando ao longo das fileiras para a esquerda.
-- `xadrez-alpha.json`: WebM transparente com quadrados brancos translúcidos, subindo devagar, para sobrepor a outros vídeos.
+- `checkerboard-classic.json`: tabuleiro clássico em quase preto e creme, com casas de 120 px, rolando devagar na diagonal para baixo e para a direita.
+- `checkerboard-diamonds.json`: tabuleiro girado a 45°, com losangos rosa sobre rosa-claro, andando para a direita.
+- `checkerboard-tilted.json`: tabuleiro verde-escuro inclinado 15° no sentido anti-horário, deslizando ao longo das fileiras para a esquerda.
+- `checkerboard-alpha.json`: WebM transparente com quadrados brancos translúcidos, subindo devagar, para sobrepor a outros vídeos.
 - `webgl-aurora.json`: aurora verde e ciano com raios violeta e rosa sobre azul quase preto, em 24 s, com o centro meio apagado para a webcam ou o jogo.
 - `webgl-lava.json`: lâmpada de lava quente, com cera âmbar e laranja embaixo subindo até magenta e violeta, sobre ameixa quase preto.
-- `webgl-seda.json`: seda champanhe, rosa e ameixa sobre fundo quase preto, com o miolo suavizado para texto.
-- `webgl-causticas.json`: fundo do mar em azul-petróleo, ciano e verde-água, com raios de sol claros descendo até o leito.
-- `webgl-celulas.json`: células em turquesa, azul, anil e violeta sobre azul-petróleo quase preto, com o centro suavizado para a câmera.
-- `webgl-topografia.json`: mapa topográfico em verde-azulado, sálvia, areia, laranja e terracota sobre grafite.
-- `webgl-nebulosa.json`: nebulosa em azul-marinho, violeta, magenta, laranja e amarelo-claro, em 30 s de deriva lenta.
-- `webgl-onda-pastel.json`: onda de fita pastel em pêssego, rosa e lilás sobre lavanda, com a crista luminosa, um brilho creme à esquerda e um véu azul-pervinca à direita.
+- `webgl-silk.json`: seda champanhe, rosa e ameixa sobre fundo quase preto, com o miolo suavizado para texto.
+- `webgl-caustics.json`: fundo do mar em azul-petróleo, ciano e verde-água, com raios de sol claros descendo até o leito.
+- `webgl-cells.json`: células em turquesa, azul, anil e violeta sobre azul-petróleo quase preto, com o centro suavizado para a câmera.
+- `webgl-contours.json`: mapa topográfico em verde-azulado, sálvia, areia, laranja e terracota sobre grafite.
+- `webgl-nebula.json`: nebulosa em azul-marinho, violeta, magenta, laranja e amarelo-claro, em 30 s de deriva lenta.
+- `webgl-flow.json`: onda de fita pastel em pêssego, rosa e lilás sobre lavanda, com a crista luminosa, um brilho creme à esquerda e um véu azul-pervinca à direita.
 - `webgl-orbital.json`: esfera perolada em azul, lilás, rosa e pêssego num estúdio lavanda, no terço direito do quadro, com as luzes dando uma volta a cada 24 s.
 - `webgl-neon.json`: dobra de cetim em rosa, lavanda, azul-violeta e anil sobre orquídea pastel, com dois filetes neon e pulsos de luz deslizando pelo vinco.
-- `webgl-camadas.json`: camadas de vidro líquido em violeta, azul e água, com borda branca luminosa e halo lilás sobre azul-céu pastel.
-- `webgl-entardecer.json`: entardecer pastel em coral, dourado, rosa, lilás, magenta e violeta sobre base rosada, com a linha dourada ondulando.
+- `webgl-layers.json`: camadas de vidro líquido em violeta, azul e água, com borda branca luminosa e halo lilás sobre azul-céu pastel.
+- `webgl-haze.json`: entardecer pastel em coral, dourado, rosa, lilás, magenta e violeta sobre base rosada, com a linha dourada ondulando.
 - `webgl-eclipse.json`: eclipse pastel com um disco azul-lavanda claro no alto à esquerda, faixas de pervinca a azul-centáureo e um aro lilás luminoso no canto.
-- `webgl-aquarela.json`: aquarela em papel creme prensado a frio, com azul ultramar, rosa quinacridona, amarelo gamboge e verde viridian nos cantos e nas laterais, e o meio livre para título, câmera e jogo.
-- `webgl-malha.json`: gradiente em malha com as seis cores do original (coral, dourado, azul-céu, violeta, rosa e menta), cobrindo o quadro inteiro, em 24 s.
+- `webgl-watercolor.json`: aquarela em papel creme prensado a frio, com azul ultramar, rosa quinacridona, amarelo gamboge e verde viridian nos cantos e nas laterais, e o meio livre para título, câmera e jogo.
+- `webgl-mesh.json`: gradiente em malha com as seis cores do original (coral, dourado, azul-céu, violeta, rosa e menta), cobrindo o quadro inteiro, em 24 s.
 - `webgl-alpha.json`: WebM transparente com curvas de nível claras e translúcidas e o centro quase todo livre, para sobrepor ao jogo no OBS.
 - `gradient-aurora.json`: luzes suaves em ciano, violeta e rosa.
 - `particles-alpha.json`: partículas sutis com alpha para composição sobre outros vídeos.
@@ -276,8 +276,8 @@ Oito temas vestem os três tipos com a mesma família visual, um preset por tipo
 
 | Tema | Visual | Presets | Fundos do pack |
 | --- | --- | --- | --- |
-| `neon` | Painel índigo translúcido com gradiente lento, cometas ciano e magenta num tubo de miolo branco, brilho forte e halo violeta; o bloco tem barra magenta à esquerda com reflexo, e a borda, faixa índigo lisa, linha dupla e colchetes pulsando. Ciclos de 8 s | `chat-neon`, `bloco-neon`, `borda-neon` | `VaporwaveLoop` (`vaporwave-classico`) |
-| `pastel` | Creme com pontos rosados rolando devagar, contorno rosa, menta e pêssego (tracejado no chat e na borda, respirando no bloco), cantos bem arredondados; o bloco tem barra menta no topo, e a borda, brilhos e joias. Ciclos de 12 s (borda, 10 s) | `chat-pastel`, `bloco-pastel`, `borda-pastel` | `KawaiiLoop` (`kawaii-constelacao`) |
+| `neon` | Painel índigo translúcido com gradiente lento, cometas ciano e magenta num tubo de miolo branco, brilho forte e halo violeta; o bloco tem barra magenta à esquerda com reflexo, e a borda, faixa índigo lisa, linha dupla e colchetes pulsando. Ciclos de 8 s | `chat-neon`, `bloco-neon`, `borda-neon` | `VaporwaveLoop` (`vaporwave-classic`) |
+| `pastel` | Creme com pontos rosados rolando devagar, contorno rosa, menta e pêssego (tracejado no chat e na borda, respirando no bloco), cantos bem arredondados; o bloco tem barra menta no topo, e a borda, brilhos e joias. Ciclos de 12 s (borda, 10 s) | `chat-pastel`, `bloco-pastel`, `borda-pastel` | `KawaiiLoop` (`kawaii-constellation`) |
 | `vidro` | Vidro branco a 10% com reflexo passando, luz de cima e filete de luz na borda superior, contorno fino em gradiente branco e lavanda, halo escuro discreto que destaca o painel sobre fundos claros; borda de linha única, sem cantoneiras nem joias. Ciclos de 8 a 10 s | `chat-vidro`, `bloco-vidro`, `borda-vidro` | `GradientLoop` (`gradient-aurora`) |
 | `halloween` | Roxo profundo com brasas laranja e amarelas subindo, contorno laranja e roxo respirando duas vezes por ciclo, brilho pulsando e halo laranja; o bloco tem barra laranja à esquerda, e a borda, joias pulsando. Ciclos de 12 s | `chat-halloween`, `bloco-halloween`, `borda-halloween` | `HalloweenLoop`, `HauntedMansionLoop` e `CobwebLoop` (presets `halloween-midnight`, `halloween-haunted-mansion`, `halloween-cobweb`) |
 | `halloween-noite` | Céu estrelado: brilhos creme e lavanda cintilando no lugar sobre roxo-noite, contorno em gradiente lavanda e creme correndo devagar, com miolo claro, e halo lavanda; o bloco tem barra lavanda no topo com reflexo, e a borda, faixa estrelada com linha dupla, sem cantoneiras nem joias (`corners: "nenhum"`). Enfeites `noite`: morcegos, abóboras, estrelas e brasas (o laranja do kit fica só nas abóboras e no brilho das brasas). Ciclos de 12 s, seed 31 | `chat-halloween-noite`, `bloco-halloween-noite`, `borda-halloween-noite` | `HalloweenLoop` (`halloween-midnight`) |
@@ -308,20 +308,20 @@ npm run render:mp4 -- HalloweenLoop --props presets/halloween-midnight.json
 npm run render:mp4 -- HauntedMansionLoop --props presets/halloween-haunted-mansion.json
 npm run render:mp4 -- HauntedInteriorLoop --props presets/halloween-haunted-interior.json
 npm run render:webm -- CobwebLoop --props presets/halloween-cobweb.json
-npm run render:webm -- KawaiiLoop --props presets/kawaii-constelacao.json
+npm run render:webm -- KawaiiLoop --props presets/kawaii-constellation.json
 npm run render:mp4 -- SunburstLoop --props presets/sunburst-crimson.json
 npm run render:mp4 -- SunburstLoop --props presets/sunburst-sand.json
 npm run render:webm -- SunburstLoop --props presets/sunburst-ocean.json
-npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-horizonte.json
-npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-classico.json
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-horizon.json
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-classic.json
 npm run render:webm -- VaporwaveLoop --props presets/vaporwave-alpha.json
-npm run render:mp4 -- DotGridLoop --props presets/dots-classico.json
-npm run render:mp4 -- DotGridLoop --props presets/dots-alternados.json
+npm run render:mp4 -- DotGridLoop --props presets/dots-classic.json
+npm run render:mp4 -- DotGridLoop --props presets/dots-alternating.json
 npm run render:webm -- DotGridLoop --props presets/dots-alpha.json
-npm run render:mp4 -- CheckerboardLoop --props presets/xadrez-classico.json
-npm run render:mp4 -- CheckerboardLoop --props presets/xadrez-losangos.json
-npm run render:mp4 -- CheckerboardLoop --props presets/xadrez-inclinado.json
-npm run render:webm -- CheckerboardLoop --props presets/xadrez-alpha.json
+npm run render:mp4 -- CheckerboardLoop --props presets/checkerboard-classic.json
+npm run render:mp4 -- CheckerboardLoop --props presets/checkerboard-diamonds.json
+npm run render:mp4 -- CheckerboardLoop --props presets/checkerboard-tilted.json
+npm run render:webm -- CheckerboardLoop --props presets/checkerboard-alpha.json
 npm run render:mp4 -- WebGLLoop --props presets/webgl-aurora.json
 npm run render:webm -- WebGLLoop --props presets/webgl-alpha.json
 npm run render:mp4 -- GradientLoop --props presets/gradient-aurora.json
@@ -416,7 +416,7 @@ Um manifesto de exemplo, menor que os de `packs/` (que pedem todos os tamanhos):
 {
   "name": "neon-exemplo",
   "items": [
-    {"composition": "VaporwaveLoop", "preset": "vaporwave-classico", "formats": ["webm", "png"]},
+    {"composition": "VaporwaveLoop", "preset": "vaporwave-classic", "formats": ["webm", "png"]},
     {"composition": "ChatLoop", "preset": "chat-neon", "sizes": ["chat-padrao", "chat-alto"], "formats": ["webm", "png"]},
     {"composition": "BlocoLoop", "preset": "bloco-neon", "sizes": ["painel-twitch"], "formats": ["gif", "png"]},
     {"composition": "BordaLoop", "preset": "borda-neon", "sizes": ["webcam-redonda"], "formats": ["webm", "png"], "frame": 120}
@@ -567,7 +567,7 @@ npm run render:png -- ChristmasLoop --props presets/christmas-gilded-garland.jso
 
 ## Kawaii: constelação pastel
 
-Selecione `KawaiiLoop` no Studio. O preset `presets/kawaii-constelacao.json` cria um ciclo de **12 segundos, 1920×1080 e 60 fps** em MP4/WebM. Os valores iniciais próprios da composição são `seed: 7`, `backgroundColor: #FFF7F4` e a paleta de morango, baunilha e matchá. Não há personagens, texto, imagens externas, fontes adicionais ou áudio.
+Selecione `KawaiiLoop` no Studio. O preset `presets/kawaii-constellation.json` cria um ciclo de **12 segundos, 1920×1080 e 60 fps** em MP4/WebM. Os valores iniciais próprios da composição são `seed: 7`, `backgroundColor: #FFF7F4` e a paleta de morango, baunilha e matchá. Não há personagens, texto, imagens externas, fontes adicionais ou áudio.
 
 O vocabulário é nuvem, coração e estrela, em três silhuetas de nuvem, dois corações (cheio e vazado) e três estrelas (cheia, cintilo de quatro pontas e vazada). As peças nunca aparecem sozinhas: elas vêm em **grupos**, e cada grupo é um acorde de nuvem mais acentos numa escada de tamanhos áurea, 1 : 0,618 : 0,382 : 0,236. São três acordes diferentes, então um grupo nunca é a cópia do vizinho.
 
@@ -588,7 +588,7 @@ Com `transparent: true` e `outputFormat: "webm"`, o céu e o halo desaparecem, p
 
 ## Vaporwave: horizonte neon
 
-Selecione `VaporwaveLoop` no Studio. O preset `presets/vaporwave-horizonte.json` cria um ciclo de **16 segundos, 1920×1080 e 60 fps** em MP4/WebM, pensado como fundo de overlay de stream. Os valores iniciais próprios da composição são `seed: 88`, `backgroundColor: #120C2E` e a paleta vaporwave clássica de rosa, ciano, amarelo-claro e lilás. A cena é desenhada em SVG, sem texto, imagens externas, fontes adicionais ou áudio.
+Selecione `VaporwaveLoop` no Studio. O preset `presets/vaporwave-horizon.json` cria um ciclo de **16 segundos, 1920×1080 e 60 fps** em MP4/WebM, pensado como fundo de overlay de stream. Os valores iniciais próprios da composição são `seed: 88`, `backgroundColor: #120C2E` e a paleta vaporwave clássica de rosa, ciano, amarelo-claro e lilás. A cena é desenhada em SVG, sem texto, imagens externas, fontes adicionais ou áudio.
 
 Na tela há um céu noturno índigo, com brilho lilás no alto, estrelas e alguns cintilos de quatro pontas; um grande sol retrô fatiado, do amarelo-claro ao rosa e ao lilás, com halo e reflexo no chão; cordilheiras aramadas em ciano, com uma segunda cordilheira mais pálida atrás e uma silhueta distante no horizonte; um chão em grade neon em perspectiva, com linhas rosa e colunas ciano; palmeiras escuras nas laterais, com um fio de luz neon só no lado voltado para o sol; e sólidos aramados translúcidos (octaedro, icosaedro e pirâmide) flutuando nos cantos. A malha das montanhas segue curvas de nível — crista, duas cotas intermediárias e o pé — ligadas por meridianos e diagonais alternadas, e as faces voltadas para o sol recebem mais luz. Nenhum pico encosta na borda do sol: um pico que ficaria a menos de 40 px dela é empurrado para fora do disco, ou mais para dentro dele. Nenhum pico fica a menos de 120 px da copa das palmeiras pequenas do horizonte, então elas nunca parecem pousadas num pico. As cristas se apagam logo acima do horizonte, então a linha rosa do horizonte segue contínua, sem trechos em ciano. As fatias do sol mostram o céu noturno através do disco, e o halo para no horizonte: abaixo dele, o chão recebe só o reflexo achatado do sol.
 
@@ -616,8 +616,8 @@ Com `transparent: true` e `outputFormat: "webm"`, o céu, o brilho do alto, o ch
 Para exportar os presets com os perfis oficiais descritos acima:
 
 ```sh
-npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-horizonte.json
-npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-classico.json
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-horizon.json
+npm run render:mp4 -- VaporwaveLoop --props presets/vaporwave-classic.json
 npm run render:webm -- VaporwaveLoop --props presets/vaporwave-alpha.json
 ```
 
@@ -653,8 +653,8 @@ A seed só desloca a grade dentro do quadro; espaçamento, tamanho e velocidade 
 Com `transparent: true` e `outputFormat: "webm"`, o fundo fica transparente e só os pontos permanecem, com bordas suaves. Em MP4/GIF, os pontos são compostos sobre `backgroundColor`. Para exportar os presets com os perfis oficiais descritos acima:
 
 ```sh
-npm run render:mp4 -- DotGridLoop --props presets/dots-classico.json
-npm run render:mp4 -- DotGridLoop --props presets/dots-alternados.json
+npm run render:mp4 -- DotGridLoop --props presets/dots-classic.json
+npm run render:mp4 -- DotGridLoop --props presets/dots-alternating.json
 npm run render:webm -- DotGridLoop --props presets/dots-alpha.json
 ```
 
@@ -697,10 +697,10 @@ A seed só desloca o tabuleiro dentro do quadro; tamanho, inclinação e velocid
 Com `transparent: true` e `outputFormat: "webm"`, as casas de `backgroundColor` ficam transparentes e só os quadrados permanecem, com bordas suaves. Em MP4/GIF, os quadrados são compostos sobre `backgroundColor`. Para exportar os presets com os perfis oficiais descritos acima:
 
 ```sh
-npm run render:mp4 -- CheckerboardLoop --props presets/xadrez-classico.json
-npm run render:mp4 -- CheckerboardLoop --props presets/xadrez-losangos.json
-npm run render:mp4 -- CheckerboardLoop --props presets/xadrez-inclinado.json
-npm run render:webm -- CheckerboardLoop --props presets/xadrez-alpha.json
+npm run render:mp4 -- CheckerboardLoop --props presets/checkerboard-classic.json
+npm run render:mp4 -- CheckerboardLoop --props presets/checkerboard-diamonds.json
+npm run render:mp4 -- CheckerboardLoop --props presets/checkerboard-tilted.json
+npm run render:webm -- CheckerboardLoop --props presets/checkerboard-alpha.json
 ```
 
 Troque `render:mp4` por `render:webm` ou `render:gif` para os outros formatos.
@@ -743,19 +743,19 @@ Remotion Chrome Headless requires the `angle` OpenGL renderer for WebGL2. The of
 ```sh
 npm run render:mp4 -- WebGLLoop --props presets/webgl-aurora.json
 npm run render:mp4 -- WebGLLoop --props presets/webgl-lava.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-seda.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-causticas.json
-npm run render:webm -- WebGLLoop --props presets/webgl-celulas.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-topografia.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-nebulosa.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-onda-pastel.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-silk.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-caustics.json
+npm run render:webm -- WebGLLoop --props presets/webgl-cells.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-contours.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-nebula.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-flow.json
 npm run render:mp4 -- WebGLLoop --props presets/webgl-orbital.json
 npm run render:mp4 -- WebGLLoop --props presets/webgl-neon.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-camadas.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-entardecer.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-layers.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-haze.json
 npm run render:mp4 -- WebGLLoop --props presets/webgl-eclipse.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-aquarela.json
-npm run render:mp4 -- WebGLLoop --props presets/webgl-malha.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-watercolor.json
+npm run render:mp4 -- WebGLLoop --props presets/webgl-mesh.json
 npm run render:webm -- WebGLLoop --props presets/webgl-alpha.json
 ```
 

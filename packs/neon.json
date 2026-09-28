@@ -3,7 +3,7 @@
   "items": [
     {
       "composition": "VaporwaveLoop",
-      "preset": "vaporwave-classico",
+      "preset": "vaporwave-classic",
       "formats": ["webm", "png"]
     },
     {

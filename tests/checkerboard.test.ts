@@ -10,7 +10,7 @@ import {
 } from '../src/backgrounds/CheckerboardLoop';
 import {getCompositionMetadata, hasTransparentBackground} from '../src/settings';
 
-const PRESETS = ['xadrez-classico.json', 'xadrez-losangos.json', 'xadrez-inclinado.json', 'xadrez-alpha.json'];
+const PRESETS = ['checkerboard-classic.json', 'checkerboard-diamonds.json', 'checkerboard-tilted.json', 'checkerboard-alpha.json'];
 const RADIAN = Math.PI / 180;
 
 /** What each direction means on the board, written out here so the table in the code is checked, not copied. */
@@ -287,11 +287,11 @@ test('Xadrez: cada direção move o tabuleiro para o lado que o nome diz, girado
     const props = checkerboardLoopSchema.parse(readPreset(filename));
     return [filename, seenStep(props, 10, getCompositionMetadata(props).durationInFrames)];
   }));
-  assert.ok(moves['xadrez-classico.json']!.x > 0 && moves['xadrez-classico.json']!.y > 0, 'clássico: para baixo e para a direita');
-  assert.ok(moves['xadrez-losangos.json']!.x > 0 && Math.abs(moves['xadrez-losangos.json']!.y) < 1e-9, 'losangos: para a direita');
-  const tilted = moves['xadrez-inclinado.json']!;
+  assert.ok(moves['checkerboard-classic.json']!.x > 0 && moves['checkerboard-classic.json']!.y > 0, 'clássico: para baixo e para a direita');
+  assert.ok(moves['checkerboard-diamonds.json']!.x > 0 && Math.abs(moves['checkerboard-diamonds.json']!.y) < 1e-9, 'losangos: para a direita');
+  const tilted = moves['checkerboard-tilted.json']!;
   assert.ok(tilted.x < 0 && tilted.y > 0 && tilted.y < -tilted.x / 3, 'inclinado: para a esquerda, descendo com a fileira');
-  assert.ok(moves['xadrez-alpha.json']!.y < 0 && Math.abs(moves['xadrez-alpha.json']!.x) < 1e-9, 'alpha: subindo');
+  assert.ok(moves['checkerboard-alpha.json']!.y < 0 && Math.abs(moves['checkerboard-alpha.json']!.x) < 1e-9, 'alpha: subindo');
 });
 
 test('Xadrez: velocidade alta demais para o tamanho da casa é recusada, nunca exibida ao contrário', () => {
@@ -491,7 +491,7 @@ test('Xadrez: os presets usam o mesmo schema e trazem direções, inclinações 
   assert.equal(new Set(variations.map(({props}) => props.direction)).size, PRESETS.length);
   assert.equal(new Set(variations.map(({props}) => props.angle)).size, 3);
   assert.equal(new Set(variations.map(({props}) => `${props.backgroundColor}|${props.squareColor}`)).size, PRESETS.length);
-  assert.deepEqual(variations.filter(({props}) => props.transparent).map(({filename}) => filename), ['xadrez-alpha.json']);
+  assert.deepEqual(variations.filter(({props}) => props.transparent).map(({filename}) => filename), ['checkerboard-alpha.json']);
   for (const {filename, props} of variations) {
     const {durationInFrames} = getCompositionMetadata(props);
     assert.ok(getCheckerTravel(props).steps >= 1, `${filename}: o tabuleiro precisa se mover`);
