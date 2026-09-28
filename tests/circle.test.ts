@@ -43,8 +43,8 @@ const parseBorder = (input: object): BorderLoopProps => borderLoopSchema.parse(i
 const messagesOf = (schema: typeof blockLoopSchema | typeof borderLoopSchema, input: object) =>
   schema.safeParse(input).error?.issues.map((issue) => [issue.path.join('.'), issue.message]) ?? [];
 
-const ROUND_BLOCOS = ['circulo-p', 'circulo', 'circulo-g'] as const;
-const ROUND_BORDAS = ['webcam-redonda-p', 'webcam-redonda', 'webcam-redonda-g'] as const;
+const ROUND_BLOCKS = ['circulo-p', 'circulo', 'circulo-g'] as const;
+const ROUND_BORDERS = ['webcam-redonda-p', 'webcam-redonda', 'webcam-redonda-g'] as const;
 const sized = (id: string) => sizeProps(getSize(id));
 
 /** Every corner of the rect lies within the inner edge of the arc's band. */
@@ -179,7 +179,7 @@ test('Tamanhos redondos: quadrado e círculo da mesma caixa são produtos difere
 test('Bloco redondo: o texto vai no quadrado centralizado, em px inteiros, com o maior padding até o contorno', () => {
   const inputs = [{}, ...THEMES.map((theme) => presetOf('block', theme)), {accent: 'topo', accentSize: 20, paddingX: 4, paddingY: 30}];
   for (const input of inputs) {
-    for (const id of ROUND_BLOCOS) {
+    for (const id of ROUND_BLOCKS) {
       const props = parseBlock({...input, ...sized(id)});
       const layout = getBlockLayout(props);
       const label = `${JSON.stringify(input).slice(0, 30)} ${id}`;
@@ -201,7 +201,7 @@ test('Bloco redondo: o texto vai no quadrado centralizado, em px inteiros, com o
     }
   }
   // The sizes the buyer gets, for the default neon look (accent off): the square of the text.
-  assert.deepEqual(ROUND_BLOCOS.map((id) => getBlockLayout(parseBlock(sized(id))).content.width), [72, 186, 298]);
+  assert.deepEqual(ROUND_BLOCKS.map((id) => getBlockLayout(parseBlock(sized(id))).content.width), [72, 186, 298]);
 });
 
 test('Bloco redondo: padding ou barra que não deixam espaço são recusados com a saída', () => {
@@ -221,7 +221,7 @@ test('Bloco redondo: padding ou barra que não deixam espaço são recusados com
 
 test('Bloco redondo: o destaque é um arco de 120° por dentro do contorno, à esquerda ou no topo, fora do texto', () => {
   assert.equal(ACCENT_ARC_SPREAD, Math.PI / 3);
-  for (const id of ROUND_BLOCOS) {
+  for (const id of ROUND_BLOCKS) {
     for (const accent of ['esquerda', 'topo'] as const) {
       for (const accentSize of [2, 6, 24]) {
         const props = parseBlock({...sized(id), accent, accentSize});
@@ -323,7 +323,7 @@ test('Bloco redondo: fundo, halo e reflexo do vidro seguem o círculo (recorte e
 
 test('Borda redonda: a janela é um disco transparente, e tudo o que sai da caixa cabe no bleed', () => {
   for (const theme of THEMES) {
-    for (const id of ROUND_BORDAS) {
+    for (const id of ROUND_BORDERS) {
       for (const corners of ['nenhum', 'colchetes', 'joias'] as const) {
         const props = parseBorder({...presetOf('border', theme), corners, ...sized(id)});
         const geometry = getBorderGeometry(props);
@@ -372,11 +372,11 @@ test('Borda redonda: os colchetes têm o mesmo comprimento em px em todo tamanho
   };
   for (const cornerSize of [4, 28]) {
     // An arc of 4·cornerSize px (112 px at the default), whatever the circle's size.
-    for (const id of ROUND_BORDAS) assert.ok(Math.abs(bracketLength(id, cornerSize) - 4 * cornerSize) < 1e-9, `${id} ${cornerSize}`);
+    for (const id of ROUND_BORDERS) assert.ok(Math.abs(bracketLength(id, cornerSize) - 4 * cornerSize) < 1e-9, `${id} ${cornerSize}`);
   }
   assert.ok(bracketLength('webcam-redonda', 40) > bracketLength('webcam-redonda', 28), 'cornerSize muda o colchete redondo');
   // A long bracket stops at 70% of a quarter, so the four never close into a ring.
-  for (const id of ROUND_BORDAS) {
+  for (const id of ROUND_BORDERS) {
     const geometry = getBorderGeometry(parseBorder({...presetOf('border', 'neon'), corners: 'colchetes', cornerSize: 512, ...sized(id)}));
     const quarter = perimeterLength(geometry.tracks[2]) / 4;
     for (const {half} of geometry.brackets) assert.ok(Math.abs(2 * half - 0.7 * quarter) < 1e-9, id);
@@ -402,7 +402,7 @@ test('Borda redonda: nada é desenhado dentro do disco, em nenhum frame', () => 
 });
 
 test('Borda redonda: formigas, cometas e gradiente em P = 2πr, voltas inteiras, e recusa de aliasing no limite', () => {
-  for (const id of ROUND_BORDAS) {
+  for (const id of ROUND_BORDERS) {
     const track = getBorderGeometry(parseBorder(sized(id))).tracks[0];
     const r = track.width / 2;
     const perimeter = perimeterLength(track);
@@ -438,11 +438,11 @@ test('Redondos: o ciclo fecha em N para cada tema e tamanho redondo, em WebM e G
   for (const theme of THEMES) {
     for (const outputFormat of ['webm', 'gif'] as const) {
       const {durationInFrames} = getCompositionMetadata({durationSeconds: 7.3, outputFormat});
-      for (const id of ROUND_BLOCOS) {
+      for (const id of ROUND_BLOCKS) {
         const props = parseBlock({...presetOf('block', theme), ...sized(id), durationSeconds: 7.3, outputFormat, accentSheen: 1});
         assert.deepEqual(getBlockLayers(props, durationInFrames, durationInFrames), getBlockLayers(props, 0, durationInFrames), `${theme} ${id}`);
       }
-      for (const id of ROUND_BORDAS) {
+      for (const id of ROUND_BORDERS) {
         const props = parseBorder({...presetOf('border', theme), ...sized(id), durationSeconds: 7.3, outputFormat});
         const at = (frame: number) => getBorderSceneParts(props, frame, durationInFrames);
         assert.deepEqual(at(durationInFrames), at(0), `${theme} ${id}`);
@@ -481,7 +481,7 @@ test('Redondos: a velocidade continua na emenda também no círculo grande, com 
 // ── The round webcam's mask ─────────────────────────────────────────────────────────────────
 
 test('Máscara redonda: um disco branco do tamanho da câmera, com a forma no nome', () => {
-  for (const id of ROUND_BORDAS) {
+  for (const id of ROUND_BORDERS) {
     const side = getSize(id).width;
     for (const theme of THEMES) {
       const maskProps = getBorderMask(parseBorder({...presetOf('border', theme), ...sized(id)}))!;
@@ -525,15 +525,15 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
     const manifest = JSON.parse(readFileSync(new URL(`../packs/${name}.json`, import.meta.url), 'utf8')) as PackManifest;
     const plan = planPack(manifest, realPackDeps);
     const files = plan.map((file) => path.posix.relative(`out/packs/${name}`, file.output));
-    for (const id of ROUND_BLOCOS) {
+    for (const id of ROUND_BLOCKS) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/BlockLoop-${id}.${format}`), `${name}: ${id}.${format}`);
     }
     // The Halloween kits also ship every size without ornaments (variant sem-enfeites).
     const kit = name.startsWith('halloween-');
-    for (const id of ROUND_BLOCOS.filter(() => kit)) {
+    for (const id of ROUND_BLOCKS.filter(() => kit)) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/BlockLoop-${id}-sem-enfeites.${format}`), `${name}: ${id} sem enfeites`);
     }
-    for (const id of ROUND_BORDAS) {
+    for (const id of ROUND_BORDERS) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/BorderLoop-${id}.${format}`), `${name}: ${id}.${format}`);
       if (kit) for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/BorderLoop-${id}-sem-enfeites.${format}`), `${name}: ${id} sem enfeites`);
       const mask = plan.find((file) => file.output.endsWith(`borders/mascara-${id}.png`))!;

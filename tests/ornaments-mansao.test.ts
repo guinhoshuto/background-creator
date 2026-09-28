@@ -74,7 +74,7 @@ const glassOf = (elements: readonly OrnamentElement[], type = 'mansao-lantern') 
   elements.filter((element) => element.type === type).map((element) => element.glass as number);
 
 const CHATS = ['chat-compacto', 'chat-padrao', 'chat-alto', 'chat-coluna', 'chat-vertical'];
-const RECT_BLOCOS = ['faixa', 'titulo', 'cartao', 'quadrado', 'lista'];
+const RECT_BLOCKS = ['faixa', 'titulo', 'cartao', 'quadrado', 'lista'];
 const RECT_CAMS = ['webcam-16x9', 'webcam-16x9-g', 'webcam-4x3', 'webcam-quadrada', 'webcam-vertical', 'jogo'];
 const ROUND_CAMS = ['webcam-redonda-p', 'webcam-redonda', 'webcam-redonda-g'];
 
@@ -100,7 +100,7 @@ test('mansao: a lanterna principal (ornamentSize = altura da lanterna) em todos 
 
 test('mansao: com o kit, a lanterna usa ≥ 85 % do espaço do canto (webcams redondas: o teto do preset) e os secundários ≥ 60 % do seu', () => {
   const measured: string[] = [];
-  for (const id of [...CHATS, ...RECT_BLOCOS, ...RECT_CAMS, ...ROUND_CAMS]) {
+  for (const id of [...CHATS, ...RECT_BLOCKS, ...RECT_CAMS, ...ROUND_CAMS]) {
     const {frame, placements, props} = kitAt(id);
     const hero = placements[0]!;
     const room = roomAt(frame, cornerSlot(frame, hero.slot as 'TR'), 'front').extent;
@@ -161,7 +161,7 @@ test('mansao: no pack, jogo e webcam-16x9-g escalam o kit (×2 e ×1,5) e a lant
 
 test('mansao: onde cada motivo fica (braços, rosácea, lancetas, cercas) e onde fica de fora', () => {
   // Chat, blocos com bleed, bordas retangulares: duas lanternas em ganchos de pastor, cerca em BL e BR do mesmo comprimento.
-  for (const id of [...CHATS, ...RECT_BLOCOS, ...RECT_CAMS]) {
+  for (const id of [...CHATS, ...RECT_BLOCKS, ...RECT_CAMS]) {
     const {placements} = layoutAt(id);
     assert.deepEqual(lanterns(placements).map((placement) => `${placement.motif}@${placement.slot}`), ['lantern@TR', 'lantern@TL'], id);
     const sides = ['jogo', 'webcam-16x9-g'].includes(id) ? ['left', 'right'] : [];
@@ -425,7 +425,7 @@ test('mansao: nada desenha sobre o texto nos tamanhos extremos', () => {
 });
 
 test('mansao: o gancho de pastor sai da borda de cima, sobe e passa pelo gancho da lanterna', () => {
-  for (const id of [...CHATS, ...RECT_BLOCOS, ...RECT_CAMS, ...ROUND_CAMS, 'circulo-p', 'circulo', 'circulo-g', 'etiqueta-p', 'etiqueta']) {
+  for (const id of [...CHATS, ...RECT_BLOCKS, ...RECT_CAMS, ...ROUND_CAMS, 'circulo-p', 'circulo', 'circulo-g', 'etiqueta-p', 'etiqueta']) {
     const {frame, placements} = kitAt(id);
     for (const placement of motifs(placements, 'lantern')) {
       const {lantern, hook} = lanternMountOf(frame, placement);

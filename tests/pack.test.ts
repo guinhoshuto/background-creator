@@ -44,8 +44,8 @@ const fakeAssets: Record<string, PackAsset> = {
 const fakePresets: Record<string, unknown> = {
   'fundo-teste': {speed: 3, outputFormat: 'mp4', durationSeconds: 4},
   'chat-teste': {glow: 20, width: 999, transparent: true},
-  'block-teste': {halo: 10},
-  'border-teste': {fit: 'tela'},
+  'block-test': {halo: 10},
+  'border-test': {fit: 'tela'},
   'quebrado': [1, 2],
 };
 
@@ -113,7 +113,7 @@ test('pack: props mesclam preset < props do item < tamanho < formato', () => {
   }]), fakeDeps);
   assert.deepEqual(file!.props, {glow: 4, width: 400, height: 800, bleed: 32, transparent: true, seed: 7, outputFormat: 'webm'});
   // A window size fixes the product even over a full-screen preset.
-  const [border] = planPack(manifest([{composition: 'BorderLoop', preset: 'border-teste', sizes: ['webcam-4x3'], formats: ['png']}]), fakeDeps);
+  const [border] = planPack(manifest([{composition: 'BorderLoop', preset: 'border-test', sizes: ['webcam-4x3'], formats: ['png']}]), fakeDeps);
   assert.equal(border!.props.fit, 'janela');
   assert.equal(border!.output, 'out/packs/teste/borders/BorderLoop-webcam-4x3.png');
 });
@@ -167,7 +167,7 @@ test('pack: a variante marca o nome dos arquivos, e o mesmo tamanho cabe duas ve
 
 test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nome', () => {
   const plan = planPack(manifest([
-    {composition: 'BlockLoop', preset: 'block-teste', formats: ['webm']},
+    {composition: 'BlockLoop', preset: 'block-test', formats: ['webm']},
     {composition: 'BlockLoop', props: {width: 700, height: 100, bleed: 16}, formats: ['webm']},
   ]), fakeDeps);
   assert.deepEqual(plan.map((file) => file.output), [
