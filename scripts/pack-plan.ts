@@ -4,11 +4,11 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {z} from 'zod';
 import {getAsset, getLayoutOf, getMaskOf, getMotionOf} from '../src/catalog';
-import {getKindPolicy, type AssetKind} from '../src/kinds';
+import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
 import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
 import {getCompositionMetadata, hasAlpha, outputFormatSchema, type OutputFormat} from '../src/settings';
-import {getSize, sizeTag, sizesForKind} from '../src/sizes';
+import {NAMED_SIZES, getSize, sizeTag, sizesForKind} from '../src/sizes';
 import {expandSize} from './render-args';
 
 /** Pack builds refuse to start (and to go on) below this much free disk: renders fill it fast. */
@@ -143,6 +143,21 @@ type MaskRequest = {
 
 /** OBS masks get a folder of their own in the pack, whatever the border's. */
 const MASK_FOLDER = 'masks';
+
+/** Every folder a buyer file can sit in: the kinds' folders, the sizes' own (twitch-panels) and masks. */
+const BUYER_FOLDERS = [...new Set([
+  ...ASSET_KINDS.map((kind) => kindPolicies[kind].folder),
+  ...NAMED_SIZES.flatMap((size) => (size.folder === undefined ? [] : [size.folder])),
+  MASK_FOLDER,
+])];
+
+/**
+ * A buyer path inside the pack: `<folder>/<pack>-<piece>[-<variant>].<ext>`, lowercase ASCII words
+ * joined by single hyphens. zip:pack refuses any planned file that does not match.
+ */
+export const BUYER_PATH = new RegExp(
+  `^(${BUYER_FOLDERS.join('|')})/[a-z0-9]+(-[a-z0-9]+)*\\.(${outputFormatSchema.options.join('|')})$`,
+);
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -524,6 +539,10 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
 
 /** Same root as scripts/export.ts, without importing the renderer into the planner. */
 const PROJECT_ROOT = fileURLToPath(new URL('../', import.meta.url));
+
+/** The pack manifest a CLI target names: a bare name means packs/<name>.json; anything ending in .json is a path. */
+export const manifestFile = (target: string) =>
+  (target.endsWith('.json') ? path.resolve(target) : path.join(PROJECT_ROOT, 'packs', `${target}.json`));
 
 /** The real catalog and presets/ folder behind the planner's injectable dependencies. */
 export const realPackDeps: PackDeps = {

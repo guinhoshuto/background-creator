@@ -3,23 +3,19 @@ import {access, mkdir, readFile, rename, rm, statfs, writeFile} from 'node:fs/pr
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
-import {dryRunText, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
+import {dryRunText, filterPlan, manifestFile, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
 
 const PACK_HELP_TEXT = `usage: npm run render:pack -- <name|file.json> [options]
 
 Builds a pack in out/packs/<name>/ from packs/<name>.json (or the given file),
 exporting one file at a time and writing out/packs/<name>/manifest.json.
-The pack folder is a working folder; the buyer gets the zip.
+The pack folder is a working folder; the buyer gets the zip: npm run zip:pack -- <name>.
 
 Options:
   --dry-run        lists every planned file with its file dimensions, without rendering
   --only <text>    exports only the files whose path contains the text
   --overwrite      replaces existing files (without it, finished files are skipped)
   -h, --help       shows this help`;
-
-/** A bare name means packs/<name>.json; anything ending in .json is a path. */
-const manifestFile = (target: string) =>
-  (target.endsWith('.json') ? path.resolve(target) : path.join(projectRoot, 'packs', `${target}.json`));
 
 const fromRoot = (relative: string) => path.join(projectRoot, relative);
 

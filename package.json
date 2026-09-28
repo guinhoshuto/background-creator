@@ -13,6 +13,7 @@
     "render:mov": "tsx scripts/render.ts --format mov",
     "render:png": "tsx scripts/render.ts --format png",
     "render:pack": "tsx scripts/pack.ts",
+    "zip:pack": "tsx scripts/zip-pack.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",

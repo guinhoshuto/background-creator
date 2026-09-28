@@ -11,6 +11,7 @@ Local Remotion, React and TypeScript project for looping animated backgrounds (1
 - Checks: `npm run typecheck`, `npm run lint`, `npm test` and `npm run validate:exports` (full FFmpeg/FFprobe).
 - Export: `npm run render:webm -- ParticleLoop --props presets/particles-alpha.json` (or `render:mp4` / `render:gif` / `render:mov` / `render:png`); overlays take `--size <id>` or `--width/--height/--bleed`.
 - Packs: `npm run render:pack -- <theme> --dry-run` (without `--dry-run` it renders; `--only`, `--overwrite`). Items accept `variant` (file suffix) and their own `bleed` above the named size; the Halloween kits ship with and without ornaments.
+- Delivery: `npm run zip:pack -- <theme>` builds `out/deliveries/<theme>-overlay-pack.zip` from the whole plan (`--check` writes nothing). A pack is ready when render:pack and zip:pack pass; the buyer gets the zip, never the folder.
 
 Keep every Remotion package at the same exact version and update the lockfile together with the dependencies. Animations depend only on the frame and the parameters; use a seed for randomness, never the clock, `Math.random()`, CSS animations or CSS transitions. The state at `N` must match frame `0`, but export only `0…N−1`. Also preserve speed across the loop seam.
 
@@ -31,4 +32,4 @@ Overlays: decorative measurements are fixed px (they do not scale with the box; 
 - Schema: `.describe()` before `.default()`, otherwise the description disappears in the Studio. Colors (`zColor()`) take no `.describe()`: their description holds the color picker marker.
 - Workflows with agents: follow `~/obsidian/AI/Harness/Workflows.md`.
 - A background disk alarm is stopped when the work ends.
-- Verification renders (reviewer, skeptic, test) go to `out/.scratch/<session>/` and are deleted at the end; `out/` keeps only `packs/` and what the owner asked to keep.
+- Verification renders (reviewer, skeptic, test) go to `out/.scratch/<session>/` and are deleted at the end; `out/` keeps only `packs/`, `deliveries/` and what the owner asked to keep.
