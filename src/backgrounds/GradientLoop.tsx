@@ -5,8 +5,8 @@ import {baseBackgroundSchema} from '../settings';
 import {Canvas} from './Canvas';
 
 export const gradientLoopSchema = baseBackgroundSchema.extend({
-  scale: z.number().finite().min(0.25).max(3).describe('Escala das manchas').default(1),
-  intensity: z.number().finite().min(0).max(2).describe('Intensidade das cores').default(1),
+  scale: z.number().finite().min(0.25).max(3).describe('Scale of the blobs').default(1),
+  intensity: z.number().finite().min(0).max(2).describe('Color intensity').default(1),
 });
 
 export type GradientLoopProps = z.infer<typeof gradientLoopSchema>;

@@ -5,9 +5,9 @@ import {baseBackgroundSchema} from '../settings';
 import {Canvas} from './Canvas';
 
 export const particleLoopSchema = baseBackgroundSchema.extend({
-  count: z.number().int().min(1).max(600).describe('Quantidade de partículas').default(100),
-  size: z.number().finite().min(0.5).max(24).describe('Tamanho das partículas').default(3),
-  distribution: z.enum(['uniform', 'center']).describe('Distribuição das partículas').default('uniform'),
+  count: z.number().int().min(1).max(600).describe('Number of particles').default(100),
+  size: z.number().finite().min(0.5).max(24).describe('Particle size').default(3),
+  distribution: z.enum(['uniform', 'center']).describe('Particle spread').default('uniform'),
 });
 
 export type ParticleLoopProps = z.infer<typeof particleLoopSchema>;

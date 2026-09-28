@@ -10,13 +10,13 @@ export const kawaiiLoopSchema = baseBackgroundSchema.extend({
   seed: baseBackgroundSchema.shape.seed.default(7),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#FFF7F4'),
   colors: baseBackgroundSchema.shape.colors.unwrap()
-    .describe('Paleta: morango, baunilha e matchá; a terceira cor é opcional')
+    .describe('Palette: strawberry, vanilla and matcha; the third color is optional')
     .default(['#F7C8D8', '#FFE6BC', '#BFE3DC']),
-  familyCount: z.number().int().min(2).max(6).describe('Quantos grupos compõem o quadro').default(5),
-  familyScale: z.number().finite().min(0.7).max(1.4).describe('Tamanho geral da composição').default(1),
-  centerClearance: z.number().finite().min(0).max(1).describe('Tamanho do vazio central reservado ao conteúdo').default(0.5),
-  drift: z.number().finite().min(0).max(1).describe('Amplitude da flutuação').default(0.55),
-  sparkleTrail: z.number().int().min(0).max(4).describe('Cintilos que acompanham cada grupo').default(2),
+  familyCount: z.number().int().min(2).max(6).describe('How many clusters make up the picture').default(5),
+  familyScale: z.number().finite().min(0.7).max(1.4).describe('Overall size of the composition').default(1),
+  centerClearance: z.number().finite().min(0).max(1).describe('Size of the empty center reserved for content').default(0.5),
+  drift: z.number().finite().min(0).max(1).describe('Float amplitude').default(0.55),
+  sparkleTrail: z.number().int().min(0).max(4).describe('Sparkles that go with each cluster').default(2),
 });
 
 export type KawaiiLoopProps = z.infer<typeof kawaiiLoopSchema>;

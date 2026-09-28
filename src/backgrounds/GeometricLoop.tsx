@@ -5,8 +5,8 @@ import {baseBackgroundSchema} from '../settings';
 import {Canvas} from './Canvas';
 
 export const geometricLoopSchema = baseBackgroundSchema.extend({
-  count: z.number().int().min(1).max(100).describe('Quantidade de formas').default(18),
-  scale: z.number().finite().min(0.15).max(3).describe('Escala das formas').default(1),
+  count: z.number().int().min(1).max(100).describe('Number of shapes').default(18),
+  scale: z.number().finite().min(0.15).max(3).describe('Scale of the shapes').default(1),
 });
 
 export type GeometricLoopProps = z.infer<typeof geometricLoopSchema>;

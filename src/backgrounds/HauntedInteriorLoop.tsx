@@ -27,25 +27,25 @@ export {
  * SKY_GLOW), sem o luar direto.
  */
 const SKY_SIDE = (1 - MOON_SIDE) as 0 | 1;
-/** O nome de cada lado do salão, para o Studio: 0, a esquerda; 1, a direita. */
-const SIDE_NAMES = ['esquerda', 'direita'] as const;
+/** The name of each side of the hall, for the Studio: 0 is left, 1 is right. */
+const SIDE_NAMES = ['left', 'right'] as const;
 
 export const hauntedInteriorLoopSchema = baseBackgroundSchema.extend({
   durationSeconds: baseBackgroundSchema.shape.durationSeconds.default(16),
   seed: baseBackgroundSchema.shape.seed.default(113),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#080D10'),
   colors: baseBackgroundSchema.shape.colors.unwrap()
-    .describe('Paleta: névoa, luar e velas; a terceira cor é opcional')
+    .describe('Palette: fog, moonlight and candles; the third color is optional')
     .default(['#536C68', '#A8BDB0', '#CA8A48']),
-  dustCount: z.number().int().min(0).max(100).describe('Partículas de poeira nas laterais').default(36),
-  fogIntensity: z.number().finite().min(0).max(1).describe('Névoa junto ao piso').default(0.55),
-  candleIntensity: z.number().finite().min(0).max(1).describe('Luz e chamas das velas').default(0.8),
+  dustCount: z.number().int().min(0).max(100).describe('Dust particles along the sides').default(36),
+  fogIntensity: z.number().finite().min(0).max(1).describe('Fog along the floor').default(0.55),
+  candleIntensity: z.number().finite().min(0).max(1).describe('Candle light and flames').default(0.8),
   moonlightIntensity: z.number().finite().min(0).max(1)
-    .describe(`Luar pela janela ${SIDE_NAMES[MOON_SIDE]} e brilho difuso do céu na ${SIDE_NAMES[SKY_SIDE]}`)
+    .describe(`Moonlight through the ${SIDE_NAMES[MOON_SIDE]} window and diffuse skylight on the ${SIDE_NAMES[SKY_SIDE]}`)
     .default(MOONLIGHT_DEFAULT),
-  hauntingIntensity: z.number().finite().min(0).max(1).describe('Aparição dos olhos nos retratos').default(0.45),
-  chandelierSway: z.number().finite().min(0).max(1).describe('Balanço suave do lustre').default(0.6),
-  lightningIntensity: z.number().finite().min(0).max(1).describe('Relâmpagos nas janelas e no reflexo; 0 desliga os clarões').default(0.7),
+  hauntingIntensity: z.number().finite().min(0).max(1).describe('Eyes appearing in the portraits').default(0.45),
+  chandelierSway: z.number().finite().min(0).max(1).describe('Gentle sway of the chandelier').default(0.6),
+  lightningIntensity: z.number().finite().min(0).max(1).describe('Lightning in the windows and in the reflection; 0 turns the flashes off').default(0.7),
 });
 
 export type HauntedInteriorLoopProps = z.infer<typeof hauntedInteriorLoopSchema>;

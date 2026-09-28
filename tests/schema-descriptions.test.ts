@@ -24,10 +24,11 @@ const colorFingerprint = (schema: Node): string | null => {
 const COLOR_REFINE = colorFingerprint(zColor() as unknown as Node);
 const isColor = (schema: Node) => schema._zod.def.type === 'string' && colorFingerprint(schema) === COLOR_REFINE;
 
-type Report = {problems: string[]; described: number; colors: number};
+type Report = {problems: string[]; described: number; colors: number; texts: string[]};
 
 const inspect = (schema: Node, where: string, report: Report): void => {
   const {def} = schema._zod;
+  if (schema.description !== undefined && schema.description !== COLOR_BRAND) report.texts.push(`${where}: ${schema.description}`);
   switch (def.type) {
     case 'object':
       for (const [key, field] of Object.entries(def.shape ?? {})) inspect(field, `${where}.${key}`, report);
@@ -81,7 +82,7 @@ const catalog = {...backgroundCatalog, ...overlayCatalog};
 
 for (const [id, entry] of Object.entries(catalog)) {
   test(`${id}: descriptions sit where the Studio reads them`, () => {
-    const report: Report = {problems: [], described: 0, colors: 0};
+    const report: Report = {problems: [], described: 0, colors: 0, texts: []};
     inspect(entry.schema as unknown as Node, id, report);
     assert.deepEqual(report.problems, []);
     assert.ok(report.colors > 0, `${id}: nenhum zColor encontrado; o percurso do schema quebrou`);
@@ -91,9 +92,27 @@ for (const [id, entry] of Object.entries(catalog)) {
 test('the walk reaches the described fields of every composition', () => {
   let described = 0;
   for (const [id, entry] of Object.entries(catalog)) {
-    const report: Report = {problems: [], described: 0, colors: 0};
+    const report: Report = {problems: [], described: 0, colors: 0, texts: []};
     inspect(entry.schema as unknown as Node, id, report);
     described += report.described;
   }
   assert.ok(described >= 100, `só ${described} campos descritos encontrados`);
+});
+
+/**
+ * The Studio shows these texts to whoever edits a preset, so they are English like the rest of the
+ * repo. The ids quoted inside them (retangulo, nenhum, formigas, circulo-p...) are still Portuguese
+ * until the renaming round reaches them; they carry no accent and are not in the word list below.
+ */
+const PORTUGUESE = /[áàâãéêíóôõúç]|\b(de|da|do|das|dos|para|com|em|ou|sem|uma|cada|quando|pelo|pela|entre|mais|menos|não|só)\b/i;
+
+test('every Studio description is in English', () => {
+  const texts: string[] = [];
+  for (const [id, entry] of Object.entries(catalog)) {
+    const report: Report = {problems: [], described: 0, colors: 0, texts: []};
+    inspect(entry.schema as unknown as Node, id, report);
+    texts.push(...report.texts);
+  }
+  assert.ok(texts.length >= 100, `only ${texts.length} descriptions found`);
+  assert.deepEqual(texts.filter((text) => PORTUGUESE.test(text.slice(text.indexOf(': ') + 2))), []);
 });

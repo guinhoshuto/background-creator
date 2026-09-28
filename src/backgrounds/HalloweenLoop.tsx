@@ -11,12 +11,12 @@ export const halloweenLoopSchema = baseBackgroundSchema.extend({
   durationSeconds: baseBackgroundSchema.shape.durationSeconds.default(12),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#120E20'),
   colors: baseBackgroundSchema.shape.colors.unwrap()
-    .describe('Paleta: névoa, luar e abóboras; a terceira cor é opcional')
+    .describe('Palette: fog, moonlight and pumpkins; the third color is optional')
     .default(['#9B85C9', '#F7DCA6', '#ED792D']),
-  batCount: z.number().int().min(0).max(18).describe('Quantidade de morcegos').default(7),
-  emberCount: z.number().int().min(0).max(120).describe('Quantidade de luzes flutuantes').default(36),
-  fogIntensity: z.number().finite().min(0).max(1).describe('Intensidade da névoa').default(0.6),
-  moonScale: z.number().finite().min(0.5).max(1.5).describe('Escala da lua').default(1),
+  batCount: z.number().int().min(0).max(18).describe('Number of bats').default(7),
+  emberCount: z.number().int().min(0).max(120).describe('Number of floating lights').default(36),
+  fogIntensity: z.number().finite().min(0).max(1).describe('Fog intensity').default(0.6),
+  moonScale: z.number().finite().min(0.5).max(1.5).describe('Moon scale').default(1),
 });
 
 export type HalloweenLoopProps = z.infer<typeof halloweenLoopSchema>;

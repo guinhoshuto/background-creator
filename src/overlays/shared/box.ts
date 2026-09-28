@@ -26,13 +26,13 @@ export type BoxDefaults = {width: number; height: number; bleed: number};
 /** Width/height/bleed fields shared by every sized kind; defaults come from the kind's default size. */
 export const overlayBoxFields = (defaults: BoxDefaults) => ({
   width: evenPx('width', {min: MIN_BOX_SIDE, max: MAX_SIDE})
-    .describe('Largura da caixa, em px (par)')
+    .describe('Box width, in px (even)')
     .default(defaults.width),
   height: evenPx('height', {min: MIN_BOX_SIDE, max: MAX_SIDE})
-    .describe('Altura da caixa, em px (par)')
+    .describe('Box height, in px (even)')
     .default(defaults.height),
   bleed: evenPx('bleed', {min: 0, max: MAX_BLEED})
-    .describe('Margem transparente em volta da caixa para brilho, em px (par)')
+    .describe('Transparent margin around the box for the glow, in px (even)')
     .default(defaults.bleed),
 });
 

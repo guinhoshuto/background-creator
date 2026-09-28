@@ -28,31 +28,31 @@ export const vaporwaveLoopSchema = baseBackgroundSchema.extend({
   seed: baseBackgroundSchema.shape.seed.default(88),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#120C2E'),
   colors: baseBackgroundSchema.shape.colors.unwrap()
-    .describe('Paleta: rosa neon das linhas do chão, do horizonte, do sol, da cordilheira de trás e de um sólido; ciano das colunas do chão, das montanhas da frente e dos outros sólidos; amarelo-claro do topo do sol; lilás da névoa. A terceira e a quarta cores são opcionais e as demais são ignoradas')
+    .describe('Palette: neon pink for the floor lines, the horizon, the sun, the back ridge and one solid; cyan for the floor columns, the front mountains and the other solids; pale yellow for the top of the sun; lilac for the haze. The third and fourth colors are optional and the rest are ignored')
     .default(['#FF71CE', '#01CDFE', '#FFFB96', '#B967FF']),
   speed: z.number().int().min(0).max(12)
-    .describe('Linhas da grade que passam por ciclo (inteiro); mais linhas deixam o chão mais rápido e 0 o deixa parado. Todo o movimento acompanha o ciclo: ao aumentar durationSeconds, aumente speed na mesma proporção (32 s → 8, 48 s → 12)')
+    .describe('Grid lines that pass per cycle (whole number); more lines make the floor faster and 0 holds it still. All motion follows the cycle: when you increase durationSeconds, increase speed in the same proportion (32 s → 8, 48 s → 12)')
     .default(4),
   sunPosition: z.number().finite().min(0.1).max(0.9)
-    .describe('Posição horizontal do sol: 0,1 na borda esquerda, 0,5 no centro e 0,9 na borda direita; perto do centro ele desce e fica meio posto no horizonte, abaixo da faixa do título. O lado do sol é o mais claro do quadro: deixe chat e alertas do lado oposto')
+    .describe('Horizontal position of the sun: 0.1 at the left edge, 0.5 at the center and 0.9 at the right edge; near the center it sinks and sits half set on the horizon, below the title band. The sun side is the brightest part of the picture: keep chat and alerts on the opposite side')
     .default(0.9),
   neonGlow: z.number().finite().min(0).max(1)
-    .describe('Brilho neon da grade, do horizonte, das montanhas, do sol e dos contornos')
+    .describe('Neon glow of the grid, the horizon, the mountains, the sun and the outlines')
     .default(0.7),
   starCount: z.number().int().min(0).max(200)
-    .describe('Estrelas no céu; a cada dez, um cintilo de quatro pontas maior (até 12)')
+    .describe('Stars in the sky; every tenth is a larger four-point sparkle (up to 12)')
     .default(90),
   shootingStars: z.number().int().min(0).max(3)
-    .describe('Estrelas cadentes por ciclo, sempre na faixa de cima; repetem o mesmo trajeto a cada ciclo — em lives longas, use 0')
+    .describe('Shooting stars per cycle, always in the top band; they repeat the same path every cycle — on long streams, use 0')
     .default(1),
   palmCount: z.number().int().min(0).max(3)
-    .describe('Palmeiras em cada lateral: 1 deixa só a que se inclina para fora do quadro; 2 soma a grande, perto da câmera; 3 soma a pequena no horizonte')
+    .describe('Palm trees on each side: 1 keeps only the one leaning out of the picture; 2 adds the large one near the camera; 3 adds the small one on the horizon')
     .default(2),
   shapeCount: z.number().int().min(0).max(4)
-    .describe('Sólidos aramados flutuando: os dois primeiros nos cantos de cima, os outros nos de baixo')
+    .describe('Floating wireframe solids: the first two in the top corners, the others in the bottom ones')
     .default(2),
   centerShade: z.number().finite().min(0).max(1)
-    .describe('Placa suave 16:9 atrás da área de conteúdo; no WebM transparente, apaga o sol, as estrelas, os cintilos, as colinas distantes e o meio da linha do horizonte atrás dela')
+    .describe('Soft 16:9 plate behind the content area; in transparent WebM it erases the sun, the stars, the sparkles, the distant hills and the middle of the horizon line behind it')
     .default(0.6),
 });
 

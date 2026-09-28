@@ -53,15 +53,15 @@ const arcClearOf = (arc: AccentArc, area: Rect) =>
 
 // ── The shape prop ──────────────────────────────────────────────────────────────────────────
 
-test('Forma: bloco e borda começam retangulares; circulo é uma opção do schema, com descrição em português', () => {
+test('Forma: bloco e borda começam retangulares; circulo é uma opção do schema, com descrição em inglês', () => {
   assert.deepEqual(PANEL_SHAPES, ['retangulo', 'circulo']);
   for (const schema of [blocoLoopSchema, bordaLoopSchema]) {
     assert.equal(schema.parse({}).shape, 'retangulo');
     assert.equal(schema.safeParse({shape: 'oval'}).success, false);
   }
   for (const schema of [blocoLoopSchema, bordaLoopSchema]) {
-    assert.match(schema.shape.shape.unwrap().description ?? '', /circulo.*quadrada/);
-    assert.match(schema.shape.radius.unwrap().description ?? '', /com shape circulo é ignorado, o raio é metade do lado/);
+    assert.match(schema.shape.shape.unwrap().description ?? '', /circulo.*must be square/);
+    assert.match(schema.shape.radius.unwrap().description ?? '', /with shape circulo it is ignored, the radius is half the side/);
   }
 });
 

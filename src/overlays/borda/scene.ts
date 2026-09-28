@@ -34,15 +34,15 @@ const bordaFields = z.object({
   // MP4 and GIF composite over this colour, the window included: a dark violet suits the neon look.
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#0B0620'),
   fit: z.enum(FRAME_FITS)
-    .describe('janela: a caixa é a janela transparente e a moldura vai para fora, no bleed; tela: a caixa é o arquivo inteiro (use bleed 0) e a moldura é desenhada para dentro')
+    .describe('janela: the box is the transparent window and the border goes outside, in the bleed; tela: the box is the whole file (use bleed 0) and the border is drawn inward')
     .default('janela'),
-  shape: shapeField('Forma da janela: retangulo (cantos com radius) ou circulo, para câmera redonda (a caixa precisa ser quadrada: use --size webcam-redonda-p, webcam-redonda ou webcam-redonda-g; só com fit janela)'),
+  shape: shapeField('Window shape: retangulo (corners with radius) or circulo, for a round camera (the box must be square: use --size webcam-redonda-p, webcam-redonda or webcam-redonda-g; only with fit janela)'),
   mascara: z.boolean()
-    .describe('Exporta só a máscara da janela (PNG branco) para o filtro Máscara de Imagem do OBS')
+    .describe('Exports only the window mask (white PNG) for the OBS Image Mask filter')
     .default(false),
-  radius: radiusField(16, 'Raio dos cantos da janela, em px; limitado a metade do menor lado; com shape circulo é ignorado, o raio é metade do lado'),
+  radius: radiusField(16, 'Corner radius of the window, in px; capped at half the shorter side; with shape circulo it is ignored, the radius is half the side'),
   thickness: z.number().finite().min(2).max(256)
-    .describe('Espessura da faixa da moldura, em px; o contorno corre no meio dela')
+    .describe('Thickness of the border band, in px; the outline runs along its middle')
     .default(10),
   ...fillFields({
     fill: 'solido', fillColors: ['#120A38'], fillOpacity: 0.9, fillScale: 12, fillSpeed: 24, fillAngle: 45,
@@ -56,28 +56,28 @@ const bordaFields = z.object({
   ...haloFields({halo: 0, haloColor: '#A78BFA'}),
   rimLight: rimLightField(0),
   lines: z.number().int().min(1).max(2)
-    .describe('1: só a faixa; 2: mais uma linha fina por fora dela, separada por lineGap (em formigas e cometas ela fica parada)')
+    .describe('1: the band only; 2: plus a thin line outside it, separated by lineGap (with formigas and cometas it stays still)')
     .default(2),
   lineGap: z.number().finite().min(1).max(64)
-    .describe('Espaço entre a faixa e a segunda linha, em px')
+    .describe('Space between the band and the second line, in px')
     .default(4),
   outerLineWidth: z.number().finite().min(1).max(32)
-    .describe('Espessura da segunda linha, em px; 2 ou mais evita perda de cor no WebM')
+    .describe('Thickness of the second line, in px; 2 or more avoids color loss in WebM')
     .default(2),
   corners: z.enum(CORNER_STYLES)
-    .describe('Enfeite dos cantos: nenhum, colchetes (cantoneiras em volta da moldura) ou joias (losangos sobre a faixa)')
+    .describe('Corner ornament: nenhum, colchetes (brackets around the border) or joias (diamonds on the band)')
     .default('colchetes'),
   cornerSize: z.number().finite().min(4).max(512)
-    .describe('colchetes: comprimento de cada braço depois da curva do canto, em px; no círculo, cada colchete é um arco de 4×cornerSize px')
+    .describe('colchetes: length of each arm after the corner curve, in px; in the circle, each bracket is an arc of 4×cornerSize px')
     .default(28),
   cornerGap: z.number().finite().min(0).max(128)
-    .describe('colchetes: distância da borda externa da moldura, em px; em tela eles ficam para dentro, a partir da borda do arquivo')
+    .describe('colchetes: distance from the outer edge of the border, in px; with tela they sit inward, from the edge of the file')
     .default(6),
   gemSize: z.number().finite().min(4).max(128)
-    .describe('joias: largura de cada losango, em px')
+    .describe('joias: width of each diamond, in px')
     .default(14),
   cornerPulses: z.number().int().min(0).max(16)
-    .describe('Quantas vezes os cantos pulsam por ciclo, acendendo um depois do outro; 0 deixa constante')
+    .describe('How many times the corners pulse per cycle, lighting up one after another; 0 keeps them steady')
     .default(1),
   ...ornamentFields(),
 });

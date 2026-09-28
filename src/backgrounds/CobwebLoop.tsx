@@ -13,14 +13,14 @@ export const cobwebLoopSchema = baseBackgroundSchema.extend({
   seed: baseBackgroundSchema.shape.seed.default(47),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#100B1B'),
   colors: baseBackgroundSchema.shape.colors.unwrap()
-    .describe('Paleta: seda, luar e destaque âmbar; a terceira cor é opcional')
+    .describe('Palette: silk, moonlight and amber accent; the third color is optional')
     .default(['#CFC6E4', '#F6EFD8', '#E8963C']),
-  webCount: z.number().int().min(0).max(4).describe('Teias ancoradas nos cantos').default(4),
-  strandCount: z.number().int().min(0).max(24).describe('Fios de seda soltos').default(12),
-  moteCount: z.number().int().min(0).max(120).describe('Partículas de poeira').default(40),
-  spiderCount: z.number().int().min(0).max(3).describe('Aranhas penduradas').default(1),
-  dewIntensity: z.number().finite().min(0).max(1).describe('Brilho das gotas de orvalho').default(0.7),
-  mistIntensity: z.number().finite().min(0).max(1).describe('Intensidade da névoa').default(0.5),
+  webCount: z.number().int().min(0).max(4).describe('Webs anchored in the corners').default(4),
+  strandCount: z.number().int().min(0).max(24).describe('Loose silk threads').default(12),
+  moteCount: z.number().int().min(0).max(120).describe('Dust particles').default(40),
+  spiderCount: z.number().int().min(0).max(3).describe('Hanging spiders').default(1),
+  dewIntensity: z.number().finite().min(0).max(1).describe('Glint of the dew drops').default(0.7),
+  mistIntensity: z.number().finite().min(0).max(1).describe('Fog intensity').default(0.5),
 });
 
 export type CobwebLoopProps = z.infer<typeof cobwebLoopSchema>;

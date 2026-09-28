@@ -15,18 +15,18 @@ export const DOT_LAYOUTS = ['aligned', 'alternating'] as const;
 const dotGridFields = baseBackgroundSchema.omit({colors: true}).extend({
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#10162B'),
   direction: z.enum(DOT_DIRECTIONS)
-    .describe('Direção do movimento: horizontal, vertical ou diagonal')
+    .describe('Direction of motion: horizontal, vertical or diagonal')
     .default('down-right'),
   layout: z.enum(DOT_LAYOUTS)
-    .describe('aligned: pontos enfileirados em grade; alternating: fileiras alternadas, deslocadas meio passo')
+    .describe('aligned: dots lined up in a grid; alternating: alternate rows, shifted half a step')
     .default('aligned'),
   dotColor: zColor().default('#7C8CFF'),
-  dotSize: z.number().finite().min(1).max(96).describe('Diâmetro dos pontos, em pixels').default(10),
+  dotSize: z.number().finite().min(1).max(96).describe('Dot diameter, in pixels').default(10),
   spacing: z.number().finite().min(16).max(240)
-    .describe('Distância entre os centros de pontos vizinhos na fileira e entre fileiras, em pixels')
+    .describe('Distance between the centers of neighboring dots in a row and between rows, in pixels')
     .default(48),
   speed: z.number().finite().min(0).max(480)
-    .describe('Velocidade em pixels por segundo, arredondada para um número inteiro de passos do padrão por ciclo (no mínimo um); 0 deixa o padrão parado')
+    .describe('Speed in pixels per second, rounded to a whole number of pattern steps per cycle (at least one); 0 holds the pattern still')
     .default(24),
 });
 

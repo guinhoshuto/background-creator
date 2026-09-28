@@ -21,26 +21,26 @@ export type StrokeMotionName = (typeof STROKE_MOTIONS)[number];
  */
 export const overlayBaseFields = (size: BoxDefaults) => ({
   ...baseBackgroundSchema.omit({colors: true}).shape,
-  transparent: z.boolean().describe('Alpha no WebM, MOV e PNG').default(true),
+  transparent: z.boolean().describe('Alpha in WebM, MOV and PNG').default(true),
   ...overlayBoxFields(size),
   guides: guidesField(),
 });
 
 /** Studio-only outlines of box, content and hole; the exporter refuses them. */
 export const guidesField = () => z.boolean()
-  .describe('Mostra no Studio a caixa, a área de texto e a janela; o export recusa guides ligado')
+  .describe('Shows the box, the text area and the window in the Studio; the export refuses guides turned on')
   .default(false);
 
 /** The description goes in here, not after: `.describe()` on the returned default hides it in the Studio. */
 export const radiusField = (
   defaultValue = 16,
-  description = 'Raio dos cantos, em px; limitado a metade do menor lado (vira pílula ou círculo)',
+  description = 'Corner radius, in px; capped at half the shorter side (becomes a pill or a circle)',
 ) => z.number().finite().min(0).max(1920)
   .describe(description)
   .default(defaultValue);
 
 export const paddingField = (defaultValue = 16) => z.number().finite().min(0).max(512)
-  .describe('Espaço entre o contorno e o conteúdo, em px')
+  .describe('Space between the outline and the content, in px')
   .default(defaultValue);
 
 export type FillDefaults = Partial<{
@@ -56,28 +56,28 @@ export type FillDefaults = Partial<{
 
 export const fillFields = (defaults: FillDefaults = {}) => ({
   fill: z.enum(FILL_STYLES)
-    .describe('Preenchimento: solido, gradiente (cores balançando devagar), pontos, listras, brilhos (cintilantes), vidro (translúcido com reflexo), nevoa (bancos de névoa rolando pela parte de baixo) ou damasco (papel de parede adamascado)')
+    .describe('Fill: solido (solid), gradiente (colors swaying slowly), pontos (dots), listras (stripes), brilhos (twinkling sparkles), vidro (translucent glass with a glint), nevoa (fog banks rolling along the bottom) or damasco (damask wallpaper)')
     .default(defaults.fill ?? 'solido'),
   fillColors: z.array(zColor()).min(1).max(3)
-    .describe('Cores do preenchimento: com uma cor, só o padrão; com mais, a primeira é a base e as outras formam o padrão (na névoa, a segunda é a névoa e a terceira o miolo claro; no damasco, a segunda é a tinta e a terceira fica de fora)')
+    .describe('Fill colors: with one color, just the pattern; with more, the first is the base and the others form the pattern (in nevoa, the second is the fog and the third the bright core; in damasco, the second is the ink and the third is left out)')
     .default(defaults.fillColors ?? ['#12162B', '#67E8F9', '#F472B6']),
   fillOpacity: z.number().finite().min(0).max(1)
-    .describe('Opacidade do preenchimento, de 0 a 1')
+    .describe('Fill opacity, from 0 to 1')
     .default(defaults.fillOpacity ?? 0.85),
   fillScale: z.number().finite().min(8).max(256)
-    .describe('Tamanho do padrão, em px: distância entre pontos, largura de cada listra com seu intervalo, espaço médio entre brilhos, altura de cada banco de névoa (um a cada 2,25 × fillScale), largura do ladrilho do damasco (1,5 vez mais alto)')
+    .describe('Pattern size, in px: distance between dots, width of each stripe with its gap, mean spacing between sparkles, height of each fog bank (one every 2.25 × fillScale), width of the damask tile (1.5 times as tall)')
     .default(defaults.fillScale ?? 32),
   fillSpeed: z.number().finite().min(0).max(480)
-    .describe('Velocidade do padrão em px/s, a mesma em todo tamanho: pontos, listras, damasco, névoa (período de 2,25 × fillScale) e o giro dos brilhos arredondam para um número inteiro de períodos por ciclo (no mínimo um); o gradiente balança para lá e para cá; no vidro, um reflexo passa por cada ponto uma vez por ciclo; 0 deixa parado')
+    .describe('Pattern speed in px/s, the same at every size: pontos, listras, damasco, nevoa (period of 2.25 × fillScale) and the spin of brilhos round to a whole number of periods per cycle (at least one); gradiente sways back and forth; in vidro, a glint passes each point once per cycle; 0 holds it still')
     .default(defaults.fillSpeed ?? 16),
   fillAngle: z.number().finite().min(-180).max(180)
-    .describe('Direção do movimento do gradiente, das listras e do reflexo, em graus (0 = para a direita, 90 = para baixo); os pontos e o damasco seguem o eixo ou a diagonal mais próxima; a névoa só anda de lado (para a direita se o ângulo aponta para a direita ou na vertical, senão para a esquerda)')
+    .describe('Direction of motion of gradiente, listras and the glint, in degrees (0 = right, 90 = down); pontos and damasco follow the nearest axis or diagonal; nevoa only moves sideways (right if the angle points right or straight up or down, otherwise left)')
     .default(defaults.fillAngle ?? 45),
   fillRise: z.boolean()
-    .describe('Só em brilhos: sobem como brasas em vez de cintilar no lugar')
+    .describe('brilhos only: they rise like embers instead of twinkling in place')
     .default(defaults.fillRise ?? false),
   fillLight: z.number().finite().min(0).max(1)
-    .describe('Luz de cima: um véu branco no topo do preenchimento que some até embaixo (dá volume ao vidro), de 0 a 1; 0 desliga')
+    .describe('Top light: a white veil at the top of the fill that fades toward the bottom (gives vidro volume), from 0 to 1; 0 turns it off')
     .default(defaults.fillLight ?? 0),
 });
 
@@ -99,37 +99,37 @@ export type StrokeDefaults = Partial<{
 
 export const strokeFields = (defaults: StrokeDefaults = {}) => ({
   strokeMotion: z.enum(STROKE_MOTIONS)
-    .describe('Movimento do contorno: parado, pulso (respira), formigas (tracejado andando), cometas ou gradiente (cores correndo pelo contorno)')
+    .describe('Outline motion: parado (still), pulso (breathes), formigas (marching dashes), cometas (comets) or gradiente (colors running along the outline)')
     .default(defaults.strokeMotion ?? 'parado'),
   strokeColors: z.array(zColor()).min(1).max(4)
-    .describe('Cores do contorno, distribuídas ao longo dele')
+    .describe('Outline colors, spread along it')
     .default(defaults.strokeColors ?? ['#67E8F9', '#F472B6']),
   strokeWidth: z.number().finite().min(defaults.strokeWidthMin ?? 0).max(64)
-    .describe('Espessura do contorno, em px; 2 ou mais evita perda de cor no WebM')
+    .describe('Outline thickness, in px; 2 or more avoids color loss in WebM')
     .default(defaults.strokeWidth ?? 3),
   dashLength: z.number().finite().min(2).max(512)
-    .describe('formigas: comprimento de cada traço, em px (ajustado para fechar o contorno sem emenda)')
+    .describe('formigas: length of each dash, in px (adjusted to close the outline without a seam)')
     .default(defaults.dashLength ?? 16),
   gapLength: z.number().finite().min(2).max(512)
-    .describe('formigas: espaço entre traços, em px (ajustado junto com o traço)')
+    .describe('formigas: gap between dashes, in px (adjusted together with the dash)')
     .default(defaults.gapLength ?? 12),
   cometSpacing: z.number().finite().min(32).max(4000)
-    .describe('cometas: distância entre um cometa e o seguinte, em px ao longo do contorno; a quantidade sai do tamanho (ajustada para fechar o contorno, no mínimo um), então todo tamanho tem a mesma densidade')
+    .describe('cometas: distance from one comet to the next, in px along the outline; the count comes from the size (adjusted to close the outline, at least one), so every size has the same density')
     .default(defaults.cometSpacing ?? 480),
   cometTail: z.number().finite().min(8).max(4000)
-    .describe('cometas: comprimento da cauda, em px ao longo do contorno (no máximo o espaço entre cometas)')
+    .describe('cometas: tail length, in px along the outline (at most the gap between comets)')
     .default(defaults.cometTail ?? 160),
   gradientLength: z.number().finite().min(32).max(4000)
-    .describe('Comprimento em px ao longo do contorno em que as cores se repetem (gradiente, e parado ou pulso com várias cores); ajustado para fechar o contorno, então todo tamanho mostra as cores na mesma escala')
+    .describe('Length in px along the outline over which the colors repeat (gradiente, and parado or pulso with several colors); adjusted to close the outline, so every size shows the colors at the same scale')
     .default(defaults.gradientLength ?? 480),
   strokeSpeed: z.number().finite().min(0).max(4000)
-    .describe('Velocidade ao longo do contorno em px/s, arredondada para um número inteiro de períodos por ciclo (no mínimo um); 0 deixa parado')
+    .describe('Speed along the outline in px/s, rounded to a whole number of periods per cycle (at least one); 0 holds it still')
     .default(defaults.strokeSpeed ?? 120),
   strokePulses: z.number().int().min(1).max(16)
-    .describe('pulso: quantas vezes o contorno respira por ciclo')
+    .describe('pulso: how many times the outline breathes per cycle')
     .default(defaults.strokePulses ?? 1),
   strokeCore: z.number().finite().min(0).max(1)
-    .describe('Miolo claro no meio do traço, como num tubo de neon: opacidade de 0 a 1 (só em traços de 2,5 px ou mais); 0 desliga')
+    .describe('Bright core in the middle of the stroke, like a neon tube: opacity from 0 to 1 (only on strokes of 2.5 px or more); 0 turns it off')
     .default(defaults.strokeCore ?? 0),
 });
 
@@ -139,20 +139,20 @@ export const strokeFields = (defaults: StrokeDefaults = {}) => ({
  * kind may keep it as a fixed look (chat) instead of a prop.
  */
 export const trackOpacityField = (defaultValue = 0.3) => z.number().finite().min(0).max(1)
-  .describe('formigas e cometas: opacidade do contorno inteiro apagado por baixo deles, na primeira cor; 0 não desenha')
+  .describe('formigas and cometas: opacity of the whole dimmed outline underneath them, in the first color; 0 draws nothing')
   .default(defaultValue);
 
 export type GlowDefaults = Partial<{glow: number; glowPulses: number; glowStrength: number}>;
 
 export const glowFields = (defaults: GlowDefaults = {}) => ({
   glow: z.number().finite().min(0).max(128)
-    .describe('Alcance do brilho do contorno, em px; para fora da caixa ele precisa caber no bleed')
+    .describe('Reach of the outline glow, in px; outside the box it must fit in the bleed')
     .default(defaults.glow ?? 12),
   glowPulses: z.number().int().min(0).max(16)
-    .describe('Quantas vezes o brilho pulsa por ciclo; 0 deixa constante')
+    .describe('How many times the glow pulses per cycle; 0 keeps it steady')
     .default(defaults.glowPulses ?? 0),
   glowStrength: z.number().finite().min(0.25).max(3)
-    .describe('Intensidade do brilho: multiplica a opacidade dele (1 = normal); o alcance não muda')
+    .describe('Glow intensity: multiplies its opacity (1 = normal); the reach does not change')
     .default(defaults.glowStrength ?? 1),
 });
 
@@ -161,7 +161,7 @@ export type HaloDefaults = Partial<{halo: number; haloColor: string}>;
 /** An outer glow around the whole panel (chat, bloco) or frame (borda); it lives in the bleed. */
 export const haloFields = (defaults: HaloDefaults = {}) => ({
   halo: z.number().finite().min(0).max(128)
-    .describe('Alcance do halo em volta do painel, em px; precisa caber no bleed')
+    .describe('Reach of the halo around the panel, in px; it must fit in the bleed')
     .default(defaults.halo ?? 0),
   haloColor: zColor().default(defaults.haloColor ?? '#67E8F9'),
 });
@@ -171,5 +171,5 @@ export const haloFields = (defaults: HaloDefaults = {}) => ({
  * glass catches from above. It lies between the stroke and the padding, never over the content.
  */
 export const rimLightField = (defaultValue = 0) => z.number().finite().min(0).max(1)
-  .describe('Reflexo de 1 px por dentro da borda de cima, sumindo pelas laterais (vidro), de 0 a 1; 0 desliga')
+  .describe('1 px glint just inside the top edge, fading along the sides (glass), from 0 to 1; 0 turns it off')
   .default(defaultValue);

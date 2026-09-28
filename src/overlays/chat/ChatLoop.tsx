@@ -53,14 +53,14 @@ const chatFields = z.object({
   ...haloFields({halo: 24, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
   headerHeight: z.number().int().min(0).max(512)
-    .describe('Altura do cabeçalho no topo do painel (onde vai o título, ex.: "CHAT"), em px; 0 = sem cabeçalho')
+    .describe('Height of the header at the top of the panel (where the title goes, e.g. "CHAT"), in px; 0 = no header')
     .default(48),
   headerColor: zColor().default('#E879F9'),
   headerOpacity: z.number().finite().min(0).max(1)
-    .describe('Opacidade da faixa do cabeçalho, de 0 a 1; 0 deixa só a linha')
+    .describe('Opacity of the header band, from 0 to 1; 0 leaves only the line')
     .default(0.1),
   headerLineWidth: z.number().finite().min(0).max(16)
-    .describe('Espessura da linha entre o cabeçalho e as mensagens, em px, nas cores do contorno; 0 = sem linha')
+    .describe('Thickness of the line between the header and the messages, in px, in the outline colors; 0 = no line')
     .default(2),
   ...ornamentFields(),
 });

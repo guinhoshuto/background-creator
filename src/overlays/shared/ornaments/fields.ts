@@ -17,18 +17,18 @@ export const ORNAMENT_SCALE_RANGE = {min: 1, max: 4, default: 1} as const;
  */
 export const ornamentFields = () => ({
   ornaments: z.enum(ORNAMENT_CHOICES)
-    .describe('Enfeites temáticos em volta do painel ou da moldura: nenhum; noite (morcegos, abóboras, estrelas e brasas); mansao (lanternas de ferro, grade de lanças, rosácea, lancetas, arandelas e portão); interior (candelabros de latão com velas, arandelas e sanefas de veludo); teia (teias com orvalho, guirlandas de fios e uma aranha). Cada motivo cabe no espaço livre do seu lugar (bleed, bolsões do padding, faixa) e nunca cobre o texto nem a janela')
+    .describe('Themed ornaments around the panel or the border: nenhum; noite (bats, pumpkins, stars and embers); mansao (iron lanterns, spear railing, rose window, lancets, sconces and gate); interior (brass candelabras with candles, sconces and velvet valances); teia (dewy webs, thread garlands and a spider). Each motif fits the free space of its slot (bleed, padding pockets, band) and never covers the text or the window')
     .default('nenhum'),
   ornamentColors: z.array(zColor()).min(1).max(3)
-    .describe('Cores dos enfeites: névoa ou seda (fria), luar (clara) e luz quente (velas, abóboras, lanternas); a terceira é opcional e cai na primeira')
+    .describe('Ornament colors: fog or silk (cool), moonlight (light) and warm light (candles, pumpkins, lanterns); the third is optional and falls back to the first')
     .default([...ORNAMENT_DEFAULT_COLORS]),
   ornamentSize: z.number().finite().min(ORNAMENT_SIZE_RANGE.min).max(ORNAMENT_SIZE_RANGE.max)
-    .describe('Tamanho do enfeite principal, em px fixos (não acompanha a caixa): diâmetro da lua, altura da lanterna, altura do candelabro até a ponta da chama ou raio da teia; os outros acompanham até um teto ou têm tamanho fixo. Limitado ao espaço livre do seu lugar (bleed, padding, faixa)')
+    .describe('Size of the main ornament, in fixed px (it does not follow the box): moon diameter, lantern height, candelabra height to the flame tip or web radius; the others follow up to a cap or have a fixed size. Capped at the free space of its slot (bleed, padding, band)')
     .default(ORNAMENT_SIZE_RANGE.default),
   ornamentScale: z.number().finite().min(ORNAMENT_SCALE_RANGE.min).max(ORNAMENT_SCALE_RANGE.max)
-    .describe('Escala de todos os enfeites juntos (tamanhos, tetos, traços e espaçamentos), de 1 a 4, para molduras grandes; o espaço livre também é medido nessa escala, então enfeites maiores pedem bleed (ou padding, ou faixa) proporcionalmente maior')
+    .describe('Scale of all ornaments together (sizes, caps, strokes and spacing), from 1 to 4, for large borders; free space is measured at the same scale too, so larger ornaments need proportionally more bleed (or padding, or band)')
     .default(ORNAMENT_SCALE_RANGE.default),
   lightning: z.number().finite().min(0).max(1)
-    .describe('Clarão de relâmpago sobre o painel ou a moldura, de 0 a 1, nos mesmos instantes do fundo Salão assombrado com a mesma seed e duração; 0 desliga')
+    .describe('Lightning flash over the panel or the border, from 0 to 1, at the same moments as the HauntedInteriorLoop background with the same seed and duration; 0 turns it off')
     .default(0),
 });

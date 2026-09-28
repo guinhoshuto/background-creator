@@ -11,13 +11,13 @@ export const hauntedMansionLoopSchema = baseBackgroundSchema.extend({
   seed: baseBackgroundSchema.shape.seed.default(81),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#0E1520'),
   colors: baseBackgroundSchema.shape.colors.unwrap()
-    .describe('Paleta: atmosfera, luar e janelas; a terceira cor é opcional')
+    .describe('Palette: atmosphere, moonlight and windows; the third color is optional')
     .default(['#688789', '#D6DDC7', '#E8AF62']),
-  batCount: z.number().int().min(0).max(12).describe('Quantidade de morcegos sobre a mansão').default(4),
-  moteCount: z.number().int().min(0).max(100).describe('Quantidade de luzes na névoa').default(28),
-  fogIntensity: z.number().finite().min(0).max(1).describe('Intensidade dos bancos de neblina').default(0.75),
-  windowIntensity: z.number().finite().min(0).max(1).describe('Intensidade das janelas e dos lampiões').default(0.7),
-  moonScale: z.number().finite().min(0.6).max(1.4).describe('Tamanho da lua atrás da mansão').default(1),
+  batCount: z.number().int().min(0).max(12).describe('Number of bats over the mansion').default(4),
+  moteCount: z.number().int().min(0).max(100).describe('Number of lights in the fog').default(28),
+  fogIntensity: z.number().finite().min(0).max(1).describe('Intensity of the fog banks').default(0.75),
+  windowIntensity: z.number().finite().min(0).max(1).describe('Intensity of the windows and the lanterns').default(0.7),
+  moonScale: z.number().finite().min(0.6).max(1.4).describe('Size of the moon behind the mansion').default(1),
 });
 
 export type HauntedMansionLoopProps = z.infer<typeof hauntedMansionLoopSchema>;

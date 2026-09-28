@@ -10,14 +10,14 @@ export const sunburstLoopSchema = baseBackgroundSchema.extend({
   seed: baseBackgroundSchema.shape.seed.default(23),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#5A0F18'),
   colors: baseBackgroundSchema.shape.colors.unwrap()
-    .describe('Paleta dos raios, alternada na ordem; cada raio termina na cor seguinte')
+    .describe('Ray palette, alternating in order; each ray ends in the next color')
     .default(['#9E1A26', '#C42A36']),
-  rayCount: z.number().int().min(6).max(48).describe('Quantidade de raios').default(20),
-  rayWidth: z.number().finite().min(0.15).max(0.8).describe('Espessura do raio dentro do passo').default(0.5),
-  swirl: z.number().finite().min(0).max(1).describe('Onda que percorre o leque').default(0.5),
-  spin: z.number().int().min(-24).max(24).describe('Passos que o leque gira por ciclo; negativo inverte o lado').default(3),
-  coreFade: z.number().finite().min(0).max(1).describe('Gradiente que dissolve os raios no centro').default(0.7),
-  coreShade: z.number().finite().min(0).max(1).describe('Sombra que escurece o miolo').default(0.6),
+  rayCount: z.number().int().min(6).max(48).describe('Number of rays').default(20),
+  rayWidth: z.number().finite().min(0.15).max(0.8).describe('Ray thickness within its step').default(0.5),
+  swirl: z.number().finite().min(0).max(1).describe('Wave that runs through the fan').default(0.5),
+  spin: z.number().int().min(-24).max(24).describe('Steps the fan turns per cycle; negative reverses the direction').default(3),
+  coreFade: z.number().finite().min(0).max(1).describe('Gradient that dissolves the rays at the center').default(0.7),
+  coreShade: z.number().finite().min(0).max(1).describe('Shadow that darkens the core').default(0.6),
 });
 
 export type SunburstLoopProps = z.infer<typeof sunburstLoopSchema>;

@@ -59,13 +59,13 @@ const fillOptions = (layout: PanelLayout): FillOptions => ({corner: layout.shape
  */
 const blocoFields = z.object({
   ...overlayBaseFields(DEFAULT_SIZE),
-  shape: shapeField('Forma do bloco: retangulo (cantos com radius) ou circulo (a caixa precisa ser quadrada: use --size circulo-p, circulo ou circulo-g); no círculo o texto vai no quadrado centralizado dentro dele'),
-  radius: radiusField(16, 'Raio dos cantos, em px; limitado a metade do menor lado (vira pílula); com shape circulo é ignorado, o raio é metade do lado'),
+  shape: shapeField('Block shape: retangulo (corners with radius) or circulo (the box must be square: use --size circulo-p, circulo or circulo-g); in the circle the text goes in the square centered inside it'),
+  radius: radiusField(16, 'Corner radius, in px; capped at half the shorter side (becomes a pill); with shape circulo it is ignored, the radius is half the side'),
   paddingX: z.number().finite().min(0).max(512)
-    .describe('Espaço horizontal entre o contorno (ou a barra de destaque) e o conteúdo, em px; no círculo vale o maior entre paddingX e paddingY, em toda a volta')
+    .describe('Horizontal space between the outline (or the accent bar) and the content, in px; in the circle the larger of paddingX and paddingY applies all the way around')
     .default(24),
   paddingY: z.number().finite().min(0).max(512)
-    .describe('Espaço vertical entre o contorno (ou a barra de destaque) e o conteúdo, em px; no círculo vale o maior entre paddingX e paddingY, em toda a volta')
+    .describe('Vertical space between the outline (or the accent bar) and the content, in px; in the circle the larger of paddingX and paddingY applies all the way around')
     .default(16),
   ...fillFields({
     fill: 'gradiente', fillColors: ['#120A38', '#26105C', '#0A1C4E'], fillOpacity: 0.9, fillAngle: 60, fillLight: 0.05,
@@ -79,14 +79,14 @@ const blocoFields = z.object({
   ...haloFields({halo: 20, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
   accent: z.enum(BLOCO_ACCENTS)
-    .describe('Barra de destaque dentro do contorno: nenhum, esquerda ou topo; o conteúdo começa depois dela. No círculo é um arco de 120° colado ao contorno, centrado à esquerda ou no topo')
+    .describe('Accent bar inside the outline: nenhum, esquerda or topo; the content starts after it. In the circle it is a 120° arc against the outline, centered on the left or the top')
     .default('nenhum'),
   accentColor: zColor().default('#E879F9'),
   accentSize: z.number().finite().min(2).max(64)
-    .describe('Espessura da barra de destaque, em px')
+    .describe('Thickness of the accent bar, in px')
     .default(6),
   accentSheen: z.number().int().min(0).max(4)
-    .describe('Quantas vezes um reflexo percorre a barra de destaque por ciclo; 0 desliga')
+    .describe('How many times a glint runs along the accent bar per cycle; 0 turns it off')
     .default(0),
   ...ornamentFields(),
 });

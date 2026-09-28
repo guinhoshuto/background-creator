@@ -1963,7 +1963,7 @@ test('Interior: a lua do salão é a mesma do corredor — o luar dos dois vem d
   // So the moon is on the right: the hall's right lancet is the one that sees it, and the Studio says so.
   assert.equal(MOON_SIDE, 1, 'a lua do salão fica à direita, como a do corredor');
   assert.match(hauntedInteriorLoopSchema.shape.moonlightIntensity.unwrap().description ?? '',
-    MOON_SIDE ? /janela direita.*na esquerda/ : /janela esquerda.*na direita/, 'o Studio põe o luar do lado da lua');
+    MOON_SIDE ? /right window.*on the left/ : /left window.*on the right/, 'o Studio põe o luar do lado da lua');
 });
 
 test('Interior: uma lua só — só a lanceta do lado da lua recebe o luar direto, e a oposta, só a luz difusa do céu', () => {

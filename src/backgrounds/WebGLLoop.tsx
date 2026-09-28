@@ -20,19 +20,19 @@ export const webglLoopSchema = baseBackgroundSchema.extend({
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#070B16'),
   colors: baseBackgroundSchema.shape.colors.default(['#2DD4BF', '#818CF8', '#F472B6']),
   experiment: z.enum(WEBGL_EXPERIMENTS)
-    .describe('Experimento de shader: aurora, lava, silk (seda), caustics (fundo do mar), cells (células), contours (curvas de nível), nebula (nebulosa), watercolor (aquarela), mesh (gradiente em malha) ou um da série pastel: flow (onda), orbital (esfera), neon (dobra neon), layers (camadas), haze (entardecer) ou eclipse')
+    .describe('Shader experiment: aurora, lava, silk, caustics (sea floor), cells, contours (contour lines), nebula, watercolor, mesh (mesh gradient) or one from the pastel series: flow (wave), orbital (sphere), neon (neon fold), layers, haze (dusk) or eclipse')
     .default('aurora'),
   speed: z.number().finite().min(0).max(3)
-    .describe('Ritmo do movimento: 1 é o ritmo base do experimento e 0 deixa a imagem parada. O ciclo arredonda o percurso para voltas inteiras, então o ritmo visto pode diferir um pouco do pedido')
+    .describe('Pace of the motion: 1 is the base pace of the experiment and 0 holds the image still. The cycle rounds the path to whole turns, so the pace you see may differ a little from the one requested')
     .default(1),
   scale: z.number().finite().min(0.5).max(2)
-    .describe('Tamanho das formas: acima de 1 elas crescem, abaixo diminuem')
+    .describe('Size of the shapes: above 1 they grow, below 1 they shrink')
     .default(1),
   intensity: z.number().finite().min(0).max(2)
-    .describe('Brilho e cobertura da camada do experimento sobre a cor de fundo')
+    .describe('Brightness and coverage of the experiment layer over the background color')
     .default(1),
   centerFade: z.number().finite().min(0).max(1)
-    .describe('Suaviza o miolo 16:9 em direção à cor de fundo, para título, câmera e jogo; no WebM transparente, deixa o miolo transparente')
+    .describe('Softens the 16:9 center toward the background color, for title, camera and game; in transparent WebM it leaves the center transparent')
     .default(0.5),
 });
 

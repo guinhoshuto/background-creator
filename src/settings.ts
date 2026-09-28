@@ -13,12 +13,12 @@ export const ALPHA_FORMATS: readonly OutputFormat[] = ['webm', 'mov', 'png'];
 export const DEFAULT_SIZE = {width: 1920, height: 1080} as const;
 
 export const baseBackgroundSchema = z.object({
-  durationSeconds: z.number().finite().positive().describe('Duração do ciclo, em segundos').default(8),
-  seed: z.number().int().safe().describe('Seed da distribuição').default(1),
-  transparent: z.boolean().describe('Alpha no WebM, MOV e PNG').default(false),
+  durationSeconds: z.number().finite().positive().describe('Cycle duration, in seconds').default(8),
+  seed: z.number().int().safe().describe('Distribution seed').default(1),
+  transparent: z.boolean().describe('Alpha in WebM, MOV and PNG').default(false),
   backgroundColor: zColor().regex(/^#[0-9a-f]{6}$/i, 'Use uma cor opaca no formato #RRGGBB.').default('#0B0F19'),
   colors: z.array(zColor()).min(2).max(6).default(['#67E8F9', '#818CF8', '#F472B6']),
-  outputFormat: outputFormatSchema.describe('Formato do preview e do export').default('webm'),
+  outputFormat: outputFormatSchema.describe('Format of the preview and the export').default('webm'),
 });
 
 export type BaseBackgroundProps = z.infer<typeof baseBackgroundSchema>;
