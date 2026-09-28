@@ -23,7 +23,7 @@ export const ORNAMENT_SEED = 503;
 /** How far out a corner motif may slide, in px (far beyond any bleed). */
 export const ORNAMENT_MAX_SLIDE = 512;
 
-/** Corners in the order the arc length meets them (borda's CORNER_SIGNS): TR, BR, BL, TL. */
+/** Corners in the order the arc length meets them (border's CORNER_SIGNS): TR, BR, BL, TL. */
 const CORNERS: readonly [OrnamentCornerId, number, number][] = [['TR', 1, -1], ['BR', 1, 1], ['BL', -1, 1], ['TL', -1, -1]];
 
 /** A corner slot: the middle of the outline's corner (x, y) and the unit diagonal (dx, dy) out of it. */

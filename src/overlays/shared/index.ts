@@ -1,6 +1,6 @@
 /**
  * The shared overlay engine: geometry, layouts, zod field groups, pure scene builders and SVG
- * layers for the sized kinds (chat, bloco, borda). A kind composes it like this:
+ * layers for the sized kinds (chat, block, border). A kind composes it like this:
  *
  * ```ts
  * const fields = z.object({

@@ -19,7 +19,7 @@ export const fitLargestContent = (shape: RoundRect, insets: Insets): Rect => {
 };
 
 /**
- * Where the text goes inside the stroke (bloco's content, the chat's messages and title): the insets from `inner` (padding plus the kind's extras)
+ * Where the text goes inside the stroke (block's content, the chat's messages and title): the insets from `inner` (padding plus the kind's extras)
  * and, near the round corners, the smaller padding kept from the curve as well. The shared
  * fitContent lets a corner of the content touch the curve (a pill's text would graze the
  * stroke); pulling the shape in by that clearance, which shrinks its radius with it, keeps the

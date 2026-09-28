@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {getHauntedInteriorScene, hauntedInteriorLoopSchema} from '../src/backgrounds/HauntedInteriorLoop';
 import {flamePathOf} from '../src/backgrounds/halloween/hauntedInteriorGeometry';
-import {getBordaGeometry} from '../src/overlays/borda';
+import {getBordaGeometry} from '../src/overlays/border';
 import {
   cornerSlot, harmonics, rectDistance, roomAt, roundRectSdf, type OrnamentElement, type OrnamentFrame, type OrnamentPlacement,
 } from '../src/overlays/shared';
@@ -147,7 +147,7 @@ test('ornaments interior: o quarto é o limite (herói ≥ 85 %, parceiro ≥ 60
   assert.ok(height('webcam-redonda') >= 115, `webcam-redonda: ${height('webcam-redonda')}`);
   assert.ok(height('circulo-p') >= 80, `circulo-p: ${height('circulo-p')}`);
   for (const id of ['webcam-redonda-g', 'circulo', 'circulo-g']) assert.equal(height(id), preset(getSize(id).kind as OrnamentKindName).ornamentSize, id);
-  assert.deepEqual([preset('chat').ornamentSize, preset('bloco').ornamentSize, preset('borda').ornamentSize], [56, 96, 144]);
+  assert.deepEqual([preset('chat').ornamentSize, preset('block').ornamentSize, preset('border').ornamentSize], [56, 96, 144]);
   // On the round blocks and on redonda-p/redonda the rosette meets the ring's outline.
   for (const id of ['circulo-p', 'circulo', 'circulo-g', 'webcam-redonda-p', 'webcam-redonda']) {
     const {frame, placements} = at(id);
@@ -342,7 +342,7 @@ test('ornaments interior: ritmos, chama e cores vêm do fundo (HauntedInteriorLo
   const wax = [CANDLE_COLORS.waxDark, CANDLE_COLORS.waxLight, CANDLE_COLORS.waxShade].map((color) => color.toLowerCase());
   assert.ok(source.includes(`<stop stopColor="${wax[0]}" /><stop offset="0.45" stopColor="${wax[1]}" /><stop offset="1" stopColor="${wax[2]}" />`), 'hi-wax-warm');
   // The kit's palette is the background's `colors`, in all three presets.
-  for (const kind of ['chat', 'bloco', 'borda'] as const) assert.deepEqual(preset(kind).ornamentColors, hauntedInteriorLoopSchema.parse({}).colors);
+  for (const kind of ['chat', 'block', 'border'] as const) assert.deepEqual(preset(kind).ornamentColors, hauntedInteriorLoopSchema.parse({}).colors);
 });
 
 /** Fixture units → canvas px for a placement. */
@@ -384,7 +384,7 @@ test('ornaments interior: nada do desenho sai do lugar, entra no texto ou na jan
   for (const size of NAMED_SIZES) {
     for (const ornamentSize of [12, 48, 96, 256]) {
       for (const extra of [{}, {accent: 'topo'}, {radius: 0}]) {
-        if (size.kind !== 'bloco' && 'accent' in extra) continue;
+        if (size.kind !== 'block' && 'accent' in extra) continue;
         for (const {frame, placements} of [kitLayout(size, {ornamentSize, ...extra}), neutralLayout(size, {ornamentSize, ...extra})]) {
           const label = `${size.id} ${ornamentSize} ${JSON.stringify(extra)}`;
           for (const placement of placements) {
@@ -471,7 +471,7 @@ const ROUND_TELAS = [
 ];
 
 test('ornaments interior: numa tela redonda as velas ficam na faixa, sem braço, e o desenho cabe no lugar e no arquivo', () => {
-  const adapter = ORNAMENT_KINDS.borda;
+  const adapter = ORNAMENT_KINDS.border;
   for (const input of ROUND_TELAS) {
     const props = adapter.parse({...input, ornaments: 'interior'});
     const {frame, placements} = adapter.ornamentLayout(props);

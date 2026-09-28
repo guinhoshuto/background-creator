@@ -12,7 +12,7 @@ export const ORNAMENT_SIZE_RANGE = {min: 12, max: 256, default: 48} as const;
 export const ORNAMENT_SCALE_RANGE = {min: 1, max: 4, default: 1} as const;
 
 /**
- * The ornament field group, shared by chat, bloco and borda. The defaults ('nenhum', lightning 0)
+ * The ornament field group, shared by chat, block and border. The defaults ('nenhum', lightning 0)
  * draw nothing, so every existing theme stays exactly as it was.
  */
 export const ornamentFields = () => ({

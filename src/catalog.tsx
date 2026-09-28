@@ -14,8 +14,8 @@ import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
 import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
 import type {AssetKind} from './kinds';
-import {blocoCatalogEntry} from './overlays/bloco';
-import {bordaCatalogEntry} from './overlays/borda';
+import {blocoCatalogEntry} from './overlays/block';
+import {bordaCatalogEntry} from './overlays/border';
 import {chatCatalogEntry} from './overlays/chat';
 import type {AssetLayout} from './overlays/shared/box';
 import type {AssetMotion} from './overlays/shared/motion';
@@ -158,8 +158,8 @@ export type Background = (typeof backgroundCatalog)[BackgroundId];
 /** The sized overlay kinds: one parametric composition each for now; a kind may register more. */
 export const overlayCatalog = {
   ChatLoop: chatCatalogEntry,
-  BlocoLoop: blocoCatalogEntry,
-  BordaLoop: bordaCatalogEntry,
+  BlockLoop: blocoCatalogEntry,
+  BorderLoop: bordaCatalogEntry,
 } as const satisfies Record<string, CatalogEntry>;
 
 /** Every composition of every kind: the backgrounds, then the overlays. */

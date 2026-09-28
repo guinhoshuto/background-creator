@@ -22,8 +22,8 @@ export type OrnamentChoice = (typeof ORNAMENT_CHOICES)[number];
 export type OrnamentSetId = Exclude<OrnamentChoice, 'nenhum'>;
 export const ORNAMENT_SET_IDS = ORNAMENT_CHOICES.filter((choice): choice is OrnamentSetId => choice !== 'nenhum');
 
-export type OrnamentKind = 'chat' | 'bloco' | 'borda';
-/** 'painel': chat and bloco; 'janela' and 'tela': the border's fits. */
+export type OrnamentKind = 'chat' | 'block' | 'border';
+/** 'painel': chat and block; 'janela' and 'tela': the border's fits. */
 export type OrnamentFit = 'painel' | 'janela' | 'tela';
 export type OrnamentLayerName = 'back' | 'front';
 
@@ -41,11 +41,11 @@ export type OrnamentFrame = {
   outline: RoundRect;
   /** The stroke's centreline (the flash's edge runs on it). */
   track: RoundRect;
-  /** The outline is a circle (round bloco, round webcam): the corner slots are its 45° points. */
+  /** The outline is a circle (round block, round webcam): the corner slots are its 45° points. */
   circle: boolean;
   /** A border's window (holeShape), which nothing may enter; null on panels. */
   hole: RoundRect | null;
-  /** Text areas front motifs keep clear of (chat: messages and title; bloco: text; borda: none). */
+  /** Text areas front motifs keep clear of (chat: messages and title; block: text; border: none). */
   keepOut: readonly Rect[];
   /** Nothing may be drawn past it: the canvas (panels, janela), the box on tela. */
   paintLimit: Rect;

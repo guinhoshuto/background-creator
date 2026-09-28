@@ -1,8 +1,8 @@
 import {readFileSync} from 'node:fs';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {BlocoFrame, blocoLoopSchema, getBlocoLayers, getBlocoLayout, getBlocoScene} from '../../src/overlays/bloco';
-import {BordaFrame, bordaLoopSchema, getBordaGeometry, getBordaSceneParts, getBordaScene} from '../../src/overlays/borda';
+import {BlocoFrame, blocoLoopSchema, getBlocoLayers, getBlocoLayout, getBlocoScene} from '../../src/overlays/block';
+import {BordaFrame, bordaLoopSchema, getBordaGeometry, getBordaSceneParts, getBordaScene} from '../../src/overlays/border';
 import {ChatFrame, chatLoopSchema, getChatLayers, getChatLayout, getChatScene} from '../../src/overlays/chat';
 import type {FlashElement, OrnamentElement, OrnamentLayout, OrnamentStyle} from '../../src/overlays/shared';
 import {getCompositionMetadata} from '../../src/settings';
@@ -11,11 +11,11 @@ import type {Scene} from './scene-scans';
 
 /**
  * One adapter per overlay kind, so the ornament harness (helpers/ornament-harness.ts) runs the same
- * checks on chat, bloco and borda: parse, the ornament layout, the ornament and flash layers of a
+ * checks on chat, block and border: parse, the ornament layout, the ornament and flash layers of a
  * frame, the full flat scene and the rendered markup.
  */
 
-export type OrnamentKindName = 'chat' | 'bloco' | 'borda';
+export type OrnamentKindName = 'chat' | 'block' | 'border';
 export type OrnamentProps = OrnamentStyle & Record<string, unknown> & {bleed: number; width: number; height: number};
 
 type Issue = {path: PropertyKey[]; message: string};
@@ -58,9 +58,9 @@ export const ORNAMENT_KINDS: Record<OrnamentKindName, OrnamentKindAdapter> = {
     render: (props, frame, n = 480) => renderToStaticMarkup(createElement(ChatFrame, {props: props as never, frame, durationInFrames: n})),
     preset: (theme) => readPreset(`chat-${theme}`),
   },
-  bloco: {
-    kind: 'bloco',
-    sizes: sizesForKind('bloco'),
+  block: {
+    kind: 'block',
+    sizes: sizesForKind('block'),
     parse: (input) => blocoLoopSchema.strict().parse(input) as OrnamentProps,
     issues: (input) => issuesOf(blocoLoopSchema.strict().safeParse(input)),
     ornamentLayout: (props) => getBlocoLayout(props as never).ornamentLayout,
@@ -71,11 +71,11 @@ export const ORNAMENT_KINDS: Record<OrnamentKindName, OrnamentKindAdapter> = {
     },
     scene: (props, frame, n) => getBlocoScene(props as never, frame, n) as unknown as Scene,
     render: (props, frame, n = 480) => renderToStaticMarkup(createElement(BlocoFrame, {props: props as never, frame, durationInFrames: n})),
-    preset: (theme) => readPreset(`bloco-${theme}`),
+    preset: (theme) => readPreset(`block-${theme}`),
   },
-  borda: {
-    kind: 'borda',
-    sizes: sizesForKind('borda'),
+  border: {
+    kind: 'border',
+    sizes: sizesForKind('border'),
     parse: (input) => bordaLoopSchema.strict().parse(input) as OrnamentProps,
     issues: (input) => issuesOf(bordaLoopSchema.strict().safeParse(input)),
     ornamentLayout: (props) => getBordaGeometry(props as never).ornamentLayout,
@@ -86,11 +86,11 @@ export const ORNAMENT_KINDS: Record<OrnamentKindName, OrnamentKindAdapter> = {
     },
     scene: (props, frame, n) => getBordaScene(props as never, frame, n) as unknown as Scene,
     render: (props, frame, n = 480) => renderToStaticMarkup(createElement(BordaFrame, {props: props as never, frame, durationInFrames: n})),
-    preset: (theme) => readPreset(`borda-${theme}`),
+    preset: (theme) => readPreset(`border-${theme}`),
   },
 };
 
-export const ORNAMENT_KIND_NAMES = ['chat', 'bloco', 'borda'] as const;
+export const ORNAMENT_KIND_NAMES = ['chat', 'block', 'border'] as const;
 
 /** The cycle's frame count of an overlay's props. */
 export const framesOf = (props: OrnamentProps) => getCompositionMetadata(props as never).durationInFrames;

@@ -21,8 +21,8 @@ const checkerboard = backgroundCatalog.CheckerboardLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const chat = overlayCatalog.ChatLoop;
-const bloco = overlayCatalog.BlocoLoop;
-const borda = overlayCatalog.BordaLoop;
+const block = overlayCatalog.BlockLoop;
+const border = overlayCatalog.BorderLoop;
 
 type MetadataProps = Pick<BaseBackgroundProps, 'durationSeconds' | 'outputFormat' | 'transparent'>
   & {width?: number; height?: number; bleed?: number};
@@ -225,24 +225,24 @@ export const RemotionRoot = () => (
         calculateMetadata={({props}: {props: typeof chat.defaultProps}) => metadataFor(chat.id, chat.schema.parse(props))}
       />
     </Folder>
-    <Folder name={kindPolicies.bloco.folder}>
+    <Folder name={kindPolicies.block.folder}>
       <Composition
-        id="BlocoLoop"
-        component={bloco.component}
-        schema={bloco.schema}
+        id="BlockLoop"
+        component={block.component}
+        schema={block.schema}
         defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"width":640,"height":360,"bleed":32,"guides":false,"shape":"retangulo" as const,"radius":16,"paddingX":24,"paddingY":16,"fill":"gradiente" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"cometas" as const,"strokeColors":["#22D3EE","#E879F9"],"strokeWidth":4,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"glow":20,"glowPulses":2,"glowStrength":3,"halo":20,"haloColor":"#A855F7","rimLight":0,"accent":"nenhum" as const,"accentColor":"#E879F9","accentSize":6,"accentSheen":0,"ornaments":"nenhum" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
-        {...getCompositionMetadata(bloco.defaultProps, bloco.getLayout(bloco.defaultProps).canvas)}
-        calculateMetadata={({props}: {props: typeof bloco.defaultProps}) => metadataFor(bloco.id, bloco.schema.parse(props))}
+        {...getCompositionMetadata(block.defaultProps, block.getLayout(block.defaultProps).canvas)}
+        calculateMetadata={({props}: {props: typeof block.defaultProps}) => metadataFor(block.id, block.schema.parse(props))}
       />
     </Folder>
-    <Folder name={kindPolicies.borda.folder}>
+    <Folder name={kindPolicies.border.folder}>
       <Composition
-        id="BordaLoop"
-        component={borda.component}
-        schema={borda.schema}
+        id="BorderLoop"
+        component={border.component}
+        schema={border.schema}
         defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":640,"height":360,"bleed":48,"guides":false,"fit":"janela" as const,"shape":"retangulo" as const,"mascara":false,"radius":16,"thickness":10,"fill":"solido" as const,"fillColors":["#120A38"],"fillOpacity":0.9,"fillScale":12,"fillSpeed":24,"fillAngle":45,"fillRise":false,"fillLight":0,"strokeMotion":"cometas" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":4,"dashLength":18,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"glow":16,"glowPulses":0,"glowStrength":2.6,"halo":0,"haloColor":"#A78BFA","rimLight":0,"lines":2,"lineGap":4,"outerLineWidth":2,"corners":"colchetes" as const,"cornerSize":28,"cornerGap":6,"gemSize":14,"cornerPulses":1,"ornaments":"nenhum" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
-        {...getCompositionMetadata(borda.defaultProps, borda.getLayout(borda.defaultProps).canvas)}
-        calculateMetadata={({props}: {props: typeof borda.defaultProps}) => metadataFor(borda.id, borda.schema.parse(props))}
+        {...getCompositionMetadata(border.defaultProps, border.getLayout(border.defaultProps).canvas)}
+        calculateMetadata={({props}: {props: typeof border.defaultProps}) => metadataFor(border.id, border.schema.parse(props))}
       />
     </Folder>
   </>

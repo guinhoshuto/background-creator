@@ -363,7 +363,7 @@ test('Cena: o contorno apagado sob formigas e cometas é a prop trackOpacity, co
   assert.deepEqual(outlines({trackOpacity: 0.5}).map((element) => element.opacity), [0.5]);
   assert.deepEqual(outlines({trackOpacity: 0}), []);
   // One family: the pastel chat and the pastel border both march their dashes over the same faint outline.
-  const border = JSON.parse(readFileSync(new URL('../presets/borda-pastel.json', import.meta.url), 'utf8')) as Record<string, unknown>;
+  const border = JSON.parse(readFileSync(new URL('../presets/border-pastel.json', import.meta.url), 'utf8')) as Record<string, unknown>;
   assert.equal(PRESETS.pastel.strokeMotion, border.strokeMotion);
   assert.equal(parse(PRESETS.pastel).trackOpacity, border.trackOpacity);
 });

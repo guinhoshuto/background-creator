@@ -7,7 +7,7 @@ import {
   BordaFrame, CORNER_STYLES, bordaCatalogEntry, bordaLoopSchema, getBordaGeometry, getBordaLayout, getBordaMask,
   getBordaMaskElement, getBordaMotion, getBordaScene, getBordaSceneParts, secondLineOptions, TRACK_MAIN, TRACK_SECOND,
   type BordaLoopProps, type CornerElement,
-} from '../src/overlays/borda';
+} from '../src/overlays/border';
 import {
   STROKE_MOTIONS, filletPath, getStrokeMotion, minBleedFor, perimeterLength, rectContains, rectPath as rectPathOf, roundRectPath, roundRectSdf,
   samplePerimeter,
@@ -22,10 +22,10 @@ import {
 import {OVERLAY_THEMES} from './helpers/themes';
 
 const parse = (input: object): BordaLoopProps => bordaLoopSchema.parse(input);
-const BORDA_SIZES = sizesForKind('borda');
+const BORDA_SIZES = sizesForKind('border');
 const THEMES = OVERLAY_THEMES;
 const presetOf = (theme: string): Record<string, unknown> =>
-  JSON.parse(readFileSync(new URL(`../presets/borda-${theme}.json`, import.meta.url), 'utf8'));
+  JSON.parse(readFileSync(new URL(`../presets/border-${theme}.json`, import.meta.url), 'utf8'));
 
 /** The literal Root.tsx registers: the composition's defaults, spelled out. */
 const ROOT_DEFAULT_PROPS = {
@@ -49,9 +49,9 @@ test('Borda: padrões = visual neon no tamanho webcam-16x9, iguais ao literal do
   assert.deepEqual(defaults, ROOT_DEFAULT_PROPS);
   assert.deepEqual(bordaLoopSchema.parse(ROOT_DEFAULT_PROPS), defaults);
   assert.deepEqual(bordaCatalogEntry.defaultProps, defaults);
-  assert.equal(bordaCatalogEntry.id, 'BordaLoop');
-  assert.equal(bordaCatalogEntry.kind, 'borda');
-  assert.equal(matchNamedSize('borda', defaults)?.id, 'webcam-16x9');
+  assert.equal(bordaCatalogEntry.id, 'BorderLoop');
+  assert.equal(bordaCatalogEntry.kind, 'border');
+  assert.equal(matchNamedSize('border', defaults)?.id, 'webcam-16x9');
   assert.deepEqual(bordaCatalogEntry.getLayout(defaults), getBordaLayout(defaults));
   assert.equal(defaults.transparent, true);
   assert.equal(defaults.outputFormat, 'webm');
@@ -93,12 +93,12 @@ test('Borda: presets parseiam estritos em todos os tamanhos e não fixam tamanho
   for (const theme of THEMES) {
     const preset = presetOf(theme);
     for (const key of ['width', 'height', 'bleed', 'fit', 'guides']) {
-      assert.ok(!(key in preset), `borda-${theme}: não fixe ${key} (o tamanho nomeado decide)`);
+      assert.ok(!(key in preset), `border-${theme}: não fixe ${key} (o tamanho nomeado decide)`);
     }
     assert.equal(bordaLoopSchema.strict().safeParse(preset).success, true, theme);
     for (const size of BORDA_SIZES) {
       const result = bordaLoopSchema.strict().safeParse({...preset, ...sizeProps(size)});
-      assert.equal(result.success, true, `borda-${theme} em ${size.id}: ${result.error?.issues.map((issue) => issue.message).join(' | ')}`);
+      assert.equal(result.success, true, `border-${theme} em ${size.id}: ${result.error?.issues.map((issue) => issue.message).join(' | ')}`);
     }
   }
 });
@@ -219,7 +219,7 @@ test('Borda: em tela a caixa é o arquivo, então bleed diferente de 0 é recusa
   ]);
   const screen = parse({fit: 'tela', width: 1920, height: 1080, bleed: 0});
   assert.deepEqual(getBordaLayout(screen).canvas, {width: 1920, height: 1080});
-  assert.equal(matchNamedSize('borda', screen)?.id, 'tela-cheia');
+  assert.equal(matchNamedSize('border', screen)?.id, 'tela-cheia');
 });
 
 // ── The hole stays empty ───────────────────────────────────────────────────────────────────
@@ -345,14 +345,14 @@ test('Borda: a máscara do buraco cobre tudo o que é desenhado, em todo tamanho
         assert.doesNotMatch(markup, /mix-blend-mode|NaN|Infinity|undefined|data-guides/);
         // The hole is black in the mask, and the masked group holds everything up to the end.
         assert.ok(inner.includes(`d="${roundRectPath(layout.holeShape)}" fill="#000000"`), 'o buraco é preto na máscara');
-        assert.ok(inner.startsWith('<g><defs><mask id="borda-frame-hole" maskUnits="userSpaceOnUse" x="0" y="0"'));
-        const masked = inner.indexOf('<g mask="url(#borda-frame-hole)">');
+        assert.ok(inner.startsWith('<g><defs><mask id="border-frame-hole" maskUnits="userSpaceOnUse" x="0" y="0"'));
+        const masked = inner.indexOf('<g mask="url(#border-frame-hole)">');
         assert.ok(masked > 0);
         const outerClose = closingOf(inner, 0);
         assert.equal(outerClose, inner.length, `${size.id}: nada é desenhado fora do grupo da moldura`);
         const tail = inner.slice(closingOf(inner, masked));
         assert.equal(tail, layout.fit === 'tela' ? '</g></g>' : '</g>', `${size.id}: nada depois do grupo mascarado`);
-        assert.equal(inner.includes('clip-path="url(#borda-frame-box)"'), layout.fit === 'tela');
+        assert.equal(inner.includes('clip-path="url(#border-frame-box)"'), layout.fit === 'tela');
         // The fill is clipped to the band without the window and, on a screen, to the file's corners.
         assert.ok(inner.includes(`d="${roundRectPath(band)}${roundRectPath(layout.window)}" clip-rule="evenodd"`));
         assert.equal(inner.includes(`d="${filletPath(layout)}" clip-rule="evenodd"`), layout.fit === 'tela');
@@ -380,7 +380,7 @@ test('Borda: em volta de uma janela os cantos da caixa são foscos, para a câme
       } else if (layout.fit === 'janela') {
         // Opaque: no opacity on the path, and no group around it but the band's clip.
         assert.match(markup, matte, `${theme} ${size.id}`);
-        assert.match(markup, /<g clip-path="url\(#borda-band-clip\)"><path [^>]*data-matte="true"><\/path>/, `${theme} ${size.id}`);
+        assert.match(markup, /<g clip-path="url\(#border-band-clip\)"><path [^>]*data-matte="true"><\/path>/, `${theme} ${size.id}`);
       } else {
         assert.doesNotMatch(markup, /data-matte/, `${theme} ${size.id}: numa tela não há câmera nos cantos`);
       }
@@ -389,7 +389,7 @@ test('Borda: em volta de uma janela os cantos da caixa são foscos, para a câme
 });
 
 test('Borda: a moldura nunca passa do próprio contorno; até raio (1 + √2)·espessura ela cobre os cantos da câmera', () => {
-  const bandClip = (markup: string) => /<clipPath id="borda-band-clip"[^>]*>([\s\S]*?)<\/clipPath>/.exec(markup)![1]!;
+  const bandClip = (markup: string) => /<clipPath id="border-band-clip"[^>]*>([\s\S]*?)<\/clipPath>/.exec(markup)![1]!;
   for (const theme of THEMES) {
     for (const size of BORDA_SIZES.filter((entry) => entry.props?.fit !== 'tela')) {
       const thickness = Number(presetOf(theme).thickness);
@@ -449,7 +449,7 @@ test('Máscara: cada tamanho de janela tem a sua, do tamanho da câmera, com a j
       // One shape, the window at (0, 0) with the frame's clamped radius, opaque white on transparency.
       assert.equal(svg[3], `<path d="${roundRectPath({x: 0, y: 0, width: size.width, height: size.height, radius: window.radius})}" fill="#FFFFFF" data-mask="true"></path>`);
       assert.match(markup, /background-color:transparent/);
-      assert.equal(matchNamedSize('borda', props)?.id, size.id);
+      assert.equal(matchNamedSize('border', props)?.id, size.id);
     }
   }
   // A round webcam's mask is a circle.
@@ -492,7 +492,7 @@ test('Máscara: só janela, sem bleed, em PNG e transparente; recusas com a saí
       ...getBordaMask(parse(presetOf('neon')))!, seed: scene.seed ?? 1,
       ...(scene.durationSeconds === undefined ? {} : {durationSeconds: scene.durationSeconds}),
     }), frame, length);
-  const label = 'BordaLoop máscara';
+  const label = 'BorderLoop máscara';
   test(`${label}: a seed não muda nada e a cena é sempre a mesma`, () => {
     assertDeterministic(label, sample, {seeded: false});
     assert.deepEqual(sample({seed: 7}, 0, 480), sample({seed: 8}, 311, 480));
@@ -581,7 +581,7 @@ const CASES: Case[] = [
 for (const {id, input, moving, seeded} of CASES) {
   const sample: Sampler = (scene: SceneInput, frame: number, length: number): Scene =>
     getBordaScene(parse({...input, ...scene}), frame, length);
-  const label = `BordaLoop ${id}`;
+  const label = `BorderLoop ${id}`;
   test(`${label}: seed e frame determinam a cena`, () => assertDeterministic(label, sample, {seeded: seeded ?? true}));
   test(`${label}: o ciclo fecha em N para 50/60 fps e durações quebradas`, () => assertPeriodic(label, sample, {moving: moving ?? true}));
   test(`${label}: velocidade contínua na emenda`, () => assertSeamVelocity(label, sample));

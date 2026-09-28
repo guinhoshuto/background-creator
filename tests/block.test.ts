@@ -6,7 +6,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {
   BLOCO_ACCENTS, BlocoFrame, blocoCatalogEntry, blocoLoopSchema, contentGlowOpacity,
   getBlocoLayers, getBlocoLayout, getBlocoScene, type AccentArc, type BlocoLoopProps,
-} from '../src/overlays/bloco';
+} from '../src/overlays/block';
 import {MAX_CONTENT_OPACITY, contentClearance, erf, getStrokeMotion, rectContains, roundRectSdf, type Rect} from '../src/overlays/shared';
 import {resolveExport} from '../scripts/export';
 import {buildExportOptions, parseRenderArgs} from '../scripts/render-args';
@@ -20,7 +20,7 @@ import {OVERLAY_THEMES} from './helpers/themes';
 
 const THEMES = OVERLAY_THEMES;
 const preset = (theme: string): Record<string, unknown> =>
-  JSON.parse(readFileSync(new URL(`../presets/bloco-${theme}.json`, import.meta.url), 'utf8'));
+  JSON.parse(readFileSync(new URL(`../presets/block-${theme}.json`, import.meta.url), 'utf8'));
 
 /** A named size as props; painel-twitch has no bleed, and its size turns glow and halo off itself. */
 const sized = (id: string): Record<string, unknown> => sizeProps(getSize(id));
@@ -41,8 +41,8 @@ test('Bloco: defaults são o neon no tamanho cartão, transparente, em WebM', ()
   const props = parse({});
   assert.deepEqual(blocoCatalogEntry.defaultProps, props);
   assert.deepEqual(blocoLoopSchema.parse(props), props, 'os defaults passam de novo pelo schema sem mudar');
-  assert.equal(blocoCatalogEntry.id, 'BlocoLoop');
-  assert.equal(blocoCatalogEntry.kind, 'bloco');
+  assert.equal(blocoCatalogEntry.id, 'BlockLoop');
+  assert.equal(blocoCatalogEntry.kind, 'block');
   assert.equal(blocoCatalogEntry.getLayout, getBlocoLayout);
   const cartao = getSize('cartao');
   assert.deepEqual([props.width, props.height, props.bleed], [cartao.width, cartao.height, cartao.bleed]);
@@ -75,7 +75,7 @@ test('Bloco: presets dos oito temas passam com strict e nunca fixam o tamanho', 
 
 test('Bloco: presets servem em todos os tamanhos (painel da Twitch sem brilho externo)', () => {
   for (const theme of THEMES) {
-    for (const size of sizesForKind('bloco')) {
+    for (const size of sizesForKind('block')) {
       const result = blocoLoopSchema.safeParse({...preset(theme), ...sized(size.id)});
       assert.equal(result.success, true, `${theme} em ${size.id}: ${JSON.stringify(result.error?.issues)}`);
     }
@@ -110,7 +110,7 @@ test('Bloco: arquivo acima de 4K é recusado com a saída', () => {
 // ── Geometry across the named sizes ─────────────────────────────────────────────────────────
 
 test('Bloco: os 11 tamanhos nomeados, inclusive as proporções extremas e os círculos, têm geometria coerente', () => {
-  const sizes = sizesForKind('bloco');
+  const sizes = sizesForKind('block');
   assert.deepEqual(sizes.map((size) => size.id).sort(),
     ['cartao', 'circulo', 'circulo-g', 'circulo-p', 'etiqueta', 'etiqueta-p', 'faixa', 'lista', 'painel-twitch', 'quadrado', 'titulo']);
   for (const size of sizes) {
@@ -177,7 +177,7 @@ test('Bloco: num círculo o conteúdo é o quadrado inscrito, com a folga do pad
 });
 
 test('Bloco: a seed nunca move a caixa, o conteúdo nem a barra', () => {
-  for (const size of sizesForKind('bloco')) {
+  for (const size of sizesForKind('block')) {
     const layout = getBlocoLayout(parse({...sized(size.id), accent: 'esquerda', seed: 1}));
     for (const seed of [-7, 42, 2026]) {
       assert.deepEqual(getBlocoLayout(parse({...sized(size.id), accent: 'esquerda', seed})), layout, size.id);
@@ -195,11 +195,11 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
   // The painel-twitch size carries that itself, and wins over a preset's glow, as the CLI does.
   assert.deepEqual(sizeProps(getSize('painel-twitch')), {...twitch, shape: 'retangulo', glow: 0, halo: 0});
   for (const theme of THEMES) {
-    const options = buildExportOptions(parseRenderArgs(['BlocoLoop', '--size', 'painel-twitch', '--format', 'gif']), preset(theme));
+    const options = buildExportOptions(parseRenderArgs(['BlockLoop', '--size', 'painel-twitch', '--format', 'gif']), preset(theme));
     const {props, output} = resolveExport(options);
     const {glow, halo, bleed} = props as Record<string, unknown>;
     assert.deepEqual([glow, halo, bleed], [0, 0, 0], theme);
-    assert.match(output, /BlocoLoop-painel-twitch\.gif$/);
+    assert.match(output, /BlockLoop-painel-twitch\.gif$/);
   }
   // The bleed the message names is accepted; two px less is refused.
   assert.match(issuesOf({halo: 41}).join(), /use bleed ≥ 42/);
@@ -229,7 +229,7 @@ test('Legibilidade: nada acima do fill entra no conteúdo, e o brilho fica abaix
     {strokeMotion: 'gradiente', accent: 'topo', accentSheen: 2, strokeWidth: 8, glow: 24, bleed: 24},
   ];
   for (const input of inputs) {
-    for (const size of sizesForKind('bloco')) {
+    for (const size of sizesForKind('block')) {
       for (const radius of [0, 16, 999]) {
         const props = parse({...input, ...sized(size.id), radius});
         const layout = getBlocoLayout(props);
@@ -315,7 +315,7 @@ test('Aliasing: contorno e preenchimento rápidos demais são recusados com a ve
   assert.match(fillMessage!, /Speed too high for the dots/);
   const fillLimit = Number(fillMessage!.match(/fillSpeed up to ([\d.]+) px\/s/)![1]);
   assert.equal(blocoLoopSchema.safeParse({...dots, fillSpeed: fillLimit}).success, true);
-  // The effective speed is rounded to whole laps and exposed for the sidecar, on the bloco's own track.
+  // The effective speed is rounded to whole laps and exposed for the sidecar, on the block's own track.
   const comets = {strokeMotion: 'cometas', cometSpacing: 64, strokeColors: ['#FFFFFF'], ...sizeProps(getSize('etiqueta-p'))};
   const motion = getStrokeMotion(parse({...comets, strokeSpeed: 100}), getBlocoLayout(parse(comets)).track);
   assert.ok(motion.laps >= 1 && motion.speed > 0);
@@ -324,13 +324,13 @@ test('Aliasing: contorno e preenchimento rápidos demais são recusados com a ve
 type Case = {id: string; input: Record<string, unknown>};
 
 const CASES: Case[] = [
-  {id: 'BlocoLoop (padrão neon)', input: {}},
-  ...THEMES.map((theme) => ({id: `BlocoLoop (${theme})`, input: preset(theme)})),
-  {id: 'BlocoLoop (formigas, barra à esquerda com reflexo)', input: {strokeMotion: 'formigas', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'esquerda', accentSheen: 2}},
-  {id: 'BlocoLoop (faixa, gradiente, barra no topo com reflexo)', input: {...sizeProps(getSize('faixa')), strokeMotion: 'gradiente', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'topo', accentSheen: 3, fill: 'listras'}},
-  {id: 'BlocoLoop (etiqueta-p em pílula, cometas)', input: {...sizeProps(getSize('etiqueta-p')), radius: 999, cometSpacing: 240, strokeSpeed: 300}},
-  {id: 'BlocoLoop (lista, brilhos, halo pulsando)', input: {...sizeProps(getSize('lista')), fill: 'brilhos', halo: 24, glowPulses: 3}},
-  {id: 'BlocoLoop (painel da Twitch, sem bleed)', input: {...sizeProps(getSize('painel-twitch')), glow: 0, halo: 0, fill: 'gradiente', accent: 'topo', accentSheen: 1}},
+  {id: 'BlockLoop (padrão neon)', input: {}},
+  ...THEMES.map((theme) => ({id: `BlockLoop (${theme})`, input: preset(theme)})),
+  {id: 'BlockLoop (formigas, barra à esquerda com reflexo)', input: {strokeMotion: 'formigas', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'esquerda', accentSheen: 2}},
+  {id: 'BlockLoop (faixa, gradiente, barra no topo com reflexo)', input: {...sizeProps(getSize('faixa')), strokeMotion: 'gradiente', strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], accent: 'topo', accentSheen: 3, fill: 'listras'}},
+  {id: 'BlockLoop (etiqueta-p em pílula, cometas)', input: {...sizeProps(getSize('etiqueta-p')), radius: 999, cometSpacing: 240, strokeSpeed: 300}},
+  {id: 'BlockLoop (lista, brilhos, halo pulsando)', input: {...sizeProps(getSize('lista')), fill: 'brilhos', halo: 24, glowPulses: 3}},
+  {id: 'BlockLoop (painel da Twitch, sem bleed)', input: {...sizeProps(getSize('painel-twitch')), glow: 0, halo: 0, fill: 'gradiente', accent: 'topo', accentSheen: 1}},
 ];
 
 for (const {id, input} of CASES) {
@@ -347,7 +347,7 @@ for (const {id, input} of CASES) {
 }
 
 test('Bloco: o ciclo fecha em todos os tamanhos nomeados, em WebM e GIF, com tudo em movimento', () => {
-  for (const size of sizesForKind('bloco')) {
+  for (const size of sizesForKind('block')) {
     for (const theme of THEMES) {
       const props = parse({...preset(theme), ...sized(size.id), durationSeconds: 7.3, accentSheen: 1});
       for (const outputFormat of ['webm', 'gif'] as const) {
@@ -397,23 +397,23 @@ const render = (input: object, frame = 0) => {
 
 test('Render: SVG do tamanho do arquivo, sem blend mode, camadas na ordem', () => {
   for (const theme of THEMES) {
-    for (const size of sizesForKind('bloco')) {
+    for (const size of sizesForKind('block')) {
       const props = parse({...preset(theme), ...sized(size.id)});
       const {canvas} = getBlocoLayout(props);
       const markup = render({...preset(theme), ...sized(size.id)}, 211);
       assert.match(markup, new RegExp(`<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}"`));
       assert.doesNotMatch(markup, /mix-blend-mode|NaN|Infinity|undefined|data-guides/);
-      assert.match(markup, /clip-path="url\(#bloco-fill-clip\)"/);
+      assert.match(markup, /clip-path="url\(#block-fill-clip\)"/);
     }
   }
   const markup = render({accent: 'esquerda', accentSheen: 1});
-  const fill = markup.indexOf('bloco-fill-clip');
-  const accent = markup.indexOf('bloco-accent-clip');
-  const stroke = markup.indexOf('bloco-stroke-glow');
-  const halo = markup.indexOf('bloco-halo-mask');
+  const fill = markup.indexOf('block-fill-clip');
+  const accent = markup.indexOf('block-accent-clip');
+  const stroke = markup.indexOf('block-stroke-glow');
+  const halo = markup.indexOf('block-halo-mask');
   assert.ok(halo >= 0 && halo < fill && fill < accent && accent < stroke, 'halo, fill, barra, contorno');
-  assert.doesNotMatch(render({}), /bloco-accent-clip/);
-  assert.doesNotMatch(render({glow: 0, halo: 0}), /bloco-stroke-glow|bloco-halo/);
+  assert.doesNotMatch(render({}), /block-accent-clip/);
+  assert.doesNotMatch(render({glow: 0, halo: 0}), /block-stroke-glow|block-halo/);
   // Alpha rule: transparent on WebM, composited over backgroundColor on MP4.
   assert.match(render({}), /background-color:transparent/);
   assert.match(render({outputFormat: 'mp4', backgroundColor: '#123456'}), /background-color:#123456/);

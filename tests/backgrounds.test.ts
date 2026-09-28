@@ -17,8 +17,8 @@ import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/Vaporwa
 import {WEBGL_EXPERIMENTS, getWebGLScene, webglLoopSchema} from '../src/backgrounds/WebGLLoop';
 import {getWutheringWavesScene, wutheringWavesLoopSchema} from '../src/backgrounds/WutheringWavesLoop';
 import {backgroundCatalog, getBackground} from '../src/catalog';
-import {blocoLoopSchema, getBlocoScene} from '../src/overlays/bloco';
-import {bordaLoopSchema, getBordaScene} from '../src/overlays/borda';
+import {blocoLoopSchema, getBlocoScene} from '../src/overlays/block';
+import {bordaLoopSchema, getBordaScene} from '../src/overlays/border';
 import {chatLoopSchema, getChatScene} from '../src/overlays/chat';
 import {loopPhase} from '../src/loop';
 import {getCompositionMetadata} from '../src/settings';
@@ -196,14 +196,14 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
       }), frame, length),
   },
   {
-    id: 'BlocoLoop',
+    id: 'BlockLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBlocoScene(blocoLoopSchema.parse(input), frame, length),
   },
   {
     // Scrolling stripes, marching ants over the dim track, a left bar with four glints per
     // cycle, the glow breathing four times and the halo filling the bleed.
-    id: 'BlocoLoop (máximos)',
+    id: 'BlockLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBlocoScene(blocoLoopSchema.parse({
         fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
@@ -211,14 +211,14 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
       }), frame, length),
   },
   {
-    id: 'BordaLoop',
+    id: 'BorderLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBordaScene(bordaLoopSchema.parse(input), frame, length),
   },
   {
     // Scrolling dots in the band, colours flowing along both lines, gems breathing four times
     // and the glow pulsing: every moving part a border has, around the window.
-    id: 'BordaLoop (máximos)',
+    id: 'BorderLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBordaScene(bordaLoopSchema.parse({
         fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
@@ -227,12 +227,12 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
   },
   {
     // The round block: its text square, the accent arc and the glint going round the circle.
-    id: 'BlocoLoop (círculo)',
+    id: 'BlockLoop (círculo)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBlocoScene(blocoLoopSchema.parse({...sizeProps(getSize('circulo')), ...(input as object)}), frame, length),
   },
   {
-    id: 'BlocoLoop (círculo, máximos)',
+    id: 'BlockLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBlocoScene(blocoLoopSchema.parse({
         ...sizeProps(getSize('circulo')), fill: 'listras', fillSpeed: 48, strokeMotion: 'formigas', accent: 'esquerda', accentSheen: 4,
@@ -240,20 +240,20 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
       }), frame, length),
   },
   {
-    id: 'BordaLoop (círculo)',
+    id: 'BorderLoop (círculo)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBordaScene(bordaLoopSchema.parse({...sizeProps(getSize('webcam-redonda')), ...(input as object)}), frame, length),
   },
   {
-    id: 'BordaLoop (círculo, máximos)',
+    id: 'BorderLoop (círculo, máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getBordaScene(bordaLoopSchema.parse({
         ...sizeProps(getSize('webcam-redonda')), fill: 'pontos', fillColors: ['#0B0620', '#E879F9'], strokeMotion: 'gradiente', lines: 2,
         corners: 'joias', cornerPulses: 4, glowPulses: 4, ...(input as object),
       }), frame, length),
   },
-  // BordaLoop's mask mode (mascara) is left out on purpose: it is one still PNG, so the scans'
-  // "frames differ" and "the seed changes the scene" checks cannot hold. tests/borda.test.ts runs
+  // BorderLoop's mask mode (mascara) is left out on purpose: it is one still PNG, so the scans'
+  // "frames differ" and "the seed changes the scene" checks cannot hold. tests/border.test.ts runs
   // the same scans on it as a still (moving: false, seeded: false) instead of faking a motion.
 ];
 

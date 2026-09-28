@@ -47,7 +47,7 @@ const chatFields = z.object({
     strokeSpeed: 160,
     strokeCore: 0.9,
   }),
-  // The same prop as bloco and borda, so a theme's outline reads as one family across its kinds.
+  // The same prop as block and border, so a theme's outline reads as one family across its kinds.
   trackOpacity: trackOpacityField(0.45),
   ...glowFields({glow: 20, glowPulses: 1, glowStrength: 3}),
   ...haloFields({halo: 24, haloColor: '#A855F7'}),

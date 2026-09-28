@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {getWindowFlash} from '../../src/backgrounds/HauntedInteriorLoop';
-import {bordaLoopSchema, getBordaMask, getBordaScene} from '../../src/overlays/borda';
+import {bordaLoopSchema, getBordaMask, getBordaScene} from '../../src/overlays/border';
 import {
   FLASH_COLOR, MAX_CONTENT_OPACITY, ORNAMENT_CLEARANCE, ORNAMENT_EDGE, ORNAMENT_REGISTRY, ORNAMENT_SIZE_RANGE,
   meetsKeepOut, ornamentOutset, ornamentWayOut, rectDistance, roundRectPath, roundRectSdf,
@@ -42,13 +42,13 @@ const ROUND_TELAS: readonly Record<string, unknown>[] = [
 /** Every named size, the border's radii 0/16/200 on each and small round screen frames, and the round blocks with each accent. */
 const variants = (adapter: OrnamentKindAdapter): Case[] => {
   const cases: Case[] = adapter.sizes.map((size) => ({label: size.id, input: sizeProps(size), mustFit: true}));
-  if (adapter.kind === 'borda') {
+  if (adapter.kind === 'border') {
     for (const size of adapter.sizes) {
       for (const radius of [0, 16, 200]) cases.push({label: `${size.id} radius ${radius}`, input: {...sizeProps(size), radius}, mustFit: true});
     }
     ROUND_TELAS.forEach((input, index) => cases.push({label: `tela redonda ${index}`, input}));
   }
-  if (adapter.kind === 'bloco') {
+  if (adapter.kind === 'block') {
     for (const size of adapter.sizes.filter((entry) => entry.props?.shape === 'circulo')) {
       for (const accent of ['esquerda', 'topo']) cases.push({label: `${size.id} accent ${accent}`, input: {...sizeProps(size), accent}, mustFit: true});
     }
@@ -161,7 +161,7 @@ const checkCase = (
   assert.deepEqual(fresh(), placements, `${id}: place() determinístico`);
   assert.deepEqual(fresh(), placements, `${id}: place() determinístico`);
   // A border's back layer tucks under the band: its cover is the whole outer edge (janela and tela).
-  if (adapter.kind === 'borda') assert.deepEqual(frame.cover, {path: roundRectPath(frame.outline), fillRule: 'nonzero'}, `${id}: a faixa esconde os de trás`);
+  if (adapter.kind === 'border') assert.deepEqual(frame.cover, {path: roundRectPath(frame.outline), fillRule: 'nonzero'}, `${id}: a faixa esconde os de trás`);
   // Seed- and frame-free: another seed lays out exactly the same.
   assert.deepEqual(adapter.ornamentLayout(adapter.parse({...input, seed: 999})), layout, `${id}: a seed não move os enfeites`);
   assert.deepEqual(adapter.ornamentLayout(adapter.parse({...input, seed: 1})), layout, `${id}: a seed não move os enfeites`);
@@ -223,7 +223,7 @@ const checkCase = (
 
 /** The size the generic scans and the markup use besides the kind's default: a round one where the kind has it. */
 export const roundSize = (adapter: OrnamentKindAdapter): NamedSize =>
-  adapter.kind === 'bloco' ? getSize('circulo') : adapter.kind === 'borda' ? getSize('webcam-redonda') : getSize('chat-vertical');
+  adapter.kind === 'block' ? getSize('circulo') : adapter.kind === 'border' ? getSize('webcam-redonda') : getSize('chat-vertical');
 
 const closingOf = (markup: string, start: number) => {
   const tags = /<g[\s>]|<\/g>/g;
@@ -245,7 +245,7 @@ const groupsOf = (markup: string) => {
   return groups;
 };
 
-/** Markup rules: clean numbers, no filters or blend modes in the ornament groups, unique ids, order, and borda inside FrameGroup. */
+/** Markup rules: clean numbers, no filters or blend modes in the ornament groups, unique ids, order, and border inside FrameGroup. */
 const checkMarkup = (id: string, adapter: OrnamentKindAdapter, props: OrnamentProps, markup: string) => {
   assert.doesNotMatch(markup, /NaN|Infinity|undefined|mix-blend-mode/, id);
   const groups = groupsOf(markup);
@@ -272,7 +272,7 @@ const checkMarkup = (id: string, adapter: OrnamentKindAdapter, props: OrnamentPr
   assert.equal(!!front, frontElements.length > 0, `${id}: grupo da frente só com elementos`);
   assert.equal(!!flash, flashElements.length > 0, `${id}: clarão só com relâmpago`);
   const prefix = adapter.kind;
-  const fill = markup.indexOf(adapter.kind === 'borda' ? `id="${prefix}-band-clip"` : `id="${prefix}-fill-clip"`);
+  const fill = markup.indexOf(adapter.kind === 'border' ? `id="${prefix}-band-clip"` : `id="${prefix}-fill-clip"`);
   const stroke = markup.indexOf(`id="${prefix}-stroke-glow"`);
   if (back) {
     assert.ok(back.end <= fill, `${id}: os enfeites de trás vêm antes do preenchimento`);
@@ -284,13 +284,13 @@ const checkMarkup = (id: string, adapter: OrnamentKindAdapter, props: OrnamentPr
   }
   if (front && stroke >= 0) assert.ok(front.start > stroke, `${id}: os da frente vêm depois do contorno`);
   if (flash && front) assert.ok(flash.start >= front.end, `${id}: o clarão por cima de tudo`);
-  if (adapter.kind === 'borda') {
-    const masked = markup.indexOf('<g mask="url(#borda-frame-hole)">');
+  if (adapter.kind === 'border') {
+    const masked = markup.indexOf('<g mask="url(#border-frame-hole)">');
     assert.ok(masked > 0, id);
     const end = closingOf(markup, masked);
     for (const group of groups) assert.ok(group.start > masked && group.end <= end, `${id}: ${group.name} dentro da moldura mascarada`);
     // The band's clip keeps the matte (or the fill) as its first child: no ornament inside it.
-    const bandClip = markup.indexOf('clip-path="url(#borda-band-clip)"');
+    const bandClip = markup.indexOf('clip-path="url(#border-band-clip)"');
     if (bandClip >= 0) {
       const bandGroup = markup.lastIndexOf('<g', bandClip);
       const bandEnd = closingOf(markup, bandGroup);
@@ -316,7 +316,7 @@ export const checkFlashAlpha = (id: string, adapter: OrnamentKindAdapter, props:
   const markup = adapter.render(props, at, n);
   const stops = (part: string) => [...(new RegExp(`id="${adapter.kind}-flash-0-${part}"[^]*?</linearGradient>`).exec(markup)?.[0] ?? '')
     .matchAll(/stop-opacity="([^"]+)"/g)].map((match) => Number(match[1]));
-  const peak = adapter.kind === 'borda' ? FLASH_PEAKS.band : FLASH_PEAKS.panel;
+  const peak = adapter.kind === 'border' ? FLASH_PEAKS.band : FLASH_PEAKS.panel;
   assert.ok(markup.includes(`<g data-flash="true"><g opacity="${props.lightning}">`), `${id}: opacidade = lightning`);
   const wash = stops('wash');
   assert.equal(wash.length, 2, `${id}: véu com duas paradas`);
@@ -324,7 +324,7 @@ export const checkFlashAlpha = (id: string, adapter: OrnamentKindAdapter, props:
   const edge = stops('edge');
   assert.equal(edge.length, (props.strokeWidth as number) > 0 ? 2 : 0, `${id}: fio do contorno`);
   edge.forEach((value, index) => assert.ok(Math.abs(value - FLASH_PEAKS.edge * (index ? flash.right : flash.left)) < 1e-9, `${id}: fio ${value}`));
-  if (adapter.kind !== 'borda') {
+  if (adapter.kind !== 'border') {
     assert.ok(props.lightning * Math.max(...wash) <= MAX_CONTENT_OPACITY + 1e-9, `${id}: clarão sobre o texto no máximo ${MAX_CONTENT_OPACITY}`);
   }
 };
@@ -398,8 +398,8 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
       }
     });
 
-    test(`ornaments [${set}] ${kindName}: markup limpo, na ordem das camadas${kindName === 'borda' ? ', tudo dentro da moldura' : ''}`, () => {
-      for (const input of [{}, sizeProps(roundSize(adapter)), ...(kindName === 'borda' ? [sizeProps(getSize('tela-cheia'))] : [])]) {
+    test(`ornaments [${set}] ${kindName}: markup limpo, na ordem das camadas${kindName === 'border' ? ', tudo dentro da moldura' : ''}`, () => {
+      for (const input of [{}, sizeProps(roundSize(adapter)), ...(kindName === 'border' ? [sizeProps(getSize('tela-cheia'))] : [])]) {
         for (const lightning of [0, 0.7]) {
           const props = adapter.parse({...NEUTRAL, ornaments: set, ...input, lightning});
           for (const at of [0, 123]) checkMarkup(`[${set}] ${kindName} ${JSON.stringify(input)} lightning ${lightning} frame ${at}`, adapter, props, adapter.render(props, at));
@@ -411,8 +411,8 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
     });
   }
 
-  if (kinds.includes('borda')) test(`ornaments [${set}] borda: a máscara não muda com enfeites nem relâmpago`, () => {
-    const adapter = ORNAMENT_KINDS.borda;
+  if (kinds.includes('border')) test(`ornaments [${set}] border: a máscara não muda com enfeites nem relâmpago`, () => {
+    const adapter = ORNAMENT_KINDS.border;
     for (const size of adapter.sizes.filter((entry) => entry.props?.fit !== 'tela')) {
       const mask = getBordaMask(bordaLoopSchema.parse({...sizeProps(size), ornaments: set, lightning: 0.7}));
       assert.ok(mask, size.id);
@@ -432,7 +432,7 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
       const preset = adapter.preset(theme);
       const props = adapter.parse(preset);
       assert.equal(props.ornaments, set, `${theme}: ornaments ${set}`);
-      if (kindName === 'borda') assert.equal((props as Record<string, unknown>).corners, 'nenhum', `${theme}: com enfeites, corners nenhum`);
+      if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'nenhum', `${theme}: com enfeites, corners nenhum`);
       for (const size of adapter.sizes) {
         checkCase(adapter, set, `[${theme}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
         // And as the pack renders it, where its item adds props (the telas' band, the Twitch panel's padding).

@@ -136,14 +136,14 @@ const planOf = (frame: OrnamentFrame, ornamentSize: number): Plan | null => {
     ? OPPOSITE[heroSlot] : free.find((corner) => corner.slot !== heroSlot)?.slot;
   const counterCorner = counterSlot ? cornerSlots(frame).find((corner) => corner.slot === counterSlot)! : null;
   // Around a rect window all four corners have the same room: every web takes the hero's radius there.
-  const even = frame.kind === 'borda' && !frame.circle;
+  const even = frame.kind === 'border' && !frame.circle;
   const counter = counterCorner ? fitFan(frame, counterCorner, layer, (even ? 1 : TEIA_COUNTER_RATIO) * hero.radius, TEIA_COUNTER_MIN) : null;
   // Soft lights need glow (a Twitch panel has none): moonlight behind the hero, the ember behind the counterweight.
   const moon = frame.glow > 0 ? lightOn(frame, hero, layer, 'luar', heroSlot, TEIA_MOON.at, TEIA_MOON.ratio * hero.radius, TEIA_MOON.min) : null;
   const ember = counter && counterSlot && frame.glow > 0
     ? fitLight(frame, counter, layer, 'brasa', counterSlot, TEIA_EMBER.ratio * counter.radius, TEIA_EMBER.min) : null;
   // A border frames a camera or the game as the background frames the screen: all four corners.
-  const quiet = frame.kind === 'borda'
+  const quiet = frame.kind === 'border'
     ? free.filter((corner) => corner.slot !== heroSlot && corner.slot !== counterSlot).flatMap((corner) => {
       const fan = fitFan(frame, corner, layer, (even ? 1 : TEIA_QUIET_RATIO) * hero!.radius, TEIA_COUNTER_MIN);
       return fan ? [{fan, slot: corner.slot}] : [];
@@ -154,7 +154,7 @@ const planOf = (frame: OrnamentFrame, ornamentSize: number): Plan | null => {
   // holds a larger spider (always on a screen). No glow (a Twitch panel): no spider.
   const spiderScale = SPIDER_PER_SIZE * ornamentSize;
   const hang = frame.glow > 0 && frame.fit !== 'tela' ? fitSpider(frame, hero, spiderScale) : null;
-  const pocket = frame.glow > 0 && (frame.kind === 'borda' || !hang) ? fitPocket(frame, hero, spiderScale) : null;
+  const pocket = frame.glow > 0 && (frame.kind === 'border' || !hang) ? fitPocket(frame, hero, spiderScale) : null;
   const spider = hang && (!pocket || hang.scale >= pocket.scale) ? hang : pocket;
   // Silk garlands along the top (and the bottom of big frames), between the corners' webs, clear of the spider.
   const cornerWebs = [{fan: hero, slot: heroSlot}, ...(counter && counterSlot ? [{fan: counter, slot: counterSlot}] : []), ...quiet];

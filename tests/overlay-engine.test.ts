@@ -11,7 +11,7 @@ import {
   rectContains, refineContent, refineFill, refineHole, refineOutset, refineStroke, ringPath, roundRectPath, roundRectSdf,
   rimLightField, samplePerimeter, strokeFields, swayShare, tangentAt, type FrameLayout, type RoundRect, type StrokeElement,
 } from '../src/overlays/shared';
-import {blocoLoopSchema, getBlocoLayers, getBlocoLayout} from '../src/overlays/bloco';
+import {blocoLoopSchema, getBlocoLayers, getBlocoLayout} from '../src/overlays/block';
 import {chatLoopSchema, getChatLayers, getChatLayout} from '../src/overlays/chat';
 import {getCompositionMetadata} from '../src/settings';
 import {NAMED_SIZES, sizeProps, sizesForKind} from '../src/sizes';
@@ -155,7 +155,7 @@ const assertInside = (shape: RoundRect, rect: {x: number; y: number; width: numb
 };
 
 test('Layout de painel: tamanhos nomeados de chat e bloco, conteúdo dentro do traço e dos cantos', () => {
-  for (const size of [...sizesForKind('chat'), ...sizesForKind('bloco')]) {
+  for (const size of [...sizesForKind('chat'), ...sizesForKind('block')]) {
     for (const radius of [0, 16, 1920]) {
       const props = kit({...sizeProps(size), radius, strokeWidth: 3, padding: 12, glow: size.bleed > 0 ? 12 : 0});
       const layout = panelOf(props);
@@ -184,7 +184,7 @@ test('Layout de painel: tamanhos nomeados de chat e bloco, conteúdo dentro do t
 });
 
 test('Layout de moldura: janela vazia para fora, tela do tamanho do arquivo', () => {
-  for (const size of sizesForKind('borda')) {
+  for (const size of sizesForKind('border')) {
     const fit = size.props?.fit ?? 'janela';
     for (const radius of [0, 24, 200]) {
       const glow = fit === 'janela' ? 16 : 24;
@@ -928,7 +928,7 @@ test('Acabamento: o reflexo de 1 px corre por dentro do contorno e nunca chega a
       return {label: `chat ${size.id} r${radius} s${strokeWidth}`, layout, areas: [layout.content, layout.header!],
         rim: getChatLayers(props, 0, 480).rim};
     }))),
-    ...sizesForKind('bloco').flatMap((size) => [0, 16, 999].flatMap((radius) => [0, 2, 8].map((strokeWidth) => {
+    ...sizesForKind('block').flatMap((size) => [0, 16, 999].flatMap((radius) => [0, 2, 8].map((strokeWidth) => {
       const props = blocoLoopSchema.parse({...sizeProps(size), radius, strokeWidth, rimLight: 0.8, glow: 0, halo: 0});
       const layout = getBlocoLayout(props);
       return {label: `bloco ${size.id} r${radius} s${strokeWidth}`, layout, areas: [layout.content], rim: getBlocoLayers(props, 0, 480).rim};
@@ -986,7 +986,7 @@ test('Acabamento: um reflexo forte colado no texto é recusado, e a saída da me
       const layout = getChatLayout(props);
       return {label: `chat ${size.id} p${padding} h${headerHeight}`, inner: layout.inner, areas: [layout.content, layout.header]};
     }))),
-    ...sizesForKind('bloco').flatMap((size) => [1, 1.5, 16].flatMap((paddingX) => [1, 2].map((paddingY) => {
+    ...sizesForKind('block').flatMap((size) => [1, 1.5, 16].flatMap((paddingX) => [1, 2].map((paddingY) => {
       const props = blocoLoopSchema.parse({...sizeProps(size), paddingX, paddingY, radius: 999, rimLight: 1, glow: 0, halo: 0});
       const layout = getBlocoLayout(props);
       return {label: `bloco ${size.id} px${paddingX} py${paddingY}`, inner: layout.inner, areas: [layout.content]};

@@ -7,7 +7,7 @@ import {
 } from '../src/backgrounds/HauntedMansionLoop';
 import {HauntedMansionArtwork} from '../src/backgrounds/halloween/HauntedMansionArtwork';
 import {TAU} from '../src/loop';
-import {getBordaGeometry} from '../src/overlays/borda';
+import {getBordaGeometry} from '../src/overlays/border';
 import {roundRectSdf} from '../src/overlays/shared/geometry';
 import {
   cornerSlot, MAX_CONTENT_OPACITY, maxExtentAt, meetsKeepOut, rectDistance, roomAt, type OrnamentElement, type OrnamentFrame,
@@ -106,7 +106,7 @@ test('mansao: com o kit, a lanterna usa ≥ 85 % do espaço do canto (webcams re
     const room = roomAt(frame, cornerSlot(frame, hero.slot as 'TR'), 'front').extent;
     // The lamp's body (its hull's circle), not its light, takes the room.
     const body = ceilHalf(lanternMountOf(frame, hero).lantern.reach);
-    // Round webcams have room for far more; the preset caps them at the circulo blocos' 60 px.
+    // Round webcams have room for far more; the preset caps them at the circulo blocks' 60 px.
     if (ROUND_CAMS.includes(id)) assert.equal(hero.size, props.ornamentSize, `${id}: teto do preset`);
     else assert.ok(body >= 0.85 * room - 1e-9, `${id}: lanterna ${hero.size} px usa ${body} de ${room}`);
     assert.ok(hero.size <= props.ornamentSize, id);
@@ -124,7 +124,7 @@ test('mansao: com o kit, a lanterna usa ≥ 85 % do espaço do canto (webcams re
       assert.ok(rose.extent >= 0.6 * maxExtentAt(frame, rose.x, rose.y, 'front') - 1e-9, `${id}: rosácea pequena demais`);
     }
   }
-  // The measured sizes (the review's targets): chat 52, rect blocos 58.5, janela 54.5, round webcams the preset's 60 (as the circulo blocos).
+  // The measured sizes (the review's targets): chat 52, rect blocks 58.5, janela 54.5, round webcams the preset's 60 (as the circulo blocks).
   const size = (id: string) => kitAt(id).placements[0]!.size;
   assert.equal(size('chat-padrao'), 52);
   assert.equal(size('cartao'), 58.5);
@@ -252,11 +252,11 @@ test('mansao: com o kit, rosácea e lancetas no topo dos contornos largos e cerc
     .map((id) => count(id, 'sconce')), [2, 2, 2, 6, 0, 0, 0, 0]);
   assert.deepEqual(['faixa', 'titulo', 'jogo', 'tela-cheia', 'tela-vertical', 'webcam-16x9-g', 'chat-vertical', 'cartao']
     .map((id) => count(id, 'gate') / 6), [1, 1, 1, 1, 1, 0, 0, 0]);
-  // Rose extents: blocos 24.5, janela 23.5, tela (thickness 24) 20.5.
+  // Rose extents: blocks 24.5, janela 23.5, tela (thickness 24) 20.5.
   assert.deepEqual(['faixa', 'jogo', 'tela-cheia'].map((id) => motifs(kitAt(id).placements, 'rose')[0]!.extent), [24.5, 23.5, 20.5]);
   // Fence runs per side: 0.22 of the width, at most 16 pickets.
   assert.deepEqual(['chat-padrao', 'cartao', 'faixa', 'jogo', 'etiqueta'].map((id) => fences(kitAt(id).placements, 'BL').length), [5, 8, 14, 16, 8]);
-  // Heavier fence: 30 px on chat, blocos, janela and tela (the band's depth); 25 on etiqueta-p.
+  // Heavier fence: 30 px on chat, blocks, janela and tela (the band's depth); 25 on etiqueta-p.
   assert.deepEqual(['chat-padrao', 'cartao', 'webcam-16x9', 'etiqueta-p', 'tela-cheia'].map((id) => fences(kitAt(id).placements)[0]!.size),
     [30, 30, 30, 25, 30]);
   // Lowered 3–4 px where the bleed allows, so the top rail clears the stroke's glow: the spear tips
@@ -516,7 +516,7 @@ test('mansao: a tinta (traços inclusos) cabe no círculo de cada lugar, no arqu
     for (const ornamentSize of [12, 36, 256]) cases.push([size.id, {ornamentSize}, false]);
     cases.push([size.id, {}, true]);
   }
-  for (const size of NAMED_SIZES.filter((candidate) => candidate.kind === 'borda')) for (const radius of [0, 200]) cases.push([size.id, {radius}, false]);
+  for (const size of NAMED_SIZES.filter((candidate) => candidate.kind === 'border')) for (const radius of [0, 200]) cases.push([size.id, {radius}, false]);
   for (const [id, extra, kit] of cases) {
     const {frame, placements, props} = kit ? kitAt(id, extra) : layoutAt(id, extra);
     const limit = frame.paintLimit;

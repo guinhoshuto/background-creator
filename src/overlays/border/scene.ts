@@ -15,14 +15,14 @@ import {
 } from '../shared';
 
 /**
- * BordaLoop: a border around a transparent window (a webcam, a game capture) or a frame around
+ * BorderLoop: a border around a transparent window (a webcam, a game capture) or a frame around
  * the whole screen. The band is painted by the shared fills, the stroke motions run along its
  * centreline, an optional thin second line runs outside it, and the corners may carry brackets
  * or gems. Everything is drawn inside the shared FrameGroup, which masks the hole out of every
  * layer, so the window stays alpha 0 whatever the props.
  */
 
-const SIZE = getSize(kindPolicies.borda.defaultSizeId!);
+const SIZE = getSize(kindPolicies.border.defaultSizeId!);
 
 /** The round window sizes, for the refusal of a circle in a box that is not square. */
 const ROUND_SIZES = 'webcam-redonda-p, webcam-redonda or webcam-redonda-g';

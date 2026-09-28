@@ -111,7 +111,7 @@ export const ornamentWayOut = (frame: Pick<OrnamentFrame, 'kind' | 'fit' | 'circ
   const rounder = !frame.circle
     && clampRadius(outline.radius, outline.width, outline.height) < Math.min(outline.width, outline.height) / 2 - 1e-9;
   if (frame.kind === 'chat') return rounder ? 'increase bleed, padding or radius or use ornaments nenhum.' : 'increase bleed or padding or use ornaments nenhum.';
-  if (frame.kind === 'bloco') {
+  if (frame.kind === 'block') {
     return rounder
       ? 'increase bleed, paddingX, paddingY or radius or use ornaments nenhum.'
       : 'increase bleed, paddingX or paddingY or use ornaments nenhum.';

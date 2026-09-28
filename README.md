@@ -13,7 +13,7 @@ npm run studio
 
 O primeiro render pode baixar o Chrome Headless Shell usado pelo Remotion. Para GIF e validação dos exports, instale também FFmpeg e FFprobe completos (a validação usa recursos que o FFmpeg embutido no Remotion não tem) e deixe os executáveis no `PATH`. Se necessário, defina `FFMPEG_PATH` e `FFPROBE_PATH` com os caminhos completos dos executáveis.
 
-Escolha uma composição no Studio e edite as propriedades no painel lateral. As composições ficam em quatro pastas, uma por [tipo de asset](#tipos-de-asset): `backgrounds`, `chat`, `blocos` e `bordas`. O preview respeita o formato selecionado: `webm`, `mov` e `png` permitem alpha, enquanto `mp4` e `gif` mostram o resultado sobre a cor de fundo.
+Escolha uma composição no Studio e edite as propriedades no painel lateral. As composições ficam em quatro pastas, uma por [tipo de asset](#tipos-de-asset): `backgrounds`, `chat`, `text-boxes` e `borders`. O preview respeita o formato selecionado: `webm`, `mov` e `png` permitem alpha, enquanto `mp4` e `gif` mostram o resultado sobre a cor de fundo.
 
 Os fundos (pasta `backgrounds`) ocupam a tela inteira:
 
@@ -40,8 +40,8 @@ Os overlays ficam nas outras três pastas, com uma composição paramétrica cad
 | Composição | Pasta | O que é |
 | --- | --- | --- |
 | `ChatLoop` | `chat` | Painel para o widget de chat (OBS, StreamElements, Streamlabs), com cabeçalho opcional para o título |
-| `BlocoLoop` | `blocos` | Painel para texto: etiquetas, faixas de nome, títulos de tela, cards, listas e painéis da Twitch |
-| `BordaLoop` | `bordas` | Moldura em volta de uma janela transparente (câmera, jogo) ou da tela inteira |
+| `BlockLoop` | `text-boxes` | Painel para texto: etiquetas, faixas de nome, títulos de tela, cards, listas e painéis da Twitch |
+| `BorderLoop` | `borders` | Moldura em volta de uma janela transparente (câmera, jogo) ou da tela inteira |
 
 Os controles dos overlays estão em [Overlays: controles](#overlays-controles) e os estilos prontos em [Temas](#temas).
 
@@ -119,8 +119,8 @@ Cada composição pertence a um tipo, definido em `src/kinds.ts`. O tipo decide 
 | --- | --- | --- | --- | --- |
 | `background` (fundos) | `backgrounds` | as 15 da primeira tabela | Fixo, 1920×1080 | `false` |
 | `chat` (fundos de chat) | `chat` | `ChatLoop` | Livre; começa em `chat-padrao` | `true` |
-| `bloco` (blocos de texto) | `blocos` | `BlocoLoop` | Livre; começa em `cartao` | `true` |
-| `borda` (bordas e molduras) | `bordas` | `BordaLoop` | Livre; começa em `webcam-16x9` | `true` |
+| `block` (blocos de texto) | `text-boxes` | `BlockLoop` | Livre; começa em `cartao` | `true` |
+| `border` (bordas e molduras) | `borders` | `BorderLoop` | Livre; começa em `webcam-16x9` | `true` |
 
 Os fundos não têm controles de tamanho. Nos outros três tipos, o tamanho segue um modelo único:
 
@@ -181,7 +181,7 @@ Bordas e molduras (a caixa é a janela transparente):
 | `tela-cheia` | 1920×1080 | 0 | 1920×1080 | Moldura da tela inteira (`fit: "tela"`) |
 | `tela-vertical` | 1080×1920 | 0 | 1080×1920 | Moldura da tela inteira vertical (`fit: "tela"`) |
 
-Os tamanhos redondos (`circulo*` e `webcam-redonda*`) desenham um círculo inscrito na caixa; a câmera redonda precisa da [máscara](#packs) no OBS para ficar redonda. `webcam-quadrada` e `webcam-redonda` têm a mesma caixa, mas são produtos diferentes, com nomes de arquivo diferentes. Fora do catálogo, qualquer caixa par serve: use `--width`, `--height` e `--bleed` (ou os mesmos campos no JSON e no Studio); um círculo fora do catálogo leva a forma no nome (`BlocoLoop-300x300-circulo.webm`). Os presets de tema não fixam tamanho e funcionam em todos os tamanhos do seu tipo.
+Os tamanhos redondos (`circulo*` e `webcam-redonda*`) desenham um círculo inscrito na caixa; a câmera redonda precisa da [máscara](#packs) no OBS para ficar redonda. `webcam-quadrada` e `webcam-redonda` têm a mesma caixa, mas são produtos diferentes, com nomes de arquivo diferentes. Fora do catálogo, qualquer caixa par serve: use `--width`, `--height` e `--bleed` (ou os mesmos campos no JSON e no Studio); um círculo fora do catálogo leva a forma no nome (`BlockLoop-300x300-circulo.webm`). Os presets de tema não fixam tamanho e funcionam em todos os tamanhos do seu tipo.
 
 ## Overlays: controles
 
@@ -230,7 +230,7 @@ A névoa tem um teto de legibilidade: o corpo cobre no máximo 0,30 e o miolo 0,
 | `headerColor`, `headerOpacity` | cor; 0–1 (`0.1`) | Cor e opacidade da faixa do cabeçalho; opacidade `0` deixa só a linha |
 | `headerLineWidth` | 0–16 px (`2`) | Linha entre o cabeçalho e as mensagens, nas cores do contorno; `0` remove |
 
-`BlocoLoop` (padrão `cartao`, 8 s):
+`BlockLoop` (padrão `cartao`, 8 s):
 
 | Parâmetro | Faixa | Uso |
 | --- | --- | --- |
@@ -240,7 +240,7 @@ A névoa tem um teto de legibilidade: o corpo cobre no máximo 0,30 e o miolo 0,
 | `accentColor`, `accentSize` | cor; 2–64 px (`6`) | Cor e espessura da barra (ou do arco) |
 | `accentSheen` | 0–4 | Quantas vezes um reflexo percorre a barra por ciclo; `0` desliga. No círculo, o reflexo dá voltas inteiras pelo meio do arco e só aparece enquanto passa por ele |
 
-`BordaLoop` (padrão `webcam-16x9`, 8 s). Aqui `radius` é o raio da janela, o preenchimento pinta a faixa da moldura e `strokeWidth` não pode passar de `thickness`:
+`BorderLoop` (padrão `webcam-16x9`, 8 s). Aqui `radius` é o raio da janela, o preenchimento pinta a faixa da moldura e `strokeWidth` não pode passar de `thickness`:
 
 | Parâmetro | Faixa | Uso |
 | --- | --- | --- |
@@ -276,14 +276,14 @@ Oito temas vestem os três tipos com a mesma família visual, um preset por tipo
 
 | Tema | Visual | Presets | Fundos do pack |
 | --- | --- | --- | --- |
-| `neon` | Painel índigo translúcido com gradiente lento, cometas ciano e magenta num tubo de miolo branco, brilho forte e halo violeta; o bloco tem barra magenta à esquerda com reflexo, e a borda, faixa índigo lisa, linha dupla e colchetes pulsando. Ciclos de 8 s | `chat-neon`, `bloco-neon`, `borda-neon` | `VaporwaveLoop` (`vaporwave-classic`) |
-| `pastel` | Creme com pontos rosados rolando devagar, contorno rosa, menta e pêssego (tracejado no chat e na borda, respirando no bloco), cantos bem arredondados; o bloco tem barra menta no topo, e a borda, brilhos e joias. Ciclos de 12 s (borda, 10 s) | `chat-pastel`, `bloco-pastel`, `borda-pastel` | `KawaiiLoop` (`kawaii-constellation`) |
-| `vidro` | Vidro branco a 10% com reflexo passando, luz de cima e filete de luz na borda superior, contorno fino em gradiente branco e lavanda, halo escuro discreto que destaca o painel sobre fundos claros; borda de linha única, sem cantoneiras nem joias. Ciclos de 8 a 10 s | `chat-vidro`, `bloco-vidro`, `borda-vidro` | `GradientLoop` (`gradient-aurora`) |
-| `halloween` | Roxo profundo com brasas laranja e amarelas subindo, contorno laranja e roxo respirando duas vezes por ciclo, brilho pulsando e halo laranja; o bloco tem barra laranja à esquerda, e a borda, joias pulsando. Ciclos de 12 s | `chat-halloween`, `bloco-halloween`, `borda-halloween` | `HalloweenLoop`, `HauntedMansionLoop` e `CobwebLoop` (presets `halloween-midnight`, `halloween-haunted-mansion`, `halloween-cobweb`) |
-| `halloween-noite` | Céu estrelado: brilhos creme e lavanda cintilando no lugar sobre roxo-noite, contorno em gradiente lavanda e creme correndo devagar, com miolo claro, e halo lavanda; o bloco tem barra lavanda no topo com reflexo, e a borda, faixa estrelada com linha dupla, sem cantoneiras nem joias (`corners: "nenhum"`). Enfeites `noite`: morcegos, abóboras, estrelas e brasas (o laranja do kit fica só nas abóboras e no brilho das brasas). Ciclos de 12 s, seed 31 | `chat-halloween-noite`, `bloco-halloween-noite`, `borda-halloween-noite` | `HalloweenLoop` (`halloween-midnight`) |
-| `halloween-mansao` | Bancos de névoa fria rolando pela parte de baixo do chat (parados nos blocos, por causa do GIF do painel), contorno em gradiente de ferro, luar e âmbar, halo escuro e cabeçalho verde-acinzentado; a borda tem faixa lisa de ferro azulado e linha dupla. Enfeites `mansao`: lanternas de ferro, grade de lanças, rosácea, lancetas, arandelas e portão. Ciclos de 16 s, seed 81 | `chat-halloween-mansao`, `bloco-halloween-mansao`, `borda-halloween-mansao` | `HauntedMansionLoop` (`halloween-haunted-mansion`) |
-| `halloween-interior` | Damasco verde-escuro parado, contorno em gradiente de latão, halo de luz de vela e cabeçalho de veludo bordô (no bloco, barra bordô à esquerda); a borda tem faixa verde lisa e linha dupla. Enfeites `interior`: candelabros com velas, arandelas e sanefas de veludo, e o clarão dos relâmpagos (`lightning` 0,8 no chat e nos blocos, 1 na borda) junto com o fundo. Ciclos de 16 s, seed 113 | `chat-halloween-interior`, `bloco-halloween-interior`, `borda-halloween-interior` | `HauntedInteriorLoop` (`halloween-haunted-interior`) |
-| `halloween-teia` | Gradiente violeta-escuro balançando devagar, contorno prateado apagado com cometas creme passando como reflexos na seda, halo prateado e cantos arredondados; a borda tem faixa escura, linha dupla e raio 38. Enfeites `teia`: teias com orvalho, guirlandas de fios, luar, brasa âmbar e uma viúva-negra; o âmbar só aparece na ampulheta e na brasa. Ciclos de 12 s, seed 47 | `chat-halloween-teia`, `bloco-halloween-teia`, `borda-halloween-teia` | `CobwebLoop` (`halloween-cobweb`) |
+| `neon` | Painel índigo translúcido com gradiente lento, cometas ciano e magenta num tubo de miolo branco, brilho forte e halo violeta; o bloco tem barra magenta à esquerda com reflexo, e a borda, faixa índigo lisa, linha dupla e colchetes pulsando. Ciclos de 8 s | `chat-neon`, `block-neon`, `border-neon` | `VaporwaveLoop` (`vaporwave-classic`) |
+| `pastel` | Creme com pontos rosados rolando devagar, contorno rosa, menta e pêssego (tracejado no chat e na borda, respirando no bloco), cantos bem arredondados; o bloco tem barra menta no topo, e a borda, brilhos e joias. Ciclos de 12 s (borda, 10 s) | `chat-pastel`, `block-pastel`, `border-pastel` | `KawaiiLoop` (`kawaii-constellation`) |
+| `vidro` | Vidro branco a 10% com reflexo passando, luz de cima e filete de luz na borda superior, contorno fino em gradiente branco e lavanda, halo escuro discreto que destaca o painel sobre fundos claros; borda de linha única, sem cantoneiras nem joias. Ciclos de 8 a 10 s | `chat-vidro`, `block-vidro`, `border-vidro` | `GradientLoop` (`gradient-aurora`) |
+| `halloween` | Roxo profundo com brasas laranja e amarelas subindo, contorno laranja e roxo respirando duas vezes por ciclo, brilho pulsando e halo laranja; o bloco tem barra laranja à esquerda, e a borda, joias pulsando. Ciclos de 12 s | `chat-halloween`, `block-halloween`, `border-halloween` | `HalloweenLoop`, `HauntedMansionLoop` e `CobwebLoop` (presets `halloween-midnight`, `halloween-haunted-mansion`, `halloween-cobweb`) |
+| `halloween-noite` | Céu estrelado: brilhos creme e lavanda cintilando no lugar sobre roxo-noite, contorno em gradiente lavanda e creme correndo devagar, com miolo claro, e halo lavanda; o bloco tem barra lavanda no topo com reflexo, e a borda, faixa estrelada com linha dupla, sem cantoneiras nem joias (`corners: "nenhum"`). Enfeites `noite`: morcegos, abóboras, estrelas e brasas (o laranja do kit fica só nas abóboras e no brilho das brasas). Ciclos de 12 s, seed 31 | `chat-halloween-noite`, `block-halloween-noite`, `border-halloween-noite` | `HalloweenLoop` (`halloween-midnight`) |
+| `halloween-mansao` | Bancos de névoa fria rolando pela parte de baixo do chat (parados nos blocos, por causa do GIF do painel), contorno em gradiente de ferro, luar e âmbar, halo escuro e cabeçalho verde-acinzentado; a borda tem faixa lisa de ferro azulado e linha dupla. Enfeites `mansao`: lanternas de ferro, grade de lanças, rosácea, lancetas, arandelas e portão. Ciclos de 16 s, seed 81 | `chat-halloween-mansao`, `block-halloween-mansao`, `border-halloween-mansao` | `HauntedMansionLoop` (`halloween-haunted-mansion`) |
+| `halloween-interior` | Damasco verde-escuro parado, contorno em gradiente de latão, halo de luz de vela e cabeçalho de veludo bordô (no bloco, barra bordô à esquerda); a borda tem faixa verde lisa e linha dupla. Enfeites `interior`: candelabros com velas, arandelas e sanefas de veludo, e o clarão dos relâmpagos (`lightning` 0,8 no chat e nos blocos, 1 na borda) junto com o fundo. Ciclos de 16 s, seed 113 | `chat-halloween-interior`, `block-halloween-interior`, `border-halloween-interior` | `HauntedInteriorLoop` (`halloween-haunted-interior`) |
+| `halloween-teia` | Gradiente violeta-escuro balançando devagar, contorno prateado apagado com cometas creme passando como reflexos na seda, halo prateado e cantos arredondados; a borda tem faixa escura, linha dupla e raio 38. Enfeites `teia`: teias com orvalho, guirlandas de fios, luar, brasa âmbar e uma viúva-negra; o âmbar só aparece na ampulheta e na brasa. Ciclos de 12 s, seed 47 | `chat-halloween-teia`, `block-halloween-teia`, `border-halloween-teia` | `CobwebLoop` (`halloween-cobweb`) |
 
 ## Formatos
 
@@ -339,11 +339,11 @@ Os overlays usam os mesmos comandos, com o tamanho em `--size` (os ids de [Taman
 
 ```sh
 npm run render:webm -- ChatLoop --props presets/chat-neon.json --size chat-padrao
-npm run render:mov -- BlocoLoop --props presets/bloco-vidro.json --size faixa
-npm run render:gif -- BlocoLoop --props presets/bloco-halloween.json --size painel-twitch
-npm run render:webm -- BordaLoop --props presets/borda-halloween-teia.json --size webcam-redonda
-npm run render:png -- BordaLoop --props presets/borda-pastel.json --size webcam-quadrada --frame 120
-npm run render:webm -- BlocoLoop --props presets/bloco-neon.json --width 800 --height 120 --bleed 32
+npm run render:mov -- BlockLoop --props presets/block-vidro.json --size faixa
+npm run render:gif -- BlockLoop --props presets/block-halloween.json --size painel-twitch
+npm run render:webm -- BorderLoop --props presets/border-halloween-teia.json --size webcam-redonda
+npm run render:png -- BorderLoop --props presets/border-pastel.json --size webcam-quadrada --frame 120
+npm run render:webm -- BlockLoop --props presets/block-neon.json --width 800 --height 120 --bleed 32
 npm run render:webm -- --list
 ```
 
@@ -353,7 +353,7 @@ O formato do comando substitui `outputFormat` do JSON; `--duration` e `--seed` s
 
 - Fundos: `out/<Composição>.<formato>`, por exemplo `out/VaporwaveLoop.webm`.
 - Overlays num tamanho do catálogo: `out/<Composição>-<tamanho>.<formato>`, por exemplo `out/ChatLoop-chat-padrao.webm`. Vale quando caixa, bleed, encaixe e forma coincidem exatamente com o tamanho (a mesma caixa 400×400 dá `webcam-quadrada` ou `webcam-redonda`, conforme `shape`).
-- Overlays em tamanho livre: `out/<Composição>-<L>x<A>.<formato>`, com a largura e a altura da caixa, não do arquivo: `out/BlocoLoop-800x120.webm`; num círculo fora do catálogo, a forma entra no nome: `out/BlocoLoop-300x300-circulo.webm`.
+- Overlays em tamanho livre: `out/<Composição>-<L>x<A>.<formato>`, com a largura e a altura da caixa, não do arquivo: `out/BlockLoop-800x120.webm`; num círculo fora do catálogo, a forma entra no nome: `out/BlockLoop-300x300-circulo.webm`.
 
 Arquivos existentes são preservados; acrescente `--overwrite` para substituí-los intencionalmente. O terminal informa as dimensões do arquivo, o número de frames e a duração efetiva antes do render. Nos overlays, informa também a velocidade real do movimento, que pode diferir um pouco da pedida porque o ciclo precisa fechar em períodos inteiros (veja [Como o loop funciona](#como-o-loop-funciona)):
 
@@ -418,8 +418,8 @@ Um manifesto de exemplo, menor que os de `packs/` (que pedem todos os tamanhos):
   "items": [
     {"composition": "VaporwaveLoop", "preset": "vaporwave-classic", "formats": ["webm", "png"]},
     {"composition": "ChatLoop", "preset": "chat-neon", "sizes": ["chat-padrao", "chat-alto"], "formats": ["webm", "png"]},
-    {"composition": "BlocoLoop", "preset": "bloco-neon", "sizes": ["painel-twitch"], "formats": ["gif", "png"]},
-    {"composition": "BordaLoop", "preset": "borda-neon", "sizes": ["webcam-redonda"], "formats": ["webm", "png"], "frame": 120}
+    {"composition": "BlockLoop", "preset": "block-neon", "sizes": ["painel-twitch"], "formats": ["gif", "png"]},
+    {"composition": "BorderLoop", "preset": "border-neon", "sizes": ["webcam-redonda"], "formats": ["webm", "png"], "frame": 120}
   ]
 }
 ```
@@ -429,7 +429,7 @@ Um manifesto de exemplo, menor que os de `packs/` (que pedem todos os tamanhos):
 ```sh
 npm run render:pack -- neon --dry-run
 npm run render:pack -- neon
-npm run render:pack -- halloween --only bordas/
+npm run render:pack -- halloween --only borders/
 npm run render:pack -- pastel --only chat-coluna --overwrite
 npm run render:pack -- caminho/meu-pack.json --dry-run
 ```
@@ -445,26 +445,26 @@ out/packs/neon/
 ├── chat/
 │   ├── ChatLoop-chat-padrao.webm
 │   └── ChatLoop-chat-padrao.png  …
-├── blocos/
-│   ├── BlocoLoop-etiqueta.webm  …
-│   └── BlocoLoop-painel-twitch.gif
-└── bordas/
-    ├── BordaLoop-webcam-16x9.webm
-    ├── BordaLoop-webcam-16x9.png
+├── text-boxes/
+│   ├── BlockLoop-etiqueta.webm  …
+│   └── BlockLoop-painel-twitch.gif
+└── borders/
+    ├── BorderLoop-webcam-16x9.webm
+    ├── BorderLoop-webcam-16x9.png
     ├── mascara-webcam-16x9.png  …
-    └── BordaLoop-tela-cheia.webm
+    └── BorderLoop-tela-cheia.webm
 ```
 
 As pastas repetem as do Studio. `manifest.json` reúne, para cada arquivo, os dados do [JSON de posição](#exportar) (`canvas`, `box`, `content`, `hole`, `header`, `bleed`, FPS, frames, formato, alpha e velocidade real), com as chaves em inglês para ferramentas; os JSONs avulsos de cada arquivo são incorporados a ele e removidos da pasta do pack. Cada borda de janela aponta a sua máscara em `mask`, e as máscaras têm `"role": "mask"`.
 
-As bordas de janela vêm com uma máscara por tamanho, `bordas/mascara-<tamanho>.png`: um PNG do tamanho da janela (640×360 em `webcam-16x9`), com a janela arredondada em branco opaco sobre transparência. A borda arredonda sozinha os cantos de uma câmera retangular até um raio de cerca de 2,4 vezes `thickness`; acima disso, os cantos da câmera aparecem por fora da moldura, e a máscara resolve. Nas câmeras redondas a máscara é obrigatória: `mascara-webcam-redonda-p.png`, `mascara-webcam-redonda.png` e `mascara-webcam-redonda-g.png` são discos brancos do tamanho da câmera (280, 400 e 560 px), e é ela que transforma a câmera retangular em redonda; sem ela, os cantos da câmera aparecem fora do anel. No OBS, clique com o botão direito na fonte da câmera, abra **Filtros**, acrescente **Máscara de imagem/mistura**, escolha o tipo **Máscara alfa** (canal alfa ou de cor; a máscara serve para os dois) e aponte o PNG. Posicione a câmera sobre a caixa da borda (o `box` do manifesto, ou seja, `bleed` px para dentro do canto do arquivo) e deixe a borda acima dela. Como a máscara depende só da janela, todos os temas do mesmo tamanho e raio usam a mesma; se um pack tem o mesmo tamanho com raios diferentes, cada máscara leva o raio no nome (`mascara-webcam-quadrada-r200.png`). As molduras de tela não precisam de máscara. Fora do pack, a máscara sai com `mascara: true` num JSON e bleed 0, por exemplo `npm run render:png -- BordaLoop --props mascara.json --size webcam-quadrada --bleed 0`, com `{"mascara": true, "radius": 24}` em `mascara.json`, com o mesmo `radius` da borda (24 é o do tema pastel; neon usa 16, vidro 20, halloween e halloween-noite 12, halloween-mansao 10, halloween-interior 8 e halloween-teia 38); o arquivo se chama `out/BordaLoop-webcam-quadrada-mascara.png`. Na câmera redonda o raio não importa: `npm run render:png -- BordaLoop --props mascara.json --size webcam-redonda --bleed 0`, com `{"mascara": true}`, gera o disco `out/BordaLoop-webcam-redonda-mascara.png`.
+As bordas de janela vêm com uma máscara por tamanho, `borders/mascara-<tamanho>.png`: um PNG do tamanho da janela (640×360 em `webcam-16x9`), com a janela arredondada em branco opaco sobre transparência. A borda arredonda sozinha os cantos de uma câmera retangular até um raio de cerca de 2,4 vezes `thickness`; acima disso, os cantos da câmera aparecem por fora da moldura, e a máscara resolve. Nas câmeras redondas a máscara é obrigatória: `mascara-webcam-redonda-p.png`, `mascara-webcam-redonda.png` e `mascara-webcam-redonda-g.png` são discos brancos do tamanho da câmera (280, 400 e 560 px), e é ela que transforma a câmera retangular em redonda; sem ela, os cantos da câmera aparecem fora do anel. No OBS, clique com o botão direito na fonte da câmera, abra **Filtros**, acrescente **Máscara de imagem/mistura**, escolha o tipo **Máscara alfa** (canal alfa ou de cor; a máscara serve para os dois) e aponte o PNG. Posicione a câmera sobre a caixa da borda (o `box` do manifesto, ou seja, `bleed` px para dentro do canto do arquivo) e deixe a borda acima dela. Como a máscara depende só da janela, todos os temas do mesmo tamanho e raio usam a mesma; se um pack tem o mesmo tamanho com raios diferentes, cada máscara leva o raio no nome (`mascara-webcam-quadrada-r200.png`). As molduras de tela não precisam de máscara. Fora do pack, a máscara sai com `mascara: true` num JSON e bleed 0, por exemplo `npm run render:png -- BorderLoop --props mascara.json --size webcam-quadrada --bleed 0`, com `{"mascara": true, "radius": 24}` em `mascara.json`, com o mesmo `radius` da borda (24 é o do tema pastel; neon usa 16, vidro 20, halloween e halloween-noite 12, halloween-mansao 10, halloween-interior 8 e halloween-teia 38); o arquivo se chama `out/BorderLoop-webcam-quadrada-mascara.png`. Na câmera redonda o raio não importa: `npm run render:png -- BorderLoop --props mascara.json --size webcam-redonda --bleed 0`, com `{"mascara": true}`, gera o disco `out/BorderLoop-webcam-redonda-mascara.png`.
 
 O builder usa um único bundle e exporta um arquivo por vez. Arquivos já prontos são pulados (`já existe, pulando.`), e o `manifest.json` é regravado depois de cada arquivo: se o build parar no meio, rode o mesmo comando de novo e ele continua de onde parou. Os renders em andamento do pack ficam em `out/.scratch/packs/<nome>/`, fora da pasta vendida; as sobras de um build interrompido (inclusive pastas `.asset-render-*` dentro do pack, de versões anteriores) são apagadas no começo do build seguinte, e o `--dry-run` avisa quantas há. Antes de começar e antes de cada arquivo, confere o espaço livre em disco e recusa seguir com menos de 2 GB, dizendo quanto há.
 
 Os manifestos pedem `webm` e `png` em todos os itens, exceto o painel da Twitch, que sai em `gif` e `png`. MOV é opcional porque os arquivos são enormes (veja [Formatos](#formatos)): para entregar a versão de edição, acrescente `"mov"` aos `formats` dos itens que precisam dela, de preferência num manifesto separado, e confira o total com `--dry-run` antes de renderizar:
 
 ```json
-{"composition": "BlocoLoop", "preset": "bloco-neon", "sizes": ["faixa", "titulo"], "formats": ["webm", "mov", "png"]}
+{"composition": "BlockLoop", "preset": "block-neon", "sizes": ["faixa", "titulo"], "formats": ["webm", "mov", "png"]}
 ```
 
 ## Wuthering Waves: Azure Lotus
@@ -495,7 +495,7 @@ A lua tem halo e crateras sutis; os morcegos descrevem trajetórias fechadas com
 
 Com `transparent: true` e `outputFormat: "webm"`, o céu de fundo desaparece, preservando lua, estrelas, cenário, abóboras e névoa com alpha. Em MP4/GIF, todos os elementos continuam compostos sobre `backgroundColor`.
 
-**Kit de overlays.** O tema [`halloween-noite`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 12 s e a seed 31: `presets/chat-halloween-noite.json`, `presets/bloco-halloween-noite.json` e `presets/borda-halloween-noite.json`, e o pack sai com `npm run render:pack -- halloween-noite` (`--dry-run` para conferir antes). Os enfeites `noite` trazem os mesmos morcegos do fundo batendo as asas no canto superior direito, as abóboras com o rosto aceso e estrelas e brasas ao longo do contorno. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra: os morcegos e as abóboras ficam nessas margens e seriam cortados ou cobertos.
+**Kit de overlays.** O tema [`halloween-noite`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 12 s e a seed 31: `presets/chat-halloween-noite.json`, `presets/block-halloween-noite.json` e `presets/border-halloween-noite.json`, e o pack sai com `npm run render:pack -- halloween-noite` (`--dry-run` para conferir antes). Os enfeites `noite` trazem os mesmos morcegos do fundo batendo as asas no canto superior direito, as abóboras com o rosto aceso e estrelas e brasas ao longo do contorno. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra: os morcegos e as abóboras ficam nessas margens e seriam cortados ou cobertos.
 
 ## Halloween: mansão assombrada
 
@@ -507,7 +507,7 @@ A arquitetura permanece fixa enquanto a iluminação das janelas varia lentament
 
 Com `transparent: true` e `outputFormat: "webm"`, o céu e a vinheta atmosférica desaparecem, preservando o cenário e a névoa com alpha. Em MP4/GIF, todos os elementos são compostos sobre `backgroundColor`. Use `npm run render:webm -- HauntedMansionLoop --props presets/halloween-haunted-mansion.json` para o WebM ou troque por `render:mp4` / `render:gif` para os formatos opacos, sempre com os perfis oficiais descritos acima.
 
-**Kit de overlays.** O tema [`halloween-mansao`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 16 s e a seed 81: `presets/chat-halloween-mansao.json`, `presets/bloco-halloween-mansao.json` e `presets/borda-halloween-mansao.json`, e o pack sai com `npm run render:pack -- halloween-mansao`. Os enfeites `mansao` repetem o lampião, a grade e as janelas da mansão: lanternas de ferro com vidro âmbar tremulando no ritmo das do fundo, grade de lanças, rosácea e lancetas no topo das caixas largas, arandelas nas laterais das bordas grandes e um portão embaixo. A névoa do chat corre quase à velocidade da névoa do fundo; nos blocos ela fica parada, para o GIF do painel da Twitch continuar leve. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra: lanternas, grade e portão ficam nessas margens.
+**Kit de overlays.** O tema [`halloween-mansao`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 16 s e a seed 81: `presets/chat-halloween-mansao.json`, `presets/block-halloween-mansao.json` e `presets/border-halloween-mansao.json`, e o pack sai com `npm run render:pack -- halloween-mansao`. Os enfeites `mansao` repetem o lampião, a grade e as janelas da mansão: lanternas de ferro com vidro âmbar tremulando no ritmo das do fundo, grade de lanças, rosácea e lancetas no topo das caixas largas, arandelas nas laterais das bordas grandes e um portão embaixo. A névoa do chat corre quase à velocidade da névoa do fundo; nos blocos ela fica parada, para o GIF do painel da Twitch continuar leve. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra: lanternas, grade e portão ficam nessas margens.
 
 ## Halloween: interior da mansão
 
@@ -527,7 +527,7 @@ Lá fora caem relâmpagos, um em cada janela, em momentos escolhidos pela seed e
 
 Com `transparent: true` e `outputFormat: "webm"`, a sala se abre sobre o jogo. Somem a parede do fundo, o arco, o campo central do piso, o teto e a vinheta. Ficam as paredes laterais com janelas, cortinas e retratos, as faixas de piso junto a elas com os candelabros, e o lustre, que passa a pender da borda superior pela corrente. As peças mantidas são opacas, sem rampas de transparência. Brilhos, névoa e poeira ficam sobre elas, e os cortes têm acabamento escuro. O reflexo do luar no piso some com o campo central, e o clarão dos relâmpagos é pintado só no miolo das peças mantidas, sem alterar o alpha. A área de conteúdo fica totalmente transparente. Em MP4/GIF, a cena é composta sobre `backgroundColor`. Para exportar o preset em MP4, use `npm run render:mp4 -- HauntedInteriorLoop --props presets/halloween-haunted-interior.json`; troque por `render:webm` ou `render:gif` para os outros formatos, mantendo os perfis oficiais descritos acima.
 
-**Kit de overlays.** O tema [`halloween-interior`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 16 s e a seed 113: `presets/chat-halloween-interior.json`, `presets/bloco-halloween-interior.json` e `presets/borda-halloween-interior.json`, e o pack sai com `npm run render:pack -- halloween-interior`. Os enfeites `interior` trazem o latão, as velas e o veludo do salão: candelabros com a mesma chama e o mesmo tremor das velas do fundo, arandelas de duas velas e sanefas de veludo com borlas. Os presets ligam `lightning`, e com a mesma seed e duração os relâmpagos caem nos mesmos instantes do fundo: painéis, molduras e candelabros clareiam junto com as janelas do salão, mais forte do lado do raio. No OBS, uma fonte de mídia recomeça do início quando a cena volta a ficar ativa (se a opção de reiniciar ao ativar estiver ligada, o padrão); por isso os overlays só relampejam junto com o fundo quando começam juntos: ponha o fundo e os overlays na mesma cena, com a mesma opção. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra; em especial, deixe pelo menos 96 px entre a moldura do jogo e a borda da tela, para as velas não serem cortadas.
+**Kit de overlays.** O tema [`halloween-interior`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 16 s e a seed 113: `presets/chat-halloween-interior.json`, `presets/block-halloween-interior.json` e `presets/border-halloween-interior.json`, e o pack sai com `npm run render:pack -- halloween-interior`. Os enfeites `interior` trazem o latão, as velas e o veludo do salão: candelabros com a mesma chama e o mesmo tremor das velas do fundo, arandelas de duas velas e sanefas de veludo com borlas. Os presets ligam `lightning`, e com a mesma seed e duração os relâmpagos caem nos mesmos instantes do fundo: painéis, molduras e candelabros clareiam junto com as janelas do salão, mais forte do lado do raio. No OBS, uma fonte de mídia recomeça do início quando a cena volta a ficar ativa (se a opção de reiniciar ao ativar estiver ligada, o padrão); por isso os overlays só relampejam junto com o fundo quando começam juntos: ponha o fundo e os overlays na mesma cena, com a mesma opção. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra; em especial, deixe pelo menos 96 px entre a moldura do jogo e a borda da tela, para as velas não serem cortadas.
 
 ## Halloween: teias de aranha
 
@@ -541,7 +541,7 @@ A luz vem de uma lua rente à borda de cima, perto do canto superior direito: a 
 
 Com `transparent: true` e `outputFormat: "webm"`, o céu de fundo, a vinheta e o brilho difuso em volta da lua desaparecem, preservando teias, orvalho, fios, aranhas, poeira e névoa com alpha. Como luz de fundo, restam apenas o halo da lua, no canto superior direito, e uma faixa âmbar na borda de baixo, ambos fora da área central; o luar e o reflexo âmbar sobre a seda continuam, e um contorno escuro discreto sob a seda mantém os fios legíveis sobre vídeo claro. A aranha tem o corpo opaco, a borda de luar das pernas a mantém visível sobre vídeo escuro, e o fio que a sustenta tem uma sombra discreta para não sumir sobre vídeo claro. Em MP4/GIF, todos os elementos são compostos sobre `backgroundColor`.
 
-**Kit de overlays.** O tema [`halloween-teia`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 12 s e a seed 47: `presets/chat-halloween-teia.json`, `presets/bloco-halloween-teia.json` e `presets/borda-halloween-teia.json`, e o pack sai com `npm run render:pack -- halloween-teia`. Os enfeites `teia` desenham as teias do fundo, com os mesmos fios, o rasgo e as pontas partidas, nos cantos das caixas, o orvalho faiscando quando passa a faixa de luar e a viúva-negra, pendurada no fio ao lado do chat e dos blocos e pousada na teia nas bordas. Ao longo da borda de cima pendem guirlandas de fios, presas em nós fixos, com gotas de orvalho nos pontos mais baixos e algumas pontas partidas; nas bordas de janela retangulares e nos blocos retangulares (menos as etiquetas e o painel da Twitch, que não tem guirlandas), outra guirlanda presa ao próprio quadro ao longo da borda de baixo. O âmbar só aparece na ampulheta da aranha e na brasa atrás da teia de baixo. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra: teias, guirlandas e a aranha ficam nessas margens.
+**Kit de overlays.** O tema [`halloween-teia`](#temas) veste chat, blocos e bordas para este fundo, com os mesmos 12 s e a seed 47: `presets/chat-halloween-teia.json`, `presets/block-halloween-teia.json` e `presets/border-halloween-teia.json`, e o pack sai com `npm run render:pack -- halloween-teia`. Os enfeites `teia` desenham as teias do fundo, com os mesmos fios, o rasgo e as pontas partidas, nos cantos das caixas, o orvalho faiscando quando passa a faixa de luar e a viúva-negra, pendurada no fio ao lado do chat e dos blocos e pousada na teia nas bordas. Ao longo da borda de cima pendem guirlandas de fios, presas em nós fixos, com gotas de orvalho nos pontos mais baixos e algumas pontas partidas; nas bordas de janela retangulares e nos blocos retangulares (menos as etiquetas e o painel da Twitch, que não tem guirlandas), outra guirlanda presa ao próprio quadro ao longo da borda de baixo. O âmbar só aparece na ampulheta da aranha e na brasa atrás da teia de baixo. Os enfeites moram no bleed, então deixe cerca de 48 px livres em volta das webcams (72 px na `webcam-16x9-g` e 96 px no `jogo`, onde os enfeites saem ampliados) e 32 px em volta do chat e dos blocos, inclusive até a borda da tela e entre uma peça e outra: teias, guirlandas e a aranha ficam nessas margens.
 
 ## Christmas: gilded garland
 
@@ -788,7 +788,7 @@ Os testes verificam schemas, arredondamento de duração, presets, determinismo 
 
 Essa etapa precisa de FFmpeg e FFprobe completos no `PATH`, ou em `FFMPEG_PATH` e `FFPROBE_PATH`: o FFmpeg embutido no Remotion não tem o muxer `rawvideo`, usado para decodificar o primeiro frame, e a leitura do alpha do WebM precisa do decodificador `libvpx-vp9`.
 
-Nos fundos, são quatro amostras de 0,4 segundo por composição: MP4, WebM opaco, WebM com alpha e GIF. Nos overlays, são WebM, MOV e PNG com alpha e um MP4 composto, no menor e no mais alto tamanho do catálogo de cada tipo. Para validar só uma parte, use `--kind` com `background`, `chat`, `bloco` ou `borda`, e `--only` com um trecho do nome da amostra (`npm run validate:exports -- --kind bloco --only etiqueta-p`). O relatório em `out/validation/report.json` registra cada arquivo aprovado, incluindo a comparação do primeiro frame decodificado com um PNG novo do Remotion, composto sobre fundos claro e escuro. Para amostras mais longas, use `npm.cmd run validate:exports -- --duration 8`. Para retomar uma verificação interrompida sem repetir os encodes existentes, acrescente `--reuse-existing`: os arquivos presentes serão novamente inspecionados e os ausentes serão renderizados. Após alterar animações ou presets de exportação, execute sem essa opção para gerar arquivos novos.
+Nos fundos, são quatro amostras de 0,4 segundo por composição: MP4, WebM opaco, WebM com alpha e GIF. Nos overlays, são WebM, MOV e PNG com alpha e um MP4 composto, no menor e no mais alto tamanho do catálogo de cada tipo. Para validar só uma parte, use `--kind` com `background`, `chat`, `block` ou `border`, e `--only` com um trecho do nome da amostra (`npm run validate:exports -- --kind bloco --only etiqueta-p`). O relatório em `out/validation/report.json` registra cada arquivo aprovado, incluindo a comparação do primeiro frame decodificado com um PNG novo do Remotion, composto sobre fundos claro e escuro. Para amostras mais longas, use `npm.cmd run validate:exports -- --duration 8`. Para retomar uma verificação interrompida sem repetir os encodes existentes, acrescente `--reuse-existing`: os arquivos presentes serão novamente inspecionados e os ausentes serão renderizados. Após alterar animações ou presets de exportação, execute sem essa opção para gerar arquivos novos.
 
 Um conjunto de enfeites fica em `src/overlays/shared/ornaments/sets/` e segue um contrato que esses testes cobram. `place` escolhe as posições e os tamanhos só a partir do layout e de `ornamentSize`, sem seed nem frame, com o motivo principal primeiro; uma lista vazia vira a recusa com a saída. `build` devolve, a cada frame, a mesma quantidade de elementos planos, cada um dentro do círculo da sua posição (luz incluída), com movimento em harmônicos inteiros do ciclo e luz de no máximo 0,2 sobre o texto. `render` desenha sem `filter` nem modo de mistura. Nenhum motivo passa do bleed nem entra na área de texto ou na janela.
 
@@ -796,7 +796,7 @@ Para validar uma mudança visual, reproduza pelo menos dois ciclos no Studio. In
 
 ### Adicionar um asset
 
-1. Escolha o tipo em `src/kinds.ts`: ele define a pasta no Studio, o tamanho e o valor inicial de `transparent`. Um tipo pode ter várias composições (por exemplo, uma borda temática ao lado de `BordaLoop`); um tipo novo precisa da política completa e, se tiver tamanho livre, dos tamanhos em `src/sizes.ts`.
+1. Escolha o tipo em `src/kinds.ts`: ele define a pasta no Studio, o tamanho e o valor inicial de `transparent`. Um tipo pode ter várias composições (por exemplo, uma borda temática ao lado de `BorderLoop`); um tipo novo precisa da política completa e, se tiver tamanho livre, dos tamanhos em `src/sizes.ts`.
 2. Para um fundo, crie o componente em `src/backgrounds/` e estenda `baseBackgroundSchema`. Para um overlay, crie-o em `src/overlays/<tipo>/`, monte o schema com `overlayBaseFields(getSize(<tamanho padrão>))` e os grupos de `src/overlays/shared/fields.ts` (preenchimento, contorno, brilho, halo), e termine com um `superRefine` que chame `refineCanvas`, `refineOutset` e as recusas do tipo, sempre com a saída na mensagem. Medidas decorativas ficam em px fixos.
 3. Separe o cálculo visual em uma função pura que receba props, frame e total de frames e devolva uma lista plana de elementos, cada um com `opacity` numérica, listados por lugar para que as trocas não apareçam na emenda. Use `loopPhase` e a seed para movimento periódico e reproduzível, e, no contorno, `fitPeriod` e `lapsFor`; evite relógio, `Math.random()`, animações CSS ou estado acumulado entre frames.
 4. Num overlay, escreva também `getLayout(props)`, pura e fonte única da geometria: `canvas`, `box`, `content`, `hole` (bordas), `header` (se houver) e `outset`, que nunca passa do bleed. Acrescente `getMotion` para a velocidade real e, se o asset tiver máscara, `getMask`.

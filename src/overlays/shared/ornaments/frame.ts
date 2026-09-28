@@ -15,7 +15,7 @@ const areas = (keepOut: readonly (Rect | null | undefined)[]): Rect[] =>
  * panel hides the back layer. Built from the kind's layout before the ornaments fold their outset.
  */
 export const panelOrnamentFrame = (input: {
-  kind: 'chat' | 'bloco'; layout: PanelLayout; keepOut: readonly (Rect | null | undefined)[];
+  kind: 'chat' | 'block'; layout: PanelLayout; keepOut: readonly (Rect | null | undefined)[];
   accent?: 'esquerda' | 'topo' | null; glow: number;
 }): OrnamentFrame => {
   const {layout} = input;
@@ -47,7 +47,7 @@ export const frameOrnamentFrame = (input: {layout: FrameLayout; track: RoundRect
   const canvas = canvasRect(layout.canvas);
   const tela = layout.fit === 'tela';
   return {
-    kind: 'borda',
+    kind: 'border',
     fit: layout.fit,
     canvas,
     box: {...layout.box},

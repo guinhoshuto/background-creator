@@ -59,22 +59,22 @@ test('ornaments: quando nem o motivo principal cabe, a combinação é recusada 
   const input = {
     width: 320, height: 100, bleed: 0, radius: 0, strokeWidth: 0, paddingX: 0, paddingY: 0, glow: 0, halo: 0, ornaments: 'noite',
   };
-  const issues = ORNAMENT_KINDS.bloco.issues(input);
+  const issues = ORNAMENT_KINDS.block.issues(input);
   assert.equal(issues.length, 1);
   assert.deepEqual(issues[0]!.path, ['ornaments']);
   assert.match(issues[0]!.message, REFUSAL);
-  assert.deepEqual(ORNAMENT_KINDS.bloco.issues({...input, ornaments: 'nenhum'}), []);
+  assert.deepEqual(ORNAMENT_KINDS.block.issues({...input, ornaments: 'nenhum'}), []);
   assert.equal(issues[0]!.message, 'The "noite" ornaments do not fit this size: increase bleed, paddingX, paddingY or radius or use ornaments nenhum.');
-  assert.deepEqual(ORNAMENT_KINDS.bloco.issues({...input, paddingX: 40, paddingY: 30}), [], 'bloco: a saída indicada resolve');
+  assert.deepEqual(ORNAMENT_KINDS.block.issues({...input, paddingX: 40, paddingY: 30}), [], 'bloco: a saída indicada resolve');
   // A border has no padding, and a screen frame no bleed: each names its own way out, which works.
   const border = {width: 200, height: 120, radius: 0, thickness: 2, strokeWidth: 2, glow: 0, halo: 0, corners: 'nenhum', ornaments: 'noite'};
   for (const [input, wayOut, fixed] of [
     [{...border, fit: 'tela', bleed: 0}, 'increase thickness, glow or radius or use ornaments nenhum.', {radius: 60}],
     [{...border, fit: 'janela', bleed: 8}, 'increase bleed or radius or use ornaments nenhum.', {bleed: 24}],
   ] as const) {
-    const refused = ORNAMENT_KINDS.borda.issues(input);
+    const refused = ORNAMENT_KINDS.border.issues(input);
     assert.deepEqual(refused.map((issue) => [issue.path, issue.message]), [[['ornaments'], `The "noite" ornaments do not fit this size: ${wayOut}`]], input.fit);
-    assert.deepEqual(ORNAMENT_KINDS.borda.issues({...input, ...fixed}), [], `${input.fit}: a saída indicada resolve`);
+    assert.deepEqual(ORNAMENT_KINDS.border.issues({...input, ...fixed}), [], `${input.fit}: a saída indicada resolve`);
   }
   // A radius already at its maximum (a pill, a round screen frame) is not offered: raising it changes nothing.
   const pill = {width: 240, height: 64, radius: 32, bleed: 0, padding: 8, headerHeight: 0, glow: 0, halo: 0, ornaments: 'noite'};
@@ -83,7 +83,7 @@ test('ornaments: quando nem o motivo principal cabe, a combinação é recusada 
   };
   for (const [adapter, input, wayOut, fixes] of [
     [ORNAMENT_KINDS.chat, pill, 'increase bleed or padding or use ornaments nenhum.', [{bleed: 64}, {padding: 20}]],
-    [ORNAMENT_KINDS.borda, round, 'increase thickness or glow or use ornaments nenhum.', [{thickness: 12}, {glow: 8}]],
+    [ORNAMENT_KINDS.border, round, 'increase thickness or glow or use ornaments nenhum.', [{thickness: 12}, {glow: 8}]],
   ] as const) {
     const message = [[['ornaments'], `The "noite" ornaments do not fit this size: ${wayOut}`]];
     assert.deepEqual(adapter.issues(input).map((issue) => [issue.path, issue.message]), message, adapter.kind);
@@ -108,7 +108,7 @@ test('ornaments: relâmpago num ciclo curto demais para um raio é recusado com 
 });
 
 test('ornaments: lugares nos cantos, espaço livre e deslize ao longo da diagonal', () => {
-  const adapter = ORNAMENT_KINDS.bloco;
+  const adapter = ORNAMENT_KINDS.block;
   const round = adapter.ornamentLayout(adapter.parse({...sizeProps(getSize('circulo')), ornaments: 'noite', accent: 'esquerda'})).frame;
   const {outline} = round;
   const [cx, cy, r] = [outline.x + outline.width / 2, outline.y + outline.height / 2, outline.width / 2];
@@ -150,10 +150,10 @@ test('ornaments: lugares nos cantos, espaço livre e deslize ao longo da diagona
   assert.equal(ornamentOutset(frame, [{...small, x: frame.box.x, y: frame.box.y}]), 10);
   assert.equal(ornamentOutset(frame, []), 0);
   // A screen frame has no back room (the rest of its box is the band's fillet, under the band fill).
-  const borda = ORNAMENT_KINDS.borda;
+  const borderKind = ORNAMENT_KINDS.border;
   for (const size of ['tela-cheia', 'tela-vertical']) {
     for (const extra of [{}, {radius: 48}]) {
-      const tela = borda.ornamentLayout(borda.parse({...sizeProps(getSize(size)), ...extra, ornaments: 'noite'}));
+      const tela = borderKind.ornamentLayout(borderKind.parse({...sizeProps(getSize(size)), ...extra, ornaments: 'noite'}));
       for (const corner of cornerSlots(tela.frame)) {
         assert.equal(roomAt(tela.frame, corner, 'back').extent, 0, `${size} ${corner.slot}`);
         assert.equal(fitMotif(tela.frame, corner, {motif: 'x', layer: 'back', nominal: 500, min: 0.5}), null, `${size} ${corner.slot}`);

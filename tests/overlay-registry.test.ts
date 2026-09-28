@@ -18,7 +18,7 @@ import {OVERLAY_THEMES, expectedPresetFiles} from './helpers/themes';
 
 const overlays = Object.values(overlayCatalog);
 const THEMES = OVERLAY_THEMES;
-const PRESET_PREFIX = {chat: 'chat', bloco: 'bloco', borda: 'borda'} as const;
+const PRESET_PREFIX = {chat: 'chat', block: 'block', border: 'border'} as const;
 
 type Registered = {
   id: string; width: number; height: number; defaultProps: Record<string, unknown>;
@@ -34,7 +34,7 @@ const sizePatch = sizeProps;
 
 test('overlays: o catálogo registra chat, bloco e borda com layout e o tipo de cada um', () => {
   assert.deepEqual(overlays.map((entry) => [entry.id, entry.kind]), [
-    ['ChatLoop', 'chat'], ['BlocoLoop', 'bloco'], ['BordaLoop', 'borda'],
+    ['ChatLoop', 'chat'], ['BlockLoop', 'block'], ['BorderLoop', 'border'],
   ]);
   for (const entry of overlays) {
     assert.ok(getLayoutOf(entry), `${entry.id}: sem getLayout o export não publica o JSON de posição`);
@@ -49,7 +49,7 @@ test('overlays: o catálogo registra chat, bloco e borda com layout e o tipo de 
 });
 
 test('overlays: cada preset de tema passa no schema estrito, sem fixar tamanho, em todo tamanho do tipo', () => {
-  const files = readdirSync(presetsDir).filter((file) => /^(chat|bloco|borda)-.*\.json$/.test(file)).sort();
+  const files = readdirSync(presetsDir).filter((file) => /^(chat|block|border)-.*\.json$/.test(file)).sort();
   // Every theme's three presets, exactly.
   assert.deepEqual(files, expectedPresetFiles());
   for (const entry of overlays) {
@@ -126,9 +126,9 @@ test('overlays: o export nomeia pelo tamanho, publica o JSON de posição e recu
   });
   assert.deepEqual(sidecar.header, layout.header);
   assert.ok(layout.header && layout.header.y >= layout.box.y && layout.header.y + layout.header.height <= layout.content.y);
-  const borda = resolveExport({compositionId: 'BordaLoop', format: 'webm'});
+  const border = resolveExport({compositionId: 'BorderLoop', format: 'webm'});
   const bordaSidecar = buildSidecar({
-    output: borda.output, asset: borda.asset, props: borda.props, layout: getLayoutOf(borda.asset)!(borda.props),
+    output: border.output, asset: border.asset, props: border.props, layout: getLayoutOf(border.asset)!(border.props),
     fps: 60, durationInFrames: 480, format: 'webm', frame: null,
   });
   assert.equal('header' in bordaSidecar, false);

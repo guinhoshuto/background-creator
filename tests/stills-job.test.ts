@@ -82,7 +82,7 @@ test('qa:kit: the Halloween night pack becomes one job with sheets and mockups',
   assert.equal(new Set(names).size, names.length);
   assert.ok(job.stills.every((still) => still.props?.outputFormat === undefined));
   assert.deepEqual(job.sheets!.map((sheet) => sheet.out).filter((out) => out.endsWith('-0.png')),
-    ['sheet-chat-0.png', 'sheet-bloco-0.png', 'sheet-borda-0.png', 'sheet-light-0.png']);
+    ['sheet-chat-0.png', 'sheet-block-0.png', 'sheet-border-0.png', 'sheet-light-0.png']);
   const chatting = job.mockups!.find((mockup) => mockup.out === 'mock-chatting-0.png')!;
   assert.equal(chatting.base, 'bg-HalloweenLoop-0');
   assert.ok(chatting.layers.some((layer) => layer.name === 'chat-padrao-0'));

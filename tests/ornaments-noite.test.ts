@@ -22,7 +22,7 @@ import {framesOf, kitProps, kitSizeIds, ORNAMENT_KINDS, type OrnamentKindName, t
  */
 
 const noite = ORNAMENT_REGISTRY.noite;
-/** A theme-like base: the kit's colours and duration, and the ornamentSize the chat and bloco presets use. */
+/** A theme-like base: the kit's colours and duration, and the ornamentSize the chat and block presets use. */
 const BASE = {
   ornaments: 'noite', ornamentSize: 64, ornamentColors: ['#9B85C9', '#F7DCA6', '#ED792D'], durationSeconds: 12, seed: 31,
 } as const;
@@ -106,10 +106,10 @@ test('[noite] kit: quais motivos ficam em cada tamanho e com que tamanho (preset
     );
     const moon = placements[0]!;
     // The hero is limited by its room, not by the preset, wherever a room target applies (every
-    // size but the round blocos, where the bloco preset's Ø64 caps it: more would crowd circulo-p);
+    // size but the round blocks, where the block preset's Ø64 caps it: more would crowd circulo-p);
     // its room is its extent's ceiling at its corner.
     const room = roomAt(frame, cornerSlots(frame).find((corner) => corner.slot === moon.slot)!, moon.layer).extent;
-    if (frame.circle && size.kind === 'bloco') assert.equal(moon.size, props.ornamentSize, `${size.id}: lua no tamanho do preset`);
+    if (frame.circle && size.kind === 'block') assert.equal(moon.size, props.ornamentSize, `${size.id}: lua no tamanho do preset`);
     else assert.ok(moon.extent >= 0.85 * room - 1e-9, `${size.id}: lua ${moon.extent} de ${room}`);
     // Secondaries: fixed px caps (never scaled with the box), minimums, and the kit's targets
     // (bats ≥ 29 px, pumpkins ≥ 32 px), the Twitch panel included (with the pack's padding).
@@ -187,7 +187,7 @@ test('[noite] luz nunca come o espaço do corpo: light ≤ reach + max(4, 0,25·
 });
 
 test('[noite] blocos redondos: a lua fica no céu (TR) e nada da frente toca o arco de destaque', () => {
-  // The arc (BlocoLoop: 60° to each side of the top or the left), in degrees counter-clockwise from the right, y up.
+  // The arc (BlockLoop: 60° to each side of the top or the left), in degrees counter-clockwise from the right, y up.
   const arcSpan = {topo: [30, 150], esquerda: [120, 240]} as const;
   for (const id of ['circulo-p', 'circulo', 'circulo-g']) {
     const size = NAMED_SIZES.find((entry) => entry.id === id)!;
@@ -220,7 +220,7 @@ test('[noite] blocos redondos: a lua fica no céu (TR) e nada da frente toca o a
 test('[noite] tela: lua, morcegos e abóboras na faixa com o preset, radius 64 e thickness 24', () => {
   for (const id of ['tela-cheia', 'tela-vertical']) {
     const size = NAMED_SIZES.find((entry) => entry.id === id)!;
-    const adapter = ORNAMENT_KINDS.borda;
+    const adapter = ORNAMENT_KINDS.border;
     const {placements} = adapter.ornamentLayout(adapter.parse({...adapter.preset('halloween-noite'), ...sizeProps(size), radius: 64, thickness: 24}));
     assert.ok(placements.every((placement) => placement.layer === 'front'), id);
     assert.ok(placements[0]!.size >= 60 - 1e-9, `${id}: lua ${placements[0]!.size}`);
@@ -230,7 +230,7 @@ test('[noite] tela: lua, morcegos e abóboras na faixa com o preset, radius 64 e
   // The bare preset (radius 12, thickness 12) keeps the moon and still fits bats in the band.
   for (const id of ['tela-cheia', 'tela-vertical']) {
     const size = NAMED_SIZES.find((entry) => entry.id === id)!;
-    const adapter = ORNAMENT_KINDS.borda;
+    const adapter = ORNAMENT_KINDS.border;
     const {placements} = adapter.ornamentLayout(adapter.parse({...adapter.preset('halloween-noite'), ...sizeProps(size)}));
     assert.equal(placements[0]!.motif, 'moon');
     assert.ok(count(placements, 'bat') >= 3, `${id} (preset): ${motifs(placements).join(', ')}`);
@@ -391,7 +391,7 @@ test('[noite] formas e cores do fundo', () => {
 });
 
 test('[noite] nada desenhado sobre o texto nos tamanhos extremos', () => {
-  for (const size of NAMED_SIZES.filter((entry) => entry.kind !== 'borda')) {
+  for (const size of NAMED_SIZES.filter((entry) => entry.kind !== 'border')) {
     for (const ornamentSize of [12, 48, 256]) {
       const tight = size.kind === 'chat' ? {padding: 0} : {paddingX: 0, paddingY: 0};
       for (const extra of [{}, tight]) {

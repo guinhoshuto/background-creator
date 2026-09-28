@@ -158,7 +158,7 @@ export const glowFields = (defaults: GlowDefaults = {}) => ({
 
 export type HaloDefaults = Partial<{halo: number; haloColor: string}>;
 
-/** An outer glow around the whole panel (chat, bloco) or frame (borda); it lives in the bleed. */
+/** An outer glow around the whole panel (chat, block) or frame (border); it lives in the bleed. */
 export const haloFields = (defaults: HaloDefaults = {}) => ({
   halo: z.number().finite().min(0).max(128)
     .describe('Reach of the halo around the panel, in px; it must fit in the bleed')

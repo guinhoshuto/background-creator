@@ -520,9 +520,9 @@ export const fitGarlands = (frame: OrnamentFrame, webs: readonly CornerWeb[], av
   }
 
   // The bottom: a block's outline or a border's main stroke line, knotted on the frame itself.
-  const bottomY = frame.kind === 'bloco' ? outline.y + outline.height : frame.fit === 'janela' ? frame.track.y + frame.track.height : null;
+  const bottomY = frame.kind === 'block' ? outline.y + outline.height : frame.fit === 'janela' ? frame.track.y + frame.track.height : null;
   if (bottomY !== null) {
-    const lows = frame.kind === 'bloco' ? [bottomY + 22, bottomY + 15] : [bottomY + 32, bottomY + 25];
+    const lows = frame.kind === 'block' ? [bottomY + 22, bottomY + 15] : [bottomY + 32, bottomY + 25];
     const side = (slot: OrnamentCornerId, x: number) => {
       const fan = web(slot);
       const at = fan ? onRim(fan, bottomY) : null;

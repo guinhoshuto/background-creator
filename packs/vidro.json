@@ -13,21 +13,21 @@
       "formats": ["webm", "png"]
     },
     {
-      "composition": "BlocoLoop",
-      "preset": "bloco-vidro",
+      "composition": "BlockLoop",
+      "preset": "block-vidro",
       "sizes": ["etiqueta-p", "etiqueta", "faixa", "titulo", "cartao", "quadrado", "lista", "circulo-p", "circulo", "circulo-g"],
       "formats": ["webm", "png"]
     },
     {
-      "composition": "BlocoLoop",
-      "preset": "bloco-vidro",
+      "composition": "BlockLoop",
+      "preset": "block-vidro",
       "props": {"transparent": false},
       "sizes": ["painel-twitch"],
       "formats": ["gif", "png"]
     },
     {
-      "composition": "BordaLoop",
-      "preset": "borda-vidro",
+      "composition": "BorderLoop",
+      "preset": "border-vidro",
       "sizes": ["webcam-16x9", "webcam-16x9-g", "webcam-4x3", "webcam-quadrada", "webcam-redonda-p", "webcam-redonda", "webcam-redonda-g", "webcam-vertical", "jogo", "tela-cheia", "tela-vertical"],
       "formats": ["webm", "png"]
     }

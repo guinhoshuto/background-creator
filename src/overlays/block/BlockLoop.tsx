@@ -28,7 +28,7 @@ import {contentGlowOpacity} from './legibility';
 export const BLOCO_ACCENTS = ['nenhum', 'esquerda', 'topo'] as const;
 
 /** The kind's default named size ('cartao', 640×360 with a 32 px bleed): the schema's defaults. */
-const DEFAULT_SIZE = getSize(kindPolicies.bloco.defaultSizeId!);
+const DEFAULT_SIZE = getSize(kindPolicies.block.defaultSizeId!);
 
 /** Peak opacity of the glint that runs along the accent bar. */
 const ACCENT_SHEEN_OPACITY = 0.55;
@@ -136,7 +136,7 @@ export const getBlocoLayout = (props: LayoutProps): BlocoLayout => withOrnaments
  */
 const withOrnaments = (base: Omit<BlocoLayout, 'ornamentLayout'>, props: LayoutProps): BlocoLayout => {
   const accent = props.accent === 'nenhum' ? null : props.accent;
-  const frame = panelOrnamentFrame({kind: 'bloco', layout: base, keepOut: [base.content], accent, glow: props.glow});
+  const frame = panelOrnamentFrame({kind: 'block', layout: base, keepOut: [base.content], accent, glow: props.glow});
   const ornamentLayout = layoutOrnaments(frame, props);
   return {...base, outset: Math.max(base.outset, layoutOutset(ornamentLayout)), ornamentLayout};
 };
@@ -348,7 +348,7 @@ export const BlocoFrame = ({props, frame, durationInFrames}: {
   const layers = getBlocoLayers(props, frame, durationInFrames);
   return (
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
-      guides={props.guides} idPrefix="bloco">
+      guides={props.guides} idPrefix="block">
       <HaloLayer elements={layers.halo} shape={layout.shape} />
       <OrnamentLayer elements={layers.ornamentBack} layout={layout.ornamentLayout} style={props} layer="back" />
       <FillLayer elements={layers.fill} clip={layout.shape} />
@@ -362,17 +362,17 @@ export const BlocoFrame = ({props, frame, durationInFrames}: {
   );
 };
 
-export const BlocoLoop = (props: BlocoLoopProps) => {
+export const BlockLoop = (props: BlocoLoopProps) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
   return <BlocoFrame props={props} frame={frame} durationInFrames={durationInFrames} />;
 };
 
-/** Ready for src/catalog.tsx: `BlocoLoop: blocoCatalogEntry`. */
+/** Ready for src/catalog.tsx: `BlockLoop: blocoCatalogEntry`. */
 export const blocoCatalogEntry = {
-  id: 'BlocoLoop',
-  kind: 'bloco',
-  component: BlocoLoop,
+  id: 'BlockLoop',
+  kind: 'block',
+  component: BlockLoop,
   schema: blocoLoopSchema,
   defaultProps: blocoLoopSchema.parse({}),
   getLayout: getBlocoLayout,

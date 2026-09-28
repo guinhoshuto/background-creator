@@ -7,8 +7,8 @@ import {getCompositionMetadata} from '../src/settings';
 import {findComposition, folderOf} from './helpers/find-composition';
 
 test('tipos: os quatro tipos e a política de cada um', () => {
-  assert.deepEqual(ASSET_KINDS, ['background', 'chat', 'bloco', 'borda']);
-  assert.deepEqual(OVERLAY_KINDS, ['chat', 'bloco', 'borda']);
+  assert.deepEqual(ASSET_KINDS, ['background', 'chat', 'block', 'border']);
+  assert.deepEqual(OVERLAY_KINDS, ['chat', 'block', 'border']);
   assert.deepEqual(
     ASSET_KINDS.map((kind) => {
       const {folder, fixedSize, defaultSizeId, transparent, format} = kindPolicies[kind];
@@ -17,8 +17,8 @@ test('tipos: os quatro tipos e a política de cada um', () => {
     [
       ['background', 'backgrounds', {width: 1920, height: 1080}, null, false, 'webm'],
       ['chat', 'chat', null, 'chat-padrao', true, 'webm'],
-      ['bloco', 'blocos', null, 'cartao', true, 'webm'],
-      ['borda', 'bordas', null, 'webcam-16x9', true, 'webm'],
+      ['block', 'text-boxes', null, 'cartao', true, 'webm'],
+      ['border', 'borders', null, 'webcam-16x9', true, 'webm'],
     ],
   );
   for (const kind of ASSET_KINDS) {
@@ -31,7 +31,7 @@ test('tipos: os quatro tipos e a política de cada um', () => {
     assert.equal(getKindPolicy(kind), policy);
   }
   assert.equal(new Set(ASSET_KINDS.map((kind) => kindPolicies[kind].folder)).size, ASSET_KINDS.length);
-  assert.throws(() => getKindPolicy('painel'), /Tipo desconhecido: painel\. Opções: background, chat, bloco, borda\./);
+  assert.throws(() => getKindPolicy('painel'), /Tipo desconhecido: painel\. Opções: background, chat, block, border\./);
   assert.throws(() => getKindPolicy('__proto__'), /Tipo desconhecido/);
 });
 

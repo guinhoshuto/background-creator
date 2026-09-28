@@ -107,7 +107,7 @@ export const moonShape = (extent: number, diameter: number, lit: boolean) => {
   return {r, halo: Math.min(extent, MOON_HALO * r)};
 };
 
-/** Half the accent arc of a round bloco (BlocoLoop's ACCENT_ARC_SPREAD), around the left or the top. */
+/** Half the accent arc of a round block (BlockLoop's ACCENT_ARC_SPREAD), around the left or the top. */
 const ACCENT_SPREAD = Math.PI / 3;
 
 /** How far (radians) a bat on a ring may move on to clear the accent arc, and in what steps. */
@@ -164,7 +164,7 @@ const placement = (motif: string, slot: OrnamentPlacement['slot'], spot: Spot, s
 });
 
 /**
- * The accent arc's angular span on a round bloco, [from, to] in radians (counter-clockwise from
+ * The accent arc's angular span on a round block, [from, to] in radians (counter-clockwise from
  * the right, y up): 30°–150° for topo, 120°–240° for esquerda. Null without one.
  */
 export const accentSpan = (frame: Pick<OrnamentFrame, 'circle' | 'accent'>): readonly [number, number] | null => {
@@ -223,7 +223,7 @@ const placeBats = (
   frame: OrnamentFrame, moon: OrnamentPlacement, diameter: number, pumpkins: readonly OrnamentPlacement[],
 ): OrnamentPlacement[] => {
   const spans = trioSpans(diameter);
-  const count = frame.circle ? (frame.kind === 'borda' ? 3 : 2) : frame.box.width >= 1000 ? 3 : frame.box.width >= 360 ? 2 : 1;
+  const count = frame.circle ? (frame.kind === 'border' ? 3 : 2) : frame.box.width >= 1000 ? 3 : frame.box.width >= 360 ? 2 : 1;
   const bats: OrnamentPlacement[] = [];
   const moonR = moon.size / 2;
   const minExtent = batExtent(BAT_MIN_SPAN);

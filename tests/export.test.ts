@@ -73,7 +73,7 @@ test('export: guides ligado nunca vira arquivo', () => {
 });
 
 test('export: o JSON de layout descreve o arquivo com chaves em inglês', () => {
-  const asset = {id: 'BordaLoop', kind: 'borda', component: null, schema: null, defaultProps: {}} as const;
+  const asset = {id: 'BorderLoop', kind: 'border', component: null, schema: null, defaultProps: {}} as const;
   const layout = {
     canvas: {width: 736, height: 456},
     box: {x: 48, y: 48, width: 640, height: 360},
@@ -82,10 +82,10 @@ test('export: o JSON de layout descreve o arquivo com chaves em inglês', () => 
     outset: 30,
   };
   const props = {width: 640, height: 360, bleed: 48, fit: 'janela', transparent: true, outputFormat: 'png'} as const;
-  const output = '/tmp/out/BordaLoop-webcam-16x9.png';
-  assert.equal(sidecarPath(output), '/tmp/out/BordaLoop-webcam-16x9.png.json');
+  const output = '/tmp/out/BorderLoop-webcam-16x9.png';
+  assert.equal(sidecarPath(output), '/tmp/out/BorderLoop-webcam-16x9.png.json');
   assert.deepEqual(buildSidecar({output, asset, props, layout, fps: 60, durationInFrames: 480, format: 'png', frame: 12}), {
-    file: 'BordaLoop-webcam-16x9.png', kind: 'borda', size: 'webcam-16x9',
+    file: 'BorderLoop-webcam-16x9.png', kind: 'border', size: 'webcam-16x9',
     canvas: layout.canvas, box: layout.box, content: layout.content, hole: layout.hole, bleed: 48,
     fps: 60, frames: 1, frame: 12, format: 'png', alpha: true, props,
   });
@@ -100,7 +100,7 @@ test('export: o JSON de layout descreve o arquivo com chaves em inglês', () => 
 });
 
 test('export: o JSON de layout e o log trazem a velocidade real, que difere da pedida', () => {
-  for (const [id, sizeId] of [['ChatLoop', 'chat-coluna'], ['BlocoLoop', 'titulo'], ['BordaLoop', 'jogo']] as const) {
+  for (const [id, sizeId] of [['ChatLoop', 'chat-coluna'], ['BlockLoop', 'titulo'], ['BorderLoop', 'jogo']] as const) {
     const resolved = resolveExport({compositionId: id, format: 'webm', props: sizeProps(getSize(sizeId))});
     const layout = getLayoutOf(resolved.asset)!(resolved.props);
     const sidecar = buildSidecar({
@@ -117,7 +117,7 @@ test('export: o JSON de layout e o log trazem a velocidade real, que difere da p
 });
 
 test('export: o JSON da borda avulsa não aponta uma máscara que o comando não gera; a máscara sai como <Id>-<tamanho>-mascara.png', () => {
-  const frame = resolveExport({compositionId: 'BordaLoop', format: 'webm', props: sizeProps(getSize('webcam-quadrada'))});
+  const frame = resolveExport({compositionId: 'BorderLoop', format: 'webm', props: sizeProps(getSize('webcam-quadrada'))});
   const layout = getLayoutOf(frame.asset)!(frame.props);
   const sidecar = buildSidecar({
     output: frame.output, asset: frame.asset, props: frame.props, layout, fps: 60, durationInFrames: 480, format: 'webm', frame: null,
@@ -125,9 +125,9 @@ test('export: o JSON da borda avulsa não aponta uma máscara que o comando não
   // exportAsset renders only the requested file: naming a mask here would point at nothing in out/.
   assert.equal('mask' in sidecar, false);
   // The CLI way to the mask: the size, no bleed, mask on, PNG.
-  const options = buildExportOptions(parseRenderArgs(['BordaLoop', '--format', 'png', '--size', 'webcam-quadrada', '--bleed', '0']), {mascara: true});
+  const options = buildExportOptions(parseRenderArgs(['BorderLoop', '--format', 'png', '--size', 'webcam-quadrada', '--bleed', '0']), {mascara: true});
   const mask = resolveExport(options);
-  assert.equal(path.basename(mask.output), 'BordaLoop-webcam-quadrada-mascara.png');
+  assert.equal(path.basename(mask.output), 'BorderLoop-webcam-quadrada-mascara.png');
   assert.deepEqual(getLayoutOf(mask.asset)!(mask.props).canvas, {width: 400, height: 400});
   const maskSidecar = buildSidecar({
     output: mask.output, asset: mask.asset, props: mask.props, layout: getLayoutOf(mask.asset)!(mask.props),
@@ -136,14 +136,14 @@ test('export: o JSON da borda avulsa não aponta uma máscara que o comando não
   assert.equal(maskSidecar.size, 'webcam-quadrada');
   assert.equal('mask' in maskSidecar, false, 'uma máscara não aponta outra');
   // A screen frame has no window mask.
-  const screen = resolveExport({compositionId: 'BordaLoop', format: 'webm', props: sizeProps(getSize('tela-cheia'))});
+  const screen = resolveExport({compositionId: 'BorderLoop', format: 'webm', props: sizeProps(getSize('tela-cheia'))});
   const screenSidecar = buildSidecar({
     output: screen.output, asset: screen.asset, props: screen.props, layout: getLayoutOf(screen.asset)!(screen.props),
     fps: 60, durationInFrames: 480, format: 'webm', frame: null,
   });
   assert.equal('mask' in screenSidecar, false);
   // Keeping the size's bleed is refused with the way out.
-  assert.throws(() => resolveExport(buildExportOptions(parseRenderArgs(['BordaLoop', '--format', 'png', '--size', 'webcam-quadrada']), {mascara: true})),
+  assert.throws(() => resolveExport(buildExportOptions(parseRenderArgs(['BorderLoop', '--format', 'png', '--size', 'webcam-quadrada']), {mascara: true})),
     /use bleed 0 \(with --size, add --bleed 0\)/);
 });
 
@@ -170,18 +170,18 @@ test('export: pastas temporárias deixadas por um export interrompido são achad
   const root = mkdtempSync(path.join(tmpdir(), 'scratch-sweep-'));
   try {
     const pack = path.join(root, 'packs', 'neon');
-    const nested = path.join(pack, 'bordas', `${SCRATCH_PREFIX}abc123`, 'frames');
+    const nested = path.join(pack, 'borders', `${SCRATCH_PREFIX}abc123`, 'frames');
     mkdirSync(nested, {recursive: true});
     writeFileSync(path.join(nested, 'element-000.png'), 'x');
     mkdirSync(path.join(pack, `${SCRATCH_PREFIX}def456`));
     // Real output, a file that only looks alike, and a missing root are left alone.
-    writeFileSync(path.join(pack, 'bordas', 'BordaLoop-jogo.webm'), 'x');
+    writeFileSync(path.join(pack, 'borders', 'BorderLoop-jogo.webm'), 'x');
     writeFileSync(path.join(pack, `${SCRATCH_PREFIX}arquivo`), 'x');
-    const expected = [path.join(pack, 'bordas', `${SCRATCH_PREFIX}abc123`), path.join(pack, `${SCRATCH_PREFIX}def456`)].sort();
+    const expected = [path.join(pack, 'borders', `${SCRATCH_PREFIX}abc123`), path.join(pack, `${SCRATCH_PREFIX}def456`)].sort();
     assert.deepEqual((await findScratchDirectories(pack)).sort(), expected);
     assert.deepEqual((await removeScratchDirectories([pack, path.join(root, 'nada')])).sort(), expected);
     assert.deepEqual(await findScratchDirectories(pack), []);
-    assert.ok(existsSync(path.join(pack, 'bordas', 'BordaLoop-jogo.webm')));
+    assert.ok(existsSync(path.join(pack, 'borders', 'BorderLoop-jogo.webm')));
     assert.ok(existsSync(path.join(pack, `${SCRATCH_PREFIX}arquivo`)));
   } finally {
     rmSync(root, {recursive: true, force: true});
@@ -235,15 +235,15 @@ test('CLI: a composição é obrigatória e o formato do comando prevalece sobre
 });
 
 test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo', () => {
-  assert.deepEqual(expandSize('borda', 'tela-cheia'), {width: 1920, height: 1080, bleed: 0, fit: 'tela', shape: 'retangulo'});
+  assert.deepEqual(expandSize('border', 'tela-cheia'), {width: 1920, height: 1080, bleed: 0, fit: 'tela', shape: 'retangulo'});
   assert.deepEqual(expandSize('chat', 'chat-coluna'), {width: 448, height: 1016, bleed: 32});
   // A preset drawn full-screen still becomes the window product once a window size is asked for.
-  const overPreset = {fit: 'tela', transparent: true, ...expandSize('borda', 'webcam-16x9')};
+  const overPreset = {fit: 'tela', transparent: true, ...expandSize('border', 'webcam-16x9')};
   assert.equal(overPreset.fit, 'janela');
-  assert.equal(sizeTag('borda', overPreset), 'webcam-16x9');
+  assert.equal(sizeTag('border', overPreset), 'webcam-16x9');
   assert.throws(() => expandSize('chat', 'webcam-16x9'), /Size webcam-16x9 is for borders and frames, not chat backgrounds\. Options: chat-compacto/);
-  assert.throws(() => expandSize('bloco', 'chat-padrao'), /not text boxes/);
-  assert.throws(() => expandSize('borda', 'enorme'), /Unknown size: enorme/);
+  assert.throws(() => expandSize('block', 'chat-padrao'), /not text boxes/);
+  assert.throws(() => expandSize('border', 'enorme'), /Unknown size: enorme/);
   assert.throws(() => expandSize('background', 'cartao'), /Backgrounds have a fixed size \(1920×1080\)/);
   for (const flags of [['--size', 'cartao'], ['--width', '800'], ['--height', '600'], ['--bleed', '0']]) {
     assert.throws(() => buildExportOptions(cli('GradientLoop', ...flags)), /fixed size/, flags.join(' '));
@@ -253,7 +253,7 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
 test('CLI: --list agrupa por tipo com cabeçalhos em inglês', () => {
   const text = listText();
   const headers = text.split('\n').filter((line) => /^\S/.test(line));
-  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (bloco):', 'Borders and frames (borda):']);
+  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders and frames (border):']);
   assert.match(text, /^ {2}GradientLoop$/m);
   assert.match(text, /webcam-16x9: box 640×360, file 736×456; standard camera/);
 });

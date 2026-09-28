@@ -13,28 +13,28 @@ const PRODUCT_TABLE = [
   ['chat-alto', 'chat', 400, 800, 32, 464, 864],
   ['chat-coluna', 'chat', 448, 1016, 32, 512, 1080],
   ['chat-vertical', 'chat', 960, 640, 32, 1024, 704],
-  ['etiqueta-p', 'bloco', 320, 64, 24, 368, 112],
-  ['etiqueta', 'bloco', 480, 96, 24, 528, 144],
-  ['faixa', 'bloco', 1200, 160, 32, 1264, 224],
-  ['titulo', 'bloco', 1200, 240, 32, 1264, 304],
-  ['cartao', 'bloco', 640, 360, 32, 704, 424],
-  ['quadrado', 'bloco', 480, 480, 32, 544, 544],
-  ['lista', 'bloco', 480, 720, 32, 544, 784],
-  ['circulo-p', 'bloco', 160, 160, 24, 208, 208],
-  ['circulo', 'bloco', 320, 320, 32, 384, 384],
-  ['circulo-g', 'bloco', 480, 480, 32, 544, 544],
-  ['painel-twitch', 'bloco', 320, 160, 0, 320, 160],
-  ['webcam-16x9', 'borda', 640, 360, 48, 736, 456],
-  ['webcam-16x9-g', 'borda', 960, 540, 48, 1056, 636],
-  ['webcam-4x3', 'borda', 480, 360, 48, 576, 456],
-  ['webcam-quadrada', 'borda', 400, 400, 48, 496, 496],
-  ['webcam-redonda-p', 'borda', 280, 280, 48, 376, 376],
-  ['webcam-redonda', 'borda', 400, 400, 48, 496, 496],
-  ['webcam-redonda-g', 'borda', 560, 560, 48, 656, 656],
-  ['webcam-vertical', 'borda', 360, 640, 48, 456, 736],
-  ['jogo', 'borda', 1440, 810, 48, 1536, 906],
-  ['tela-cheia', 'borda', 1920, 1080, 0, 1920, 1080],
-  ['tela-vertical', 'borda', 1080, 1920, 0, 1080, 1920],
+  ['etiqueta-p', 'block', 320, 64, 24, 368, 112],
+  ['etiqueta', 'block', 480, 96, 24, 528, 144],
+  ['faixa', 'block', 1200, 160, 32, 1264, 224],
+  ['titulo', 'block', 1200, 240, 32, 1264, 304],
+  ['cartao', 'block', 640, 360, 32, 704, 424],
+  ['quadrado', 'block', 480, 480, 32, 544, 544],
+  ['lista', 'block', 480, 720, 32, 544, 784],
+  ['circulo-p', 'block', 160, 160, 24, 208, 208],
+  ['circulo', 'block', 320, 320, 32, 384, 384],
+  ['circulo-g', 'block', 480, 480, 32, 544, 544],
+  ['painel-twitch', 'block', 320, 160, 0, 320, 160],
+  ['webcam-16x9', 'border', 640, 360, 48, 736, 456],
+  ['webcam-16x9-g', 'border', 960, 540, 48, 1056, 636],
+  ['webcam-4x3', 'border', 480, 360, 48, 576, 456],
+  ['webcam-quadrada', 'border', 400, 400, 48, 496, 496],
+  ['webcam-redonda-p', 'border', 280, 280, 48, 376, 376],
+  ['webcam-redonda', 'border', 400, 400, 48, 496, 496],
+  ['webcam-redonda-g', 'border', 560, 560, 48, 656, 656],
+  ['webcam-vertical', 'border', 360, 640, 48, 456, 736],
+  ['jogo', 'border', 1440, 810, 48, 1536, 906],
+  ['tela-cheia', 'border', 1920, 1080, 0, 1920, 1080],
+  ['tela-vertical', 'border', 1080, 1920, 0, 1080, 1920],
 ] as const;
 
 test('tamanhos: a tabela bate exatamente com a linha de produtos, na mesma ordem', () => {
@@ -78,17 +78,17 @@ test('tamanhos: só as molduras de tela inteira usam fit tela, sempre sem bleed'
     const fit = size.props?.fit;
     assert.equal(fit === 'tela', size.id.startsWith('tela-'), size.id);
     if (fit === 'tela') {
-      assert.equal(size.kind, 'borda');
+      assert.equal(size.kind, 'border');
       assert.equal(size.bleed, 0);
     }
   }
   assert.deepEqual(sizeProps(getSize('tela-cheia')), {width: 1920, height: 1080, bleed: 0, fit: 'tela', shape: 'retangulo'});
   assert.deepEqual(sizeProps(getSize('webcam-16x9')), {width: 640, height: 360, bleed: 48, fit: 'janela', shape: 'retangulo'});
   // The id alone fixes the product: every border size spells out its fit.
-  for (const size of sizesForKind('borda')) assert.ok(size.props?.fit, size.id);
-  // Chat and bloco have no fit: an unparsed border without one is still a window.
-  assert.equal(sizeTag('borda', {width: 640, height: 360, bleed: 48}), 'webcam-16x9');
-  assert.equal(sizeTag('borda', {width: 1920, height: 1080, bleed: 0}), '1920x1080');
+  for (const size of sizesForKind('border')) assert.ok(size.props?.fit, size.id);
+  // Chat and block have no fit: an unparsed border without one is still a window.
+  assert.equal(sizeTag('border', {width: 640, height: 360, bleed: 48}), 'webcam-16x9');
+  assert.equal(sizeTag('border', {width: 1920, height: 1080, bleed: 0}), '1920x1080');
 });
 
 test('tamanhos: getSize lista as opções em inglês; sizesForKind separa por tipo', () => {
@@ -119,31 +119,31 @@ test('nomes de arquivo: fundos sem tamanho, tamanhos do catálogo pelo id, livre
   assert.equal(assetFileStem({id: 'GradientLoop', kind: 'background', props: {}}), 'GradientLoop');
   assert.equal(assetFileStem({id: 'ChatLoop', kind: 'chat', props: {width: 400, height: 600, bleed: 32}}), 'ChatLoop-chat-padrao');
   assert.equal(
-    assetFileName({id: 'BordaLoop', kind: 'borda', props: {width: 640, height: 360, bleed: 48, fit: 'janela'}, format: 'mov'}),
-    'BordaLoop-webcam-16x9.mov',
+    assetFileName({id: 'BorderLoop', kind: 'border', props: {width: 640, height: 360, bleed: 48, fit: 'janela'}, format: 'mov'}),
+    'BorderLoop-webcam-16x9.mov',
   );
   assert.equal(
-    assetFileName({id: 'BordaLoop', kind: 'borda', props: {width: 1920, height: 1080, bleed: 0, fit: 'tela'}, format: 'png'}),
-    'BordaLoop-tela-cheia.png',
+    assetFileName({id: 'BorderLoop', kind: 'border', props: {width: 1920, height: 1080, bleed: 0, fit: 'tela'}, format: 'png'}),
+    'BorderLoop-tela-cheia.png',
   );
   // The same box drawn as a window is a different product than the full-screen frame.
-  assert.equal(sizeTag('borda', {width: 1920, height: 1080, bleed: 0, fit: 'janela'}), '1920x1080');
-  assert.equal(sizeTag('borda', {width: 640, height: 360, bleed: 48, fit: 'tela'}), '640x360');
+  assert.equal(sizeTag('border', {width: 1920, height: 1080, bleed: 0, fit: 'janela'}), '1920x1080');
+  assert.equal(sizeTag('border', {width: 640, height: 360, bleed: 48, fit: 'tela'}), '640x360');
   // Another bleed is another file size, so it is no longer the named size.
   assert.equal(sizeTag('chat', {width: 400, height: 600, bleed: 40}), '400x600');
   assert.equal(sizeTag('chat', {width: 400, height: 600, bleed: 32}), 'chat-padrao');
-  assert.equal(assetFileName({id: 'BlocoLoop', kind: 'bloco', props: {width: 500, height: 100, bleed: 24}, format: 'webm'}), 'BlocoLoop-500x100.webm');
+  assert.equal(assetFileName({id: 'BlockLoop', kind: 'block', props: {width: 500, height: 100, bleed: 24}, format: 'webm'}), 'BlockLoop-500x100.webm');
   // A window's OBS mask has no bleed but keeps its size's name, tagged as the mask.
   assert.equal(
-    assetFileName({id: 'BordaLoop', kind: 'borda', props: {width: 640, height: 360, bleed: 0, fit: 'janela', mascara: true}, format: 'png'}),
-    'BordaLoop-webcam-16x9-mascara.png',
+    assetFileName({id: 'BorderLoop', kind: 'border', props: {width: 640, height: 360, bleed: 0, fit: 'janela', mascara: true}, format: 'png'}),
+    'BorderLoop-webcam-16x9-mascara.png',
   );
   assert.equal(
-    assetFileName({id: 'BordaLoop', kind: 'borda', props: {width: 500, height: 300, bleed: 0, fit: 'janela', mascara: true}, format: 'png'}),
-    'BordaLoop-500x300-mascara.png',
+    assetFileName({id: 'BorderLoop', kind: 'border', props: {width: 500, height: 300, bleed: 0, fit: 'janela', mascara: true}, format: 'png'}),
+    'BorderLoop-500x300-mascara.png',
   );
   // Sizes of another kind never name a file.
-  assert.equal(matchNamedSize('bloco', {width: 400, height: 600, bleed: 32}), undefined);
+  assert.equal(matchNamedSize('block', {width: 400, height: 600, bleed: 32}), undefined);
   assert.throws(() => sizeTag('chat', {}), /width\/height/);
 });
 

@@ -28,8 +28,8 @@ import {assertPeriodic, assertSeamVelocity, type Sampler, type Scene} from './he
 /** The kit's look (SPEC §3 teia), so the rooms are the ones the presets will see. */
 const KIT: Record<string, Record<string, unknown>> = {
   chat: {strokeWidth: 2, glow: 10, halo: 8, headerHeight: 48, radius: 20},
-  bloco: {strokeWidth: 2, glow: 10, halo: 8, radius: 20, accent: 'nenhum'},
-  borda: {thickness: 16, lines: 2, lineGap: 5, strokeWidth: 3, corners: 'nenhum', glow: 10, halo: 8, radius: 38},
+  block: {strokeWidth: 2, glow: 10, halo: 8, radius: 20, accent: 'nenhum'},
+  border: {thickness: 16, lines: 2, lineGap: 5, strokeWidth: 3, corners: 'nenhum', glow: 10, halo: 8, radius: 38},
 };
 const BASE = {ornaments: 'teia', durationSeconds: 12, seed: 47, ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C']};
 
@@ -68,7 +68,7 @@ test('teia: quais motivos cada tamanho mantém', () => {
     const hero = radius('teia');
     // The counterweight is at most 0.85 of the hero; the quiet corners 0.75. Around a rect window
     // every corner has the same room, so there all four take the hero's radius (at most).
-    const even = adapter.kind === 'borda' && !frame.circle;
+    const even = adapter.kind === 'border' && !frame.circle;
     if (kept.has('teia-contrapeso')) assert.ok(radius('teia-contrapeso') <= (even ? 1 : TEIA_COUNTER_RATIO) * hero + 1e-9, id);
     for (const quiet of placements.filter((placement) => placement.motif === 'teia-canto')) {
       assert.ok(quiet.size <= (even ? 1 : TEIA_QUIET_RATIO) * hero + 1e-9 && quiet.size >= TEIA_COUNTER_MIN - 1e-9, id);
@@ -76,7 +76,7 @@ test('teia: quais motivos cada tamanho mantém', () => {
     if (kept.has('teia-contrapeso')) assert.ok(radius('teia-contrapeso') >= TEIA_COUNTER_MIN - 1e-9, `${id}: contrapeso legível`);
     if (size.id === 'painel-twitch') {
       // No glow: no soft light, no spider (crisp). The counterweight only where its room reaches
-      // TEIA_COUNTER_MIN (not at the default padding: the kit's bloco padding brings it back).
+      // TEIA_COUNTER_MIN (not at the default padding: the kit's block padding brings it back).
       const want = TEIA_COUNTER_RATIO * hero >= TEIA_COUNTER_MIN ? ['teia', 'teia-contrapeso'] : ['teia'];
       assert.ok([...kept].every((motif) => want.includes(motif)) && kept.has('teia'), `${id}: ${[...kept]}`);
       continue;
@@ -89,7 +89,7 @@ test('teia: quais motivos cada tamanho mantém', () => {
     const spider = placements.find((placement) => placement.motif === 'aranha');
     if (spider) assert.ok(spider.size >= SPIDER_MIN_SCALE - 1e-9 && spider.layer === 'front', id);
     // Chat and blocks keep the background's diagonal pair; a border frames all four corners.
-    assert.equal(kept.has('teia-canto'), adapter.kind === 'borda', `${id}: cantos quietos só na borda`);
+    assert.equal(kept.has('teia-canto'), adapter.kind === 'border', `${id}: cantos quietos só na borda`);
     // Everything in front: over the panel's corner, draped over a border's band (clear of the
     // window: fitsAt), and a screen has no back room at all.
     assert.ok(placements.every((placement) => placement.layer === 'front'), `${id}: tudo na frente`);
@@ -253,7 +253,7 @@ test('teia: harmônicos inteiros do ciclo (3,7 s, 8 s e 12,25 s), sem salto na e
 
 test('teia: a queda da aranha é a do fundo (spiderTimeline), uma por ciclo, parada na emenda (3, 12, 18 e 30 s)', () => {
   const size = getSize('circulo-g');
-  const adapter = ORNAMENT_KINDS.bloco;
+  const adapter = ORNAMENT_KINDS.block;
   for (const durationSeconds of [3, 12, 18, 30]) {
     const {props, frame, placements} = layoutOf(adapter, size, {ornamentSize: 58, durationSeconds});
     const n = framesOf(props);
@@ -355,7 +355,7 @@ test('teia: os refactors do fundo são só opcionais (padrões idênticos)', () 
 test('teia: minExtent e o frame 0 do painel da Twitch (sem luz, nítido)', () => {
   assert.ok(teiaSet.minExtent > 0 && teiaSet.minExtent <= 12);
   const size = getSize('painel-twitch');
-  const {props, frame, placements} = layoutOf(ORNAMENT_KINDS.bloco, size, {ornamentSize: 58});
+  const {props, frame, placements} = layoutOf(ORNAMENT_KINDS.block, size, {ornamentSize: 58});
   assert.equal(frame.glow, 0);
   for (const element of teiaSet.build(frame, placements, props, 0, framesOf(props))) assert.equal(element.light, 0);
   const frameOnly: OrnamentFrame = frame;
@@ -461,7 +461,7 @@ test('teia: guirlandas de seda: nós fixos, vãos inteiros de 150 a 270 px, pont
       }
       // Knots: inner ones 6 px under the file's top (top run) or on the frame line (bottom run).
       const inner = run.slot === 'top' ? frame.paintLimit.y + GARLAND.knotDrop
-        : frame.kind === 'bloco' ? frame.outline.y + frame.outline.height : frame.track.y + frame.track.height;
+        : frame.kind === 'block' ? frame.outline.y + frame.outline.height : frame.track.y + frame.track.height;
       for (const swag of swags) {
         if (swag.index > 0) assert.ok(Math.abs(swag.y0 - inner) < 1e-9, `${where}: nó interno em y ${swag.y0}`);
         if (run.slot === 'bottom') assert.ok(swag.tie0 === 0 && swag.tie1 === 0, `${where}: sem amarras embaixo`);
@@ -485,7 +485,7 @@ test('teia: guirlandas de seda: nós fixos, vãos inteiros de 150 a 270 px, pont
       const lows = restLows(run);
       const target = run.slot === 'top'
         ? (frame.fit === 'painel' ? frame.outline.y + 5 : frame.fit === 'tela' ? frame.hole!.y - 7 : frame.hole!.y - 10)
-        : inner + (frame.kind === 'bloco' ? 22 : 32);
+        : inner + (frame.kind === 'block' ? 22 : 32);
       assert.ok(lows[0]! <= target + 1e-6 && lows[0]! >= target - 2.5, `${where}: C em ${lows[0]} (alvo ${target})`);
       const step = frame.fit === 'tela' ? 6 : 7;
       lows.forEach((low, thread) => assert.ok(Math.abs(low - (lows[0]! - step * thread)) < 0.05, `${where}: fio ${thread} em ${low}`));

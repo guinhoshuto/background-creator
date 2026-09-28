@@ -590,7 +590,7 @@ export const SCONCE_SPACING = 480;
 export const SCONCE_WIDTH = 900;
 const placeSconces = (frame: OrnamentFrame, heroHeight: number, taken: readonly OrnamentPlacement[]): OrnamentPlacement[] => {
   const {outline, paintLimit} = frame;
-  if (frame.kind !== 'borda' || frame.circle || outline.width < SCONCE_WIDTH - 1e-9) return [];
+  if (frame.kind !== 'border' || frame.circle || outline.width < SCONCE_WIDTH - 1e-9) return [];
   const nominal = floorHalf(Math.min(SCONCE_HEIGHT, heroHeight));
   if (nominal < SCONCE_MIN - 1e-9) return [];
   const middle = outline.y + outline.height / 2;

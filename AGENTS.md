@@ -4,7 +4,7 @@ Local Remotion, React and TypeScript project for looping animated backgrounds (1
 
 - `src/settings.ts`: shared parameters, duration/FPS, alpha rule and export presets.
 - `src/kinds.ts`: asset kinds (Studio folder, size, default alpha); `src/sizes.ts`: named sizes.
-- `src/`: catalog and compositions; `src/overlays/`: ChatLoop, BlocoLoop, BordaLoop and the shared engine in `shared/` (themed ornaments in `shared/ornaments/`, one set per name in `sets/` (`<name>.tsx` plus helpers `<name>-*.ts(x)`)).
+- `src/`: catalog and compositions; `src/overlays/`: ChatLoop, BlockLoop, BorderLoop and the shared engine in `shared/` (themed ornaments in `shared/ornaments/`, one set per name in `sets/` (`<name>.tsx` plus helpers `<name>-*.ts(x)`)).
 - `scripts/`: export, validation and the pack builder (`scripts/pack.ts`); `packs/`: manifests per theme.
 - `presets/`: ready-made JSON parameters; `tests/`: determinism, periodicity and configuration tests.
 - Install: `npm ci`. Preview: `npm run studio`.

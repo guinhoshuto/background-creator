@@ -20,7 +20,7 @@ export const stillSchema = z.object({
   name,
   id: z.string().min(1).describe('Composition id, e.g. ChatLoop or WebGLLoop'),
   preset: z.string().regex(/^[a-z0-9-]+$/).optional().describe('File in presets/, without .json'),
-  size: z.string().min(1).optional().describe('Named size (chat, bloco and borda only)'),
+  size: z.string().min(1).optional().describe('Named size (chat, block and border only)'),
   props: z.record(z.string(), z.unknown()).optional().describe('Props applied over the preset'),
   frame: z.number().int().default(0).describe('Frame; negative counts from the end (-1 is the last)'),
 }).strict();
@@ -271,8 +271,8 @@ const MOCK_LAYOUTS: {out: string; base: 'background' | string; layers: {size: st
 
 const SHEETS: {out: string; kind: string; cols: number; width: number; bg: string}[] = [
   {out: 'sheet-chat', kind: 'chat', cols: 5, width: 320, bg: 'dark'},
-  {out: 'sheet-bloco', kind: 'bloco', cols: 3, width: 520, bg: 'dark'},
-  {out: 'sheet-borda', kind: 'borda', cols: 4, width: 390, bg: 'checker'},
+  {out: 'sheet-block', kind: 'block', cols: 3, width: 520, bg: 'dark'},
+  {out: 'sheet-border', kind: 'border', cols: 4, width: 390, bg: 'checker'},
 ];
 
 /**

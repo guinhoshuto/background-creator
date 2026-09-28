@@ -1,2 +1,2 @@
-export * from './BlocoLoop';
+export * from './BlockLoop';
 export * from './legibility';

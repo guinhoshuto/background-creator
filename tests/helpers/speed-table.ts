@@ -1,8 +1,8 @@
 import {readFileSync} from 'node:fs';
-import {blocoLoopSchema, getBlocoLayout, getBlocoMotion} from '../../src/overlays/bloco';
+import {blocoLoopSchema, getBlocoLayout, getBlocoMotion} from '../../src/overlays/block';
 import {
   TRACK_MAIN, TRACK_SECOND, bordaFillOptions, bordaLoopSchema, getBordaGeometry, getBordaMotion,
-} from '../../src/overlays/borda';
+} from '../../src/overlays/border';
 import {chatLoopSchema, getChatLayout, getChatMotion} from '../../src/overlays/chat';
 import {
   colorRepeatsOf, getFillMotion, getStrokeMotion, type AssetMotion, type FillOptions, type Rect, type RoundRect,
@@ -16,7 +16,7 @@ import {OVERLAY_THEMES} from './themes';
  */
 
 export const SPEED_THEMES = OVERLAY_THEMES;
-export const SPEED_KINDS = ['chat', 'bloco', 'borda'] as const;
+export const SPEED_KINDS = ['chat', 'block', 'border'] as const;
 
 /** How far the effective speed may stray from the requested one: ±35%. */
 export const SPEED_TOLERANCE = 0.35;
@@ -60,13 +60,13 @@ const ADAPTERS: Record<(typeof SPEED_KINDS)[number], KindAdapter> = {
     fillArea: (props) => ({area: getChatLayout(props as never).box, options: {}}),
     motion: (props) => getChatMotion(props as never),
   },
-  bloco: {
+  block: {
     parse: (input) => blocoLoopSchema.strict().parse(input) as unknown as Parsed,
     track: (props) => getBlocoLayout(props as never).track,
     fillArea: (props) => ({area: getBlocoLayout(props as never).box, options: {}}),
     motion: (props) => getBlocoMotion(props as never),
   },
-  borda: {
+  border: {
     parse: (input) => bordaLoopSchema.strict().parse(input) as unknown as Parsed,
     track: (props) => getBordaGeometry(props as never).tracks[TRACK_MAIN],
     secondTrack: (props) => (props.lines === 2 ? getBordaGeometry(props as never).tracks[TRACK_SECOND] : null),

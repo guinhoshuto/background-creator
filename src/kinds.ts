@@ -1,7 +1,7 @@
 import type {OutputFormat} from './settings';
 
 /** Every asset kind the studio produces; backgrounds are the original 1920×1080 loops. */
-export const ASSET_KINDS = ['background', 'chat', 'bloco', 'borda'] as const;
+export const ASSET_KINDS = ['background', 'chat', 'block', 'border'] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 
 /** Kinds whose box size comes from props (named sizes or free even sizes). */
@@ -31,12 +31,12 @@ export const kindPolicies: Record<AssetKind, KindPolicy> = {
     kind: 'chat', folder: 'chat', label: 'Chat backgrounds',
     fixedSize: null, defaultSizeId: 'chat-padrao', transparent: true, format: 'webm',
   },
-  bloco: {
-    kind: 'bloco', folder: 'blocos', label: 'Text boxes',
+  block: {
+    kind: 'block', folder: 'text-boxes', label: 'Text boxes',
     fixedSize: null, defaultSizeId: 'cartao', transparent: true, format: 'webm',
   },
-  borda: {
-    kind: 'borda', folder: 'bordas', label: 'Borders and frames',
+  border: {
+    kind: 'border', folder: 'borders', label: 'Borders and frames',
     fixedSize: null, defaultSizeId: 'webcam-16x9', transparent: true, format: 'webm',
   },
 };

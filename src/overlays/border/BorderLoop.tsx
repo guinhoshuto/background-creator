@@ -19,7 +19,7 @@ const diamondPath = (x: number, y: number, half: number) => {
 const renderCorner = (element: CornerElement, key: number, tracks: readonly RoundRect[], core: number): ReactNode => {
   if (element.type === 'bracket') {
     // A bracket is a piece of a track like a dash: the engine draws it, with the lines' light core.
-    return renderOverlayElement({...element, type: 'dash'}, key, {tracks, idBase: 'borda-bracket', core});
+    return renderOverlayElement({...element, type: 'dash'}, key, {tracks, idBase: 'border-bracket', core});
   }
   const half = element.size / 2;
   // The highlight sits up-left inside the gem (its tips stay within the diamond), like a facet.
@@ -72,7 +72,7 @@ const BordaMaskFrame = ({props}: {props: BordaLoopProps}) => {
   const window = getBordaMaskElement(props);
   return (
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
-      guides={props.guides} idPrefix="borda-mascara">
+      guides={props.guides} idPrefix="border-mascara">
       <path d={roundRectPath({...window, radius: window.corner})} fill={window.color} data-mask="true" />
     </OverlayCanvas>
   );
@@ -92,7 +92,7 @@ export const BordaFrame = ({props, frame, durationInFrames}: {
   ];
   return (
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
-      guides={props.guides} idPrefix="borda">
+      guides={props.guides} idPrefix="border">
       <FrameGroup layout={layout}>
         <HaloLayer elements={halo} shape={layout.outer} />
         {/* A sibling before the band's fill, never inside its clip (the matte stays the clip's first child). */}
@@ -110,17 +110,17 @@ export const BordaFrame = ({props, frame, durationInFrames}: {
   );
 };
 
-export const BordaLoop = (props: BordaLoopProps) => {
+export const BorderLoop = (props: BordaLoopProps) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
   return <BordaFrame props={props} frame={frame} durationInFrames={durationInFrames} />;
 };
 
-/** The catalog entry the integrator registers (kind 'borda', Studio folder 'bordas'). */
+/** The catalog entry the integrator registers (kind 'border', Studio folder 'borders'). */
 export const bordaCatalogEntry = {
-  id: 'BordaLoop',
-  kind: 'borda',
-  component: BordaLoop,
+  id: 'BorderLoop',
+  kind: 'border',
+  component: BorderLoop,
   schema: bordaLoopSchema,
   defaultProps: bordaLoopSchema.parse({}),
   getLayout: getBordaLayout,

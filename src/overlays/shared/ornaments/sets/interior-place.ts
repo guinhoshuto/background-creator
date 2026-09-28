@@ -696,7 +696,7 @@ export const placeGirandoles = (frame: OrnamentFrame, ornamentSize: number): Orn
     add(secondSlot[1] === 'TL' ? partnerAt(secondSlot[0], secondSlot[1], 'candelabro-2', 'rosette') : secondaryAt(secondSlot[0], secondSlot[1], 'candelabro-2', 'rosette'));
     return placements;
   }
-  const compact = frame.kind === 'bloco' && frame.outline.height <= COMPACT_HEIGHT;
+  const compact = frame.kind === 'block' && frame.outline.height <= COMPACT_HEIGHT;
   const hero = heroAt(cornerSlot(frame, 'TR'), 'TR', compact ? 'candelabro-2' : 'candelabro-3', 'rosette');
   if (!hero) return null;
   placements.push(hero);
@@ -710,7 +710,7 @@ export const placeGirandoles = (frame: OrnamentFrame, ornamentSize: number): Orn
       for (const stand of topRail(frame, ornamentSize, centre)) add(stand);
     }
     // The swag valance from the bottom line (a border's outer line, a block's stroke) into the bleed.
-    if (frame.fit === 'janela' || frame.kind === 'bloco') placements.push(...swagRun(frame, placements));
+    if (frame.fit === 'janela' || frame.kind === 'block') placements.push(...swagRun(frame, placements));
   }
   return placements;
 };
