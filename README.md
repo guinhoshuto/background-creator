@@ -415,7 +415,6 @@ Um manifesto de exemplo, menor que os de `packs/` (que pedem todos os tamanhos):
 ```json
 {
   "name": "neon-exemplo",
-  "title": "Pack Neon (exemplo)",
   "items": [
     {"composition": "VaporwaveLoop", "preset": "vaporwave-classico", "formats": ["webm", "png"]},
     {"composition": "ChatLoop", "preset": "chat-neon", "sizes": ["chat-padrao", "chat-alto"], "formats": ["webm", "png"]},
@@ -425,7 +424,7 @@ Um manifesto de exemplo, menor que os de `packs/` (que pedem todos os tamanhos):
 }
 ```
 
-`name` vira o nome da pasta (letras minúsculas, números e hífen) e `title` é o nome para as pessoas. Cada item exporta uma composição com um preset de `presets/` (sem a pasta e sem `.json`), `props` opcionais por cima dele, os `sizes` do catálogo (só para chat, blocos e bordas; um fundo com `sizes` é recusado) e os `formats`, na ordem escrita. `frame` escolhe o quadro dos PNGs do item e exige `png` em `formats`. `variant` (letras minúsculas, números e hífen) entra no nome dos arquivos do item, `<Id>-<tamanho>-<variante>.<ext>`, para o mesmo tamanho sair duas vezes no pack (por exemplo, com e sem enfeites). Os parâmetros se juntam nesta ordem: preset, `props` do item, tamanho e formato; só o `bleed` das `props` do item vale acima do tamanho, que continua fixando a caixa. Tudo é validado antes do primeiro render, com a mensagem apontando o item.
+`name` vira o nome da pasta (letras minúsculas, números e hífen). Cada item exporta uma composição com um preset de `presets/` (sem a pasta e sem `.json`), `props` opcionais por cima dele, os `sizes` do catálogo (só para chat, blocos e bordas; um fundo com `sizes` é recusado) e os `formats`, na ordem escrita. `frame` escolhe o quadro dos PNGs do item e exige `png` em `formats`. `variant` (letras minúsculas, números e hífen) entra no nome dos arquivos do item, `<Id>-<tamanho>-<variante>.<ext>`, para o mesmo tamanho sair duas vezes no pack (por exemplo, com e sem enfeites). Os parâmetros se juntam nesta ordem: preset, `props` do item, tamanho e formato; só o `bleed` das `props` do item vale acima do tamanho, que continua fixando a caixa. Tudo é validado antes do primeiro render, com a mensagem apontando o item.
 
 ```sh
 npm run render:pack -- neon --dry-run

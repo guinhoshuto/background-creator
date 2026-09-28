@@ -33,7 +33,6 @@ export const packItemSchema = z.object({
 
 export const packManifestSchema = z.object({
   name: z.string().regex(slug, 'The pack name becomes a folder: use lowercase letters, digits and hyphens.'),
-  title: z.string().min(1).describe('Pack title, for people'),
   items: z.array(packItemSchema).min(1).describe('What the pack exports, in order'),
 }).strict();
 
@@ -424,7 +423,7 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
   const planned = new Set(fullPlan.map((file) => path.posix.relative(packRoot, file.output)));
   const entries = new Map([...previousFiles].filter(([file]) => planned.has(file)));
   const save = () => effects.writeManifest(manifestPath, {
-    name: manifest.name, title: manifest.title,
+    name: manifest.name,
     files: [...entries.values()].sort((a, b) => a.file.localeCompare(b.file)),
   });
   // Partial renders of an interrupted run are never valid output: gone before anything else, freeing their space.

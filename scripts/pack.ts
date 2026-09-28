@@ -64,7 +64,7 @@ const main = async () => {
   if (values['dry-run']) {
     const existing = new Set<string>();
     for (const entry of plan) if (await exists(fromRoot(entry.output))) existing.add(entry.output);
-    console.log(`${manifest.title} (${manifest.name})`);
+    console.log(`Pack: ${manifest.name}`);
     console.log(dryRunText(plan, existing));
     // A dry run changes nothing: it only says what the real run will clean up.
     const leftovers = (await Promise.all(scratchRoots.map(findScratchDirectories))).flat();

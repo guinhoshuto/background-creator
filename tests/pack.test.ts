@@ -61,11 +61,13 @@ const fakeDeps: PackDeps = {
   },
 };
 
-const manifest = (items: PackManifest['items'], name = 'teste'): PackManifest => ({name, title: 'Pack de teste', items});
+const manifest = (items: PackManifest['items'], name = 'teste'): PackManifest => ({name, items});
 
 test('pack: o manifesto é estrito e recusa campos desconhecidos com mensagem em inglês', () => {
-  const valid = {name: 'neon', title: 'Neon', items: [{composition: 'ChatLoop', formats: ['webm']}]};
+  const valid = {name: 'neon', items: [{composition: 'ChatLoop', formats: ['webm']}]};
   assert.deepEqual(parsePackManifest(valid), valid);
+  // A pack has no title: the name is all it has, so a title is an unknown field.
+  assert.throws(() => parsePackManifest({...valid, title: 'Neon'}), /Invalid pack manifest/);
   assert.throws(() => parsePackManifest({...valid, extra: 1}), /Invalid pack manifest/);
   // Keys follow the SPEC (English, like the preset props): the old pt-BR keys are unknown now.
   assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', formats: ['webm'], tamanhos: ['x']}]}), /Invalid pack manifest/);
@@ -158,9 +160,9 @@ test('pack: a variante marca o nome dos arquivos, e o mesmo tamanho cabe duas ve
   // The variant becomes part of a file name: a slug only.
   const item = {composition: 'ChatLoop', formats: ['webm']};
   for (const variant of ['Sem Enfeites', 'sem_enfeites', '', 'a/b']) {
-    assert.throws(() => parsePackManifest({name: 'teste', title: 'Teste', items: [{...item, variant}]}), /Invalid pack manifest/, variant);
+    assert.throws(() => parsePackManifest({name: 'teste', items: [{...item, variant}]}), /Invalid pack manifest/, variant);
   }
-  assert.throws(() => parsePackManifest({name: 'teste', title: 'Teste', items: [{...item, variant: 'X'}]}), /lowercase letters/);
+  assert.throws(() => parsePackManifest({name: 'teste', items: [{...item, variant: 'X'}]}), /lowercase letters/);
 });
 
 test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nome', () => {
@@ -295,9 +297,9 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
   assert.deepEqual(run.exported, plan.map((file) => file.output));
   assert.deepEqual([result.rendered, result.skipped], [4, 0]);
   assert.equal([...run.disk.keys()].some((file) => file.endsWith('.png.json') || file.endsWith('.webm.json')), false, 'sem sidecars soltos');
-  const data = run.disk.get('out/packs/teste/manifest.json') as {name: string; title: string; files: Record<string, unknown>[]};
+  const data = run.disk.get('out/packs/teste/manifest.json') as {name: string; files: Record<string, unknown>[]};
+  assert.deepEqual(Object.keys(data).sort(), ['files', 'name'], 'the manifest records the name and the files, no title');
   assert.equal(data.name, 'teste');
-  assert.equal(data.title, 'Pack de teste');
   assert.deepEqual(data.files.map((entry) => entry.file), [
     'backgrounds/FundoLoop.webm',
     'bordas/BordaLoop-webcam-16x9.png',
@@ -361,12 +363,15 @@ const recordManifests = (run: ReturnType<typeof fakeRun>) => {
 test('pack: a manifest entry the whole plan no longer has is pruned before the first save', async () => {
   const plan = samplePlan();
   const stale = {file: 'bordas/BordaLoop-old-size.png', composition: 'BordaLoop', kind: 'borda', format: 'png'};
+  // Written before packs lost their title: the next save drops it.
   const run = fakeRun({'out/packs/teste/manifest.json': {name: 'teste', title: 'Pack de teste', files: [stale]}});
   const saved = recordManifests(run);
   await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   assert.ok(saved.length > 0);
   for (const files of saved) assert.equal(files.some((entry) => entry.file === stale.file), false, 'no save keeps the stale entry');
-  const files = (run.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
+  const written = run.disk.get('out/packs/teste/manifest.json') as Record<string, unknown>;
+  assert.equal('title' in written, false, 'an old manifest\'s title is not carried over');
+  const files = (written as {files: {file: string}[]}).files;
   assert.deepEqual(files.map((entry) => entry.file), [
     'backgrounds/FundoLoop.webm', 'bordas/BordaLoop-webcam-16x9.png', 'chat/ChatLoop-chat-padrao.png', 'chat/ChatLoop-chat-padrao.webm',
   ]);
@@ -376,7 +381,7 @@ test('pack: an --only run prunes by the whole plan and keeps the entries of the 
   const plan = samplePlan();
   const first = fakeRun();
   await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
-  const before = first.disk.get('out/packs/teste/manifest.json') as {name: string; title: string; files: {file: string}[]};
+  const before = first.disk.get('out/packs/teste/manifest.json') as {name: string; files: {file: string}[]};
   const stale = {file: 'chat/ChatLoop-old-size.webm', composition: 'ChatLoop', kind: 'chat', format: 'webm'};
   const run = fakeRun({...Object.fromEntries(first.disk), 'out/packs/teste/manifest.json': {...before, files: [...before.files, stale]}});
   await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Borda'), fullPlan: plan, overwrite: true, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
@@ -494,20 +499,19 @@ const TWITCH_PROPS: Readonly<Record<string, Record<string, unknown>>> = {
 };
 const readPack = (name: string): unknown => JSON.parse(readFileSync(path.join(root, 'packs', `${name}.json`), 'utf8'));
 
-/** Each Halloween kit's background (composition, preset) and title (SPEC §1): its presets follow that background's duration and seed. */
-const KITS: Readonly<Record<(typeof KIT_THEMES)[number], readonly [string, string, string]>> = {
-  'halloween-noite': ['HalloweenLoop', 'halloween-midnight', 'Pack Halloween — Noite de lua'],
-  'halloween-mansao': ['HauntedMansionLoop', 'halloween-haunted-mansion', 'Pack Halloween — Mansão assombrada'],
-  'halloween-interior': ['HauntedInteriorLoop', 'halloween-haunted-interior', 'Pack Halloween — Salão assombrado'],
-  'halloween-teia': ['CobwebLoop', 'halloween-cobweb', 'Pack Halloween — Teias de aranha'],
+/** Each Halloween kit's background (composition, preset): its presets follow that background's duration and seed. */
+const KITS: Readonly<Record<(typeof KIT_THEMES)[number], readonly [string, string]>> = {
+  'halloween-noite': ['HalloweenLoop', 'halloween-midnight'],
+  'halloween-mansao': ['HauntedMansionLoop', 'halloween-haunted-mansion'],
+  'halloween-interior': ['HauntedInteriorLoop', 'halloween-haunted-interior'],
+  'halloween-teia': ['CobwebLoop', 'halloween-cobweb'],
 };
 const presetJson = (name: string): Record<string, unknown> => JSON.parse(readFileSync(path.join(root, 'presets', `${name}.json`), 'utf8'));
 
 test('packs: cada kit de Halloween traz o seu fundo e os presets seguem a duração e a seed dele', () => {
   for (const theme of KIT_THEMES) {
-    const [composition, preset, title] = KITS[theme];
+    const [composition, preset] = KITS[theme];
     const pack = parsePackManifest(readPack(theme));
-    assert.equal(pack.title, title, theme);
     assert.deepEqual(pack.items.filter((item) => item.sizes === undefined).map((item) => [item.composition, item.preset]), [[composition, preset]], theme);
     const background = getAsset(composition).schema.parse(presetJson(preset)) as {durationSeconds: number; seed: number};
     for (const kind of ['chat', 'bloco', 'borda'] as const satisfies readonly AssetKind[]) {

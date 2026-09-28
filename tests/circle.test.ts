@@ -551,6 +551,6 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
 
 test('Packs: dois temas com raios diferentes dividem a mesma máscara redonda', () => {
   const border = (preset: string, format: 'webm' | 'png') => ({composition: 'BordaLoop', preset, sizes: ['webcam-redonda'], formats: [format]});
-  const plan = planPack({name: 'teste', title: 'Teste', items: [border('borda-neon', 'webm'), border('borda-pastel', 'png')]}, realPackDeps);
+  const plan = planPack({name: 'teste', items: [border('borda-neon', 'webm'), border('borda-pastel', 'png')]}, realPackDeps);
   assert.deepEqual(plan.filter((file) => file.role === 'mask').map((file) => path.posix.basename(file.output)), ['mascara-webcam-redonda.png']);
 });
