@@ -91,18 +91,18 @@ export type ExportOptions = {
 
 /** Guides are a Studio aid; a sold file must never carry them. */
 export const assertExportable = (props: Record<string, unknown>) => {
-  if (props.guides === true) throw new Error('Desligue guides para exportar.');
+  if (props.guides === true) throw new Error('Turn guides off to export.');
 };
 
 /** The still's frame: only PNG takes one, and it must exist inside the loop (0…N−1). */
 export const resolveFrame = (format: OutputFormat, frame: number | undefined, durationInFrames: number) => {
   if (format !== 'png') {
-    if (frame !== undefined) throw new Error('Use --frame somente com --format png.');
+    if (frame !== undefined) throw new Error('Use --frame only with --format png.');
     return null;
   }
   const still = frame ?? 0;
   if (!Number.isInteger(still) || still < 0 || still >= durationInFrames) {
-    throw new Error(`O frame precisa ser um inteiro entre 0 e ${durationInFrames - 1}.`);
+    throw new Error(`The frame must be an integer from 0 to ${durationInFrames - 1}.`);
   }
   return still;
 };
@@ -142,9 +142,9 @@ export const buildSidecar = ({output, asset, props, layout, fps, durationInFrame
   };
 };
 
-/** pt-BR: the speeds actually shown, since whole periods per cycle round the requested ones. */
+/** The speeds actually shown, since whole periods per cycle round the requested ones. */
 export const motionText = ({strokeSpeed, fillSpeed}: AssetMotion) =>
-  `Velocidade real: contorno ${strokeSpeed} px/s, preenchimento ${fillSpeed} px/s (arredondadas para períodos inteiros por ciclo).`;
+  `Actual speed: stroke ${strokeSpeed} px/s, fill ${fillSpeed} px/s (rounded to whole periods per cycle).`;
 
 export const resolveExport = (options: ExportOptions) => {
   const asset = getAsset(options.compositionId);
@@ -156,7 +156,7 @@ export const resolveExport = (options: ExportOptions) => {
   const inputProps = Object.fromEntries(Object.entries(props).filter(([key]) => key in requestedProps));
   const output = path.resolve(options.output ?? defaultOutput(asset, props, options.format));
   if (path.extname(output).toLowerCase() !== `.${options.format}`) {
-    throw new Error(`O destino precisa ter a extensão .${options.format}.`);
+    throw new Error(`The output needs the .${options.format} extension.`);
   }
   const chromiumOptions = {gl: getOpenGlRenderer(asset)};
   const sidecar = getLayoutOf(asset) ? sidecarPath(output) : null;
@@ -188,7 +188,7 @@ export const publishInOrder = async (
 const assertMissing = async (file: string) => {
   try {
     await access(file);
-    throw new Error(`O arquivo já existe: ${file}. Use --overwrite para substituí-lo.`);
+    throw new Error(`The file already exists: ${file}. Use --overwrite to replace it.`);
   } catch (error) {
     if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
   }
@@ -219,14 +219,14 @@ export const exportAsset = async (options: ExportOptions) => {
   const layout = getLayoutOf(asset)?.(props) ?? null;
   const sidecar = layout ? sidecarPath(output) : null;
   if (layout && (layout.canvas.width !== composition.width || layout.canvas.height !== composition.height)) {
-    throw new Error(`O layout descreve ${layout.canvas.width}×${layout.canvas.height}, mas a composição tem ${composition.width}×${composition.height}.`);
+    throw new Error(`The layout describes ${layout.canvas.width}×${layout.canvas.height}, but the composition is ${composition.width}×${composition.height}.`);
   }
   if (!options.overwrite && !nameIsFinal) {
     await assertMissing(output);
     if (sidecar) await assertMissing(sidecar);
   }
   log(`${asset.id}: ${composition.width}×${composition.height}, ${composition.fps} fps, ${composition.durationInFrames} frames (${(composition.durationInFrames / composition.fps).toFixed(3)} s).`);
-  if (props.transparent && !hasAlpha(props)) log(`Transparência composta sobre ${props.backgroundColor}.`);
+  if (props.transparent && !hasAlpha(props)) log(`Transparency composited over ${props.backgroundColor}.`);
   const motion = getMotionOf(asset)?.(props) ?? null;
   if (motion) log(motionText(motion));
   await mkdir(path.dirname(output), {recursive: true});
@@ -273,17 +273,17 @@ export const exportAsset = async (options: ExportOptions) => {
       });
       const frames = (await readdir(framesDirectory)).filter((name) => name.endsWith('.png')).sort();
       const match = /^(.*?)(\d+)\.png$/.exec(frames[0] ?? '');
-      if (!match || frames.length !== composition.durationInFrames) throw new Error('A sequência PNG está incompleta.');
+      if (!match || frames.length !== composition.durationInFrames) throw new Error('The PNG sequence is incomplete.');
       const inputPattern = path.join(framesDirectory, `${match[1]}%0${match[2].length}d.png`);
       const palette = path.join(scratch, 'palette.png');
       const input = ['-framerate', String(composition.fps), '-start_number', String(Number(match[2])), '-i', inputPattern];
-      log('GIF: calculando paleta global de 256 cores…');
+      log('GIF: computing a global 256-color palette…');
       await runProcess(ffmpegPath(), [
         '-hide_banner', '-loglevel', 'error', '-y', ...input,
         '-vf', 'palettegen=stats_mode=full:max_colors=256:reserve_transparent=0',
         '-frames:v', '1', '-update', '1', palette,
       ]);
-      log('GIF: aplicando dithering e repetição infinita…');
+      log('GIF: applying dithering and infinite looping…');
       await runProcess(ffmpegPath(), [
         '-hide_banner', '-loglevel', 'error', '-y', ...input, '-i', palette,
         '-lavfi', 'paletteuse=dither=sierra2_4a', '-an', '-loop', '0',
@@ -304,7 +304,7 @@ export const exportAsset = async (options: ExportOptions) => {
       ...(sidecar ? [[temporarySidecar, sidecar] as const] : []),
       [temporaryOutput, output] as const,
     ], publish);
-    log(`Exportado: ${output}`);
+    log(`Exported: ${output}`);
     return {output, sidecar, props, composition};
   } finally {
     releaseScratch();

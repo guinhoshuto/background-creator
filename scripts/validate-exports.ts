@@ -94,7 +94,7 @@ const main = async () => {
           };
           const result = values['reuse-existing'] && existsSync(options.output)
             ? await (async () => {
-              console.log(`Verificando arquivo existente: ${path.basename(options.output)}`);
+              console.log(`Checking existing file: ${path.basename(options.output)}`);
               const resolved = resolveExport(options);
               const composition = await selectComposition({
                 serveUrl, id: compositionId, inputProps: resolved.inputProps,
@@ -110,7 +110,7 @@ const main = async () => {
             '-v', 'error', '-count_frames', '-show_streams', '-show_format', '-of', 'json', output,
           ])).toString()) as Probe;
           const stream = probe.streams.find((item) => item.codec_type === 'video');
-          assert(stream, `${output}: sem vídeo`);
+          assert(stream, `${output}: no video stream.`);
           assert.equal(stream.width, width);
           assert.equal(stream.height, height);
           assert.equal(stream.codec_name, CODEC_NAMES[profile.format]);
@@ -123,14 +123,14 @@ const main = async () => {
           assert(!probe.streams.some((item) => item.codec_type === 'audio'));
           if (profile.format === 'mov') {
             // FFmpeg decodes 4444 (ap4h) at 12 bits whatever the encoder wrote, so check the plane layout, not the depth.
-            assert.equal(stream.codec_tag_string, 'ap4h', 'O MOV precisa ser ProRes 4444.');
-            assert.match(stream.pix_fmt ?? '', hasAlpha(props) ? /^yuva444p1[02]le$/ : /^yuv444p1[02]le$/, 'ProRes 4444 com o pixel format errado.');
+            assert.equal(stream.codec_tag_string, 'ap4h', 'The MOV must be ProRes 4444.');
+            assert.match(stream.pix_fmt ?? '', hasAlpha(props) ? /^yuva444p1[02]le$/ : /^yuv444p1[02]le$/, 'ProRes 4444 with the wrong pixel format.');
           }
           if (profile.format === 'gif') {
             const bytes = await readFile(output);
             const extension = bytes.indexOf(Buffer.from('NETSCAPE2.0'));
-            assert(extension >= 0, 'GIF sem extensão de repetição.');
-            assert.deepEqual([...bytes.subarray(extension + 11, extension + 16)], [3, 1, 0, 0, 0], 'GIF deve repetir infinitamente.');
+            assert(extension >= 0, 'GIF without a loop extension.');
+            assert.deepEqual([...bytes.subarray(extension + 11, extension + 16)], [3, 1, 0, 0, 0], 'The GIF must loop forever.');
           }
           const reference = path.join(destination, `${stem}-${profile.format}-reference.png`);
           await renderStill({
@@ -167,11 +167,11 @@ const main = async () => {
           // Averaging over the empty canvas would let a thin border with a wrong alpha pass.
           const meanVisibleAlphaError = visibleAlphaError / Math.max(1, alphaPixels);
           if (hasAlpha(props)) {
-            assert(minAlpha < 240 && maxAlpha > 20 && partialAlpha > 0, 'Alpha suave não foi preservado.');
+            assert(minAlpha < 240 && maxAlpha > 20 && partialAlpha > 0, 'Soft alpha was not preserved.');
             // Backgrounds keep their historical full-frame limit (sparse ones sit far above 2 per visible pixel).
             // The overlay limit starts at the same 2 and must be revisited after the first real render.
             const alphaErrorForKind = kind === 'background' ? meanAlphaError : meanVisibleAlphaError;
-            assert(alphaErrorForKind < 2, `Alpha exportado diverge do PNG de referência: erro médio ${alphaErrorForKind.toFixed(3)}.`);
+            assert(alphaErrorForKind < 2, `Exported alpha differs from the reference PNG: mean error ${alphaErrorForKind.toFixed(3)}.`);
             for (const [label, color] of [['light', 'white'], ['dark', '#0B0F19']]) {
               await runProcess(ffmpegPath(), [
                 '-v', 'error', '-y', '-f', 'lavfi', '-i', `color=c=${color}:s=${width}x${height}:r=${fps}`,
@@ -181,12 +181,12 @@ const main = async () => {
               ]);
             }
           } else {
-            assert.equal(minAlpha, 255, 'Uma saída opaca contém transparência.');
+            assert.equal(minAlpha, 255, 'An opaque output contains transparency.');
           }
           const rgbErrorOnLight = compositedRgbError(actual, expected.data, [255, 255, 255]);
           const rgbErrorOnDark = compositedRgbError(actual, expected.data, [11, 15, 25]);
           const meanRgbError = Math.max(rgbErrorOnLight, rgbErrorOnDark);
-          assert(meanRgbError < (profile.format === 'gif' ? 12 : 5), `A saída composta diverge do preview: erro RGB médio ${meanRgbError}.`);
+          assert(meanRgbError < (profile.format === 'gif' ? 12 : 5), `The composited output differs from the preview: mean RGB error ${meanRgbError}.`);
           // Keep the decoded image for inspection alongside the original PNG.
           const decoded = new PNG({width, height});
           decoded.data = Buffer.from(actual);
@@ -197,12 +197,12 @@ const main = async () => {
             minAlpha, maxAlpha, meanAlphaError, meanVisibleAlphaError, rgbErrorOnLight, rgbErrorOnDark,
           });
           await writeFile(reportPath, JSON.stringify(report, null, 2));
-          console.log(`OK: ${path.basename(output)}; erro RGB médio ${meanRgbError.toFixed(3)}`);
+          console.log(`OK: ${path.basename(output)}; mean RGB error ${meanRgbError.toFixed(3)}`);
         }
       }
     }
   }
-  console.log(`Validação concluída: ${report.length} exports. Relatório em out/validation/report.json.`);
+  console.log(`Validation done: ${report.length} exports. Report in out/validation/report.json.`);
 };
 
 main().catch((error: unknown) => {console.error(error); process.exitCode = 1;});

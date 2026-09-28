@@ -116,7 +116,7 @@ test('overlays: o export nomeia pelo tamanho, publica o JSON de posição e recu
     // A free size carries its box instead of a name (the kind's own bleed holds its glow).
     const free = resolveExport({compositionId: entry.id, format: 'webm', props: {width: 500, height: 300}});
     assert.equal(path.basename(free.output), `${entry.id}-500x300.webm`);
-    assert.throws(() => resolveExport({compositionId: entry.id, format: 'webm', props: {guides: true}}), /Desligue guides para exportar\./);
+    assert.throws(() => resolveExport({compositionId: entry.id, format: 'webm', props: {guides: true}}), /Turn guides off to export\./);
   }
   // The chat's title area reaches the buyer next to the file; kinds without one keep the shape they had.
   const chat = resolveExport({compositionId: 'ChatLoop', format: 'png', props: sizeProps(sizesForKind('chat')[0]!)});

@@ -12,9 +12,9 @@ export const runProcess = (executable: string, args: string[]): Promise<Buffer> 
     child.stderr.on('data', (chunk: Buffer) => {
       stderr = (stderr + chunk.toString()).slice(-12000);
     });
-    child.on('error', (error) => reject(new Error(`Não foi possível executar ${executable}. Verifique a instalação e o PATH. ${error.message}`)));
+    child.on('error', (error) => reject(new Error(`Could not run ${executable}. Check the installation and the PATH. ${error.message}`)));
     child.on('close', (code) => {
-      if (code !== 0) reject(new Error(`${executable} terminou com código ${code}.\n${stderr}`));
+      if (code !== 0) reject(new Error(`${executable} exited with code ${code}.\n${stderr}`));
       else resolve(Buffer.concat(chunks));
     });
   });

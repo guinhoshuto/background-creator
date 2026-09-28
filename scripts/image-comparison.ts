@@ -5,7 +5,7 @@ export const compositedRgbError = (
   background: readonly [number, number, number],
 ) => {
   if (actual.length !== expected.length || actual.length % 4 !== 0) {
-    throw new Error('Os frames RGBA precisam ter o mesmo tamanho.');
+    throw new Error('The RGBA frames must have the same size.');
   }
   let total = 0;
   let count = 0;

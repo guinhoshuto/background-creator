@@ -16,24 +16,24 @@ export const MIN_FREE_BYTES = 2 * 1024 ** 3;
 /** Names become folder and file names, so they stay ASCII and shell-safe. */
 const slug = /^[a-z0-9-]+$/;
 
-// Keys in English, like the preset props they sit next to and the manifest.json the build writes;
-// the descriptions and every message stay in pt-BR.
+// Keys, descriptions and messages in English, like the preset props they sit next to and the
+// manifest.json the build writes.
 export const packItemSchema = z.object({
-  composition: z.string().min(1).describe('Id da composição, por exemplo ChatLoop'),
-  preset: z.string().regex(slug, 'Use o nome do preset sem pasta nem extensão, por exemplo chat-neon.').optional()
-    .describe('Nome do arquivo em presets/, sem .json'),
-  props: z.record(z.string(), z.unknown()).optional().describe('Parâmetros aplicados sobre o preset'),
-  sizes: z.array(z.string().min(1)).min(1).optional().describe('Tamanhos do catálogo (só chat, blocos e bordas)'),
-  formats: z.array(outputFormatSchema).min(1).describe('Formatos exportados para cada tamanho'),
-  frame: z.number().int().min(0).optional().describe('Frame do PNG (padrão 0)'),
-  variant: z.string().regex(slug, 'A variante vira parte do nome do arquivo: use letras minúsculas, números e hífen.').optional()
-    .describe('Sufixo dos arquivos deste item, por exemplo sem-enfeites: <Id>-<tamanho>-<variante>.<ext>'),
+  composition: z.string().min(1).describe('Composition id, for example ChatLoop'),
+  preset: z.string().regex(slug, 'Use the preset name without folder or extension, for example chat-neon.').optional()
+    .describe('File name in presets/, without .json'),
+  props: z.record(z.string(), z.unknown()).optional().describe('Parameters applied over the preset'),
+  sizes: z.array(z.string().min(1)).min(1).optional().describe('Catalog sizes (chat, text boxes and borders only)'),
+  formats: z.array(outputFormatSchema).min(1).describe('Formats exported for each size'),
+  frame: z.number().int().min(0).optional().describe('PNG frame (default 0)'),
+  variant: z.string().regex(slug, 'The variant becomes part of the file name: use lowercase letters, digits and hyphens.').optional()
+    .describe('Suffix of this item\'s files, for example sem-enfeites: <Id>-<size>-<variant>.<ext>'),
 }).strict();
 
 export const packManifestSchema = z.object({
-  name: z.string().regex(slug, 'O nome do pack vira pasta: use letras minúsculas, números e hífen.'),
-  title: z.string().min(1).describe('Título do pack, para as pessoas'),
-  items: z.array(packItemSchema).min(1).describe('O que o pack exporta, na ordem'),
+  name: z.string().regex(slug, 'The pack name becomes a folder: use lowercase letters, digits and hyphens.'),
+  title: z.string().min(1).describe('Pack title, for people'),
+  items: z.array(packItemSchema).min(1).describe('What the pack exports, in order'),
 }).strict();
 
 export type PackItem = z.infer<typeof packItemSchema>;
@@ -103,13 +103,13 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 
 const describeItem = (item: PackItem, index: number) => `Item ${index + 1} (${item.composition})`;
 
-/** zod issues flattened into one pt-BR line per problem, with the field path. */
+/** zod issues flattened into one line per problem, with the field path. */
 const issuesText = (error: z.ZodError) =>
   error.issues.map((issue) => `${issue.path.length > 0 ? `${issue.path.join('.')}: ` : ''}${issue.message}`).join('; ');
 
 export const parsePackManifest = (raw: unknown): PackManifest => {
   const result = packManifestSchema.safeParse(raw);
-  if (!result.success) throw new Error(`Manifesto de pack inválido: ${issuesText(result.error)}`);
+  if (!result.success) throw new Error(`Invalid pack manifest: ${issuesText(result.error)}`);
   return result.data;
 };
 
@@ -117,7 +117,7 @@ export const parsePackManifest = (raw: unknown): PackManifest => {
 const itemSizePatch = (asset: PackAsset, sizeId: string) => {
   const policy = getKindPolicy(asset.kind);
   if (policy.fixedSize) {
-    throw new Error(`${asset.id} é de ${policy.label.toLowerCase()}, com tamanho fixo (${policy.fixedSize.width}×${policy.fixedSize.height}): remova "sizes" deste item.`);
+    throw new Error(`${asset.id} is for ${policy.label.toLowerCase()}, with a fixed size (${policy.fixedSize.width}×${policy.fixedSize.height}): remove "sizes" from this item.`);
   }
   return expandSize(asset.kind, sizeId);
 };
@@ -150,13 +150,13 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
       }
     };
     if (item.frame !== undefined && !item.formats.includes('png')) {
-      throw new Error(`${where}: "frame" vale só para PNG; inclua png em "formats" ou remova "frame".`);
+      throw new Error(`${where}: "frame" only applies to PNG; add png to "formats" or remove "frame".`);
     }
     const asset = withContext(() => deps.getAsset(item.composition));
     const policy = getKindPolicy(asset.kind);
     const presetName = item.preset;
     const preset = presetName === undefined ? {} : withContext(() => deps.readPreset(presetName));
-    if (!isPlainObject(preset)) throw new Error(`${where}: o preset ${item.preset} deve conter um objeto JSON.`);
+    if (!isPlainObject(preset)) throw new Error(`${where}: the preset ${item.preset} must hold a JSON object.`);
     const sizes: (string | undefined)[] = item.sizes ?? [undefined];
     for (const sizeId of sizes) {
       const sizePatch = sizeId === undefined ? {} : withContext(() => itemSizePatch(asset, sizeId));
@@ -164,16 +164,16 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
         const bleed = item.props?.bleed === undefined ? {} : {bleed: item.props.bleed};
         const props = {...preset, ...item.props, ...sizePatch, ...bleed, outputFormat: format};
         const parsed = withContext(() => asset.parse(props));
-        if (parsed.guides === true) throw new Error(`${where}: desligue guides para exportar.`);
+        if (parsed.guides === true) throw new Error(`${where}: turn guides off to export.`);
         const layout = asset.layout?.(parsed) ?? null;
         const canvas = layout?.canvas ?? policy.fixedSize;
-        if (!canvas) throw new Error(`${where}: a composição não informa o tamanho do arquivo.`);
+        if (!canvas) throw new Error(`${where}: the composition does not report the file size.`);
         const {fps, durationInFrames} = getCompositionMetadata({
           durationSeconds: parsed.durationSeconds as number, outputFormat: format,
         });
         const frame = format === 'png' ? item.frame ?? 0 : undefined;
         if (frame !== undefined && frame >= durationInFrames) {
-          throw new Error(`${where}: o quadro precisa ser um inteiro entre 0 e ${durationInFrames - 1}.`);
+          throw new Error(`${where}: the frame must be an integer from 0 to ${durationInFrames - 1}.`);
         }
         // A named size is the product tag even when the schema would match another table entry.
         const tag = item.variant === undefined ? '' : `-${item.variant}`;
@@ -183,7 +183,7 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
         const output = path.posix.join('out', 'packs', manifest.name, policy.folder, file);
         const previous = seen.get(output);
         if (previous) {
-          throw new Error(`${where} repete o arquivo ${output}, já gerado por ${previous}: mude o tamanho, o formato ou separe em outro pack.`);
+          throw new Error(`${where} repeats the file ${output}, already produced by ${previous}: change the size or the format, or move the item to another pack.`);
         }
         seen.set(output, where);
         const motion = asset.motion?.(parsed) ?? null;
@@ -221,15 +221,15 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
         return asset.parse(request.props);
       } catch (error) {
         const message = error instanceof z.ZodError ? issuesText(error) : error instanceof Error ? error.message : String(error);
-        throw new Error(`${where}: a máscara de ${sizeId} é inválida: ${message}`);
+        throw new Error(`${where}: the mask of ${sizeId} is invalid: ${message}`);
       }
     })();
     const canvas = asset.layout?.(exportProps).canvas;
-    if (!canvas) throw new Error(`${where}: a composição não informa o tamanho da máscara.`);
+    if (!canvas) throw new Error(`${where}: the composition does not report the mask size.`);
     const tag = radiiBySize.get(sizeId)!.size > 1 ? `-r${radiusTag(radius)}` : '';
     const output = path.posix.join('out', 'packs', manifest.name, policy.folder, `mascara-${getSize(sizeId).id}${tag}.png`);
     const previous = seen.get(output);
-    if (previous) throw new Error(`${where}: a máscara ${output} repete um arquivo de ${previous}: renomeie o item ou separe em outro pack.`);
+    if (previous) throw new Error(`${where}: the mask ${output} repeats a file of ${previous}: rename the item or move it to another pack.`);
     seen.set(output, where);
     const {fps, durationInFrames} = getCompositionMetadata({durationSeconds: exportProps.durationSeconds as number, outputFormat: 'png'});
     const mask: PlannedFile = {
@@ -247,16 +247,16 @@ export const filterPlan = (plan: readonly PlannedFile[], only: string | undefine
   if (only === undefined) return [...plan];
   const needle = only.toLowerCase();
   const kept = plan.filter((file) => file.output.toLowerCase().includes(needle));
-  if (kept.length === 0) throw new Error(`Nenhum arquivo do pack contém "${only}". Use --dry-run para ver a lista.`);
+  if (kept.length === 0) throw new Error(`No pack file contains "${only}". Use --dry-run to see the list.`);
   return kept;
 };
 
-const gigabytes = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1).replace('.', ',')} GB`;
+const gigabytes = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 
 /** Refuses to render when the disk is nearly full: a crashed render run once took this Mac down. */
 export const assertFreeSpace = (freeBytes: number, where: string) => {
   if (freeBytes < MIN_FREE_BYTES) {
-    throw new Error(`Espaço livre insuficiente em ${where}: há ${gigabytes(freeBytes)} livres e o pack precisa de pelo menos ${gigabytes(MIN_FREE_BYTES)}. Libere espaço e rode de novo; os arquivos prontos serão pulados.`);
+    throw new Error(`Not enough free space in ${where}: ${gigabytes(freeBytes)} free, and the pack needs at least ${gigabytes(MIN_FREE_BYTES)}. Free up space and run again; finished files will be skipped.`);
   }
 };
 
@@ -266,13 +266,13 @@ export const assertFreeSpace = (freeBytes: number, where: string) => {
  */
 export const dryRunText = (plan: readonly PlannedFile[], existing: ReadonlySet<string> = new Set()) => [
   ...plan.map((file) => {
-    const still = file.frame === undefined ? `${file.fps} fps, ${file.frames} frames` : `quadro ${file.frame}`;
+    const still = file.frame === undefined ? `${file.fps} fps, ${file.frames} frames` : `frame ${file.frame}`;
     // A still does not move: its speeds would only be noise there.
-    const speeds = file.motion && file.frame === undefined ? `, contorno ${file.motion.strokeSpeed} px/s, preenchimento ${file.motion.fillSpeed} px/s` : '';
-    const note = existing.has(file.output) ? ' (já existe)' : '';
+    const speeds = file.motion && file.frame === undefined ? `, stroke ${file.motion.strokeSpeed} px/s, fill ${file.motion.fillSpeed} px/s` : '';
+    const note = existing.has(file.output) ? ' (already exists)' : '';
     return `${file.output}  ${file.canvas.width}×${file.canvas.height}, ${still}${speeds}${note}`;
   }),
-  `Total: ${plan.length} ${plan.length === 1 ? 'arquivo' : 'arquivos'}.`,
+  `Total: ${plan.length} ${plan.length === 1 ? 'file' : 'files'}.`,
 ].join('\n');
 
 /** Pack manifest entry for one file (keys in English/CSS style, for tools). */
@@ -356,11 +356,11 @@ export const packFileEntry = (
   };
 };
 
-/** pt-BR: how many scratch directories of interrupted exports were (or will be) removed. */
-export const scratchText = (count: number, done: 'removida' | 'será removida') => {
-  const plural = count === 1 ? '' : 's';
-  const verb = done === 'removida' ? `removida${plural}` : `ser${count === 1 ? 'á' : 'ão'} removida${plural}`;
-  return `${count} pasta${plural} temporária${plural} de exports interrompidos ${verb}${done === 'removida' ? '.' : ' ao montar o pack.'}`;
+/** How many scratch directories of interrupted exports were (or will be) removed. */
+export const scratchText = (count: number, done: 'removed' | 'will-be-removed') => {
+  const noun = count === 1 ? 'scratch folder' : 'scratch folders';
+  const verb = done === 'removed' ? 'removed.' : 'will be removed when the pack is built.';
+  return `${count} ${noun} of interrupted exports ${verb}`;
 };
 
 /** Every side effect of a pack run, injected so the run loop is tested without rendering. */
@@ -401,7 +401,7 @@ export const runPack = async ({manifest, plan, overwrite, deps, effects, diskLab
   });
   // Partial renders of an interrupted run are never valid output: gone before anything else, freeing their space.
   const swept = await effects.sweepScratch();
-  if (swept.length > 0) effects.log(scratchText(swept.length, 'removida'));
+  if (swept.length > 0) effects.log(scratchText(swept.length, 'removed'));
   assertFreeSpace(await effects.freeBytes(), diskLabel);
   let rendered = 0;
   let skipped = 0;
@@ -411,7 +411,7 @@ export const runPack = async ({manifest, plan, overwrite, deps, effects, diskLab
     const sidecar = `${file.output}.json`;
     const asset = deps.getAsset(file.composition);
     if (!overwrite && await effects.exists(file.output)) {
-      effects.log(`${counter} ${file.output}: já existe, pulando.`);
+      effects.log(`${counter} ${file.output}: already exists, skipping.`);
       skipped += 1;
     } else {
       // Checked again per file: one pack can take many gigabytes.
@@ -452,7 +452,7 @@ export const realPackDeps: PackDeps = {
   },
   readPreset: (name) => {
     const file = path.join(PROJECT_ROOT, 'presets', `${name}.json`);
-    if (!existsSync(file)) throw new Error(`Preset não encontrado: presets/${name}.json.`);
+    if (!existsSync(file)) throw new Error(`Preset not found: presets/${name}.json.`);
     return JSON.parse(readFileSync(file, 'utf8')) as unknown;
   },
 };

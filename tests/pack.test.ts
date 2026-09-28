@@ -55,7 +55,7 @@ const fakeDeps: PackDeps = {
     return asset;
   },
   readPreset: (name) => {
-    if (!(name in fakePresets)) throw new Error(`Preset não encontrado: presets/${name}.json.`);
+    if (!(name in fakePresets)) throw new Error(`Preset not found: presets/${name}.json.`);
     return fakePresets[name];
   },
 };
@@ -65,14 +65,14 @@ const manifest = (items: PackManifest['items'], name = 'teste'): PackManifest =>
 test('pack: o manifesto é estrito e recusa campos desconhecidos com mensagem em português', () => {
   const valid = {name: 'neon', title: 'Neon', items: [{composition: 'ChatLoop', formats: ['webm']}]};
   assert.deepEqual(parsePackManifest(valid), valid);
-  assert.throws(() => parsePackManifest({...valid, extra: 1}), /Manifesto de pack inválido/);
+  assert.throws(() => parsePackManifest({...valid, extra: 1}), /Invalid pack manifest/);
   // Keys follow the SPEC (English, like the preset props): the old pt-BR keys are unknown now.
-  assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', formats: ['webm'], tamanhos: ['x']}]}), /inválido/);
-  assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', formats: []}]}), /inválido/);
+  assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', formats: ['webm'], tamanhos: ['x']}]}), /Invalid pack manifest/);
+  assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', formats: []}]}), /Invalid pack manifest/);
   assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', formats: ['avi']}]}), /formats/);
-  assert.throws(() => parsePackManifest({...valid, name: 'Néon Pack'}), /letras minúsculas/);
-  assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', preset: 'presets/x.json', formats: ['png']}]}), /sem pasta nem extensão/);
-  assert.throws(() => parsePackManifest({...valid, items: []}), /inválido/);
+  assert.throws(() => parsePackManifest({...valid, name: 'Néon Pack'}), /lowercase letters/);
+  assert.throws(() => parsePackManifest({...valid, items: [{composition: 'ChatLoop', preset: 'presets/x.json', formats: ['png']}]}), /without folder or extension/);
+  assert.throws(() => parsePackManifest({...valid, items: []}), /Invalid pack manifest/);
 });
 
 test('pack: o plano segue a ordem do manifesto e nomeia <Id>-<tamanho>.<ext> na pasta do tipo', () => {
@@ -157,9 +157,9 @@ test('pack: a variante marca o nome dos arquivos, e o mesmo tamanho cabe duas ve
   // The variant becomes part of a file name: a slug only.
   const item = {composition: 'ChatLoop', formats: ['webm']};
   for (const variant of ['Sem Enfeites', 'sem_enfeites', '', 'a/b']) {
-    assert.throws(() => parsePackManifest({name: 'teste', title: 'Teste', items: [{...item, variant}]}), /inválido/, variant);
+    assert.throws(() => parsePackManifest({name: 'teste', title: 'Teste', items: [{...item, variant}]}), /Invalid pack manifest/, variant);
   }
-  assert.throws(() => parsePackManifest({name: 'teste', title: 'Teste', items: [{...item, variant: 'X'}]}), /letras minúsculas/);
+  assert.throws(() => parsePackManifest({name: 'teste', title: 'Teste', items: [{...item, variant: 'X'}]}), /lowercase letters/);
 });
 
 test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nome', () => {
@@ -177,11 +177,11 @@ test('pack: sem tamanhos, itens de tamanho livre usam o tamanho das props no nom
 test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em português', () => {
   assert.throws(
     () => planPack(manifest([{composition: 'FundoLoop', sizes: ['cartao'], formats: ['webm']}]), fakeDeps),
-    /Item 1 \(FundoLoop\): .*tamanho fixo \(1920×1080\): remova "sizes"/,
+    /Item 1 \(FundoLoop\): .*with a fixed size \(1920×1080\): remove "sizes"/,
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', formats: ['webm']}, {composition: 'ChatLoop', sizes: ['webcam-16x9'], formats: ['webm']}]), fakeDeps),
-    /Item 2 \(ChatLoop\): O tamanho webcam-16x9 é de bordas e molduras, não de fundos de chat/,
+    /Item 2 \(ChatLoop\): Size webcam-16x9 is for borders and frames, not chat backgrounds/,
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', sizes: ['gigante'], formats: ['webm']}]), fakeDeps),
@@ -191,10 +191,10 @@ test('pack: tamanhos em fundos e tamanhos de outro tipo são recusados em portug
 
 test('pack: composição, preset e props inválidos param o plano antes de qualquer render', () => {
   assert.throws(() => planPack(manifest([{composition: 'Nada', formats: ['webm']}]), fakeDeps), /Item 1 \(Nada\): Composição desconhecida/);
-  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', preset: 'sumiu', formats: ['webm']}]), fakeDeps), /Preset não encontrado/);
-  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', preset: 'quebrado', formats: ['webm']}]), fakeDeps), /objeto JSON/);
+  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', preset: 'sumiu', formats: ['webm']}]), fakeDeps), /Preset not found/);
+  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', preset: 'quebrado', formats: ['webm']}]), fakeDeps), /JSON object/);
   assert.throws(() => planPack(manifest([{composition: 'ChatLoop', props: {typo: 1}, formats: ['webm']}]), fakeDeps), /typo/);
-  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', props: {guides: true}, formats: ['png']}]), fakeDeps), /desligue guides/);
+  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', props: {guides: true}, formats: ['png']}]), fakeDeps), /turn guides off/);
 });
 
 test('pack: nomes de arquivo repetidos são recusados', () => {
@@ -203,20 +203,20 @@ test('pack: nomes de arquivo repetidos são recusados', () => {
       {composition: 'ChatLoop', sizes: ['chat-padrao'], formats: ['webm']},
       {composition: 'ChatLoop', preset: 'chat-teste', sizes: ['chat-padrao'], formats: ['png', 'webm']},
     ]), fakeDeps),
-    /Item 2 \(ChatLoop\) repete o arquivo out\/packs\/teste\/chat\/ChatLoop-chat-padrao\.webm, já gerado por Item 1/,
+    /Item 2 \(ChatLoop\) repeats the file out\/packs\/teste\/chat\/ChatLoop-chat-padrao\.webm, already produced by Item 1/,
   );
   assert.throws(
     () => planPack(manifest([{composition: 'ChatLoop', sizes: ['chat-alto', 'chat-alto'], formats: ['webm']}]), fakeDeps),
-    /repete o arquivo/,
+    /repeats the file/,
   );
 });
 
 test('pack: frame vale só com PNG e precisa existir no loop', () => {
   const plan = planPack(manifest([{composition: 'ChatLoop', formats: ['gif', 'png'], frame: 120}]), fakeDeps);
   assert.deepEqual(plan.map((file) => [file.format, file.frame, file.fps]), [['gif', undefined, 50], ['png', 120, 60]]);
-  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', formats: ['webm'], frame: 3}]), fakeDeps), /"frame" vale só para PNG/);
+  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', formats: ['webm'], frame: 3}]), fakeDeps), /"frame" only applies to PNG/);
   // 8 s at 60 fps: frames 0…479.
-  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', formats: ['png'], frame: 480}]), fakeDeps), /entre 0 e 479/);
+  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', formats: ['png'], frame: 480}]), fakeDeps), /from 0 to 479/);
 });
 
 const samplePlan = () => planPack(manifest([
@@ -230,7 +230,7 @@ test('pack: --only filtra pelo caminho e recusa um filtro vazio', () => {
   assert.equal(filterPlan(plan, undefined).length, 4);
   assert.deepEqual(filterPlan(plan, 'CHAT-PADRAO').map((file) => file.format), ['webm', 'png']);
   assert.deepEqual(filterPlan(plan, '.png').map((file) => file.composition), ['ChatLoop', 'BordaLoop']);
-  assert.throws(() => filterPlan(plan, 'xyz'), /Nenhum arquivo do pack contém "xyz"/);
+  assert.throws(() => filterPlan(plan, 'xyz'), /No pack file contains "xyz"/);
 });
 
 test('pack: --dry-run lista cada arquivo com o tamanho do arquivo e o total', () => {
@@ -239,16 +239,16 @@ test('pack: --dry-run lista cada arquivo com o tamanho do arquivo e o total', ()
   assert.deepEqual(text.split('\n'), [
     'out/packs/teste/backgrounds/FundoLoop.webm  1920×1080, 60 fps, 480 frames',
     'out/packs/teste/chat/ChatLoop-chat-padrao.webm  464×664, 60 fps, 480 frames',
-    'out/packs/teste/chat/ChatLoop-chat-padrao.png  464×664, quadro 0 (já existe)',
-    'out/packs/teste/bordas/BordaLoop-webcam-16x9.png  736×456, quadro 0',
-    'Total: 4 arquivos.',
+    'out/packs/teste/chat/ChatLoop-chat-padrao.png  464×664, frame 0 (already exists)',
+    'out/packs/teste/bordas/BordaLoop-webcam-16x9.png  736×456, frame 0',
+    'Total: 4 files.',
   ]);
-  assert.match(dryRunText(plan.slice(0, 1)), /Total: 1 arquivo\.$/);
+  assert.match(dryRunText(plan.slice(0, 1)), /Total: 1 file\.$/);
 });
 
 test('pack: recusa começar com menos de 2 GB livres e diz quanto há', () => {
   assert.doesNotThrow(() => assertFreeSpace(MIN_FREE_BYTES, 'out'));
-  assert.throws(() => assertFreeSpace(1.5 * 1024 ** 3, 'out'), /Espaço livre insuficiente em out: há 1,5 GB livres .* pelo menos 2,0 GB/);
+  assert.throws(() => assertFreeSpace(1.5 * 1024 ** 3, 'out'), /Not enough free space in out: 1\.5 GB free.* at least 2\.0 GB/);
 });
 
 /** In-memory disk for the run loop: files are paths, JSON files hold parsed data. */
@@ -327,7 +327,7 @@ test('pack: arquivos prontos são pulados (retomável) e --overwrite os refaz', 
   const result = await runPack({manifest: manifest([]), plan, overwrite: false, deps: fakeDeps, effects: resumed.effects, diskLabel: 'out'});
   assert.deepEqual(resumed.exported, plan.slice(2).map((file) => file.output));
   assert.deepEqual([result.rendered, result.skipped], [2, 2]);
-  assert.ok(resumed.logs.some((line) => line.includes('FundoLoop.webm: já existe, pulando.')));
+  assert.ok(resumed.logs.some((line) => line.includes('FundoLoop.webm: already exists, skipping.')));
   const files = (resumed.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
   assert.equal(files.length, 4, 'o manifesto mantém os arquivos da execução anterior');
 
@@ -351,8 +351,8 @@ test('pack: as pastas temporárias de um export interrompido somem antes de tudo
   await runPack({manifest: manifest([]), plan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   assert.equal(run.disk.has(leftover), false);
   // Swept first, so the space it held counts in the free-space check and nothing renders over it.
-  assert.deepEqual(run.logs.slice(0, 2), ['sweep', '1 pasta temporária de exports interrompidos removida.']);
-  assert.equal(scratchText(3, 'será removida'), '3 pastas temporárias de exports interrompidos serão removidas ao montar o pack.');
+  assert.deepEqual(run.logs.slice(0, 2), ['sweep', '1 scratch folder of interrupted exports removed.']);
+  assert.equal(scratchText(3, 'will-be-removed'), '3 scratch folders of interrupted exports will be removed when the pack is built.');
   // Low disk still refuses, but only after the sweep had its chance to free space.
   const low = fakeRun({[leftover]: 'bytes parciais'}, 512 * 1024 ** 2);
   await assert.rejects(runPack({manifest: manifest([]), plan: samplePlan(), overwrite: false, deps: fakeDeps, effects: low.effects, diskLabel: 'out'}));
@@ -363,7 +363,7 @@ test('pack: pouco disco recusa antes de exportar qualquer arquivo', async () => 
   const run = fakeRun({}, 512 * 1024 ** 2);
   await assert.rejects(
     runPack({manifest: manifest([]), plan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'}),
-    /há 0,5 GB livres/,
+    /0\.5 GB free/,
   );
   assert.deepEqual(run.exported, []);
 });
@@ -526,7 +526,7 @@ test('packs: o plano, o --dry-run e o manifesto mostram a velocidade real de cad
   const column = plan.find((file) => file.output.endsWith('ChatLoop-chat-coluna.webm'))!;
   assert.notEqual(column.motion!.strokeSpeed, 160);
   assert.ok(Math.abs(column.motion!.strokeSpeed / 160 - 1) <= 0.35, String(column.motion!.strokeSpeed));
-  assert.match(dryRunText([column]), new RegExp(`, contorno ${column.motion!.strokeSpeed} px/s, preenchimento ${column.motion!.fillSpeed} px/s\n`));
+  assert.match(dryRunText([column]), new RegExp(`, stroke ${column.motion!.strokeSpeed} px/s, fill ${column.motion!.fillSpeed} px/s\n`));
 });
 
 test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejada uma vez logo depois dela', () => {
@@ -564,7 +564,7 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
       assert.equal(fromSidecar.mask, entry.mask, file.output);
       assert.deepEqual(fromSidecar.motion, entry.motion, file.output);
     }
-    assert.match(dryRunText(plan), new RegExp(`out/packs/${name}/bordas/mascara-webcam-16x9\\.png  640×360, quadro 0\n`));
+    assert.match(dryRunText(plan), new RegExp(`out/packs/${name}/bordas/mascara-webcam-16x9\\.png  640×360, frame 0\n`));
   }
 });
 

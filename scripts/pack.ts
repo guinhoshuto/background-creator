@@ -5,18 +5,19 @@ import {parseArgs} from 'node:util';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
 import {dryRunText, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
 
-const PACK_HELP_TEXT = `npm run render:pack -- <nome|arquivo.json> [opções]
+const PACK_HELP_TEXT = `usage: npm run render:pack -- <name|file.json> [options]
 
-Monta um pack em out/packs/<nome>/ a partir de packs/<nome>.json (ou do arquivo informado),
-exportando um arquivo por vez e escrevendo out/packs/<nome>/manifest.json.
+Builds a pack in out/packs/<name>/ from packs/<name>.json (or the given file),
+exporting one file at a time and writing out/packs/<name>/manifest.json.
+The pack folder is a working folder; the buyer gets the zip.
 
-Opções:
-  --dry-run        lista cada arquivo planejado com o tamanho do arquivo, sem renderizar
-  --only <texto>   exporta só os arquivos cujo caminho contém o texto
-  --overwrite      substitui arquivos existentes (sem ela, arquivos prontos são pulados)
-  -h, --help       mostra esta ajuda`;
+Options:
+  --dry-run        lists every planned file with its file dimensions, without rendering
+  --only <text>    exports only the files whose path contains the text
+  --overwrite      replaces existing files (without it, finished files are skipped)
+  -h, --help       shows this help`;
 
-/** A bare name means packs/<nome>.json; anything ending in .json is a path. */
+/** A bare name means packs/<name>.json; anything ending in .json is a path. */
 const manifestFile = (target: string) =>
   (target.endsWith('.json') ? path.resolve(target) : path.join(projectRoot, 'packs', `${target}.json`));
 
@@ -46,9 +47,9 @@ const main = async () => {
     },
   });
   if (values.help) {console.log(PACK_HELP_TEXT); return;}
-  if (positionals.length !== 1) throw new Error('Informe um pack: npm run render:pack -- <nome|arquivo.json>. Use --help.');
+  if (positionals.length !== 1) throw new Error('Name one pack: npm run render:pack -- <name|file.json>. Use --help.');
   const file = manifestFile(positionals[0]!);
-  if (!existsSync(file)) throw new Error(`Manifesto não encontrado: ${path.relative(process.cwd(), file) || file}.`);
+  if (!existsSync(file)) throw new Error(`Manifest not found: ${path.relative(process.cwd(), file) || file}.`);
   const manifest = parsePackManifest(JSON.parse(await readFile(file, 'utf8')));
   const plan = filterPlan(planPack(manifest, realPackDeps), values.only);
 
@@ -65,7 +66,7 @@ const main = async () => {
     console.log(dryRunText(plan, existing));
     // A dry run changes nothing: it only says what the real run will clean up.
     const leftovers = (await Promise.all(scratchRoots.map(findScratchDirectories))).flat();
-    if (leftovers.length > 0) console.log(scratchText(leftovers.length, 'será removida'));
+    if (leftovers.length > 0) console.log(scratchText(leftovers.length, 'will-be-removed'));
     return;
   }
 

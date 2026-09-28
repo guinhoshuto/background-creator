@@ -26,7 +26,7 @@ test('the requested encoder format overrides saved preview props', () => {
 test('invalid composition, unknown props, and mismatched extension fail before rendering', () => {
   assert.throws(() => resolveExport({compositionId: 'Unknown', format: 'mp4'}));
   assert.throws(() => resolveExport({compositionId: 'GradientLoop', format: 'mp4', props: {typo: 12}}));
-  assert.throws(() => resolveExport({compositionId: 'GradientLoop', format: 'mp4', output: 'wrong.webm'}), /extensão/);
+  assert.throws(() => resolveExport({compositionId: 'GradientLoop', format: 'mp4', output: 'wrong.webm'}), /extension/);
 });
 
 test('the flattening color cannot contain alpha', () => {
@@ -56,16 +56,16 @@ test('export: MOV sai em ProRes 4444 e PNG vira um still no frame pedido', () =>
   assert.equal(png.frame, 0);
   assert.equal(hasAlpha(png.props), true);
   assert.equal(resolveExport({compositionId: 'ParticleLoop', format: 'png', frame: 479}).frame, 479);
-  assert.throws(() => resolveExport({compositionId: 'ParticleLoop', format: 'png', frame: 480}), /entre 0 e 479/);
-  assert.throws(() => resolveExport({compositionId: 'ParticleLoop', format: 'png', frame: 1.5}), /inteiro/);
-  assert.throws(() => resolveExport({compositionId: 'ParticleLoop', format: 'mp4', frame: 3}), /--frame somente com --format png/);
-  assert.throws(() => resolveExport({compositionId: 'GradientLoop', format: 'mov', output: 'wrong.mp4'}), /extensão \.mov/);
-  assert.throws(() => resolveExport({compositionId: 'GradientLoop', format: 'png', output: 'wrong.webm'}), /extensão \.png/);
+  assert.throws(() => resolveExport({compositionId: 'ParticleLoop', format: 'png', frame: 480}), /from 0 to 479/);
+  assert.throws(() => resolveExport({compositionId: 'ParticleLoop', format: 'png', frame: 1.5}), /integer/);
+  assert.throws(() => resolveExport({compositionId: 'ParticleLoop', format: 'mp4', frame: 3}), /--frame only with --format png/);
+  assert.throws(() => resolveExport({compositionId: 'GradientLoop', format: 'mov', output: 'wrong.mp4'}), /\.mov extension/);
+  assert.throws(() => resolveExport({compositionId: 'GradientLoop', format: 'png', output: 'wrong.webm'}), /\.png extension/);
   assert(resolveExport({compositionId: 'GradientLoop', format: 'png', output: 'still.PNG'}).output.endsWith('still.PNG'));
 });
 
 test('export: guides ligado nunca vira arquivo', () => {
-  assert.throws(() => assertExportable({guides: true}), /^Error: Desligue guides para exportar\.$/);
+  assert.throws(() => assertExportable({guides: true}), /^Error: Turn guides off to export\.$/);
   assert.doesNotThrow(() => assertExportable({guides: false}));
   assert.doesNotThrow(() => assertExportable({}));
   // Backgrounds have no guides at all: the strict schema refuses the key.
@@ -112,7 +112,7 @@ test('export: o JSON de layout e o log trazem a velocidade real, que difere da p
     const asked = (resolved.props as {strokeSpeed: number}).strokeSpeed;
     assert.notEqual(motion.strokeSpeed, asked, `${id}: ${motion.strokeSpeed}`);
     assert.ok(Math.abs(motion.strokeSpeed / asked - 1) <= 0.35, `${id}: ${motion.strokeSpeed}`);
-    assert.equal(motionText(motion), `Velocidade real: contorno ${motion.strokeSpeed} px/s, preenchimento ${motion.fillSpeed} px/s (arredondadas para períodos inteiros por ciclo).`);
+    assert.equal(motionText(motion), `Actual speed: stroke ${motion.strokeSpeed} px/s, fill ${motion.fillSpeed} px/s (rounded to whole periods per cycle).`);
   }
 });
 
@@ -215,10 +215,10 @@ test('export: Ctrl+C no meio do render remove a pasta temporária mesmo sem pass
 const cli = (...args: string[]) => parseRenderArgs(args);
 
 test('CLI: a composição é obrigatória e o formato do comando prevalece sobre o JSON', () => {
-  assert.throws(() => buildExportOptions(cli()), /Informe a composição\. Use --list/);
-  assert.throws(() => buildExportOptions(cli('GradientLoop', 'ParticleLoop')), /somente uma composição/);
+  assert.throws(() => buildExportOptions(cli()), /Name the composition\. Use --list/);
+  assert.throws(() => buildExportOptions(cli('GradientLoop', 'ParticleLoop')), /only one composition/);
   assert.throws(() => buildExportOptions(cli('Nada')), /Composição desconhecida: Nada/);
-  assert.throws(() => buildExportOptions(cli('GradientLoop'), [1, 2]), /objeto JSON/);
+  assert.throws(() => buildExportOptions(cli('GradientLoop'), [1, 2]), /JSON object/);
   assert.throws(() => buildExportOptions(cli('GradientLoop', '--format', 'avi')));
   const options = buildExportOptions(
     cli('GradientLoop', '--format', 'mov', '--duration', '2.5', '--seed', '9', '--overwrite'),
@@ -231,7 +231,7 @@ test('CLI: a composição é obrigatória e o formato do comando prevalece sobre
   });
   assert.equal(resolveExport(options).props.outputFormat, 'mov');
   assert.equal(buildExportOptions(cli('GradientLoop', '--format', 'png', '--frame', '30')).frame, 30);
-  assert.match(HELP_TEXT, /O formato do comando prevalece sobre o JSON\./);
+  assert.match(HELP_TEXT, /The command's format wins over the JSON\./);
 });
 
 test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo', () => {
@@ -241,19 +241,19 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
   const overPreset = {fit: 'tela', transparent: true, ...expandSize('borda', 'webcam-16x9')};
   assert.equal(overPreset.fit, 'janela');
   assert.equal(sizeTag('borda', overPreset), 'webcam-16x9');
-  assert.throws(() => expandSize('chat', 'webcam-16x9'), /O tamanho webcam-16x9 é de bordas e molduras, não de fundos de chat\. Opções: chat-compacto/);
-  assert.throws(() => expandSize('bloco', 'chat-padrao'), /não de blocos de texto/);
+  assert.throws(() => expandSize('chat', 'webcam-16x9'), /Size webcam-16x9 is for borders and frames, not chat backgrounds\. Options: chat-compacto/);
+  assert.throws(() => expandSize('bloco', 'chat-padrao'), /not text boxes/);
   assert.throws(() => expandSize('borda', 'enorme'), /Tamanho desconhecido: enorme/);
-  assert.throws(() => expandSize('background', 'cartao'), /Fundos têm tamanho fixo \(1920×1080\)/);
+  assert.throws(() => expandSize('background', 'cartao'), /Backgrounds have a fixed size \(1920×1080\)/);
   for (const flags of [['--size', 'cartao'], ['--width', '800'], ['--height', '600'], ['--bleed', '0']]) {
-    assert.throws(() => buildExportOptions(cli('GradientLoop', ...flags)), /tamanho fixo/, flags.join(' '));
+    assert.throws(() => buildExportOptions(cli('GradientLoop', ...flags)), /fixed size/, flags.join(' '));
   }
 });
 
 test('CLI: --list agrupa por tipo com cabeçalhos em português', () => {
   const text = listText();
   const headers = text.split('\n').filter((line) => /^\S/.test(line));
-  assert.deepEqual(headers, ['Fundos (background):', 'Fundos de chat (chat):', 'Blocos de texto (bloco):', 'Bordas e molduras (borda):']);
+  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (bloco):', 'Borders and frames (borda):']);
   assert.match(text, /^ {2}GradientLoop$/m);
-  assert.match(text, /webcam-16x9: caixa 640×360, arquivo 736×456; câmera padrão/);
+  assert.match(text, /webcam-16x9: box 640×360, file 736×456; câmera padrão/);
 });

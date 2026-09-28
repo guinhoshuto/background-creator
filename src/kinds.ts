@@ -12,7 +12,7 @@ export type KindPolicy = {
   kind: AssetKind;
   /** Studio <Folder> name: Remotion only accepts a-z, A-Z, 0-9 and "-". */
   folder: string;
-  /** pt-BR name shown by the CLI and the docs. */
+  /** Name shown by the CLI and the docs. */
   label: string;
   /** Kinds with a fixed canvas have no width/height props at all. */
   fixedSize: {width: number; height: number} | null;
@@ -24,19 +24,19 @@ export type KindPolicy = {
 
 export const kindPolicies: Record<AssetKind, KindPolicy> = {
   background: {
-    kind: 'background', folder: 'backgrounds', label: 'Fundos',
+    kind: 'background', folder: 'backgrounds', label: 'Backgrounds',
     fixedSize: {width: 1920, height: 1080}, defaultSizeId: null, transparent: false, format: 'webm',
   },
   chat: {
-    kind: 'chat', folder: 'chat', label: 'Fundos de chat',
+    kind: 'chat', folder: 'chat', label: 'Chat backgrounds',
     fixedSize: null, defaultSizeId: 'chat-padrao', transparent: true, format: 'webm',
   },
   bloco: {
-    kind: 'bloco', folder: 'blocos', label: 'Blocos de texto',
+    kind: 'bloco', folder: 'blocos', label: 'Text boxes',
     fixedSize: null, defaultSizeId: 'cartao', transparent: true, format: 'webm',
   },
   borda: {
-    kind: 'borda', folder: 'bordas', label: 'Bordas e molduras',
+    kind: 'borda', folder: 'bordas', label: 'Borders and frames',
     fixedSize: null, defaultSizeId: 'webcam-16x9', transparent: true, format: 'webm',
   },
 };

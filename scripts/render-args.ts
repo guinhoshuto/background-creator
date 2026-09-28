@@ -5,22 +5,22 @@ import {outputFormatSchema} from '../src/settings';
 import {canvasOf, getSize, sizeProps, sizesForKind} from '../src/sizes';
 import type {ExportOptions} from './export';
 
-export const HELP_TEXT = `npm run render:<webm|mov|png|mp4|gif> -- <composição> [opções]
+export const HELP_TEXT = `usage: npm run render:<webm|mov|png|mp4|gif> -- <composition> [options]
 
-Opções:
-  --props arquivo.json   parâmetros salvos (o formato do comando prevalece sobre o JSON)
-  --size <id>            tamanho do catálogo (chat, blocos e bordas); veja --list
-  --width <px>           largura da caixa, par (chat, blocos e bordas)
-  --height <px>          altura da caixa, par (chat, blocos e bordas)
-  --bleed <px>           margem transparente para brilho, par (chat, blocos e bordas)
-  --frame <n>            frame do PNG (padrão 0)
-  --duration <segundos>  duração do ciclo
-  --seed <inteiro>       seed da distribuição
-  --out <destino>        arquivo de saída
-  --overwrite            substitui um arquivo existente
-  --list                 lista as composições e os tamanhos por tipo
+Options:
+  --props file.json      saved parameters (the command's format wins over the JSON)
+  --size <id>            catalog size (chat, text boxes and borders); see --list
+  --width <px>           box width, even (chat, text boxes and borders)
+  --height <px>          box height, even (chat, text boxes and borders)
+  --bleed <px>           transparent margin for the glow, even (chat, text boxes and borders)
+  --frame <n>            PNG frame (default 0)
+  --duration <seconds>   loop duration
+  --seed <integer>       distribution seed
+  --out <path>           output file
+  --overwrite            replaces an existing file
+  --list                 lists the compositions and the sizes by kind
 
-O formato do comando prevalece sobre o JSON.`;
+The command's format wins over the JSON.`;
 
 export const renderCliOptions = {
   format: {type: 'string', default: 'webm'},
@@ -37,18 +37,18 @@ export const parseRenderArgs = (args: string[]) =>
 
 export type RenderValues = ReturnType<typeof parseRenderArgs>['values'];
 
-/** Compositions and sizes grouped by kind, with pt-BR headers. */
+/** Compositions and sizes grouped by kind, headed by the kind labels. */
 export const listText = () => ASSET_KINDS.map((kind) => {
   const policy = kindPolicies[kind];
   const ids = Object.values(assetCatalog).filter((entry) => entry.kind === kind).map((entry) => `  ${entry.id}`);
-  const lines = [`${policy.label} (${kind}):`, ...(ids.length > 0 ? ids : ['  (nenhuma composição ainda)'])];
+  const lines = [`${policy.label} (${kind}):`, ...(ids.length > 0 ? ids : ['  (no compositions yet)'])];
   if (policy.fixedSize) {
-    lines.push(`  Tamanho fixo: ${policy.fixedSize.width}×${policy.fixedSize.height}.`);
+    lines.push(`  Fixed size: ${policy.fixedSize.width}×${policy.fixedSize.height}.`);
   } else {
-    lines.push('  Tamanhos (--size):');
+    lines.push('  Sizes (--size):');
     for (const size of sizesForKind(kind)) {
       const canvas = canvasOf(size);
-      lines.push(`    ${size.id}: caixa ${size.width}×${size.height}, arquivo ${canvas.width}×${canvas.height}; ${size.use}`);
+      lines.push(`    ${size.id}: box ${size.width}×${size.height}, file ${canvas.width}×${canvas.height}; ${size.use}`);
     }
   }
   return lines.join('\n');
@@ -58,12 +58,12 @@ export const listText = () => ASSET_KINDS.map((kind) => {
 export const expandSize = (kind: AssetKind, sizeId: string): Record<string, unknown> => {
   const policy = getKindPolicy(kind);
   if (policy.fixedSize) {
-    throw new Error(`${policy.label} têm tamanho fixo (${policy.fixedSize.width}×${policy.fixedSize.height}): --size, --width, --height e --bleed valem só para chat, blocos e bordas.`);
+    throw new Error(`${policy.label} have a fixed size (${policy.fixedSize.width}×${policy.fixedSize.height}): --size, --width, --height and --bleed only apply to chat, text boxes and borders.`);
   }
   const size = getSize(sizeId);
   if (size.kind !== kind) {
     const options = sizesForKind(kind).map((entry) => entry.id).join(', ');
-    throw new Error(`O tamanho ${sizeId} é de ${kindPolicies[size.kind].label.toLowerCase()}, não de ${policy.label.toLowerCase()}. Opções: ${options}.`);
+    throw new Error(`Size ${sizeId} is for ${kindPolicies[size.kind].label.toLowerCase()}, not ${policy.label.toLowerCase()}. Options: ${options}.`);
   }
   return sizeProps(size);
 };
@@ -75,10 +75,10 @@ export const buildExportOptions = (
   {values, positionals}: {values: RenderValues; positionals: string[]},
   rawProps: unknown = {},
 ): ExportOptions => {
-  if (positionals.length === 0) throw new Error('Informe a composição. Use --list para ver as opções.');
-  if (positionals.length > 1) throw new Error('Informe somente uma composição. Use --help.');
+  if (positionals.length === 0) throw new Error('Name the composition. Use --list to see the options.');
+  if (positionals.length > 1) throw new Error('Name only one composition. Use --help.');
   if (rawProps === null || Array.isArray(rawProps) || typeof rawProps !== 'object') {
-    throw new Error('O arquivo de parâmetros deve conter um objeto JSON.');
+    throw new Error('The parameters file must hold a JSON object.');
   }
   const asset = getAsset(positionals[0]!);
   const policy = getKindPolicy(asset.kind);
