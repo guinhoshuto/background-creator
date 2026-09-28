@@ -11,6 +11,7 @@ import {CheckerboardLoop, checkerboardLoopSchema} from './backgrounds/Checkerboa
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
+import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
 import type {AssetKind} from './kinds';
 import {blocoCatalogEntry} from './overlays/bloco';
 import {bordaCatalogEntry} from './overlays/borda';
@@ -20,6 +21,14 @@ import type {AssetMotion} from './overlays/shared/motion';
 
 /** The 1920×1080 backgrounds: one registry shared by the Studio, renderer, validation, and documentation. */
 export const backgroundCatalog = {
+  WutheringWavesLoop: {
+    id: 'WutheringWavesLoop',
+    kind: 'background',
+    component: WutheringWavesLoop,
+    schema: wutheringWavesLoopSchema,
+    defaultProps: wutheringWavesLoopSchema.parse({}),
+    gl: 'angle',
+  },
   KawaiiLoop: {
     id: 'KawaiiLoop',
     kind: 'background',

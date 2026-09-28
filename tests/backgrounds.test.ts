@@ -14,6 +14,7 @@ import {getParticleScene, particleLoopSchema} from '../src/backgrounds/ParticleL
 import {getSunburstScene, sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
 import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/VaporwaveLoop';
 import {WEBGL_EXPERIMENTS, getWebGLScene, webglLoopSchema} from '../src/backgrounds/WebGLLoop';
+import {getWutheringWavesScene, wutheringWavesLoopSchema} from '../src/backgrounds/WutheringWavesLoop';
 import {backgroundCatalog, getBackground} from '../src/catalog';
 import {blocoLoopSchema, getBlocoScene} from '../src/overlays/bloco';
 import {bordaLoopSchema, getBordaScene} from '../src/overlays/borda';
@@ -27,6 +28,19 @@ type Scene = Record<string, string | number>[];
 type SeamExempt = (element: Record<string, string | number>, key: string) => boolean;
 
 const scenes: {id: string; sample: (input: unknown, frame: number, length: number) => Scene; seamExempt?: SeamExempt}[] = [
+  {
+    id: 'WutheringWavesLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getWutheringWavesScene(wutheringWavesLoopSchema.parse(input), frame, length),
+  },
+  {
+    id: 'WutheringWavesLoop (maximum controls)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getWutheringWavesScene(wutheringWavesLoopSchema.parse({
+        atmosphere: 1, resonance: 1, particleCount: 100, motion: 2, centerShade: 1,
+        transparent: true, ...(input as object),
+      }), frame, length),
+  },
   {
     id: 'GradientLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
@@ -403,6 +417,7 @@ test('particle controls keep their element count and visible opacity for the ent
 
 test('catalog defaults and shipped presets pass the same schemas used by Studio and export', () => {
   const presets = [
+    ['WutheringWavesLoop', 'wuthering-waves-azure-lotus.json'],
     ['GradientLoop', 'gradient-aurora.json'],
     ['ParticleLoop', 'particles-alpha.json'],
     ['GeometricLoop', 'geometric-orbit.json'],

@@ -18,6 +18,7 @@ const vaporwave = backgroundCatalog.VaporwaveLoop;
 const dotGrid = backgroundCatalog.DotGridLoop;
 const checkerboard = backgroundCatalog.CheckerboardLoop;
 const webgl = backgroundCatalog.WebGLLoop;
+const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const chat = overlayCatalog.ChatLoop;
 const bloco = overlayCatalog.BlocoLoop;
 const borda = overlayCatalog.BordaLoop;
@@ -50,6 +51,18 @@ const metadataFor = <Props extends MetadataProps>(id: string, props: Props) => {
 export const RemotionRoot = () => (
   <>
     <Folder name={kindPolicies.background.folder}>
+      <Composition
+        id="WutheringWavesLoop"
+        component={wutheringWaves.component}
+        schema={wutheringWaves.schema}
+        defaultProps={{
+          durationSeconds: 16, seed: 1403, transparent: false, backgroundColor: '#1B3E6D',
+          colors: ['#ECDCB6', '#48B9C6', '#DBBE8D'], outputFormat: 'webm',
+          atmosphere: 0.8, resonance: 0.7, particleCount: 28, motion: 1, centerShade: 0.08,
+        }}
+        {...getCompositionMetadata(wutheringWaves.defaultProps)}
+        calculateMetadata={({props}: {props: typeof wutheringWaves.defaultProps}) => metadataFor(wutheringWaves.id, wutheringWaves.schema.parse(props))}
+      />
       <Composition
         id="KawaiiLoop"
         component={kawaii.component}

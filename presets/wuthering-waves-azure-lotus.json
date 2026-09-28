@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 16,
+  "seed": 1403,
+  "transparent": false,
+  "backgroundColor": "#1B3E6D",
+  "colors": ["#ECDCB6", "#48B9C6", "#DBBE8D"],
+  "outputFormat": "mp4",
+  "atmosphere": 0.8,
+  "resonance": 0.7,
+  "particleCount": 28,
+  "motion": 1,
+  "centerShade": 0.08
+}

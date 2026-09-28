@@ -40,9 +40,9 @@ test('tipos: o tamanho fixo dos fundos é o mesmo dos metadados atuais', () => {
   assert.deepEqual(kindPolicies.background.fixedSize, {width, height});
 });
 
-test('catálogo: os 13 fundos são do tipo background e continuam acessíveis pelos nomes antigos', () => {
+test('catalog: all 14 backgrounds retain their original composition IDs', () => {
   const ids = Object.keys(backgroundCatalog);
-  assert.equal(ids.length, 13);
+  assert.equal(ids.length, 14);
   for (const id of ids) {
     const entry = getAsset(id);
     assert.equal(entry, backgroundCatalog[id as keyof typeof backgroundCatalog]);
@@ -53,7 +53,7 @@ test('catálogo: os 13 fundos são do tipo background e continuam acessíveis pe
   for (const entry of Object.values(assetCatalog)) {
     assert.ok((ASSET_KINDS as readonly string[]).includes(entry.kind), entry.id);
   }
-  assert.throws(() => getAsset('UnknownLoop'), /Composição desconhecida: UnknownLoop\. Opções: KawaiiLoop, /);
+  assert.throws(() => getAsset('UnknownLoop'), /Composição desconhecida: UnknownLoop\. Opções: WutheringWavesLoop, KawaiiLoop, /);
   assert.throws(() => getAsset('__proto__'), /Composição desconhecida/);
 });
 

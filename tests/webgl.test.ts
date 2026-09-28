@@ -71,9 +71,9 @@ test('WebGL: o Studio tem um defaultProps literal válido e o catálogo usa os v
   assert.deepEqual(backgroundCatalog.WebGLLoop.defaultProps, webglLoopSchema.parse({}));
 });
 
-test('WebGL: só a composição WebGL pede o backend ANGLE ao Chrome', () => {
+test('WebGL: shader compositions request the ANGLE backend', () => {
   for (const background of Object.values(backgroundCatalog)) {
-    assert.equal(getOpenGlRenderer(background), background.id === 'WebGLLoop' ? 'angle' : null, background.id);
+    assert.equal(getOpenGlRenderer(background), ['WebGLLoop', 'WutheringWavesLoop'].includes(background.id) ? 'angle' : null, background.id);
   }
   const resolved = resolveExport({compositionId: 'WebGLLoop', format: 'mp4'});
   assert.deepEqual(resolved.chromiumOptions, {gl: 'angle'});

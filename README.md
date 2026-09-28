@@ -19,6 +19,7 @@ Os fundos (pasta `backgrounds`) ocupam a tela inteira:
 
 | Composição | Movimento | Controles específicos |
 | --- | --- | --- |
+| `WutheringWavesLoop` | Blue-and-gold waterside SVG/WebGL illustration with layered lotus, a curved boat, distant eaves and pine, and procedural paper/ink texture | `atmosphere` (mist), `resonance` (light and ribbon details), `particleCount` (particles), `motion` (movement), `centerShade` (central shading) |
 | `HalloweenLoop` | Noite ilustrada com lua, morcegos, névoa e abóboras iluminadas | `batCount` (0–18), `emberCount` (0–120), `fogIntensity` (0–1), `moonScale` (0,5–1,5) |
 | `HauntedMansionLoop` | Mansão vitoriana à direita, luar frio, janelas âmbar e névoa baixa | `batCount` (0–12), `moteCount` (0–100), `fogIntensity` (0–1), `windowIntensity` (0–1), `moonScale` (0,6–1,4) |
 | `HauntedInteriorLoop` | Salão gótico em perspectiva central, com a parede do fundo atrás do conteúdo, janelas enluaradas, relâmpagos, cortinas de veludo, candelabros e lustre oscilante | `dustCount` (0–100), `fogIntensity` (0–1), `candleIntensity` (0–1), `moonlightIntensity` (0–1), `hauntingIntensity` (0–1), `chandelierSway` (0–1), `lightningIntensity` (0–1) |
@@ -58,6 +59,7 @@ Todos os fundos compartilham estes parâmetros; os overlays usam os mesmos, exce
 
 Um arquivo de parâmetros pode conter somente as opções que você quer alterar; as demais recebem seus valores iniciais. Os exemplos em `presets/` oferecem estas direções visuais:
 
+- `wuthering-waves-azure-lotus.json`: Wuthering Waves-inspired waterside illustration in azure, cream, turquoise and gold, with a 16-second loop and MP4 output; awaiting visual review.
 - `halloween-midnight.json`: noite em violeta escuro, lua cremosa, abóboras âmbar e centro livre para conteúdo.
 - `halloween-haunted-mansion.json`: mansão vitoriana em azul-noite, luar pálido, janelas âmbar e área central esquerda escura para overlay.
 - `halloween-haunted-interior.json`: salão gótico em perspectiva, cortinas de veludo carmim, luar esverdeado e velas âmbar nas laterais, com um grande arco escuro exatamente atrás da área de conteúdo.
@@ -113,7 +115,7 @@ Cada composição pertence a um tipo, definido em `src/kinds.ts`. O tipo decide 
 
 | Tipo | Pasta no Studio | Composições | Tamanho | `transparent` padrão |
 | --- | --- | --- | --- | --- |
-| `background` (fundos) | `backgrounds` | as 13 da primeira tabela | Fixo, 1920×1080 | `false` |
+| `background` (fundos) | `backgrounds` | as 14 da primeira tabela | Fixo, 1920×1080 | `false` |
 | `chat` (fundos de chat) | `chat` | `ChatLoop` | Livre; começa em `chat-padrao` | `true` |
 | `bloco` (blocos de texto) | `blocos` | `BlocoLoop` | Livre; começa em `cartao` | `true` |
 | `borda` (bordas e molduras) | `bordas` | `BordaLoop` | Livre; começa em `webcam-16x9` | `true` |
@@ -464,6 +466,24 @@ Os manifestos pedem `webm` e `png` em todos os itens, exceto o painel da Twitch,
 {"composition": "BlocoLoop", "preset": "bloco-neon", "sizes": ["faixa", "titulo"], "formats": ["webm", "mov", "png"]}
 ```
 
+## Wuthering Waves: Azure Lotus
+
+`WutheringWavesLoop` is an **SVG/WebGL** streaming background inspired by **Wuthering Waves**: a blue-and-gold waterside illustration with layered lotus, a curved boat, distant eaves and pine, procedural paper/ink texture, and precise thin gold details informed by the game's UI. The scene uses no image assets. Its palette combines azure `#1B3E6D`, cream `#ECDCB6`, turquoise `#48B9C6` and gold `#DBBE8D`. The preset defines a **16-second loop at 1920×1080 and 60 fps**, without audio.
+
+UI references are real launch-era captures from [GamesRadar (Terminal and Convene)](https://www.gamesradar.com/games/rpg/the-wuthering-waves-wish-convene-gacha-system/), [Gamerpillar (Resonator/Echo)](https://gamerpillar.com/how-to-tune-the-echo-in-the-echoes-interface-in-wuthering-waves/) and [Dot Esports (Map)](https://dotesports.com/wuthering-waves/news/how-to-get-the-lootmapper-in-wuthering-waves), published in May–June 2024. They inform the fine ivory/gold lines, blue-gray depth and asymmetric spacing; the waterside illustration is an original interpretation.
+
+**Status: visual preview awaiting review; not yet approved for release.**
+
+**Visual review:** inspect the full composition and enlarged junctions, including at motion extremes. Trace every structural element to its support: bridge landings must meet visible terrain, posts must meet both deck and rail, building steps need continuous risers, and plant stems must enter their leaves or flowers. Check occlusion and depth so a valid geometric overlap also reads as a connection. Isolated strokes must read as intentional ornament or texture, never detached construction parts. Unit tests alone do not complete this review.
+
+In Studio, `atmosphere` controls mist, `resonance` adjusts the light effects, `particleCount` sets the number of particles, `motion` adjusts movement and `centerShade` darkens the central content area. The composition defaults to seed `1403` and WebM output; the preset selects MP4 for an OBS media source with **Loop** enabled. Official render commands select the ANGLE backend automatically. For a render launched from Studio, choose **angle** under **OpenGL renderer**.
+
+```sh
+npm run render:mp4 -- WutheringWavesLoop --props presets/wuthering-waves-azure-lotus.json
+npm run render:webm -- WutheringWavesLoop --props presets/wuthering-waves-azure-lotus.json
+npm run render:png -- WutheringWavesLoop --props presets/wuthering-waves-azure-lotus.json --frame 0
+```
+
 ## Halloween: noite de outono
 
 Selecione `HalloweenLoop` no Studio. O preset `presets/halloween-midnight.json` cria um ciclo de **12 segundos, 1920×1080 e 60 fps** em MP4/WebM, com os principais elementos concentrados nas bordas. Não há texto, imagens externas, fontes adicionais ou áudio.
@@ -695,7 +715,7 @@ O shader recebe somente valores calculados a partir do frame e dos parâmetros; 
 
 Com `transparent: true` e `outputFormat: "webm"`, sobra só a camada do experimento (luz, linhas, gotas, gás), com alpha suave. Em MP4 e GIF, essa mesma camada é composta sobre `backgroundColor`. Os sete primeiros experimentos somam luz: sobre um fundo claro ficam em tons pastel, com menos contraste. A série pastel (`flow`, `orbital`, `neon`, `layers`, `haze`, `eclipse`) foi feita para fundos claros: `backgroundColor` é o tom de base da cena, e sobre um fundo escuro vira uma versão noturna. Em `watercolor`, `backgroundColor` é o papel: em papel claro a tinta só escurece, como aquarela de verdade; onde o pigmento é mais claro que o papel (papel escuro, ou um pigmento claro num papel cinza médio), ele vira aos poucos guache opaco, porque a aquarela pura sumiria ali. Nesse experimento, `centerFade` entre 0,3 e 0,5 combina melhor; em 1 o miolo fica liso, sem a textura do papel. Em `mesh`, a malha é opaca: no WebM transparente só a clareira do `centerFade`, `intensity` abaixo de 1 e o alpha das cores deixam ver o que está atrás; com `centerFade`, escolha um `backgroundColor` próximo da paleta, porque um fundo escuro sob cores claras deixa o miolo turvo.
 
-O Chrome Headless do Remotion só tem WebGL2 com o renderizador OpenGL `angle`. Os comandos oficiais já o usam para `WebGLLoop` (e só para ela: as composições em SVG continuam com o renderizador padrão, que dá o antialiasing das referências delas). No diálogo de render do Studio, escolha `angle` em **OpenGL renderer**; sem isso o render falha com uma mensagem explicando o motivo, em vez de gerar frames vazios.
+Remotion Chrome Headless requires the `angle` OpenGL renderer for WebGL2. The official commands select it for `WebGLLoop` and `WutheringWavesLoop`; SVG-only compositions keep the default renderer and their reference antialiasing. In the Studio render dialog, choose `angle` under **OpenGL renderer**. Otherwise, rendering fails with an explanation instead of producing blank frames.
 
 ```sh
 npm run render:mp4 -- WebGLLoop --props presets/webgl-aurora.json
