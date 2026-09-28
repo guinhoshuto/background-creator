@@ -61,7 +61,7 @@ export type PackDeps = {
 export type PlannedFile = {
   composition: string;
   kind: AssetKind;
-  /** The kind's Studio folder, reused as the buyer-facing folder inside the pack. */
+  /** The kind's Studio folder, reused as the kind's folder inside the pack folder. */
   folder: string;
   size?: string;
   format: OutputFormat;
@@ -381,9 +381,11 @@ export type PackRunEffects = {
  * Renders the plan strictly one file at a time. Existing files are skipped unless `overwrite`,
  * so an interrupted build resumes where it stopped. The pack manifest is rewritten after every
  * file: the per-file sidecars are deleted once read, so their data must already be on disk.
+ * `plan` is what this run renders (an --only slice or all of it); `fullPlan` is the pack's whole
+ * plan, before --only: manifest entries it no longer has are pruned before the first save.
  */
-export const runPack = async ({manifest, plan, overwrite, deps, effects, diskLabel}: {
-  manifest: PackManifest; plan: readonly PlannedFile[]; overwrite: boolean;
+export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effects, diskLabel}: {
+  manifest: PackManifest; plan: readonly PlannedFile[]; fullPlan: readonly PlannedFile[]; overwrite: boolean;
   deps: PackDeps; effects: PackRunEffects; diskLabel: string;
 }) => {
   const packRoot = path.posix.join('out', 'packs', manifest.name);
@@ -393,8 +395,9 @@ export const runPack = async ({manifest, plan, overwrite, deps, effects, diskLab
   if (isPlainObject(previous) && Array.isArray(previous.files)) {
     for (const entry of previous.files as PackFileEntry[]) previousFiles.set(entry.file, entry);
   }
-  // Files outside this run (another --only slice) keep their entries.
-  const entries = new Map(previousFiles);
+  // Files outside this run (another --only slice) keep their entries; files the whole plan no longer has lose them.
+  const planned = new Set(fullPlan.map((file) => path.posix.relative(packRoot, file.output)));
+  const entries = new Map([...previousFiles].filter(([file]) => planned.has(file)));
   const save = () => effects.writeManifest(manifestPath, {
     name: manifest.name, title: manifest.title,
     files: [...entries.values()].sort((a, b) => a.file.localeCompare(b.file)),
@@ -420,7 +423,7 @@ export const runPack = async ({manifest, plan, overwrite, deps, effects, diskLab
       await effects.exportFile(file, overwrite);
       rendered += 1;
     }
-    // A leftover sidecar (fresh render or an interrupted run) wins over older data, then leaves the buyer's folder.
+    // A leftover sidecar (fresh render or an interrupted run) wins over older data, then leaves the pack folder.
     const data = await effects.readJson(sidecar);
     const known = previousFiles.get(relative);
     entries.set(relative, data !== null

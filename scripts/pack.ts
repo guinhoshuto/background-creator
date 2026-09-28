@@ -51,10 +51,12 @@ const main = async () => {
   const file = manifestFile(positionals[0]!);
   if (!existsSync(file)) throw new Error(`Manifest not found: ${path.relative(process.cwd(), file) || file}.`);
   const manifest = parsePackManifest(JSON.parse(await readFile(file, 'utf8')));
-  const plan = filterPlan(planPack(manifest, realPackDeps), values.only);
+  // The whole plan, before --only: the manifest keeps only the entries it has.
+  const fullPlan = planPack(manifest, realPackDeps);
+  const plan = filterPlan(fullPlan, values.only);
 
   const packDirectory = fromRoot(path.posix.join('out', 'packs', manifest.name));
-  // Scratch directories live outside the folder that is sold, on the same disk (out/) so results link or rename.
+  // Scratch directories live outside the pack folder, on the same disk (out/) so results link or rename.
   const scratchDirectory = fromRoot(path.posix.join('out', '.scratch', 'packs', manifest.name));
   // Older runs put them inside the pack itself: both places are swept.
   const scratchRoots = [packDirectory, scratchDirectory];
@@ -74,7 +76,7 @@ const main = async () => {
   // One bundle for the whole pack; exportAsset reuses its serveUrl for every file.
   let serveUrl: string | undefined;
   await runPack({
-    manifest, plan, overwrite: values.overwrite, deps: realPackDeps,
+    manifest, plan, fullPlan, overwrite: values.overwrite, deps: realPackDeps,
     diskLabel: path.relative(process.cwd(), statTarget()) || '.',
     effects: {
       exists: (relative) => exists(fromRoot(relative)),

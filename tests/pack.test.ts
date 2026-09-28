@@ -290,7 +290,7 @@ const fakeRun = (initial: Record<string, unknown> = {}, freeBytes = 10 * 1024 **
 test('pack: a execução exporta um por vez, move os sidecars para o manifesto e limpa as pastas', async () => {
   const plan = samplePlan();
   const run = fakeRun();
-  const result = await runPack({manifest: manifest([]), plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  const result = await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   assert.deepEqual(run.exported, plan.map((file) => file.output));
   assert.deepEqual([result.rendered, result.skipped], [4, 0]);
   assert.equal([...run.disk.keys()].some((file) => file.endsWith('.png.json') || file.endsWith('.webm.json')), false, 'sem sidecars soltos');
@@ -321,10 +321,10 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
 test('pack: arquivos prontos são pulados (retomável) e --overwrite os refaz', async () => {
   const plan = samplePlan();
   const first = fakeRun();
-  await runPack({manifest: manifest([]), plan: plan.slice(0, 2), overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
+  await runPack({manifest: manifest([]), plan: plan.slice(0, 2), fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
   // Resume on the same disk with the whole plan: only the missing files render.
   const resumed = fakeRun(Object.fromEntries(first.disk));
-  const result = await runPack({manifest: manifest([]), plan, overwrite: false, deps: fakeDeps, effects: resumed.effects, diskLabel: 'out'});
+  const result = await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: resumed.effects, diskLabel: 'out'});
   assert.deepEqual(resumed.exported, plan.slice(2).map((file) => file.output));
   assert.deepEqual([result.rendered, result.skipped], [2, 2]);
   assert.ok(resumed.logs.some((line) => line.includes('FundoLoop.webm: already exists, skipping.')));
@@ -332,37 +332,79 @@ test('pack: arquivos prontos são pulados (retomável) e --overwrite os refaz', 
   assert.equal(files.length, 4, 'o manifesto mantém os arquivos da execução anterior');
 
   const again = fakeRun(Object.fromEntries(resumed.disk));
-  await runPack({manifest: manifest([]), plan, overwrite: true, deps: fakeDeps, effects: again.effects, diskLabel: 'out'});
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: true, deps: fakeDeps, effects: again.effects, diskLabel: 'out'});
   assert.deepEqual(again.exported, plan.map((file) => file.output));
 });
 
 test('pack: uma execução com --only preserva no manifesto os arquivos das outras', async () => {
   const plan = samplePlan();
   const run = fakeRun();
-  await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Fundo'), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
-  await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Borda'), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Fundo'), fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Borda'), fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   const files = (run.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
   assert.deepEqual(files.map((entry) => entry.file), ['backgrounds/FundoLoop.webm', 'bordas/BordaLoop-webcam-16x9.png']);
+});
+
+/** Records every manifest the run writes, so a test can see the first save, not only the last. */
+const recordManifests = (run: ReturnType<typeof fakeRun>) => {
+  const saved: {file: string}[][] = [];
+  const write = run.effects.writeManifest;
+  run.effects.writeManifest = async (file, data) => {
+    saved.push(structuredClone((data as {files: {file: string}[]}).files));
+    await write(file, data);
+  };
+  return saved;
+};
+
+test('pack: a manifest entry the whole plan no longer has is pruned before the first save', async () => {
+  const plan = samplePlan();
+  const stale = {file: 'bordas/BordaLoop-old-size.png', composition: 'BordaLoop', kind: 'borda', format: 'png'};
+  const run = fakeRun({'out/packs/teste/manifest.json': {name: 'teste', title: 'Pack de teste', files: [stale]}});
+  const saved = recordManifests(run);
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  assert.ok(saved.length > 0);
+  for (const files of saved) assert.equal(files.some((entry) => entry.file === stale.file), false, 'no save keeps the stale entry');
+  const files = (run.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
+  assert.deepEqual(files.map((entry) => entry.file), [
+    'backgrounds/FundoLoop.webm', 'bordas/BordaLoop-webcam-16x9.png', 'chat/ChatLoop-chat-padrao.png', 'chat/ChatLoop-chat-padrao.webm',
+  ]);
+});
+
+test('pack: an --only run prunes by the whole plan and keeps the entries of the other planned files', async () => {
+  const plan = samplePlan();
+  const first = fakeRun();
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
+  const before = first.disk.get('out/packs/teste/manifest.json') as {name: string; title: string; files: {file: string}[]};
+  const stale = {file: 'chat/ChatLoop-old-size.webm', composition: 'ChatLoop', kind: 'chat', format: 'webm'};
+  const run = fakeRun({...Object.fromEntries(first.disk), 'out/packs/teste/manifest.json': {...before, files: [...before.files, stale]}});
+  await runPack({manifest: manifest([]), plan: filterPlan(plan, 'Borda'), fullPlan: plan, overwrite: true, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  assert.deepEqual(run.exported, ['out/packs/teste/bordas/BordaLoop-webcam-16x9.png']);
+  const after = (run.disk.get('out/packs/teste/manifest.json') as {files: {file: string}[]}).files;
+  assert.deepEqual(after.map((entry) => entry.file), before.files.map((entry) => entry.file));
+  // The entries this run did not touch are the ones the earlier run wrote, unchanged.
+  for (const entry of before.files.filter((file) => !file.file.startsWith('bordas/'))) {
+    assert.deepEqual(after.find((file) => file.file === entry.file), entry);
+  }
 });
 
 test('pack: as pastas temporárias de um export interrompido somem antes de tudo, inclusive da pasta vendida', async () => {
   const leftover = 'out/packs/teste/bordas/.asset-render-abc123/render.webm';
   const run = fakeRun({[leftover]: 'bytes parciais'});
-  await runPack({manifest: manifest([]), plan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  await runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
   assert.equal(run.disk.has(leftover), false);
   // Swept first, so the space it held counts in the free-space check and nothing renders over it.
   assert.deepEqual(run.logs.slice(0, 2), ['sweep', '1 scratch folder of interrupted exports removed.']);
   assert.equal(scratchText(3, 'will-be-removed'), '3 scratch folders of interrupted exports will be removed when the pack is built.');
   // Low disk still refuses, but only after the sweep had its chance to free space.
   const low = fakeRun({[leftover]: 'bytes parciais'}, 512 * 1024 ** 2);
-  await assert.rejects(runPack({manifest: manifest([]), plan: samplePlan(), overwrite: false, deps: fakeDeps, effects: low.effects, diskLabel: 'out'}));
+  await assert.rejects(runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: low.effects, diskLabel: 'out'}));
   assert.equal(low.disk.has(leftover), false);
 });
 
 test('pack: pouco disco recusa antes de exportar qualquer arquivo', async () => {
   const run = fakeRun({}, 512 * 1024 ** 2);
   await assert.rejects(
-    runPack({manifest: manifest([]), plan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'}),
+    runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'}),
     /0\.5 GB free/,
   );
   assert.deepEqual(run.exported, []);

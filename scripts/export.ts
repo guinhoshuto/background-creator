@@ -83,7 +83,7 @@ export type ExportOptions = {
   frame?: number;
   /**
    * Where the scratch directory is made (default: next to the output). Packs keep it out of the
-   * folder that is sold; it must be on the output's filesystem, since the result is linked or renamed.
+   * pack folder; it must be on the output's filesystem, since the result is linked or renamed.
    */
   scratchDirectory?: string;
   onProgress?: (message: string) => void;
