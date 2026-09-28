@@ -131,6 +131,28 @@ test('refuses a missing or stale props hash', () => withPack(async (pack) => {
   });
 }));
 
+test('refuses a border whose mask is not a recorded mask output', async () => {
+  const BORDER = 'borders/test-webcam-round.webm';
+  type Entry = {file: string; mask?: string; role?: string};
+  const breaks: Record<string, (files: Entry[]) => void> = {
+    'no mask on the border': (files) => { delete files.find((entry) => entry.file === BORDER)!.mask; },
+    'mask names another file': (files) => { files.find((entry) => entry.file === BORDER)!.mask = 'text-boxes/test-card.png'; },
+    'mask output without role mask': (files) => { delete files.find((entry) => entry.file === MASK)!.role; },
+  };
+  for (const [label, breakIt] of Object.entries(breaks)) {
+    await withPack(async (pack) => {
+      const manifest = manifestOf(PLAN);
+      breakIt(manifest.files as unknown as Entry[]);
+      await writeFile(path.join(pack.packDirectory, 'manifest.json'), JSON.stringify(manifest));
+      await assert.rejects(run(pack).result, (error: Error) => {
+        assert.ok(error.message.includes(`${BORDER}: its mask must be ${MASK}, recorded with role mask.`), label);
+        return true;
+      });
+      assert.equal(existsSync(pack.deliveriesDirectory), false, label);
+    });
+  }
+});
+
 test('refuses interrupted builds, warns on loose files', async () => {
   const signs: ((directory: string) => Promise<void>)[] = [
     (directory) => writeFile(path.join(directory, 'borders/test-webcam-round.webm.json'), '{}'),
