@@ -6,7 +6,9 @@ import {crc32} from 'node:zlib';
 import {outputFormatSchema, type OutputFormat} from '../src/settings';
 import {SCRATCH_PREFIX} from './export';
 import {START_MIN_FREE_BYTES, gibibytes} from './disk';
-import {BUYER_PATH, packPropsHash, type PlannedFile} from './pack-plan';
+import {buyerPathIssues, packPropsHash, type PlannedFile} from './pack-plan';
+// The buyer-name rule lives with the planner, which refuses a bad name first; zip:pack checks it again.
+export {MAX_BUYER_PATH, buyerPathIssues} from './pack-plan';
 
 /*
  * The buyer zip of a finished pack (npm run zip:pack). The list of files comes from the whole plan,
@@ -15,8 +17,6 @@ import {BUYER_PATH, packPropsHash, type PlannedFile} from './pack-plan';
  * ZIP64, so a pack stays under 4 GiB and 65,535 files.
  */
 
-/** A buyer path inside the zip, with the root folder left out, has at most this many characters. */
-export const MAX_BUYER_PATH = 100;
 /** Etsy caps a digital file name at 70 characters; the zip keeps to it wherever it is sold. */
 export const MAX_ZIP_NAME = 70;
 /** Free space the zip must leave on top of its own size before it is written. */
@@ -63,24 +63,6 @@ const MAGIC: Record<OutputFormat, (head: Buffer) => boolean> = {
 
 /** Whether a file's first bytes are those of its format (it was not renamed from another one). */
 export const magicMatches = (format: OutputFormat, head: Buffer) => MAGIC[format](head);
-
-/** The buyer-name rules the planner's paths must keep: the pattern, the length and no two alike. */
-export const buyerPathIssues = (names: readonly string[]): string[] => {
-  const issues: string[] = [];
-  const lower = new Map<string, string>();
-  const base = new Map<string, string>();
-  for (const name of names) {
-    if (!BUYER_PATH.test(name)) issues.push(`${name}: not a buyer file name (<folder>/<pack>-<piece>[-<variant>].<ext>, lowercase letters, digits and single hyphens).`);
-    if (name.length > MAX_BUYER_PATH) issues.push(`${name}: ${name.length} characters, over the ${MAX_BUYER_PATH} a buyer path may have.`);
-    const folded = name.toLowerCase();
-    if (lower.has(folded)) issues.push(`${name}: the same path as ${lower.get(folded)} on a case-insensitive disk.`);
-    else lower.set(folded, name);
-    const file = path.posix.basename(folded);
-    if (base.has(file)) issues.push(`${name}: the same file name as ${base.get(file)}; every file name in a pack is unique.`);
-    else base.set(file, name);
-  }
-  return issues;
-};
 
 /** The zip name keeps to what every shop and disk accepts. */
 export const assertZipName = (name: string) => {
@@ -155,7 +137,7 @@ export const checkPackContents = async ({pack, plan, packDirectory, packLabel = 
   const issues: string[] = [];
   const warnings: string[] = [];
 
-  issues.push(...buyerPathIssues([...planned.keys()]));
+  issues.push(...buyerPathIssues([...planned.keys()], pack));
 
   // The folder: an interrupted build is refused, anything else unplanned only warns.
   const {files, scratch} = await walk(packDirectory);

@@ -152,13 +152,42 @@ const BUYER_FOLDERS = [...new Set([
   MASK_FOLDER,
 ])];
 
+/** A buyer path inside the zip, with the root folder left out, has at most this many characters. */
+export const MAX_BUYER_PATH = 100;
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
- * A buyer path inside the pack: `<folder>/<pack>-<piece>[-<variant>].<ext>`, lowercase ASCII words
- * joined by single hyphens. zip:pack refuses any planned file that does not match.
+ * A buyer path inside the pack `pack`: `<folder>/<pack>-<piece>[-<variant>].<ext>`, lowercase ASCII
+ * words joined by single hyphens, the pack's own name first. The planner refuses a plan that breaks
+ * it, before any render, and zip:pack checks every planned file again.
  */
-export const BUYER_PATH = new RegExp(
-  `^(${BUYER_FOLDERS.join('|')})/[a-z0-9]+(-[a-z0-9]+)*\\.(${outputFormatSchema.options.join('|')})$`,
+export const buyerPathPattern = (pack: string) => new RegExp(
+  `^(${BUYER_FOLDERS.join('|')})/${escapeRegExp(pack)}(-[a-z0-9]+)+\\.(${outputFormatSchema.options.join('|')})$`,
 );
+
+/** What one path breaks of the buyer rule: the pattern (the pack's name first) and the length. */
+export const buyerNameIssues = (name: string, pack: string): string[] => [
+  ...(buyerPathPattern(pack).test(name) ? [] : [`${name}: not a buyer file name (<folder>/${pack}-<piece>[-<variant>].<ext>, lowercase letters, digits and single hyphens).`]),
+  ...(name.length > MAX_BUYER_PATH ? [`${name}: ${name.length} characters, over the ${MAX_BUYER_PATH} a buyer path may have.`] : []),
+];
+
+/** The buyer-name rules the paths of a pack keep: the pattern, the length and no two alike. */
+export const buyerPathIssues = (names: readonly string[], pack: string): string[] => {
+  const issues: string[] = [];
+  const lower = new Map<string, string>();
+  const base = new Map<string, string>();
+  for (const name of names) {
+    issues.push(...buyerNameIssues(name, pack));
+    const folded = name.toLowerCase();
+    if (lower.has(folded)) issues.push(`${name}: the same path as ${lower.get(folded)} on a case-insensitive disk.`);
+    else lower.set(folded, name);
+    const file = path.posix.basename(folded);
+    if (base.has(file)) issues.push(`${name}: the same file name as ${base.get(file)}; every file name in a pack is unique.`);
+    else base.set(file, name);
+  }
+  return issues;
+};
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -202,6 +231,20 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
   const planned: PlannedFile[] = [];
   const seen = new Map<string, string>();
   const masks = new Map<string, MaskRequest>();
+  const packRoot = path.posix.join('out', 'packs', manifest.name);
+  const names = new Map<string, {name: string; where: string}>();
+  // The buyer rule at plan time: --dry-run and render:pack refuse a bad name before any render (zip:pack checks again).
+  const claimBuyerName = (output: string, where: string) => {
+    const name = path.posix.relative(packRoot, output);
+    const issues = buyerNameIssues(name, manifest.name);
+    if (issues.length > 0) throw new Error(`${where}: ${issues.join(' ')}`);
+    const base = path.posix.basename(name);
+    const previous = names.get(base.toLowerCase());
+    if (previous) {
+      throw new Error(`${where}: the file name ${base} repeats ${previous.name}, from ${previous.where}; the buyer sees file names, so each is unique in a pack: change the size or the variant, or move the item to another pack.`);
+    }
+    names.set(base.toLowerCase(), {name, where});
+  };
   manifest.items.forEach((item, index) => {
     const where = describeItem(item, index);
     const withContext = <T>(run: () => T): T => {
@@ -250,6 +293,7 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
           throw new Error(`${where} repeats the file ${output}, already produced by ${previous}: change the size or the format, or move the item to another pack.`);
         }
         seen.set(output, where);
+        claimBuyerName(output, where);
         const motion = asset.motion?.(parsed) ?? null;
         const entry: PlannedFile = {
           composition: asset.id, kind: asset.kind, folder,
@@ -297,6 +341,7 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
     const previous = seen.get(output);
     if (previous) throw new Error(`${where}: the mask ${output} repeats a file of ${previous}: rename the item or move it to another pack.`);
     seen.set(output, where);
+    claimBuyerName(output, where);
     const {fps, durationInFrames} = getCompositionMetadata({durationSeconds: exportProps.durationSeconds as number, outputFormat: 'png'});
     const mask: PlannedFile = {
       composition: asset.id, kind: asset.kind, folder: MASK_FOLDER, size: sizeId, format: 'png',

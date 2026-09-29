@@ -816,3 +816,15 @@ test('pack: both CLIs refuse an unknown pack with the options, and --dry-run poi
   assert.match(dry.stdout, /^Pack: neon$/m);
   assert.doesNotMatch(dry.stdout + dry.stderr, /Next:/);
 });
+
+test('pack: the plan refuses a buyer file name used twice or over 100 characters, before any render', () => {
+  // The same free size in two kinds: two folders, one file name for the buyer.
+  assert.throws(() => planPack(manifest([
+    {composition: 'ChatLoop', props: {width: 700, height: 100}, formats: ['webm']},
+    {composition: 'BlockLoop', props: {width: 700, height: 100}, formats: ['webm']},
+  ]), fakeDeps), /Item 2 \(BlockLoop\): the file name test-700x100\.webm repeats chat\/test-700x100\.webm, from Item 1 \(ChatLoop\)/);
+  assert.equal(planPack(manifest([{composition: 'ChatLoop', props: {width: 700, height: 100}, formats: ['webm', 'png']}]), fakeDeps).length, 2);
+  // A long pack name takes a path over the 100 characters a buyer path may have.
+  assert.throws(() => planPack(manifest([{composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm']}], `pack-${'x'.repeat(80)}`), fakeDeps),
+    /Item 1 \(ChatLoop\): chat\/pack-x+-chat-standard\.webm: 109 characters, over the 100 a buyer path may have/);
+});

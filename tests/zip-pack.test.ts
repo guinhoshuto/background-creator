@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {
-  assertZip32, assertZipName, buyerPathIssues, checkPackContents, readCentralDirectory, zipFileName, zipLayout, zipPack,
+  assertZip32, assertZipName, buyerPathIssues, checkPackContents, partialFileName, readCentralDirectory, zipFileName, zipLayout, zipPack,
   type ZipPackEffects,
 } from '../scripts/pack-contents';
 import {packPropsHash, type PlannedFile} from '../scripts/pack-plan';
@@ -220,13 +220,16 @@ test('an independent reader accepts the zip', () => withPack(async (pack) => {
 }));
 
 test('buyer file names are enforced', async () => {
-  assert.deepEqual(buyerPathIssues(SORTED), []);
-  assert.equal(buyerPathIssues(['text-boxes/BlockLoop-card.png']).length, 1);
-  const at = (length: number) => `borders/${'a'.repeat(length - 'borders/'.length - '.webm'.length)}.webm`;
-  assert.deepEqual(buyerPathIssues([at(100)]), []);
-  assert.match(buyerPathIssues([at(101)]).join('\n'), /101 characters, over the 100/);
-  assert.match(buyerPathIssues(['chat/test-a.png', 'CHAT/test-a.png']).join('\n'), /same path/);
-  assert.match(buyerPathIssues(['chat/test-a.png', 'borders/test-a.png']).join('\n'), /same file name/);
+  assert.deepEqual(buyerPathIssues(SORTED, 'test'), []);
+  assert.equal(buyerPathIssues(['text-boxes/BlockLoop-card.png'], 'test').length, 1);
+  const at = (length: number) => `borders/test-${'a'.repeat(length - 'borders/test-'.length - '.webm'.length)}.webm`;
+  assert.deepEqual(buyerPathIssues([at(100)], 'test'), []);
+  assert.match(buyerPathIssues([at(101)], 'test').join('\n'), /101 characters, over the 100/);
+  // The pack's own name starts every file name: another pack's, or the name alone, is refused.
+  assert.match(buyerPathIssues(['chat/other-a.png'], 'test').join('\n'), /chat\/other-a\.png: not a buyer file name \(<folder>\/test-<piece>/);
+  assert.equal(buyerPathIssues(['chat/test.png', 'chat/testing-a.png'], 'test').length, 2);
+  assert.match(buyerPathIssues(['chat/test-a.png', 'CHAT/test-a.png'], 'test').join('\n'), /same path/);
+  assert.match(buyerPathIssues(['chat/test-a.png', 'borders/test-a.png'], 'test').join('\n'), /same file name/);
   assert.doesNotThrow(() => assertZipName(`${'a'.repeat(66)}.zip`));
   assert.throws(() => assertZipName(`${'a'.repeat(67)}.zip`), /71 characters, over the 70/);
   const bad = [file('text-boxes/BlockLoop-card.png', 'png'), ...PLAN.slice(1)];
@@ -301,4 +304,15 @@ test('refuses a file that changes between passes', () => withPack(async (pack) =
   const betweenPasses = () => appendFile(path.join(pack.packDirectory, 'text-boxes/test-card.png'), 'x');
   await assert.rejects(run(pack, {effects: {betweenPasses}}).result, /text-boxes\/test-card\.png changed size between passes/);
   assert.equal(existsSync(zipPath(pack)), false);
+}));
+
+test('a refused run writes nothing and only clears an old partial zip; --check leaves even that', () => withPack(async (pack) => {
+  const partial = path.join(pack.deliveriesDirectory, partialFileName('test'));
+  await mkdir(pack.deliveriesDirectory, {recursive: true});
+  await writeFile(partial, 'left by an interrupted write');
+  const refused = [...PLAN, file('backgrounds/test-extra.png', 'png')];
+  await assert.rejects(run(pack, {check: true, plan: refused}).result, /Missing 1 planned files/);
+  assert.deepEqual(await readdir(pack.deliveriesDirectory), [partialFileName('test')]);
+  await assert.rejects(run(pack, {plan: refused}).result, /Missing 1 planned files/);
+  assert.deepEqual(await readdir(pack.deliveriesDirectory), []);
 }));
