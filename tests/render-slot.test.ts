@@ -297,6 +297,25 @@ test('an old mutex whose holder still runs is not cleared, with or without an ol
   assert.deepEqual(stranded(mutex), []);
 });
 
+test('a dead slot whose takeover mutex is held by a live pid names that pid and the rm of both, with no promise of a takeover', async (t) => {
+  const dir = tempSlot(t);
+  const gone = spawnSync(process.execPath, ['-e', '']).pid;
+  writeOwner(dir, gone);
+  // A pid reused after the taker died in the critical section: process.ppid runs and takes nothing over.
+  agedMutexHeldBy(`${dir}.takeover`, process.ppid);
+  const old = new Date(Date.now() - 11_000);
+  utimesSync(`${dir}.takeover`, old, old);
+  const wayOut = `rm -r ${dir} ${dir}.takeover`;
+  const blocked = (error: Error) => error.message.includes(`pid ${process.ppid}`) && error.message.includes(wayOut)
+    && !error.message.includes('taken over automatically');
+  await assert.rejects(acquireRenderSlot({dir, command: 'no wait', wait: false, log: () => {}}), blocked);
+  const messages: string[] = [];
+  await assert.rejects(acquireRenderSlot({dir, command: 'waits', pollMs: 50, waitLimitMs: 300, log: (message) => messages.push(message)}), blocked);
+  assert.ok(messages.some((message) => message.includes(`pid ${process.ppid}`) && message.includes(wayOut)), `no message named the way out: ${messages.join(' | ')}`);
+  assert.equal(ownerPid(dir), gone);
+  assert.equal(existsSync(`${dir}.takeover`), true);
+});
+
 test('an old mutex whose holder is gone, or is this process that holds no mutex, is cleared', (t) => {
   const base = tempSlot(t);
   const gone = spawnSync(process.execPath, ['-e', '']).pid;

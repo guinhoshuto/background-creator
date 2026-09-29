@@ -18,7 +18,9 @@
 // its holder.json still runs (by the rule above for owner.json: a holder.json written before the last
 // boot is dead), it stays, however old, so a holder stopped for a while (a sleep of the Mac) keeps
 // its mutex. A holder.json naming the clearing process itself is an orphan it left, and a mutex
-// without a readable holder.json is judged by its age alone. Clearing first claims the mutex with an
+// without a readable holder.json is judged by its age alone. A live pid that takes nothing over (a
+// pid reused after its taker died in the critical section) keeps the mutex until someone removes it
+// by hand: a waiter for a dead owner's slot names that pid and the rm of the slot and the mutex. Clearing first claims the mutex with an
 // atomic mkdir of <mutex>/clearing, then checks that the path still holds the inode it saw: only
 // one process claims a given directory, and a claim that landed in a newer mutex is taken back out
 // (rmdir) while that mutex stays at its path. The claimed mutex is removed as below. A claim older
@@ -61,8 +63,13 @@ const WAIT_LIMIT_MS = 30 * 60 * 1000;
 /** An owner.json still missing after this long means its writer died between mkdir and write. */
 const UNWRITTEN_GRACE_MS = 10_000;
 const OWNER_FILE = 'owner.json';
-/** The manual way out when no render is running and the slot stays held. */
-const STUCK_HINT = (dir: string) => `If no render is running, remove the slot by hand: rm -r ${dir}`;
+/**
+ * The manual way out when no render is running and the slot stays held; with `mutexPid`, the pid
+ * of an old takeover mutex that still runs and blocks the takeover of a dead owner's slot.
+ */
+const STUCK_HINT = (dir: string, mutexPid: number | null = null) => (mutexPid === null
+  ? `If no render is running, remove the slot by hand: rm -r ${dir}`
+  : `If pid ${mutexPid} is not a render taking over this slot, remove the slot and its takeover mutex by hand: rm -r ${dir} ${dir}.takeover`);
 
 export const slotDir = () => process.env.RENDER_SLOT_DIR || path.join(os.homedir(), '.cache', 'render-slot');
 
@@ -230,20 +237,26 @@ const removeMutexIfSame = (mutex: string, ino: number, nameAside = asideName) =>
 export const releaseMutex = (mutex: string, ino: number, nameAside = asideName) => removeMutexIfSame(mutex, ino, nameAside);
 
 /**
- * Whether the pid in the holder.json at the mutex path still runs, by the rule of ownerAlive: a
- * holder.json written before the last boot is dead. False when holder.json is unreadable (age alone
+ * The pid in the holder.json at the mutex path while it still runs, by the rule of ownerAlive: a
+ * holder.json written before the last boot is dead. Null when holder.json is unreadable (age alone
  * decides then) and when it names this process: a process clears a mutex only while it holds none,
  * so its own holder.json there is an orphan it left (a mutex it gave up on or failed to move).
  */
-const holderRuns = (mutex: string) => {
+const runningHolder = (mutex: string): number | null => {
   const file = path.join(mutex, HOLDER_FILE);
   try {
     const {pid} = JSON.parse(readFileSync(file, 'utf8')) as {pid?: unknown};
-    if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0 || pid === process.pid) return false;
-    return !(statSync(file).mtimeMs < bootTimeMs()) && alive(pid);
+    if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0 || pid === process.pid) return null;
+    return !(statSync(file).mtimeMs < bootTimeMs()) && alive(pid) ? pid : null;
   } catch {
-    return false;
+    return null;
   }
+};
+
+/** The pid of a takeover mutex older than the grace whose holder still runs, which no clearer removes. */
+const blockingMutexHolder = (mutex: string) => {
+  const seen = sightMutex(mutex);
+  return seen !== null && seen.ageMs > UNWRITTEN_GRACE_MS ? runningHolder(mutex) : null;
 };
 
 /**
@@ -255,7 +268,7 @@ const holderRuns = (mutex: string) => {
 export const clearStaleMutex = (mutex: string, seen: MutexSighting) => {
   if (seen.ageMs <= UNWRITTEN_GRACE_MS) return false;
   // Old but held by a process that still runs (stopped for a while, as in a sleep of the Mac).
-  if (holderRuns(mutex)) return false;
+  if (runningHolder(mutex) !== null) return false;
   const claim = path.join(mutex, CLAIM_DIR);
   try {
     mkdirSync(claim);
@@ -320,6 +333,7 @@ export const acquireRenderSlot = async (options: SlotOptions): Promise<SlotHandl
   const log = options.log ?? ((message: string) => console.log(message));
   const started = Date.now();
   let warned = false;
+  let warnedBlocked = false;
   mkdirSync(path.dirname(dir), {recursive: true});
   for (;;) {
     const current = readOwner(dir);
@@ -331,12 +345,21 @@ export const acquireRenderSlot = async (options: SlotOptions): Promise<SlotHandl
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       const owner = readOwner(dir);
-      if (isStale(dir, owner) && takeOverStale(dir, owner?.pid ?? null)) continue;
-      const holder = describeHolder(owner);
-      if (options.wait === false) throw new Error(`Another render holds the render slot (${dir}), ${holder}. Run again when it ends. ${STUCK_HINT(dir)}`);
+      const stale = isStale(dir, owner);
+      if (stale && takeOverStale(dir, owner?.pid ?? null)) continue;
+      // A dead owner's slot whose takeover waits on an old mutex of a pid that still runs.
+      const blocker = stale ? blockingMutexHolder(`${dir}.takeover`) : null;
+      const holder = blocker === null
+        ? describeHolder(owner)
+        : `${describeHolder(owner)}, whose takeover waits on the mutex ${dir}.takeover, held for over 10 seconds by pid ${blocker}, which still runs`;
+      const hint = STUCK_HINT(dir, blocker);
+      if (options.wait === false) throw new Error(`Another render holds the render slot (${dir}), ${holder}. Run again when it ends. ${hint}`);
       if (!warned) { log(`Waiting for the render slot, ${holder}.`); warned = true; }
+      if (blocker !== null && !warnedBlocked) { log(`The takeover of the render slot waits on pid ${blocker}. ${hint}`); warnedBlocked = true; }
       if (Date.now() - started > waitLimitMs) {
-        throw new Error(`Gave up after ${Math.round(waitLimitMs / 60_000)} minutes waiting for the render slot (${dir}), ${holder}. Run again when that render ends; a slot whose pid is gone is taken over automatically. ${STUCK_HINT(dir)}`);
+        // No promise of an automatic takeover while a mutex of a live pid blocks it.
+        const retry = blocker === null ? ' Run again when that render ends; a slot whose pid is gone is taken over automatically.' : '';
+        throw new Error(`Gave up after ${Math.round(waitLimitMs / 60_000)} minutes waiting for the render slot (${dir}), ${holder}.${retry} ${hint}`);
       }
       await sleep(pollMs);
       continue;
