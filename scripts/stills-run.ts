@@ -13,6 +13,7 @@ import {FREE_SPACE_HINT, RUN_MIN_FREE_BYTES, START_MIN_FREE_BYTES, assertCanStar
 import {projectRoot} from './export';
 import {expandSize} from './render-args';
 import {acquireRenderSlot, currentCommand} from './render-slot';
+import {busyProcesses, takeRenderTurn} from './render-turn';
 import {
   alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, resolveOutDir,
   seamVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
@@ -21,17 +22,9 @@ import {
 type Browser = Awaited<ReturnType<typeof openBrowser>>;
 type Prepared = {spec: StillSpec; props: Record<string, unknown>; canvas: {width: number; height: number}; bleed: number; gl: 'angle' | null};
 
-const WAIT_LIMIT_MS = 30 * 60 * 1000;
-/**
- * Heavy renders that do not take the render slot: headless Chrome (SE Widget Studio, thumbnails, an
- * older checkout) and the Remotion CLI. render:pack and validate:exports are left out: they take the
- * slot, and one waiting for it must not keep this run waiting in turn.
- */
-const BUSY_PATTERN = 'Chrome.*--headless|remotion render|dist/cli/index\\.js';
-
 const readPng = (file: string): Rgba => PNG.sync.read(readFileSync(file));
 const writePng = (file: string, png: PNG) => { mkdirSync(path.dirname(file), {recursive: true}); writeFileSync(file, PNG.sync.write(png)); };
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const localDate = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -65,29 +58,6 @@ const prepare = (job: StillsJob): Prepared[] => {
 const estimateBytes = (prepared: readonly Prepared[], job: StillsJob) => {
   const perRun = prepared.reduce((sum, p) => sum + p.canvas.width * p.canvas.height * 4, 0);
   return perRun * (job.baseline ? 2 : 1) + 200 * 1024 ** 2;
-};
-
-const busyProcesses = () => {
-  try {
-    return execFileSync('pgrep', ['-fl', BUSY_PATTERN], {encoding: 'utf8'}).trim().split('\n')
-      .filter((line) => line && !line.startsWith(`${process.pid} `));
-  } catch {
-    return []; // pgrep exits 1 when nothing matches
-  }
-};
-
-const waitForIdleMachine = async (wait: boolean) => {
-  const started = Date.now();
-  let warned = false;
-  for (;;) {
-    const busy = busyProcesses();
-    if (busy.length === 0) return;
-    const sample = busy.slice(0, 3).map((line) => `  ${line.slice(0, 140)}`).join('\n');
-    if (!wait) throw new Error(`Another render is running on this machine (one heavy render at a time):\n${sample}\nRun again when it ends, or drop --no-wait to wait for it.`);
-    if (!warned) { console.log(`Waiting: another render is running on this machine (one at a time):\n${sample}`); warned = true; }
-    if (Date.now() - started > WAIT_LIMIT_MS) throw new Error('Gave up after 30 minutes waiting for the other render to end.');
-    await sleep(10_000);
-  }
 };
 
 /** Cleanup that must also run on Ctrl-C: bundles, the baseline worktree and the render slot. */
@@ -137,13 +107,15 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
   const onBrowserLog = (log: {type: string; text: string}) => { if (log.type === 'error' || log.type === 'warning') logs.add(log.text.slice(0, 300)); };
   let browser: Browser | undefined;
   try {
-    // pgrep first, holding nothing: a render that does not take the slot yet (Chrome, the se-dev-kit
-    // CLI) may itself be waiting for the slot, and holding it while waiting on pgrep would deadlock.
-    await waitForIdleMachine(wait);
-    const slot = await acquireRenderSlot({command: currentCommand(), wait});
+    // No other render running and the slot held (render-turn.ts has the order and why).
+    const slot = await takeRenderTurn({wait}, {
+      busy: busyProcesses,
+      acquire: ({wait: waitForSlot, waitLimitMs}) => acquireRenderSlot({command: currentCommand(), wait: waitForSlot, waitLimitMs}),
+      sleep,
+      // Measured inside the slot: after waiting for another render, the disk is what that render left.
+      whileHeld: () => assertCanStart({free: freeBytes(outDir), estimate, where: shown, then: FREE_SPACE_HINT}),
+    });
     cleanups.push(() => slot.release());
-    // Measured inside the slot: after waiting for another render, the disk is what that render left.
-    assertCanStart({free: freeBytes(outDir), estimate, where: shown, then: FREE_SPACE_HINT});
     mkdirSync(outDir, {recursive: true});
 
     let t = Date.now();
