@@ -800,6 +800,8 @@ Os preenchimentos seguem o mesmo princípio: pontos, listras, damasco e o giro d
 ```sh
 npm run typecheck
 npm run lint
+npm run test:quick                           # seconds: the core tests, after every step
+npm run test:quick -- tests/cobweb.test.ts   # plus the test file of what you are changing
 npm test
 npm run validate:exports
 ```

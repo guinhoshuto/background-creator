@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",
+    "test:quick": "tsx --test tests/kinds.test.ts tests/settings.test.ts tests/sizes.test.ts tests/schema-descriptions.test.ts tests/backgrounds.test.ts tests/webgl.test.ts tests/wuthering-waves.test.ts",
     "validate:exports": "tsx scripts/validate-exports.ts",
     "stills": "tsx scripts/stills.ts",
     "qa:kit": "tsx scripts/qa-kit.ts",
