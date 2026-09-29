@@ -1,4 +1,4 @@
-// The one disk floor every render shares (stills, render:*, render:pack, zip:pack). This Mac has
+// The one disk floor every render shares (stills, render:*, render:pack, validate:exports, zip:pack). This Mac has
 // little disk to spare and a full disk once took it down mid-render, so every job checks here.
 import {existsSync, statfsSync} from 'node:fs';
 import path from 'node:path';

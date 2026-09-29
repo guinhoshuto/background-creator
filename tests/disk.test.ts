@@ -33,16 +33,18 @@ test('disk: sizes read in GiB, computed in 1024 ** 3', () => {
 const render = (free: number) => {
   const exported: ExportOptions[] = [];
   const asked: string[] = [];
+  const events: string[] = [];
   const run = runRender(['ParticleLoop', '--out', '/nowhere/renders/clip.webm'], {
     defaultOutDirectory: '/nowhere/out',
     effects: {
       readProps: async () => ({}),
-      freeBytes: (directory) => {asked.push(directory); return free;},
-      exportAsset: async (options) => {exported.push(options);},
+      freeBytes: (directory) => {asked.push(directory); events.push('disk'); return free;},
+      exportAsset: async (options) => {exported.push(options); events.push('export');},
+      withRenderSlot: async (task) => {events.push('slot'); try { await task(); } finally { events.push('release'); }},
       log: () => undefined,
     },
   });
-  return {run, exported, asked};
+  return {run, exported, asked, events};
 };
 
 test('render: refuses below 3 GiB before anything renders, pointing at the way out', async () => {
@@ -53,6 +55,12 @@ test('render: refuses below 3 GiB before anything renders, pointing at the way o
   const enough = render(3 * GiB);
   await enough.run;
   assert.equal(enough.exported.length, 1);
+});
+
+test('render: measures the disk after taking the render slot, not before waiting for it', async () => {
+  const enough = render(3 * GiB);
+  await enough.run;
+  assert.deepEqual(enough.events, ['slot', 'disk', 'export', 'release']);
 });
 
 test('validate:exports: --out picks the folder, and the default is scratch', () => {

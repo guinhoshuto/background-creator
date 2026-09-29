@@ -10,8 +10,9 @@ runRender(process.argv.slice(2), {
   effects: {
     readProps: async (file) => JSON.parse(await readFile(file, 'utf8')) as unknown,
     freeBytes,
+    exportAsset,
     // --help and --list never get here; a real export waits for the machine-wide render slot.
-    exportAsset: (options) => withRenderSlot(() => exportAsset(options)),
+    withRenderSlot: (task) => withRenderSlot(task),
     log: (message) => console.log(message),
   },
 }).catch((error: unknown) => {

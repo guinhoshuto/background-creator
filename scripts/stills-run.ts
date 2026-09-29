@@ -128,8 +128,6 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
     return null;
   }
 
-  assertCanStart({free: freeBytes(outDir), estimate, where: shown, then: FREE_SPACE_HINT});
-
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);
   const report: Record<string, unknown> = {outDir, stills: {}, timings: {}};
@@ -139,10 +137,13 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
   const onBrowserLog = (log: {type: string; text: string}) => { if (log.type === 'error' || log.type === 'warning') logs.add(log.text.slice(0, 300)); };
   let browser: Browser | undefined;
   try {
+    // pgrep first, holding nothing: a render that does not take the slot yet (Chrome, the se-dev-kit
+    // CLI) may itself be waiting for the slot, and holding it while waiting on pgrep would deadlock.
+    await waitForIdleMachine(wait);
     const slot = await acquireRenderSlot({command: currentCommand(), wait});
     cleanups.push(() => slot.release());
-    // The slot covers renders from this repo; pgrep still catches the ones that do not take it.
-    await waitForIdleMachine(wait);
+    // Measured inside the slot: after waiting for another render, the disk is what that render left.
+    assertCanStart({free: freeBytes(outDir), estimate, where: shown, then: FREE_SPACE_HINT});
     mkdirSync(outDir, {recursive: true});
 
     let t = Date.now();

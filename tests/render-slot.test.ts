@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawn, spawnSync} from 'node:child_process';
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -19,9 +19,9 @@ const tempSlot = (t: {after: (fn: () => void) => void}) => {
 
 const ownerPid = (dir: string) => (JSON.parse(readFileSync(path.join(dir, 'owner.json'), 'utf8')) as {pid: number}).pid;
 
-const writeOwner = (dir: string, pid: number) => {
+const writeOwner = (dir: string, pid: number, startedAt = new Date().toISOString()) => {
   mkdirSync(dir, {recursive: true});
-  writeFileSync(path.join(dir, 'owner.json'), JSON.stringify({pid, repo: 'other-repo', command: 'npm run render', startedAt: '2026-09-28T12:00:00.000Z'}));
+  writeFileSync(path.join(dir, 'owner.json'), JSON.stringify({pid, repo: 'other-repo', command: 'npm run render', startedAt}));
 };
 
 /** Starts tests/helpers/render-slot-holder.ts with its own slot directory. */
@@ -77,6 +77,47 @@ test('a slot whose pid is gone is taken over', (t) => {
     slot.release();
     assert.equal(existsSync(dir), false);
   });
+});
+
+test('a slot written before the last boot is taken over even when its pid is alive again', async (t) => {
+  const dir = tempSlot(t);
+  // process.ppid is alive: only the boot time says this owner is gone (a pid reused after a reboot).
+  writeOwner(dir, process.ppid, '2000-01-01T00:00:00.000Z');
+  const slot = await acquireRenderSlot({dir, command: 'after a reboot', wait: false, log: () => {}});
+  assert.equal(ownerPid(dir), process.pid);
+  slot.release();
+});
+
+test('a stuck slot tells how to remove it by hand', async (t) => {
+  const dir = tempSlot(t);
+  writeOwner(dir, process.ppid);
+  await assert.rejects(
+    acquireRenderSlot({dir, command: 'no wait', wait: false, log: () => {}}),
+    (error: Error) => error.message.includes(`rm -r ${dir}`),
+  );
+});
+
+test('a takeover in progress is left alone: the dead slot is not taken twice', async (t) => {
+  const dir = tempSlot(t);
+  const gone = spawnSync(process.execPath, ['-e', '']).pid;
+  writeOwner(dir, gone);
+  mkdirSync(`${dir}.takeover`);
+  await assert.rejects(acquireRenderSlot({dir, command: 'second taker', wait: false, log: () => {}}), /Another render holds the render slot/);
+  assert.equal(ownerPid(dir), gone);
+  assert.equal(existsSync(`${dir}.takeover`), true);
+});
+
+test('a takeover mutex left by a dead taker is cleared after 10 seconds', async (t) => {
+  const dir = tempSlot(t);
+  const gone = spawnSync(process.execPath, ['-e', '']).pid;
+  writeOwner(dir, gone);
+  mkdirSync(`${dir}.takeover`);
+  const old = new Date(Date.now() - 11_000);
+  utimesSync(`${dir}.takeover`, old, old);
+  const slot = await acquireRenderSlot({dir, command: 'after a dead taker', wait: false, log: () => {}});
+  assert.equal(ownerPid(dir), process.pid);
+  assert.equal(existsSync(`${dir}.takeover`), false);
+  slot.release();
 });
 
 test('--no-wait fails at once when another process holds the slot', async (t) => {

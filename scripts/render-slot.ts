@@ -2,7 +2,9 @@
 //
 // Protocol, so another repo can adopt it as is: the slot is the directory ~/.cache/render-slot
 // (RENDER_SLOT_DIR overrides it). Taking it is an atomic mkdir; inside, owner.json holds
-// {pid, repo, command, startedAt}. A slot whose pid is gone is taken over. Only the owner removes
+// {pid, repo, command, startedAt}. A slot whose pid is gone, or whose startedAt is before the last
+// boot (the pid was reused), is taken over, under the mutex <slot>.takeover (an atomic mkdir), and
+// only after checking again under it that the same dead owner still holds it. Only the owner removes
 // it. A child process started by the owner finds RENDER_SLOT_HELD=<owner pid> in its environment
 // and runs under the parent's slot instead of waiting for it.
 import {mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync} from 'node:fs';
@@ -29,6 +31,8 @@ const WAIT_LIMIT_MS = 30 * 60 * 1000;
 /** An owner.json still missing after this long means its writer died between mkdir and write. */
 const UNWRITTEN_GRACE_MS = 10_000;
 const OWNER_FILE = 'owner.json';
+/** The manual way out when no render is running and the slot stays held. */
+const STUCK_HINT = (dir: string) => `If no render is running, remove the slot by hand: rm -r ${dir}`;
 
 export const slotDir = () => process.env.RENDER_SLOT_DIR || path.join(os.homedir(), '.cache', 'render-slot');
 
@@ -43,6 +47,15 @@ export const currentCommand = () => {
 const alive = (pid: number) => {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code === 'EPERM'; }
 };
+
+/** When this machine booted, in ms since the epoch. */
+const bootTimeMs = () => Date.now() - os.uptime() * 1000;
+
+/**
+ * Whether the owner still runs. A slot written before the last boot is dead even when its pid is
+ * alive again: after a reboot the pid belongs to another process (EPERM counts as alive).
+ */
+const ownerAlive = (owner: SlotOwner) => !(Date.parse(owner.startedAt) < bootTimeMs()) && alive(owner.pid);
 
 const readOwner = (dir: string): SlotOwner | null => {
   try {
@@ -59,15 +72,30 @@ const ageMs = (dir: string) => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Moves a dead owner's slot aside; if someone else took it in between, puts theirs back. */
+/** Whether `dir` is held by a dead owner (or by a writer that died before writing owner.json). */
+const isStale = (dir: string, owner: SlotOwner | null) => (owner ? !ownerAlive(owner) : ageMs(dir) > UNWRITTEN_GRACE_MS);
+
+/**
+ * Removes a dead owner's slot under the takeover mutex, after checking again that the same dead
+ * owner still holds it: a slot someone took in between is never touched. False when another
+ * process is taking it over now. A mutex left by a taker that died is cleared after the grace.
+ */
 const takeOverStale = (dir: string, stalePid: number | null) => {
-  const grave = `${dir}.stale-${process.pid}-${Date.now()}`;
-  try { renameSync(dir, grave); } catch { return; }
-  const moved = readOwner(grave);
-  if ((moved?.pid ?? null) !== stalePid) {
-    try { renameSync(grave, dir); return; } catch { /* a third process holds the slot now: the moved one is stale */ }
+  const mutex = `${dir}.takeover`;
+  try {
+    mkdirSync(mutex);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    if (ageMs(mutex) > UNWRITTEN_GRACE_MS) { rmSync(mutex, {recursive: true, force: true}); return true; }
+    return false;
   }
-  rmSync(grave, {recursive: true, force: true});
+  try {
+    const owner = readOwner(dir);
+    if ((owner?.pid ?? null) === stalePid && isStale(dir, owner)) rmSync(dir, {recursive: true, force: true});
+  } finally {
+    rmSync(mutex, {recursive: true, force: true});
+  }
+  return true;
 };
 
 /** Removes the slot only when this process owns it. */
@@ -83,14 +111,6 @@ const noopHandle = (): SlotHandle => ({release: () => {}, inherited: true});
 const describeHolder = (owner: SlotOwner | null) => (owner
   ? `held by pid ${owner.pid} (${owner.repo}: ${owner.command}) since ${owner.startedAt}`
   : 'held by a process that is still writing its owner file');
-
-/** Who holds the slot now, as a phrase for messages ("held by pid …"); null when it is free or its owner is gone. */
-export const slotHolder = (dir = slotDir()): string | null => {
-  const owner = readOwner(dir);
-  if (owner) return alive(owner.pid) ? describeHolder(owner) : null;
-  try { statSync(dir); } catch { return null; }
-  return ageMs(dir) > UNWRITTEN_GRACE_MS ? null : describeHolder(null);
-};
 
 /**
  * Waits for the machine-wide render slot and takes it. The slot is released by `release()`, on
@@ -109,18 +129,18 @@ export const acquireRenderSlot = async (options: SlotOptions): Promise<SlotHandl
     const current = readOwner(dir);
     if (current?.pid === process.pid) return noopHandle();
     const held = Number(process.env[HELD_ENV]);
-    if (current && current.pid === held && alive(held)) return noopHandle();
+    if (current && current.pid === held && ownerAlive(current)) return noopHandle();
     try {
       mkdirSync(dir);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       const owner = readOwner(dir);
-      if (owner ? !alive(owner.pid) : ageMs(dir) > UNWRITTEN_GRACE_MS) { takeOverStale(dir, owner?.pid ?? null); continue; }
+      if (isStale(dir, owner) && takeOverStale(dir, owner?.pid ?? null)) continue;
       const holder = describeHolder(owner);
-      if (options.wait === false) throw new Error(`Another render holds the render slot (${dir}), ${holder}. Run again when it ends.`);
+      if (options.wait === false) throw new Error(`Another render holds the render slot (${dir}), ${holder}. Run again when it ends. ${STUCK_HINT(dir)}`);
       if (!warned) { log(`Waiting for the render slot, ${holder}.`); warned = true; }
       if (Date.now() - started > waitLimitMs) {
-        throw new Error(`Gave up after ${Math.round(waitLimitMs / 60_000)} minutes waiting for the render slot (${dir}), ${holder}. Run again when that render ends; a slot whose pid is gone is taken over automatically.`);
+        throw new Error(`Gave up after ${Math.round(waitLimitMs / 60_000)} minutes waiting for the render slot (${dir}), ${holder}. Run again when that render ends; a slot whose pid is gone is taken over automatically. ${STUCK_HINT(dir)}`);
       }
       await sleep(pollMs);
       continue;

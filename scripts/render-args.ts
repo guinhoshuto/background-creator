@@ -110,11 +110,14 @@ export type RenderEffects = {
   /** Free bytes on the disk that holds `directory`. */
   freeBytes: (directory: string) => number;
   exportAsset: (options: ExportOptions) => Promise<unknown>;
+  /** Runs `task` holding the machine-wide render slot. */
+  withRenderSlot: (task: () => Promise<void>) => Promise<void>;
   log: (message: string) => void;
 };
 
 /**
- * The whole `npm run render:*` command. The disk is checked before the bundle opens: a render
+ * The whole `npm run render:*` command. The disk is checked once the render slot is held, before
+ * the bundle opens: a render
  * that fills the disk halfway leaves a broken file on a Mac that barely answers.
  * `defaultOutDirectory` is where the file goes without --out.
  */
@@ -125,6 +128,9 @@ export const runRender = async (args: string[], {defaultOutDirectory, effects}: 
   const rawProps = values.props ? await effects.readProps(values.props) : {};
   const options = buildExportOptions({values, positionals}, rawProps);
   const directory = options.output === undefined ? defaultOutDirectory : path.dirname(path.resolve(options.output));
-  assertCanStart({free: effects.freeBytes(directory), where: path.relative(process.cwd(), directory) || '.', then: FREE_SPACE_HINT});
-  await effects.exportAsset(options);
+  // Measured inside the slot: a render that waited 30 minutes for another one sees the disk it left.
+  await effects.withRenderSlot(async () => {
+    assertCanStart({free: effects.freeBytes(directory), where: path.relative(process.cwd(), directory) || '.', then: FREE_SPACE_HINT});
+    await effects.exportAsset(options);
+  });
 };

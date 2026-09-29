@@ -1,8 +1,8 @@
 // What `npm run clean` deletes: space that comes back by itself (verification renders, old bundles,
 // the webpack cache). What the buyer gets (out/packs, out/deliveries) is never on the list, with any flag.
-import {existsSync, lstatSync, readdirSync, rmSync} from 'node:fs';
+import {existsSync, lstatSync, readdirSync, realpathSync, rmSync} from 'node:fs';
 import path from 'node:path';
-import {slotHolder} from './render-slot';
+import {acquireRenderSlot, type SlotHandle} from './render-slot';
 
 /** Relative to the repo root, with forward slashes. */
 export const WEBPACK_CACHE = 'node_modules/.cache/webpack';
@@ -39,12 +39,27 @@ export const planClean = (existing: readonly string[], options: CleanOptions): C
   return why && !isProtected(target) ? [{path: target, why}] : [];
 });
 
-/** The paths planClean looks at, as they exist under `root`. */
+/**
+ * Whether `target` (relative) really lives under `root`. A worktree's node_modules is a symlink to
+ * the main checkout: following it would delete another checkout's cache.
+ */
+export const livesUnder = (root: string, target: string) => {
+  try {
+    const real = realpathSync(path.join(root, target));
+    const base = realpathSync(root);
+    return real === base || real.startsWith(`${base}${path.sep}`);
+  } catch {
+    return false;
+  }
+};
+
+/** The paths planClean looks at, as they exist under `root` (never through a symlink out of it). */
 export const listCandidates = (root: string): string[] => {
   const children = (dir: string) => {
     try { return readdirSync(path.join(root, dir)).map((name) => `${dir}/${name}`); } catch { return []; }
   };
-  return [...children('out'), ...children('.cache'), ...(existsSync(path.join(root, WEBPACK_CACHE)) ? [WEBPACK_CACHE] : [])];
+  return [...children('out'), ...children('.cache'), ...(existsSync(path.join(root, WEBPACK_CACHE)) ? [WEBPACK_CACHE] : [])]
+    .filter((target) => livesUnder(root, target));
 };
 
 /** Bytes on disk under `target`, like du: symlinks are counted, never followed. */
@@ -76,29 +91,41 @@ export type CleanEffects = {
   list: (root: string) => string[];
   size: (target: string) => number;
   remove: (target: string) => void;
-  holder: () => string | null;
+  /** Takes the render slot without waiting; throws when a render holds it. */
+  takeSlot: () => Promise<SlotHandle>;
 };
 
 const realEffects: CleanEffects = {
   list: listCandidates,
   size: diskBytes,
   remove: (target) => rmSync(target, {recursive: true, force: true}),
-  holder: () => slotHolder(),
+  takeSlot: () => acquireRenderSlot({command: 'npm run clean -- --apply', wait: false}),
 };
 
-/** Lists what clean would delete; deletes it only with `apply`, and never while a render holds the slot. */
-export const runClean = (
+/**
+ * Lists what clean would delete; deletes it only with `apply`, holding the render slot from before
+ * the listing until the last delete, so no render starts on a bundle or cache being deleted.
+ */
+export const runClean = async (
   {root, review, apply}: {root: string; review: boolean; apply: boolean},
   effects: Partial<CleanEffects> = {},
 ) => {
-  const {list, size, remove, holder} = {...realEffects, ...effects};
+  const {list, size, remove, takeSlot} = {...realEffects, ...effects};
+  let slot: SlotHandle | undefined;
   if (apply) {
-    const held = holder();
-    if (held) throw new Error(`Refusing to delete while a render runs: the render slot is ${held}. Run again when it ends.`);
+    try {
+      slot = await takeSlot();
+    } catch (error) {
+      throw new Error(`Refusing to delete while a render runs. ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
-  const targets = planClean(list(root), {review}).map((target) => ({...target, bytes: size(path.join(root, target.path))}));
-  if (apply) for (const target of targets) remove(path.join(root, target.path));
-  return {targets, text: formatPlan(targets, {apply})};
+  try {
+    const targets = planClean(list(root), {review}).map((target) => ({...target, bytes: size(path.join(root, target.path))}));
+    if (apply) for (const target of targets) remove(path.join(root, target.path));
+    return {targets, text: formatPlan(targets, {apply})};
+  } finally {
+    slot?.release();
+  }
 };
 
 /** Pure: whether a webpack cache of `bytes` is dropped before the next bundle. */
@@ -109,6 +136,8 @@ export const pruneWebpackCache = (
   root: string,
   {size = diskBytes, remove = realEffects.remove, log = console.log}: {size?: (target: string) => number; remove?: (target: string) => void; log?: (message: string) => void} = {},
 ) => {
+  // In a worktree node_modules is a symlink: the main checkout's cache is left to its own bundles.
+  if (!livesUnder(root, WEBPACK_CACHE)) return false;
   const cache = path.join(root, WEBPACK_CACHE);
   const bytes = size(cache);
   if (!webpackCacheTooBig(bytes)) return false;

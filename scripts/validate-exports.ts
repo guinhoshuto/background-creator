@@ -8,6 +8,7 @@ import {assetCatalog, getOpenGlRenderer} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy, type AssetKind} from '../src/kinds';
 import {hasAlpha, type OutputFormat} from '../src/settings';
 import {canvasOf, sizeProps, sizesForKind, type NamedSize} from '../src/sizes';
+import {FREE_SPACE_HINT, assertCanStart, freeBytes} from './disk';
 import {createBundle, exportAsset, projectRoot, resolveExport} from './export';
 import {compositedRgbError} from './image-comparison';
 import {ffmpegPath, ffprobePath, runProcess} from './process';
@@ -66,6 +67,8 @@ const main = async () => {
   await runProcess(ffprobePath(), ['-version']);
   // Arguments and tools are checked first: a typo never waits 30 minutes for the slot.
   slot = await acquireRenderSlot({command: currentCommand()});
+  // The same disk floor as every render, measured once the slot is held.
+  assertCanStart({free: freeBytes(destination), where: path.relative(process.cwd(), destination) || '.', then: FREE_SPACE_HINT});
   await mkdir(destination, {recursive: true});
   const serveUrl = await createBundle();
   const report: Record<string, unknown>[] = [];

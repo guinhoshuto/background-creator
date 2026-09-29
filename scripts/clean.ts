@@ -18,12 +18,12 @@ if (args.includes('--help')) {
     console.error(`Unknown option ${unknown.join(', ')}.\n\n${HELP}`);
     process.exitCode = 1;
   } else {
-    try {
-      const root = fileURLToPath(new URL('../', import.meta.url));
-      console.log(runClean({root, apply: args.includes('--apply'), review: args.includes('--review')}).text);
-    } catch (error) {
+    const root = fileURLToPath(new URL('../', import.meta.url));
+    runClean({root, apply: args.includes('--apply'), review: args.includes('--review')}).then(({text}) => {
+      console.log(text);
+    }, (error: unknown) => {
       console.error(error instanceof Error ? error.message : error);
       process.exitCode = 1;
-    }
+    });
   }
 }
