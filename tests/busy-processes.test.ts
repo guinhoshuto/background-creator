@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
 import {test} from 'node:test';
+import {fileURLToPath} from 'node:url';
 import {otherRenders, parseProcessList} from '../scripts/render-turn';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
 
 const SELF = 4000;
 
@@ -73,8 +77,28 @@ test('shells and searches that only mention the pattern are wrappers, whatever t
   assert.deepEqual(otherRenders(parseProcessList(ps([[6800, 1, '/usr/local/bin/zshrender remotion render A']])), SELF), ['6800 /usr/local/bin/zshrender remotion render A']);
 });
 
-test('a ppid cycle, above or below this run, ends and keeps the rest right', () => {
+test('a render beside this run is busy: another session under the same agent, a sibling under this run\'s shell or parent', () => {
+  // Only the ancestors themselves and what this run started are its family, not every tree they hold.
   const list = parseProcessList(ps([
+    ...OWN,
+    [3500, 3000, 'zsh -c npx remotion render X out/x.mp4'],
+    [3600, 3500, 'node /Users/me/dev/thumbs/node_modules/.bin/remotion render X out/x.mp4'],
+    [3450, 3200, 'node /Users/me/dev/thumbs/node_modules/.bin/remotion render Y out/y.mp4'],
+    [3420, 3400, 'node /Users/me/dev/thumbs/node_modules/.bin/remotion render Z out/z.mp4'],
+  ]));
+  assert.deepEqual(otherRenders(list, SELF), [
+    '3600 node /Users/me/dev/thumbs/node_modules/.bin/remotion render X out/x.mp4',
+    '3450 node /Users/me/dev/thumbs/node_modules/.bin/remotion render Y out/y.mp4',
+    '3420 node /Users/me/dev/thumbs/node_modules/.bin/remotion render Z out/z.mp4',
+  ]);
+});
+
+test('a ppid cycle, above or below this run, ends and keeps the rest right', () => {
+  // The walks are synchronous: a missing cycle guard would spin forever, out of reach of a test
+  // timeout. So the case runs in a child process that is killed after 10 s, and a hang fails.
+  const cycle = `
+    import {otherRenders, parseProcessList} from './scripts/render-turn.ts';
+    const list = parseProcessList(${JSON.stringify(ps([
     [7000, 7100, 'node remotion render cycle-above-a'],
     [7100, 7000, 'node remotion render cycle-above-b'],
     [SELF, 7000, 'node scripts/stills.ts'],
@@ -82,8 +106,13 @@ test('a ppid cycle, above or below this run, ends and keeps the rest right', () 
     [7300, 7200, 'node remotion render grandchild'],
     [7200, 7300, 'node remotion render duplicate row closing a loop'],
     [7400, 7400, 'node remotion render its own parent'],
-  ]));
-  assert.deepEqual(otherRenders(list, SELF), ['7400 node remotion render its own parent']);
+  ]))});
+    console.log(JSON.stringify(otherRenders(list, ${SELF})));
+  `;
+  const run = spawnSync(process.execPath, ['--max-old-space-size=256', '--import', 'tsx', '--input-type=module', '-e', cycle], {cwd: root, encoding: 'utf8', timeout: 10_000});
+  assert.equal(run.error, undefined, 'the cycle walk did not end within 10 s');
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(JSON.parse(run.stdout), ['7400 node remotion render its own parent']);
 });
 
 test('parseProcessList reads padded ps rows and skips what is not one', () => {
