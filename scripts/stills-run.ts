@@ -4,15 +4,16 @@
 import {bundle} from '@remotion/bundler';
 import {openBrowser, renderFrames, renderStill, selectComposition} from '@remotion/renderer';
 import {execFileSync} from 'node:child_process';
-import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statfsSync, symlinkSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {PNG} from 'pngjs';
 import {getAsset, getLayoutOf, getOpenGlRenderer} from '../src/catalog';
 import {kindPolicies} from '../src/kinds';
+import {FREE_SPACE_HINT, RUN_MIN_FREE_BYTES, START_MIN_FREE_BYTES, assertCanStart, freeBytes, gibibytes} from './disk';
 import {projectRoot} from './export';
 import {expandSize} from './render-args';
 import {
-  STILLS_MIN_FREE_BYTES, alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, resolveOutDir,
+  alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, resolveOutDir,
   seamVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
 } from './stills-job';
 
@@ -26,17 +27,10 @@ const BUSY_PATTERN = 'Chrome.*--headless|remotion render|scripts/pack\\.ts|valid
 
 const readPng = (file: string): Rgba => PNG.sync.read(readFileSync(file));
 const writePng = (file: string, png: PNG) => { mkdirSync(path.dirname(file), {recursive: true}); writeFileSync(file, PNG.sync.write(png)); };
-const gigabytes = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const localDate = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-};
-const existingAncestor = (directory: string): string =>
-  (existsSync(directory) || path.dirname(directory) === directory ? directory : existingAncestor(path.dirname(directory)));
-const freeBytes = (directory: string) => {
-  const stats = statfsSync(existingAncestor(directory));
-  return Number(stats.bavail) * Number(stats.bsize);
 };
 
 /** Resolves every still to parsed props before anything heavy starts: a bad preset fails in a second. */
@@ -147,14 +141,11 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
   if (dryRun) {
     for (const p of prepared) console.log(`${p.spec.name}: ${p.spec.id} frame ${p.spec.frame}, ${p.canvas.width}×${p.canvas.height}${p.gl ? ', WebGL' : ''}`);
     console.log(`${prepared.length} stills${job.baseline ? ` (+${prepared.length} at ${job.baseline.ref})` : ''}, ${job.sheets?.length ?? 0} sheets, ${job.mockups?.length ?? 0} mockups → ${shown}/`);
-    console.log(`Disk: up to ${gigabytes(estimate)} for this job, ${gigabytes(freeBytes(outDir))} free (the minimum left is ${gigabytes(STILLS_MIN_FREE_BYTES)}).`);
+    console.log(`Disk: up to ${gibibytes(estimate)} for this job, ${gibibytes(freeBytes(outDir))} free (a job starts with at least ${gibibytes(START_MIN_FREE_BYTES)} and leaves at least ${gibibytes(RUN_MIN_FREE_BYTES)}).`);
     return null;
   }
 
-  const free = freeBytes(outDir);
-  if (free - estimate < STILLS_MIN_FREE_BYTES) {
-    throw new Error(`Not enough free disk: ${gigabytes(free)} free, this job needs up to ${gigabytes(estimate)} and ${gigabytes(STILLS_MIN_FREE_BYTES)} must stay free. Free space (node_modules/.cache/webpack regenerates) and run again.`);
-  }
+  assertCanStart({free: freeBytes(outDir), estimate, where: shown, then: FREE_SPACE_HINT});
 
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);

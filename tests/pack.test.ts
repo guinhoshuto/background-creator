@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {resolveExport} from '../scripts/export';
 import {
-  MIN_FREE_BYTES, assertFreeSpace, dryRunText, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
+  dryRunText, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
   realPackDeps, runPack, scratchText, type PackAsset, type PackDeps, type PackManifest, type PlannedFile, type PackRunEffects,
 } from '../scripts/pack-plan';
 import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
@@ -266,11 +266,6 @@ test('pack: --dry-run lista cada arquivo com o tamanho do arquivo e o total', ()
   assert.match(dryRunText(plan.slice(0, 1)), /Total: 1 file\.$/);
 });
 
-test('pack: recusa começar com menos de 2 GB livres e diz quanto há', () => {
-  assert.doesNotThrow(() => assertFreeSpace(MIN_FREE_BYTES, 'out'));
-  assert.throws(() => assertFreeSpace(1.5 * 1024 ** 3, 'out'), /Not enough free space in out: 1\.5 GB free.* at least 2\.0 GB/);
-});
-
 /** In-memory disk for the run loop: files are paths, JSON files hold parsed data. */
 const fakeRun = (initial: Record<string, unknown> = {}, freeBytes = 10 * 1024 ** 3) => {
   const disk = new Map<string, unknown>(Object.entries(initial));
@@ -496,9 +491,31 @@ test('pack: pouco disco recusa antes de exportar qualquer arquivo', async () => 
   const run = fakeRun({}, 512 * 1024 ** 2);
   await assert.rejects(
     runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'}),
-    /0\.5 GB free/,
+    /0\.5 GiB free/,
   );
   assert.deepEqual(run.exported, []);
+});
+
+test('pack: starts with 3 GiB free, and stops between files below 2 GiB saying how to resume', async () => {
+  const GiB = 1024 ** 3;
+  const refused = fakeRun({}, 3 * GiB - 1);
+  await assert.rejects(
+    runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: refused.effects, diskLabel: 'out'}),
+    /Not enough free disk in out: .* a render needs at least 3\.0 GiB to start/,
+  );
+  assert.deepEqual(refused.exported, []);
+  // Start, before the first file, before the second: the floor while running is 2 GiB, not 3.
+  const run = fakeRun({}, 3 * GiB);
+  const free = [3 * GiB, 2 * GiB, 2 * GiB - 1];
+  run.effects.freeBytes = async () => free.shift() ?? 0;
+  await assert.rejects(
+    runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'}),
+    /below the 2\.0 GiB a running render keeps\. .*run the same command again; finished files will be skipped\./,
+  );
+  assert.equal(run.exported.length, 1);
+  // The first file is already in the manifest, so the same command resumes after it.
+  const saved = run.disk.get('out/packs/test/manifest.json') as {files: unknown[]};
+  assert.equal(saved.files.length, 1);
 });
 
 const PACKS = OVERLAY_THEMES;

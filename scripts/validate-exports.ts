@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
-import {parseArgs} from 'node:util';
 import {renderStill, selectComposition} from '@remotion/renderer';
 import {PNG} from 'pngjs';
 import {assetCatalog, getOpenGlRenderer} from '../src/catalog';
@@ -12,6 +11,7 @@ import {canvasOf, sizeProps, sizesForKind, type NamedSize} from '../src/sizes';
 import {createBundle, exportAsset, projectRoot, resolveExport} from './export';
 import {compositedRgbError} from './image-comparison';
 import {ffmpegPath, ffprobePath, runProcess} from './process';
+import {parseValidateArgs} from './validate-args';
 
 type Probe = {
   streams: {
@@ -55,18 +55,12 @@ const fixtureSizes = (kind: AssetKind): (NamedSize | null)[] => {
 const decoderFor = (format: OutputFormat) => (format === 'webm' ? ['-c:v', 'libvpx-vp9'] : []);
 
 const main = async () => {
-  const {values} = parseArgs({options: {
-    duration: {type: 'string', default: '0.4'},
-    'reuse-existing': {type: 'boolean', default: false},
-    kind: {type: 'string'},
-    only: {type: 'string'},
-  }});
+  const {values, destination} = parseValidateArgs(process.argv.slice(2), projectRoot);
   const durationSeconds = Number(values.duration);
   assert(Number.isFinite(durationSeconds) && durationSeconds >= 0.1, 'Use --duration >= 0.1.');
   const kinds = values.kind === undefined ? ASSET_KINDS : [getKindPolicy(values.kind).kind];
   await runProcess(ffmpegPath(), ['-version']);
   await runProcess(ffprobePath(), ['-version']);
-  const destination = path.join(projectRoot, 'out', 'validation');
   await mkdir(destination, {recursive: true});
   const serveUrl = await createBundle();
   const report: Record<string, unknown>[] = [];
@@ -202,7 +196,7 @@ const main = async () => {
       }
     }
   }
-  console.log(`Validation done: ${report.length} exports. Report in out/validation/report.json.`);
+  console.log(`Validation done: ${report.length} exports. Report in ${path.relative(process.cwd(), reportPath) || reportPath}.`);
 };
 
 main().catch((error: unknown) => {console.error(error); process.exitCode = 1;});

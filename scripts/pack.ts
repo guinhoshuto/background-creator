@@ -1,7 +1,8 @@
 import {existsSync} from 'node:fs';
-import {access, mkdir, readFile, rename, rm, statfs, writeFile} from 'node:fs/promises';
+import {access, mkdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
+import {freeBytes as diskFreeBytes, existingAncestor} from './disk';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
 import {dryRunText, filterPlan, manifestFile, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
 
@@ -27,10 +28,6 @@ const exists = async (file: string) => {
     return false;
   }
 };
-
-/** The nearest existing directory: statfs needs a real path, and out/ may not exist yet. */
-const existingAncestor = (directory: string): string =>
-  (existsSync(directory) || path.dirname(directory) === directory ? directory : existingAncestor(path.dirname(directory)));
 
 const main = async () => {
   const {values, positionals} = parseArgs({
@@ -76,10 +73,7 @@ const main = async () => {
     diskLabel: path.relative(process.cwd(), statTarget()) || '.',
     effects: {
       exists: (relative) => exists(fromRoot(relative)),
-      freeBytes: async () => {
-        const stats = await statfs(statTarget());
-        return Number(stats.bavail) * Number(stats.bsize);
-      },
+      freeBytes: async () => diskFreeBytes(statTarget()),
       exportFile: async (entry, overwrite) => {
         serveUrl ??= await createBundle();
         // The parsed props, every key spelled out: the Studio's saved defaults never leak into a pack.

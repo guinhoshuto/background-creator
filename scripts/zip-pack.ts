@@ -1,7 +1,8 @@
 import {existsSync} from 'node:fs';
-import {readFile, statfs} from 'node:fs/promises';
+import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
+import {freeBytes as diskFreeBytes} from './disk';
 import {projectRoot} from './export';
 import {PackContentsError, zipFileName, zipPack} from './pack-contents';
 import {manifestFile, parsePackManifest, planPack, realPackDeps} from './pack-plan';
@@ -17,10 +18,6 @@ Options:
   --check      runs every check and compares with the existing zip, writing nothing
                (exit 0: up to date; 2: no zip or a different one; 1: a check failed)
   -h, --help   shows this help`;
-
-/** The nearest existing directory: statfs needs a real path, and out/deliveries may not exist yet. */
-const existingAncestor = (directory: string): string =>
-  (existsSync(directory) || path.dirname(directory) === directory ? directory : existingAncestor(path.dirname(directory)));
 
 const main = async () => {
   const {values, positionals} = parseArgs({
@@ -45,10 +42,7 @@ const main = async () => {
     packDirectory: path.join(projectRoot, packLabel), packLabel,
     deliveriesDirectory, zipLabel: path.posix.join('out', 'deliveries', zipFileName(manifest.name)),
     effects: {
-      freeBytes: async () => {
-        const stats = await statfs(existingAncestor(deliveriesDirectory));
-        return Number(stats.bavail) * Number(stats.bsize);
-      },
+      freeBytes: async () => diskFreeBytes(deliveriesDirectory),
       log: (message) => console.log(message),
     },
   });

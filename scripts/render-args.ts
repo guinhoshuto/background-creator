@@ -1,8 +1,10 @@
+import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {assetCatalog, getAsset} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
 import {outputFormatSchema} from '../src/settings';
 import {canvasOf, getSize, sizeProps, sizesForKind} from '../src/sizes';
+import {FREE_SPACE_HINT, assertCanStart} from './disk';
 import type {ExportOptions} from './export';
 
 export const HELP_TEXT = `usage: npm run render:<webm|mov|png|mp4|gif> -- <composition> [options]
@@ -100,4 +102,29 @@ export const buildExportOptions = (
     ...(values.frame === undefined ? {} : {frame: Number(values.frame)}),
     output: values.out, overwrite: values.overwrite,
   };
+};
+
+/** Every side effect of `npm run render:*`, injected so the flow is tested without rendering. */
+export type RenderEffects = {
+  readProps: (file: string) => Promise<unknown>;
+  /** Free bytes on the disk that holds `directory`. */
+  freeBytes: (directory: string) => number;
+  exportAsset: (options: ExportOptions) => Promise<unknown>;
+  log: (message: string) => void;
+};
+
+/**
+ * The whole `npm run render:*` command. The disk is checked before the bundle opens: a render
+ * that fills the disk halfway leaves a broken file on a Mac that barely answers.
+ * `defaultOutDirectory` is where the file goes without --out.
+ */
+export const runRender = async (args: string[], {defaultOutDirectory, effects}: {defaultOutDirectory: string; effects: RenderEffects}) => {
+  const {values, positionals} = parseRenderArgs(args);
+  if (values.help) {effects.log(HELP_TEXT); return;}
+  if (values.list) {effects.log(listText()); return;}
+  const rawProps = values.props ? await effects.readProps(values.props) : {};
+  const options = buildExportOptions({values, positionals}, rawProps);
+  const directory = options.output === undefined ? defaultOutDirectory : path.dirname(path.resolve(options.output));
+  assertCanStart({free: effects.freeBytes(directory), where: path.relative(process.cwd(), directory) || '.', then: FREE_SPACE_HINT});
+  await effects.exportAsset(options);
 };

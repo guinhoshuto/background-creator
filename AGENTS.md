@@ -30,12 +30,12 @@ Overlays: decorative measurements are fixed px (they do not scale with the box; 
 ## Agents on this machine (render and verification)
 
 - One render at a time on the machine, counting other sessions and other repos (`pgrep -fl` first). `render:pack` and `validate:exports` never run alongside another render.
-- `df -h /` before rendering; do not start with less than 3 GB free. The regenerable space is `node_modules/.cache/webpack` (up to ~5 GB; once deleted, it comes back on the next render).
-- Visual verification is `npm run stills -- <job.json>` (one bundle, one browser, many frames; format in `scripts/stills-job.ts`): stills, contact sheets, stream mockups, loop-seam checks (`seams`), determinism (`sequences`) and before/after against a git ref (`baseline: {ref: "HEAD"}`), plus `report.json`. It waits for other renders, holds a lock and refuses to leave less than 3 GB free. A whole pack: `npm run qa:kit -- <pack>`. Do not write another stills script, and never one `render:png --frame` per frame. Output defaults to `out/review/<date>-<job>/`, which the owner opens.
+- `df -h /` before rendering. One disk floor for every render, in `scripts/disk.ts`: a job starts with at least 3 GiB free, leaves at least 2 GiB after its estimate, and a pack stops between files below 2 GiB. The regenerable space is `node_modules/.cache/webpack` (up to ~5 GB; once deleted, it comes back on the next render).
+- Visual verification is `npm run stills -- <job.json>` (one bundle, one browser, many frames; format in `scripts/stills-job.ts`): stills, contact sheets, stream mockups, loop-seam checks (`seams`), determinism (`sequences`) and before/after against a git ref (`baseline: {ref: "HEAD"}`), plus `report.json`. It waits for other renders, holds a lock and follows the disk floor above. A whole pack: `npm run qa:kit -- <pack>`. Do not write another stills script, and never one `render:png --frame` per frame. Output defaults to `out/review/<date>-<job>/`, which the owner opens.
 - Missing a flag? Add it to the official script; never copy a script into `.cache` to change it.
 - Retire an old tool only after the new one is committed.
 - Full FFmpeg and FFprobe live in `/opt/homebrew/bin`. Do not use the ffmpeg from `@remotion/compositor-*` (no `rawvideo`) nor the wrapper in `.cache/webgl-tools/bin` (obsolete).
-- `validate:exports` samples 0.4 s with `defaultProps` per kind: run `--kind`/`--only` on what changed. It does not validate packs.
+- `validate:exports` samples 0.4 s with `defaultProps` per kind: run `--kind`/`--only` on what changed. Its files and `report.json` go to `out/.scratch/validation/` (`--out <dir>` for another folder). It does not validate packs.
 - A custom script that renders WebGL passes `gl: 'angle'`, like `src/catalog.tsx:80`.
 - Schema: `.describe()` before `.default()`, otherwise the description disappears in the Studio. Colors (`zColor()`) take no `.describe()`: their description holds the color picker marker.
 - Workflows with agents: follow `~/obsidian/AI/Harness/Workflows.md`.

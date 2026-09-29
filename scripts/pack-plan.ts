@@ -9,10 +9,11 @@ import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
 import {getCompositionMetadata, hasAlpha, outputFormatSchema, type OutputFormat} from '../src/settings';
 import {NAMED_SIZES, getSize, sizeTag, sizesForKind} from '../src/sizes';
+import {assertCanGoOn, assertCanStart} from './disk';
 import {expandSize} from './render-args';
 
-/** Pack builds refuse to start (and to go on) below this much free disk: renders fill it fast. */
-export const MIN_FREE_BYTES = 2 * 1024 ** 3;
+/** How to get out of a pack refused for disk: the build resumes where it stopped. */
+const PACK_RESUME = 'Free space (node_modules/.cache/webpack regenerates) and run the same command again; finished files will be skipped.';
 
 /**
  * Names become folder and file names, so they stay ASCII and shell-safe: lowercase words joined by
@@ -316,15 +317,6 @@ export const filterPlan = (plan: readonly PlannedFile[], only: string | undefine
   return kept;
 };
 
-const gigabytes = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1)} GB`;
-
-/** Refuses to render when the disk is nearly full: a crashed render run once took this Mac down. */
-export const assertFreeSpace = (freeBytes: number, where: string) => {
-  if (freeBytes < MIN_FREE_BYTES) {
-    throw new Error(`Not enough free space in ${where}: ${gigabytes(freeBytes)} free, and the pack needs at least ${gigabytes(MIN_FREE_BYTES)}. Free up space and run again; finished files will be skipped.`);
-  }
-};
-
 /**
  * One line per file for --dry-run: path, file (canvas) dimensions, timing and, for sized kinds,
  * the speeds the file actually shows (rounded to whole periods per cycle, so they vary by size).
@@ -494,7 +486,7 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
   // Partial renders of an interrupted run are never valid output: gone before anything else, freeing their space.
   const swept = await effects.sweepScratch();
   if (swept.length > 0) effects.log(scratchText(swept.length, 'removed'));
-  assertFreeSpace(await effects.freeBytes(), diskLabel);
+  assertCanStart({free: await effects.freeBytes(), where: diskLabel, then: PACK_RESUME});
   let rendered = 0;
   let skipped = 0;
   for (const [index, file] of plan.entries()) {
@@ -515,7 +507,7 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
       skipped += 1;
     } else {
       // Checked again per file: one pack can take many gigabytes.
-      assertFreeSpace(await effects.freeBytes(), diskLabel);
+      assertCanGoOn({free: await effects.freeBytes(), where: diskLabel, then: PACK_RESUME});
       effects.log(changed
         ? `${counter} ${file.output}: Warning: its props changed since it was rendered; rendering it again.`
         : `${counter} ${file.output}`);

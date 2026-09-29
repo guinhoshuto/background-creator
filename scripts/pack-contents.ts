@@ -5,7 +5,8 @@ import path from 'node:path';
 import {crc32} from 'node:zlib';
 import {outputFormatSchema, type OutputFormat} from '../src/settings';
 import {SCRATCH_PREFIX} from './export';
-import {BUYER_PATH, MIN_FREE_BYTES, packPropsHash, type PlannedFile} from './pack-plan';
+import {START_MIN_FREE_BYTES, gibibytes} from './disk';
+import {BUYER_PATH, packPropsHash, type PlannedFile} from './pack-plan';
 
 /*
  * The buyer zip of a finished pack (npm run zip:pack). The list of files comes from the whole plan,
@@ -405,7 +406,6 @@ const sha256Of = async (file: string) => {
 };
 
 const mebibytes = (bytes: number) => `${(bytes / 1024 ** 2).toFixed(1)} MiB`;
-const gigabytes = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 
 export type ZipPackEffects = {
   /** Free bytes on the disk that holds the deliveries folder. */
@@ -458,7 +458,7 @@ export const zipPack = async ({pack, plan, packDirectory, deliveriesDirectory, p
 
   const free = await effects.freeBytes();
   if (free < layout.totalBytes + ZIP_DISK_MARGIN) {
-    fail([`Not enough free space for ${label}: ${gigabytes(free)} free, and the zip needs ${gigabytes(layout.totalBytes + ZIP_DISK_MARGIN)} (its size plus 1 GB). Free up space and run again.`]);
+    fail([`Not enough free space for ${label}: ${gibibytes(free)} free, and the zip needs ${gibibytes(layout.totalBytes + ZIP_DISK_MARGIN)} (its size plus 1 GiB). Free up space and run again.`]);
   }
 
   // Third pass: write to a partial file, flush it, then rename it over the old zip in one step.
@@ -494,6 +494,6 @@ export const zipPack = async ({pack, plan, packDirectory, deliveriesDirectory, p
   await rename(partial, zip);
   effects.log(`Zip: ${label}, ${summary}`);
   const after = await effects.freeBytes();
-  if (after < MIN_FREE_BYTES) effects.log(`Warning: ${gigabytes(after)} free after the zip; renders need at least ${gigabytes(MIN_FREE_BYTES)}.`);
+  if (after < START_MIN_FREE_BYTES) effects.log(`Warning: ${gibibytes(after)} free after the zip; a render needs at least ${gibibytes(START_MIN_FREE_BYTES)} to start.`);
   return {code: 0, sha256, zip};
 };
