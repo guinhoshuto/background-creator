@@ -5,6 +5,7 @@ import {parseArgs} from 'node:util';
 import {freeBytes as diskFreeBytes, existingAncestor} from './disk';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
 import {dryRunText, filterPlan, manifestFile, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
+import {withRenderSlot} from './render-slot';
 
 const PACK_HELP_TEXT = `usage: npm run render:pack -- <name|file.json> [options]
 
@@ -68,7 +69,8 @@ const main = async () => {
   const statTarget = () => existingAncestor(packDirectory);
   // One bundle for the whole pack; exportAsset reuses its serveUrl for every file.
   let serveUrl: string | undefined;
-  await runPack({
+  // One slot for the whole pack, taken after --dry-run and --help have returned.
+  await withRenderSlot(() => runPack({
     manifest, plan, fullPlan, overwrite: values.overwrite, deps: realPackDeps,
     diskLabel: path.relative(process.cwd(), statTarget()) || '.',
     effects: {
@@ -101,7 +103,7 @@ const main = async () => {
       sweepScratch: () => removeScratchDirectories(scratchRoots),
       log: (message) => console.log(message),
     },
-  });
+  }));
 };
 
 main().catch((error: unknown) => {

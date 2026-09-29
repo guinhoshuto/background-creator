@@ -1,6 +1,6 @@
 // The render half of `npm run stills` and `npm run qa:kit`: ONE bundle and ONE browser for every
-// still, under a machine-wide lock, after checking free disk and other renders (this Mac has 8 GB
-// of RAM). The job format and every image operation live in stills-job.ts.
+// still, holding the machine-wide render slot (render-slot.ts), after checking free disk and other
+// renders (this Mac has 8 GB of RAM). The job format and every image operation live in stills-job.ts.
 import {bundle} from '@remotion/bundler';
 import {openBrowser, renderFrames, renderStill, selectComposition} from '@remotion/renderer';
 import {execFileSync} from 'node:child_process';
@@ -12,6 +12,7 @@ import {kindPolicies} from '../src/kinds';
 import {FREE_SPACE_HINT, RUN_MIN_FREE_BYTES, START_MIN_FREE_BYTES, assertCanStart, freeBytes, gibibytes} from './disk';
 import {projectRoot} from './export';
 import {expandSize} from './render-args';
+import {acquireRenderSlot, currentCommand} from './render-slot';
 import {
   alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, resolveOutDir,
   seamVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
@@ -20,10 +21,13 @@ import {
 type Browser = Awaited<ReturnType<typeof openBrowser>>;
 type Prepared = {spec: StillSpec; props: Record<string, unknown>; canvas: {width: number; height: number}; bleed: number; gl: 'angle' | null};
 
-const LOCK_DIR = path.join(projectRoot, '.cache', 'locks', 'render');
 const WAIT_LIMIT_MS = 30 * 60 * 1000;
-/** Other heavy renders on this machine: headless Chrome (Remotion, SE Widget Studio, thumbnails) and pack/validation runs. */
-const BUSY_PATTERN = 'Chrome.*--headless|remotion render|scripts/pack\\.ts|validate-exports|dist/cli/index\\.js';
+/**
+ * Heavy renders that do not take the render slot: headless Chrome (SE Widget Studio, thumbnails, an
+ * older checkout) and the Remotion CLI. render:pack and validate:exports are left out: they take the
+ * slot, and one waiting for it must not keep this run waiting in turn.
+ */
+const BUSY_PATTERN = 'Chrome.*--headless|remotion render|dist/cli/index\\.js';
 
 const readPng = (file: string): Rgba => PNG.sync.read(readFileSync(file));
 const writePng = (file: string, png: PNG) => { mkdirSync(path.dirname(file), {recursive: true}); writeFileSync(file, PNG.sync.write(png)); };
@@ -86,28 +90,7 @@ const waitForIdleMachine = async (wait: boolean) => {
   }
 };
 
-const alive = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
-const acquireLock = async () => {
-  mkdirSync(path.dirname(LOCK_DIR), {recursive: true});
-  const started = Date.now();
-  let warned = false;
-  for (;;) {
-    try {
-      mkdirSync(LOCK_DIR);
-      writeFileSync(path.join(LOCK_DIR, 'pid'), String(process.pid));
-      return;
-    } catch {
-      let pid = 0;
-      try { pid = Number(readFileSync(path.join(LOCK_DIR, 'pid'), 'utf8').trim() || 0); } catch { /* the writer is racing us */ }
-      if (pid && !alive(pid)) { rmSync(LOCK_DIR, {recursive: true, force: true}); continue; }
-      if (!warned) { console.log(`Waiting for the stills lock (held by pid ${pid || '?'}).`); warned = true; }
-      if (Date.now() - started > WAIT_LIMIT_MS) throw new Error(`Gave up after 30 minutes waiting for the stills lock (${path.relative(projectRoot, LOCK_DIR)}).`);
-      await sleep(2000);
-    }
-  }
-};
-
-/** Cleanup that must also run on Ctrl-C: bundles, the baseline worktree and the lock. */
+/** Cleanup that must also run on Ctrl-C: bundles, the baseline worktree and the render slot. */
 const cleanups: (() => void)[] = [];
 const runCleanups = () => { while (cleanups.length > 0) { try { cleanups.pop()!(); } catch { /* keep cleaning */ } } };
 const onSignal = () => { runCleanups(); process.exit(130); };
@@ -156,9 +139,10 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
   const onBrowserLog = (log: {type: string; text: string}) => { if (log.type === 'error' || log.type === 'warning') logs.add(log.text.slice(0, 300)); };
   let browser: Browser | undefined;
   try {
+    const slot = await acquireRenderSlot({command: currentCommand(), wait});
+    cleanups.push(() => slot.release());
+    // The slot covers renders from this repo; pgrep still catches the ones that do not take it.
     await waitForIdleMachine(wait);
-    await acquireLock();
-    cleanups.push(() => rmSync(LOCK_DIR, {recursive: true, force: true}));
     mkdirSync(outDir, {recursive: true});
 
     let t = Date.now();
@@ -290,7 +274,7 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
     process.off('SIGTERM', onSignal);
   }
 
-  // CPU only from here: the browser is closed and the lock released.
+  // CPU only from here: the browser is closed and the render slot released.
   const load = (ref: string) => readPng(path.join(outDir, `${ref}.png`));
   if (job.diffs?.length) report.diffs = job.diffs.map(([a, b]) => ({a, b, ...diffImages(load(a), load(b))}));
   for (const sheet of job.sheets ?? []) writePng(path.join(outDir, sheet.out), contactSheet(sheet.names.map(load), sheet));

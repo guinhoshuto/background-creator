@@ -1,0 +1,126 @@
+import assert from 'node:assert/strict';
+import {spawn, spawnSync} from 'node:child_process';
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {test} from 'node:test';
+import {fileURLToPath} from 'node:url';
+import {HELD_ENV, acquireRenderSlot, releaseRenderSlot} from '../scripts/render-slot';
+
+// Every test uses its own temporary slot (RENDER_SLOT_DIR / `dir`), never ~/.cache/render-slot.
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const holderScript = path.join(root, 'tests', 'helpers', 'render-slot-holder.ts');
+
+const tempSlot = (t: {after: (fn: () => void) => void}) => {
+  const base = mkdtempSync(path.join(os.tmpdir(), 'render-slot-test-'));
+  t.after(() => rmSync(base, {recursive: true, force: true}));
+  return path.join(base, 'render-slot');
+};
+
+const ownerPid = (dir: string) => (JSON.parse(readFileSync(path.join(dir, 'owner.json'), 'utf8')) as {pid: number}).pid;
+
+const writeOwner = (dir: string, pid: number) => {
+  mkdirSync(dir, {recursive: true});
+  writeFileSync(path.join(dir, 'owner.json'), JSON.stringify({pid, repo: 'other-repo', command: 'npm run render', startedAt: '2026-09-28T12:00:00.000Z'}));
+};
+
+/** Starts tests/helpers/render-slot-holder.ts with its own slot directory. */
+const startHolder = (dir: string, args: string[], heldBy = '') => {
+  const child = spawn(process.execPath, ['--import', 'tsx', holderScript, ...args], {
+    cwd: root, stdio: ['ignore', 'pipe', 'pipe'],
+    env: {...process.env, RENDER_SLOT_DIR: dir, [HELD_ENV]: heldBy},
+  });
+  let output = '';
+  let errors = '';
+  child.stdout.on('data', (chunk: Buffer) => { output += chunk.toString(); });
+  child.stderr.on('data', (chunk: Buffer) => { errors += chunk.toString(); });
+  const exited = new Promise<{code: number | null; signal: NodeJS.Signals | null}>((resolve) => {
+    child.on('exit', (code, signal) => resolve({code, signal}));
+  });
+  const waitFor = (text: string) => new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`holder never printed "${text}": ${output}${errors}`)), 20_000);
+    const check = () => { if (output.includes(text)) { clearTimeout(timer); resolve(); } };
+    child.stdout.on('data', check);
+    void exited.then(() => { check(); clearTimeout(timer); reject(new Error(`holder exited before "${text}": ${output}${errors}`)); });
+    check();
+  });
+  return {child, exited, waitFor, output: () => output, errors: () => errors};
+};
+
+test('a second run waits until the first one releases the slot', async (t) => {
+  const dir = tempSlot(t);
+  const first = startHolder(dir, ['1500']);
+  await first.waitFor('held');
+  const messages: string[] = [];
+  const started = Date.now();
+  const slot = await acquireRenderSlot({dir, command: 'second', pollMs: 50, waitLimitMs: 20_000, log: (message) => messages.push(message)});
+  const waited = Date.now() - started;
+  try {
+    // The holder keeps the slot for 1.5 s after printing "held".
+    assert.ok(waited >= 1000, `took the slot after ${waited} ms, while the first run still held it`);
+    assert.equal(ownerPid(dir), process.pid);
+    assert.equal(messages.length, 1);
+    assert.match(messages[0]!, new RegExp(`^Waiting for the render slot, held by pid ${first.child.pid} \\(background-creator: render-slot test holder\\) since `));
+  } finally {
+    slot.release();
+  }
+  assert.equal(existsSync(dir), false);
+  assert.equal((await first.exited).code, 0);
+});
+
+test('a slot whose pid is gone is taken over', (t) => {
+  const dir = tempSlot(t);
+  const gone = spawnSync(process.execPath, ['-e', '']).pid;
+  writeOwner(dir, gone);
+  return acquireRenderSlot({dir, command: 'after a crash', pollMs: 50, waitLimitMs: 2000, log: () => {}}).then((slot) => {
+    assert.equal(ownerPid(dir), process.pid);
+    slot.release();
+    assert.equal(existsSync(dir), false);
+  });
+});
+
+test('--no-wait fails at once when another process holds the slot', async (t) => {
+  const dir = tempSlot(t);
+  writeOwner(dir, process.ppid);
+  const started = Date.now();
+  await assert.rejects(
+    acquireRenderSlot({dir, command: 'no wait', wait: false, pollMs: 50, waitLimitMs: 5000, log: () => {}}),
+    new RegExp(`held by pid ${process.ppid} \\(other-repo: npm run render\\)`),
+  );
+  assert.ok(Date.now() - started < 1000, 'waited for the slot despite wait: false');
+  assert.equal(ownerPid(dir), process.ppid);
+});
+
+test('a process that does not own the slot never releases it', (t) => {
+  const dir = tempSlot(t);
+  writeOwner(dir, process.ppid);
+  assert.equal(releaseRenderSlot(dir), false);
+  assert.equal(ownerPid(dir), process.ppid);
+});
+
+test('a child of the owner runs under the parent slot instead of waiting', async (t) => {
+  const dir = tempSlot(t);
+  const slot = await acquireRenderSlot({dir, command: 'parent', pollMs: 50, waitLimitMs: 2000, log: () => {}});
+  try {
+    // The child may wait 2 s; without the handoff it gives up and exits with 1.
+    const child = startHolder(dir, ['0', '2000'], String(process.pid));
+    const {code} = await child.exited;
+    assert.equal(code, 0, child.errors());
+    assert.match(child.output(), /^inherited\n/);
+    assert.equal(ownerPid(dir), process.pid, 'the child released the parent slot');
+  } finally {
+    slot.release();
+  }
+  assert.equal(existsSync(dir), false);
+});
+
+test('SIGINT releases the slot', async (t) => {
+  const dir = tempSlot(t);
+  const holder = startHolder(dir, ['forever']);
+  await holder.waitFor('held');
+  assert.equal(ownerPid(dir), holder.child.pid);
+  holder.child.kill('SIGINT');
+  const {code} = await holder.exited;
+  assert.equal(existsSync(dir), false);
+  assert.equal(code, 130);
+});

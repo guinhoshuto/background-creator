@@ -11,6 +11,7 @@ import {canvasOf, sizeProps, sizesForKind, type NamedSize} from '../src/sizes';
 import {createBundle, exportAsset, projectRoot, resolveExport} from './export';
 import {compositedRgbError} from './image-comparison';
 import {ffmpegPath, ffprobePath, runProcess} from './process';
+import {acquireRenderSlot, currentCommand, type SlotHandle} from './render-slot';
 import {parseValidateArgs} from './validate-args';
 
 type Probe = {
@@ -54,6 +55,8 @@ const fixtureSizes = (kind: AssetKind): (NamedSize | null)[] => {
 /** Decoders that read alpha back: libvpx for VP9 alpha, ffmpeg's default ProRes decoder otherwise. */
 const decoderFor = (format: OutputFormat) => (format === 'webm' ? ['-c:v', 'libvpx-vp9'] : []);
 
+let slot: SlotHandle | undefined;
+
 const main = async () => {
   const {values, destination} = parseValidateArgs(process.argv.slice(2), projectRoot);
   const durationSeconds = Number(values.duration);
@@ -61,6 +64,8 @@ const main = async () => {
   const kinds = values.kind === undefined ? ASSET_KINDS : [getKindPolicy(values.kind).kind];
   await runProcess(ffmpegPath(), ['-version']);
   await runProcess(ffprobePath(), ['-version']);
+  // Arguments and tools are checked first: a typo never waits 30 minutes for the slot.
+  slot = await acquireRenderSlot({command: currentCommand()});
   await mkdir(destination, {recursive: true});
   const serveUrl = await createBundle();
   const report: Record<string, unknown>[] = [];
@@ -199,4 +204,6 @@ const main = async () => {
   console.log(`Validation done: ${report.length} exports. Report in ${path.relative(process.cwd(), reportPath) || reportPath}.`);
 };
 
-main().catch((error: unknown) => {console.error(error); process.exitCode = 1;});
+main()
+  .catch((error: unknown) => {console.error(error); process.exitCode = 1;})
+  .finally(() => slot?.release());
