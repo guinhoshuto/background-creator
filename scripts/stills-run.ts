@@ -15,7 +15,7 @@ import {expandSize} from './render-args';
 import {acquireRenderSlot, currentCommand} from './render-slot';
 import {busyProcesses, takeRenderTurn} from './render-turn';
 import {
-  alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, resolveOutDir,
+  alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
   seamVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
 } from './stills-job';
 
@@ -87,6 +87,8 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
   const job = parseJob(JSON.parse(readFileSync(jobFile, 'utf8')));
   const outDir = resolveOutDir(job, jobFile, projectRoot, localDate());
   const prepared = prepare(job);
+  const boxes = regionProblems(job, new Map(prepared.map((p) => [p.spec.name, p.canvas])));
+  if (boxes.length > 0) throw new Error(`Nothing rendered; fix these regions first:\n- ${boxes.join('\n- ')}`);
   const byName = new Map(prepared.map((p) => [p.spec.name, p]));
   const estimate = estimateBytes(prepared, job);
   const shown = path.relative(process.cwd(), outDir) || '.';
@@ -146,7 +148,9 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
       const started = Date.now();
       const {frame, frames} = await renderOne(serveUrl, p, p.spec.frame, output);
       const png = readPng(output);
-      stills[p.spec.name] = {frame, frames, canvas: `${png.width}×${png.height}`, ms: Date.now() - started, meanLuma: meanLuma(png), ...alphaStats(png)};
+      const regions = regionReport(png, p.spec.name, job.regions ?? []);
+      stills[p.spec.name] = {frame, frames, canvas: `${png.width}×${png.height}`, ms: Date.now() - started, meanLuma: meanLuma(png), ...alphaStats(png), regions: regions.stats};
+      for (const crop of regions.crops) writePng(path.join(outDir, crop.file), crop.png);
     }
     timings.stillsMs = Date.now() - t;
 

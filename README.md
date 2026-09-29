@@ -812,6 +812,8 @@ Nos fundos, são quatro amostras de 0,4 segundo por composição: MP4, WebM opac
 
 Um conjunto de enfeites fica em `src/overlays/shared/ornaments/sets/` e segue um contrato que esses testes cobram. `place` escolhe as posições e os tamanhos só a partir do layout e de `ornamentSize`, sem seed nem frame, com o motivo principal primeiro; uma lista vazia vira a recusa com a saída. `build` devolve, a cada frame, a mesma quantidade de elementos planos, cada um dentro do círculo da sua posição (luz incluída), com movimento em harmônicos inteiros do ciclo e luz de no máximo 0,2 sobre o texto. `render` desenha sem `filter` nem modo de mistura. Nenhum motivo passa do bleed nem entra na área de texto ou na janela.
 
+Visual verification is `npm run stills -- <job.json>` (format in `scripts/stills-job.ts`): stills, contact sheets, stream mockups, loop seams, determinism, before/after against a git ref, region stats and `report.json`, in `out/review/<date>-<job>/`. A whole pack is `npm run qa:kit -- <pack>`. Pixels are measured with `npm run stills -- inspect` (region, profile, crop, diff; `--help` lists the definitions), never with a throwaway script.
+
 Para validar uma mudança visual, reproduza pelo menos dois ciclos no Studio. Inspecione especialmente a emenda, as bordas, sombras, cores e a composição sobre fundos claros e escuros quando houver alpha. Durações e seeds diferentes devem manter o loop contínuo.
 
 ### Adicionar um asset

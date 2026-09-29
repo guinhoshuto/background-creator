@@ -4,8 +4,8 @@ import path from 'node:path';
 import {test} from 'node:test';
 import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
 import {
-  MAX_SHEET_WIDTH, buildKitJob, contactSheet, diffImages, mergeStillProps, parseJob, resolveOutDir, seamVerdict,
-  sheetGeometry, streamMockup, wrapFrame, type Rgba,
+  MAX_SHEET_WIDTH, buildKitJob, contactSheet, diffImages, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
+  seamVerdict, sheetGeometry, streamMockup, wrapFrame, type Rgba,
 } from '../scripts/stills-job';
 
 const solid = (width: number, height: number, rgba: [number, number, number, number]): Rgba => {
@@ -60,6 +60,34 @@ test('stills job: diffs, the loop seam verdict and sheets capped at 1600 px', ()
   const sheet = contactSheet([a, b, a], {cols: 2, width: 700, bg: 'dark'});
   assert.equal(sheet.width, 4 + 6 + 4); // never upscaled
   assert.equal(sheet.height, 2 + 6 + 2);
+});
+
+test('stills job: regions parse, check their refs, fit each canvas and land in the report', () => {
+  const two = [{name: 'a', id: 'X'}, {name: 'b', id: 'Y'}];
+  const job = parseJob({stills: two, regions: [
+    {name: 'content', box: {x: 1, y: 0, w: 2, h: 2}, lift: 2}, {name: 'corner', box: {x: 0, y: 0, w: 1, h: 1}, stills: ['b'], threshold: 10},
+  ]});
+  assert.equal(job.regions![0]!.threshold, 128);
+  assert.throws(() => parseJob({stills: two, regions: [{name: 'r', box: {x: 0, y: 0, w: 1, h: 1}, stills: ['z']}]}), /regions\.0 \(r\) refers to "z"/);
+  assert.throws(() => parseJob({stills: two, regions: [{name: 'r', box: {x: 0, y: 0, w: 1, h: 1}}, {name: 'r', box: {x: 0, y: 0, w: 2, h: 1}}]}), /region name "r" repeats/);
+  assert.throws(() => parseJob({stills: two, regions: [{name: 'r', box: {x: 0, y: 0, w: 1601, h: 10}, lift: 1.5}]}), /1601×10 is over 1600×900/);
+  assert.throws(() => parseJob({stills: two, regions: [{name: 'r', box: {x: 0, y: 0, w: 10, h: 901}, lift: 1.5}]}), /10×901 is over 1600×900/);
+  assert.equal(parseJob({stills: two, regions: [{name: 'r', box: {x: 0, y: 0, w: 1920, h: 1080}}]}).regions!.length, 1); // no lift, no limit
+  assert.throws(() => parseJob({stills: two, regions: [{name: 'r', box: {x: 0, y: 0, w: 0, h: 1}}]}), /Invalid stills job/);
+  assert.throws(() => parseJob({stills: two, regions: [{name: 'r', box: {x: 0, y: 0, w: 1, h: 1}, lift: 5}]}), /Invalid stills job/);
+  const fits = new Map([['a', {width: 4, height: 2}], ['b', {width: 4, height: 2}]]);
+  assert.deepEqual(regionProblems(job, fits), []);
+  assert.deepEqual(regionProblems(job, new Map([['a', {width: 2, height: 2}], ['b', {width: 2, height: 2}]])), [
+    'content: the box 1,0,2,2 leaves the 2×2 image of a', 'content: the box 1,0,2,2 leaves the 2×2 image of b',
+  ]);
+  const png = {width: 4, height: 2, data: new Uint8Array(4 * 2 * 4).fill(255)};
+  const forA = regionReport(png, 'a', job.regions!);
+  assert.deepEqual(Object.keys(forA.stats!), ['content']);
+  assert.deepEqual(forA.stats!.content, {meanLuma: 255, stdLuma: 0, p99Luma: 255, meanLstar: 100, aboveShare: 1, meanAlpha: 255, alphaNonZeroShare: 1});
+  assert.deepEqual(forA.crops.map((crop) => [crop.file, crop.png.width, crop.png.height]), [['regions/a-content.png', 2, 2]]);
+  const forB = regionReport(png, 'b', job.regions!);
+  assert.deepEqual(Object.keys(forB.stats!), ['content', 'corner']);
+  assert.equal(regionReport(png, 'a', []).stats, undefined);
 });
 
 test('stills job: a mockup places overlays by their box, bleed subtracted', () => {

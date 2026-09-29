@@ -5,6 +5,7 @@ import path from 'node:path';
 import {PNG} from 'pngjs';
 import {z} from 'zod';
 import type {PlannedFile} from './pack-plan';
+import {MAX_CROP, backdropColor, boxProblem, cropImage, regionStats, type RegionStats} from './pixel-stats';
 
 /** Sheets and mockups are for people and for agents that read images: never wider than this. */
 export const MAX_SHEET_WIDTH = 1600;
@@ -46,6 +47,14 @@ export const jobSchema = z.object({
       .describe('x/y place the overlay BOX; its bleed is subtracted automatically'),
   }).strict()).optional(),
   bench: z.array(name).optional().describe('Re-render on the CPU (swangle), 3 times each; the median is a shader cost proxy'),
+  regions: z.array(z.object({
+    name,
+    box: z.object({x: z.number().int().min(0), y: z.number().int().min(0), w: z.number().int().min(1), h: z.number().int().min(1)}).strict(),
+    stills: z.array(name).optional().describe('Default: every still'),
+    threshold: z.number().min(0).max(255).describe('aboveShare counts luma above this').default(128),
+    lift: z.number().min(1).max(4).optional().describe('Also write a crop lifted by this gamma to regions/<still>-<region>.png'),
+  }).strict()).optional()
+    .describe('Box in the still\'s pixels, bleed included; stats per still go to report.json under stills.<name>.regions.<region>; with lift, a lifted crop (over checker, no zoom) is written to regions/<still>-<region>.png'),
 }).strict();
 
 export type StillsJob = z.infer<typeof jobSchema>;
@@ -78,11 +87,40 @@ export const parseJob = (raw: unknown): StillsJob => {
     m.layers.forEach((layer) => need(`mockups.${i} (${m.out})`, layer.name));
   });
   job.bench?.forEach((ref, i) => need(`bench.${i}`, ref));
+  job.regions?.forEach((region, i) => {
+    if (job.regions!.findIndex((other) => other.name === region.name) !== i) problems.push(`regions.${i}: the region name "${region.name}" repeats`);
+    region.stills?.forEach((ref) => need(`regions.${i} (${region.name})`, ref));
+    if (region.lift !== undefined && (region.box.w > MAX_CROP.width || region.box.h > MAX_CROP.height)) {
+      problems.push(`regions.${i} (${region.name}): a lifted crop of ${region.box.w}×${region.box.h} is over ${MAX_CROP.width}×${MAX_CROP.height}; drop lift or shrink the box`);
+    }
+  });
   const outs = [...(job.sheets ?? []), ...(job.mockups ?? [])].map((entry) => entry.out);
   const repeated = outs.find((out, i) => outs.indexOf(out) !== i);
   if (repeated) problems.push(`two sheets or mockups write ${repeated}`);
   if (problems.length > 0) throw new Error(`Invalid stills job: ${problems.join('; ')}.`);
   return job;
+};
+
+type Region = NonNullable<StillsJob['regions']>[number];
+const appliesTo = (region: Region, still: string) => region.stills === undefined || region.stills.includes(still);
+
+/** Every region box that leaves the canvas of a still it applies to (canvases by still name). */
+export const regionProblems = (job: StillsJob, canvases: ReadonlyMap<string, {width: number; height: number}>) =>
+  (job.regions ?? []).flatMap((region) => job.stills.flatMap((still) => {
+    const canvas = canvases.get(still.name);
+    const problem = canvas && appliesTo(region, still.name) ? boxProblem(region.box, canvas) : null;
+    return problem ? [`${region.name}: ${problem} of ${still.name}`] : [];
+  }));
+
+/** One still's region stats for report.json, and the lifted crops to write (relative to outDir). */
+export const regionReport = (png: Rgba, still: string, regions: readonly Region[]) => {
+  const stats: Record<string, RegionStats> = {};
+  const crops: {file: string; png: PNG}[] = [];
+  for (const region of regions.filter((r) => appliesTo(r, still))) {
+    stats[region.name] = regionStats(png, region.box, region.threshold);
+    if (region.lift !== undefined) crops.push({file: `regions/${still}-${region.name}.png`, png: cropImage(png, region.box, {lift: region.lift})});
+  }
+  return {stats: Object.keys(stats).length > 0 ? stats : undefined, crops};
 };
 
 /** Where the PNGs land: the job's outDir (relative to the job file) or out/review/<date>-<job>/. */
@@ -160,13 +198,11 @@ export const seamVerdict = (seamMean: number, stepMean: number) => {
 };
 
 const hex = (value: string) => [1, 3, 5].map((i) => parseInt(value.slice(i, i + 2), 16)) as [number, number, number];
-const solidOf = (bg: string): [number, number, number] | null =>
-  (bg.startsWith('#') ? hex(bg) : bg === 'dark' ? [24, 22, 30] : bg === 'light' ? [236, 236, 240] : null);
 
 /** Box-filter downscale of one image into a cell, composed over a backdrop so alpha stays visible. */
 const drawCell = (target: PNG, img: Rgba, ox: number, oy: number, w: number, h: number, bg: string) => {
   const fx = img.width / w, fy = img.height / h;
-  const solid = solidOf(bg);
+  const solid = backdropColor(bg);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const acc = [0, 0, 0]; let count = 0;
     const y0 = Math.floor(y * fy), y1 = Math.max(y0 + 1, Math.floor((y + 1) * fy));
