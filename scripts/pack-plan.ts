@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {existsSync, readFileSync} from 'node:fs';
+import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {z} from 'zod';
@@ -465,9 +465,11 @@ export type PackRunEffects = {
  * `plan` is what this run renders (an --only slice or all of it); `fullPlan` is the pack's whole
  * plan, before --only: manifest entries it no longer has are pruned before the first save.
  */
-export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effects, diskLabel}: {
+export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effects, diskLabel, target = manifest.name}: {
   manifest: PackManifest; plan: readonly PlannedFile[]; fullPlan: readonly PlannedFile[]; overwrite: boolean;
   deps: PackDeps; effects: PackRunEffects; diskLabel: string;
+  /** How the CLI named the pack (a name or a .json path), repeated in the next step it points to. */
+  target?: string;
 }) => {
   const packRoot = path.posix.join('out', 'packs', manifest.name);
   const manifestPath = path.posix.join(packRoot, 'manifest.json');
@@ -526,6 +528,8 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
   }
   await save();
   effects.log(`Pack ${manifest.name}: ${rendered} exported, ${skipped} skipped. Manifest: ${manifestPath}`);
+  // The pack folder is a working folder: the buyer gets the zip.
+  effects.log(`Next: npm run zip:pack -- ${target}`);
   return {rendered, skipped, manifestPath};
 };
 
@@ -535,6 +539,21 @@ const PROJECT_ROOT = fileURLToPath(new URL('../', import.meta.url));
 /** The pack manifest a CLI target names: a bare name means packs/<name>.json; anything ending in .json is a path. */
 export const manifestFile = (target: string) =>
   (target.endsWith('.json') ? path.resolve(target) : path.join(PROJECT_ROOT, 'packs', `${target}.json`));
+
+/** The pack ids packs/ holds, sorted: the options a refused pack name lists. */
+export const packIds = () =>
+  readdirSync(path.join(PROJECT_ROOT, 'packs')).filter((file) => file.endsWith('.json')).map((file) => file.slice(0, -'.json'.length)).sort();
+
+/**
+ * The manifest file a CLI target names, shared by render:pack and zip:pack. An unknown pack name
+ * is refused with the ids that exist; a .json path that does not exist is refused as a file.
+ */
+export const existingManifestFile = (target: string) => {
+  const file = manifestFile(target);
+  if (existsSync(file)) return file;
+  if (target.endsWith('.json')) throw new Error(`Manifest not found: ${path.relative(process.cwd(), file) || file}.`);
+  throw new Error(`Unknown pack: ${target}. Options: ${packIds().join(', ')}.`);
+};
 
 /** The real catalog and presets/ folder behind the planner's injectable dependencies. */
 export const realPackDeps: PackDeps = {

@@ -203,6 +203,7 @@ test('Pontos: velocidade alta demais para o espaçamento é recusada, nunca exib
               const issue = result.error.issues[0]!;
               assert.deepEqual(issue.path, ['speed'], name);
               assert.match(issue.message, /seem to go backwards or flicker/, name);
+              assert.match(issue.message, /of the way to the neighboring dot/, name);
               // The way out the message offers really is accepted, and just past it is not.
               const limit = /below (\d+) px\/s/.exec(issue.message);
               if (limit) {

@@ -1,10 +1,9 @@
-import {existsSync} from 'node:fs';
 import {access, mkdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {freeBytes as diskFreeBytes, existingAncestor} from './disk';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
-import {dryRunText, filterPlan, manifestFile, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
+import {dryRunText, existingManifestFile, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
 import {withRenderSlot} from './render-slot';
 
 const PACK_HELP_TEXT = `usage: npm run render:pack -- <name|file.json> [options]
@@ -42,8 +41,7 @@ const main = async () => {
   });
   if (values.help) {console.log(PACK_HELP_TEXT); return;}
   if (positionals.length !== 1) throw new Error('Name one pack: npm run render:pack -- <name|file.json>. Use --help.');
-  const file = manifestFile(positionals[0]!);
-  if (!existsSync(file)) throw new Error(`Manifest not found: ${path.relative(process.cwd(), file) || file}.`);
+  const file = existingManifestFile(positionals[0]!);
   const manifest = parsePackManifest(JSON.parse(await readFile(file, 'utf8')));
   // The whole plan, before --only: the manifest keeps only the entries it has.
   const fullPlan = planPack(manifest, realPackDeps);
@@ -71,7 +69,7 @@ const main = async () => {
   let serveUrl: string | undefined;
   // One slot for the whole pack, taken after --dry-run and --help have returned.
   await withRenderSlot(() => runPack({
-    manifest, plan, fullPlan, overwrite: values.overwrite, deps: realPackDeps,
+    manifest, plan, fullPlan, overwrite: values.overwrite, deps: realPackDeps, target: positionals[0]!,
     diskLabel: path.relative(process.cwd(), statTarget()) || '.',
     effects: {
       exists: (relative) => exists(fromRoot(relative)),

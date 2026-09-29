@@ -1,11 +1,10 @@
-import {existsSync} from 'node:fs';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {freeBytes as diskFreeBytes} from './disk';
 import {projectRoot} from './export';
 import {PackContentsError, zipFileName, zipPack} from './pack-contents';
-import {manifestFile, parsePackManifest, planPack, realPackDeps} from './pack-plan';
+import {existingManifestFile, parsePackManifest, planPack, realPackDeps} from './pack-plan';
 
 const ZIP_HELP_TEXT = `usage: npm run zip:pack -- <name|file.json> [--check]
 
@@ -29,8 +28,7 @@ const main = async () => {
   });
   if (values.help) {console.log(ZIP_HELP_TEXT); return;}
   if (positionals.length !== 1) throw new Error('Name one pack: npm run zip:pack -- <name|file.json>. Use --help.');
-  const file = manifestFile(positionals[0]!);
-  if (!existsSync(file)) throw new Error(`Manifest not found: ${path.relative(process.cwd(), file) || file}.`);
+  const file = existingManifestFile(positionals[0]!);
   const manifest = parsePackManifest(JSON.parse(await readFile(file, 'utf8')));
   // The whole plan, the same pure path as --dry-run: the zip lists what the pack plans, not what the folder holds.
   const plan = planPack(manifest, realPackDeps);

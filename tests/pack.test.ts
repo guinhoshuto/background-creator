@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
 import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {resolveExport} from '../scripts/export';
 import {
-  dryRunText, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
+  dryRunText, existingManifestFile, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
   realPackDeps, runPack, scratchText, type PackAsset, type PackDeps, type PackManifest, type PlannedFile, type PackRunEffects,
 } from '../scripts/pack-plan';
 import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
@@ -773,4 +774,45 @@ test('every real pack plans only buyer-rule names', () => {
   }
   assert.equal(longest, 'halloween-haunted-interior-fullscreen-vertical-plain.webm');
   assert.equal(longest.length, 57);
+});
+
+// A refusal points the way out: an unknown pack name lists the packs that exist (plan rule 4.1.10).
+test('pack: an unknown pack name is refused with the pack ids that exist, in order', () => {
+  assert.throws(() => existingManifestFile('halloween-noite'), (error: Error) => {
+    const match = /^Unknown pack: halloween-noite\. Options: (.+)\.$/.exec(error.message);
+    assert.ok(match, error.message);
+    const options = match[1]!.split(', ');
+    for (const id of ['neon', 'halloween-midnight']) assert.ok(options.includes(id), `${id} missing from ${match[1]}`);
+    assert.deepEqual(options, [...options].sort(), 'options are sorted');
+    assert.ok(options.every((id) => !id.endsWith('.json') && id !== ''), match[1]);
+    return true;
+  });
+  assert.ok(existingManifestFile('neon').endsWith(path.join('packs', 'neon.json')));
+  // A .json path is a file, not a pack id: it keeps the file message.
+  assert.throws(() => existingManifestFile('nope/missing-pack.json'), /^Error: Manifest not found: .*missing-pack\.json\.$/);
+});
+
+test('pack: the run ends pointing at the zip, with the pack as the CLI named it', async () => {
+  const plan = samplePlan();
+  const run = fakeRun();
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  assert.equal(run.logs.at(-1), 'Next: npm run zip:pack -- test');
+  const named = fakeRun();
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: named.effects, diskLabel: 'out', target: 'packs/test.json'});
+  assert.equal(named.logs.at(-1), 'Next: npm run zip:pack -- packs/test.json');
+});
+
+const cli = (script: string, ...args: string[]) =>
+  spawnSync(process.execPath, ['--import', 'tsx', path.join(root, 'scripts', script), ...args], {cwd: root, encoding: 'utf8'});
+
+test('pack: both CLIs refuse an unknown pack with the options, and --dry-run points at nothing', () => {
+  for (const script of ['pack.ts', 'zip-pack.ts']) {
+    const refused = cli(script, 'halloween-noite');
+    assert.equal(refused.status, 1, `${script}: ${refused.stderr}`);
+    assert.match(refused.stderr, /Unknown pack: halloween-noite\. Options: .*\bneon\b/, script);
+  }
+  const dry = cli('pack.ts', 'neon', '--dry-run');
+  assert.equal(dry.status, 0, dry.stderr);
+  assert.match(dry.stdout, /^Pack: neon$/m);
+  assert.doesNotMatch(dry.stdout + dry.stderr, /Next:/);
 });

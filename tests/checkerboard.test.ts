@@ -329,6 +329,7 @@ test('Xadrez: velocidade alta demais para o tamanho da casa é recusada, nunca e
             const issue = result.error.issues[0]!;
             assert.deepEqual(issue.path, ['speed'], name);
             assert.match(issue.message, /seem to go backwards or flicker/, name);
+            assert.match(issue.message, /of the way to the neighboring square of the same color/, name);
             // The share quoted is the one refused, and never reads as the limit that is accepted.
             const quoted = /move (more than 40|\d+)% of the way/.exec(issue.message)![1]!;
             const quotedShare = /Increase durationSeconds/.test(issue.message) ? 1 / durationInFrames : getFrameShare(props, durationInFrames);

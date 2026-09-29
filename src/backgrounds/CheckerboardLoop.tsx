@@ -130,8 +130,8 @@ export const checkerboardLoopSchema = checkerboardFields.superRefine((props, con
     code: 'custom',
     path: ['speed'],
     message: maxSteps >= 1
-      ? `Speed too high for this square size: each frame the board would move ${percentOf(share)} of the way to the neighbouring square of the same colour and would seem to go backwards or flicker. Use speed below ${Math.floor(((maxSteps + 0.5) * stepLength) / props.durationSeconds)} px/s or increase squareSize.`
-      : `Cycle too short for the board: even one step per cycle would make the board move ${percentOf(1 / durationInFrames)} of the way to the neighbouring square of the same colour each frame, and it would seem to go backwards or flicker. Increase durationSeconds.`,
+      ? `Speed too high for this square size: each frame the board would move ${percentOf(share)} of the way to the neighboring square of the same color and would seem to go backwards or flicker. Use speed below ${Math.floor(((maxSteps + 0.5) * stepLength) / props.durationSeconds)} px/s or increase squareSize.`
+      : `Cycle too short for the board: even one step per cycle would make the board move ${percentOf(1 / durationInFrames)} of the way to the neighboring square of the same color each frame, and it would seem to go backwards or flicker. Increase durationSeconds.`,
   });
 }, {when: (payload) => payload.issues.length === 0});
 

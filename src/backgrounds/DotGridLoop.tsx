@@ -138,8 +138,8 @@ export const dotGridLoopSchema = dotGridFields.superRefine((props, context) => {
     code: 'custom',
     path: ['speed'],
     message: maxSteps >= 1
-      ? `Speed too high for this spacing: each frame the pattern would move ${percent}% of the way to the neighbouring dot and would seem to go backwards or flicker. Use speed below ${Math.floor(((maxSteps + 0.5) * stepLength) / props.durationSeconds)} px/s or increase spacing.`
-      : `Cycle too short for this pattern: even one step per cycle would make the pattern move ${percent}% of the way to the neighbouring dot each frame, and it would seem to go backwards or flicker. Increase durationSeconds or reduce spacing.`,
+      ? `Speed too high for this spacing: each frame the pattern would move ${percent}% of the way to the neighboring dot and would seem to go backwards or flicker. Use speed below ${Math.floor(((maxSteps + 0.5) * stepLength) / props.durationSeconds)} px/s or increase spacing.`
+      : `Cycle too short for this pattern: even one step per cycle would make the pattern move ${percent}% of the way to the neighboring dot each frame, and it would seem to go backwards or flicker. Increase durationSeconds or reduce spacing.`,
   });
 }, {when: (payload) => payload.issues.length === 0});
 
