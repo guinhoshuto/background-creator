@@ -23,10 +23,15 @@ const main = async () => {
     args: process.argv.slice(2), allowPositionals: true,
     options: {
       check: {type: 'boolean', default: false},
+      'dry-run': {type: 'boolean', default: false},
       help: {type: 'boolean', short: 'h'},
     },
   });
   if (values.help) {console.log(ZIP_HELP_TEXT); return;}
+  // The size and time of a pack are known before its render, so render:pack estimates them; the zip only packs the result.
+  if (values['dry-run']) {
+    throw new Error(`zip:pack has no --dry-run. Size and render time of the pack: npm run render:pack -- ${positionals[0] ?? '<name>'} --dry-run. Every zip check, writing nothing: --check.`);
+  }
   if (positionals.length !== 1) throw new Error('Name one pack: npm run zip:pack -- <name|file.json>. Use --help.');
   const file = existingManifestFile(positionals[0]!);
   const manifest = parsePackManifest(JSON.parse(await readFile(file, 'utf8')));

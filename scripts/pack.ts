@@ -3,6 +3,7 @@ import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {freeBytes as diskFreeBytes, existingAncestor} from './disk';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
+import {estimateText} from './pack-estimate';
 import {dryRunText, existingManifestFile, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
 import {withRenderSlot} from './render-slot';
 
@@ -13,7 +14,8 @@ exporting one file at a time and writing out/packs/<name>/manifest.json.
 The pack folder is a working folder; the buyer gets the zip: npm run zip:pack -- <name>.
 
 Options:
-  --dry-run        lists every planned file with its file dimensions, without rendering
+  --dry-run        lists every planned file with its file dimensions, then the estimated size
+                   and render time per variant and for the whole plan, without rendering
   --only <text>    exports only the files whose path contains the text
   --overwrite      replaces existing files (without it, finished files are skipped)
   -h, --help       shows this help`;
@@ -58,6 +60,7 @@ const main = async () => {
     for (const entry of plan) if (await exists(fromRoot(entry.output))) existing.add(entry.output);
     console.log(`Pack: ${manifest.name}`);
     console.log(dryRunText(plan, existing));
+    console.log(estimateText(plan, existing));
     // A dry run changes nothing: it only says what the real run will clean up.
     const leftovers = (await Promise.all(scratchRoots.map(findScratchDirectories))).flat();
     if (leftovers.length > 0) console.log(scratchText(leftovers.length, 'will-be-removed'));
