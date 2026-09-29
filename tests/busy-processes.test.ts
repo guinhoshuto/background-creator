@@ -1,0 +1,105 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {otherRenders, parseProcessList} from '../scripts/render-turn';
+
+const SELF = 4000;
+
+/** A fake `ps -Ao pid=,ppid=,command=` listing, padded the way ps pads it. */
+const ps = (rows: Array<[number, number, string]>) => rows.map(([pid, ppid, command]) => `${String(pid).padStart(5)} ${String(ppid).padStart(5)} ${command}`).join('\n') + '\n';
+
+// This run: the agent's shell chains the machine check before stills, under /usr/bin/time (which
+// stays the parent of what it runs) and caffeinate (which runs it in its own pid, watching from a
+// child); stills then starts a headless Chrome and its helper.
+const CHECK = 'pgrep -fl \'Chrome.*--headless|remotion render|dist/cli/index.js\' && npm run stills -- job.json';
+const OWN: Array<[number, number, string]> = [
+  [1, 0, '/sbin/launchd'],
+  [3000, 1, '/Users/me/.local/bin/claude'],
+  [3100, 3000, `/usr/bin/time -l caffeinate -i zsh -c ${CHECK}`],
+  [3200, 3100, `zsh -c ${CHECK}`],
+  [3250, 3200, `caffeinate -i zsh -c ${CHECK}`],
+  [3300, 3200, 'npm run stills -- job.json'],
+  [3400, 3300, 'node /repo/node_modules/tsx/dist/cli.mjs scripts/stills.ts job.json'],
+  [SELF, 3400, 'node --require /repo/node_modules/tsx/dist/preflight.cjs scripts/stills.ts job.json'],
+  [4100, SELF, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new --remote-debugging-pipe'],
+  [4200, 4100, '/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --type=renderer --headless'],
+];
+
+// Another session: its shell mentions the render, its child is the render, and a Chrome it drives.
+const OTHER: Array<[number, number, string]> = [
+  [5000, 1, '/bin/zsh -c cd ~/dev/thumbs && npx remotion render Thumb out/thumb.mp4'],
+  [5100, 5000, 'node /Users/me/dev/thumbs/node_modules/.bin/remotion render Thumb out/thumb.mp4'],
+  [5200, 1, '/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --headless=new --remote-debugging-pipe'],
+];
+
+test('this run\'s own tree is never busy: time, shell and npm above it, caffeinate beside it, its Chrome below it', () => {
+  assert.deepEqual(otherRenders(parseProcessList(ps(OWN)), SELF), []);
+});
+
+test('an ancestor that is not a shell but whose command line carries the pattern is not busy', () => {
+  // time is no wrapper: only the ancestor walk keeps it out.
+  const list = parseProcessList(ps(OWN));
+  assert.deepEqual(otherRenders(list, SELF).filter((line) => line.startsWith('3100 ')), []);
+  // Seen from an unrelated pid, the same process is a render.
+  assert.equal(otherRenders(list, 9999).filter((line) => line.startsWith('3100 ')).length, 1);
+});
+
+test('a headless Chrome this run started, and its helper, are not busy; the same Chrome from another run is', () => {
+  const list = parseProcessList(ps(OWN));
+  assert.deepEqual(otherRenders(list, SELF), []);
+  assert.deepEqual(otherRenders(list, 3000 + 7).map((line) => line.split(' ')[0]), ['3100', '4100', '4200']);
+});
+
+test('another session: its shell is not busy, its remotion render and its headless Chrome are', () => {
+  assert.deepEqual(otherRenders(parseProcessList(ps([...OWN, ...OTHER])), SELF), [
+    '5100 node /Users/me/dev/thumbs/node_modules/.bin/remotion render Thumb out/thumb.mp4',
+    '5200 /Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --headless=new --remote-debugging-pipe',
+  ]);
+});
+
+test('shells and searches that only mention the pattern are wrappers, whatever the path or a login dash', () => {
+  const wrappers: Array<[number, number, string]> = [
+    [6000, 1, '/usr/bin/pgrep -fl Chrome.*--headless|remotion render|dist/cli/index.js'],
+    [6100, 1, 'pkill -f remotion render'],
+    [6200, 1, 'grep -E Chrome.*--headless log.txt'],
+    [6300, 1, 'egrep remotion render notes.md'],
+    [6400, 1, '/opt/homebrew/bin/rg dist/cli/index.js'],
+    [6500, 1, '-zsh -c until ! pgrep -f \'Chrome.*--headless\'; do sleep 10; done'],
+    [6600, 1, '/bin/bash -c sleep 1; npx remotion render A'],
+    [6700, 1, 'sh -c remotion render A'],
+    [6750, 6700, 'caffeinate -i sh -c remotion render A'],
+  ];
+  assert.deepEqual(otherRenders(parseProcessList(ps(wrappers)), SELF), []);
+  // A program whose name only starts like a shell is no wrapper.
+  assert.deepEqual(otherRenders(parseProcessList(ps([[6800, 1, '/usr/local/bin/zshrender remotion render A']])), SELF), ['6800 /usr/local/bin/zshrender remotion render A']);
+});
+
+test('a ppid cycle, above or below this run, ends and keeps the rest right', () => {
+  const list = parseProcessList(ps([
+    [7000, 7100, 'node remotion render cycle-above-a'],
+    [7100, 7000, 'node remotion render cycle-above-b'],
+    [SELF, 7000, 'node scripts/stills.ts'],
+    [7200, SELF, 'node remotion render child'],
+    [7300, 7200, 'node remotion render grandchild'],
+    [7200, 7300, 'node remotion render duplicate row closing a loop'],
+    [7400, 7400, 'node remotion render its own parent'],
+  ]));
+  assert.deepEqual(otherRenders(list, SELF), ['7400 node remotion render its own parent']);
+});
+
+test('parseProcessList reads padded ps rows and skips what is not one', () => {
+  assert.deepEqual(parseProcessList([
+    '  PID  PPID COMMAND',
+    '    1     0 /sbin/launchd',
+    '  812   811 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless  --flag',
+    '',
+    '  900   812',
+    '  901   812   ',
+    'abc 1 x',
+    '77 12 -zsh',
+  ].join('\n') + '\n'), [
+    {pid: 1, ppid: 0, command: '/sbin/launchd'},
+    {pid: 812, ppid: 811, command: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless  --flag'},
+    {pid: 77, ppid: 12, command: '-zsh'},
+  ]);
+  assert.deepEqual(parseProcessList(''), []);
+});

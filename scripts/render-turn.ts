@@ -1,13 +1,14 @@
-// Waiting for this machine's turn to render: no other heavy render running (pgrep) AND the
+// Waiting for this machine's turn to render: no other heavy render running (the process list) AND the
 // machine-wide render slot (render-slot.ts) in hand. Kept free of the bundler and the renderer, so the
 // tests import it as is.
 //
-// The order matters. pgrep is waited for holding nothing: a render that does not take the slot yet
-// (Chrome, the se-dev-kit CLI) may itself be waiting for the slot, and holding it while waiting on
-// pgrep would deadlock. But waiting for the slot can take minutes, and a render that does not take
-// the slot may start meanwhile, so pgrep is checked again, without waiting, once the slot is held.
-// Busy then: release the slot, wait for pgrep again and retry, all within one total time limit.
+// The order matters. The process check is waited for holding nothing: a render that does not take the
+// slot yet (Chrome, the se-dev-kit CLI) may itself be waiting for the slot, and holding it while
+// waiting on the check would deadlock. But waiting for the slot can take minutes, and a render that
+// does not take the slot may start meanwhile, so the check runs again, without waiting, once the slot
+// is held. Busy then: release the slot, wait again and retry, all within one total time limit.
 import {execFileSync} from 'node:child_process';
+import {basename} from 'node:path';
 import type {SlotHandle} from './render-slot';
 
 /**
@@ -17,21 +18,67 @@ import type {SlotHandle} from './render-slot';
  */
 export const BUSY_PATTERN = 'Chrome.*--headless|remotion render|dist/cli/index\\.js';
 
-/**
- * Matching processes, this one excluded. Its ancestors (npm, sh, tsx's dist/cli.mjs) do not match the
- * pattern, and it has no children yet when this runs: the bundle and the browser start after the turn.
- */
-export const busyProcesses = (): string[] => {
-  try {
-    return execFileSync('pgrep', ['-fl', BUSY_PATTERN], {encoding: 'utf8'}).trim().split('\n')
-      .filter((line) => line && !line.startsWith(`${process.pid} `));
-  } catch {
-    return []; // pgrep exits 1 when nothing matches
+export type ProcessInfo = {pid: number; ppid: number; command: string};
+
+/** `ps -o pid=,ppid=,command=` output as a list; a line without a pid, a ppid and a command is skipped. */
+export const parseProcessList = (text: string): ProcessInfo[] => text.split('\n').flatMap((line) => {
+  const match = /^\s*(\d+)\s+(\d+)\s+(\S.*)$/.exec(line);
+  return match ? [{pid: Number(match[1]), ppid: Number(match[2]), command: match[3]}] : [];
+});
+
+// A shell or a search tool whose command line only mentions the pattern (the machine check's own
+// `pgrep -fl 'Chrome.*headless|remotion|...'`, the shell that chains it before `npm run stills`, a
+// watch loop) renders nothing: the work a shell starts shows up as a process of its own. So does
+// caffeinate, which on macOS runs the command in its own pid and keeps a child with the same command
+// line: a sibling of this run, not an ancestor.
+const WRAPPER = /^-?(sh|bash|zsh|dash|ksh|fish|pgrep|pkill|grep|egrep|rg|caffeinate)$/;
+const executable = (command: string) => basename(command.trimStart().split(/\s+/, 1)[0] ?? '');
+
+/** `selfPid`, the processes above it (below launchd) and everything it started. Safe against ppid cycles. */
+const familyOf = (processes: readonly ProcessInfo[], selfPid: number) => {
+  const parents = new Map(processes.map(({pid, ppid}) => [pid, ppid]));
+  const children = new Map<number, number[]>();
+  for (const {pid, ppid} of processes) children.set(ppid, [...(children.get(ppid) ?? []), pid]);
+  const own = new Set<number>();
+  const pending = [selfPid];
+  for (let pid = pending.pop(); pid !== undefined; pid = pending.pop()) {
+    if (own.has(pid)) continue;
+    own.add(pid);
+    pending.push(...(children.get(pid) ?? []));
   }
+  const ancestors = new Set<number>();
+  for (let pid = parents.get(selfPid); pid !== undefined && pid > 1 && !ancestors.has(pid); pid = parents.get(pid)) ancestors.add(pid);
+  return new Set([...own, ...ancestors]);
+};
+
+/**
+ * The other heavy renders, as `${pid} ${command}` lines (the shape of `pgrep -fl`): processes whose
+ * full command matches BUSY_PATTERN, except this run's own family and the wrappers above. The shell
+ * that runs an agent's command is an ancestor, and its command line often contains the pattern (the
+ * machine check chained before `npm run stills`): counting it made stills wait for itself.
+ */
+export const otherRenders = (processes: readonly ProcessInfo[], selfPid: number): string[] => {
+  const busy = new RegExp(BUSY_PATTERN);
+  const own = familyOf(processes, selfPid);
+  return processes
+    .filter(({pid, command}) => !own.has(pid) && busy.test(command) && !WRAPPER.test(executable(command)))
+    .map(({pid, command}) => `${pid} ${command}`);
+};
+
+/** The other heavy renders running now, from `ps` (macOS and Linux). */
+export const busyProcesses = (): string[] => {
+  let list: string;
+  try {
+    list = execFileSync('ps', ['-Aww', '-o', 'pid=,ppid=,command='], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
+  } catch {
+    // Fails open: no list, nothing busy. The render slot still serializes the renders that take it.
+    return [];
+  }
+  return otherRenders(parseProcessList(list), process.pid);
 };
 
 export type TurnEffects = {
-  /** The other renders running right now (pgrep), never waiting. */
+  /** The other renders running right now (busyProcesses), never waiting. */
   busy: () => string[];
   /** Takes the render slot, waiting at most `waitLimitMs` (or failing at once when `wait` is false). */
   acquire: (options: {wait: boolean; waitLimitMs: number}) => Promise<SlotHandle>;
@@ -61,7 +108,7 @@ export const takeRenderTurn = async ({wait, limitMs = TOTAL_LIMIT_MS, pollMs = P
   let warnedBusy = false;
   let warnedRetry = false;
   for (;;) {
-    // pgrep first, holding nothing.
+    // The process check first, holding nothing.
     for (let busy = effects.busy(); busy.length > 0; busy = effects.busy()) {
       if (!wait) throw new Error(`Another render is running on this machine (one heavy render at a time):\n${sample(busy)}\nRun again when it ends, or drop --no-wait to wait for it.`);
       if (!warnedBusy) { log(`Waiting: another render is running on this machine (one at a time):\n${sample(busy)}`); warnedBusy = true; }
