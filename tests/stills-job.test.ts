@@ -80,14 +80,28 @@ test('stills job: regions parse, check their refs, fit each canvas and land in t
   assert.deepEqual(regionProblems(job, new Map([['a', {width: 2, height: 2}], ['b', {width: 2, height: 2}]])), [
     'content: the box 1,0,2,2 leaves the 2×2 image of a', 'content: the box 1,0,2,2 leaves the 2×2 image of b',
   ]);
-  const png = {width: 4, height: 2, data: new Uint8Array(4 * 2 * 4).fill(255)};
+  // A region restricted to one still is checked only against that still's canvas.
+  const wide = parseJob({stills: two, regions: [{name: 'wide', box: {x: 2, y: 0, w: 2, h: 2}, stills: ['b']}]});
+  assert.deepEqual(regionProblems(wide, new Map([['a', {width: 1, height: 1}], ['b', {width: 4, height: 2}]])), []);
+  // Opaque gray 64 everywhere: luma 64.
+  const png = {width: 4, height: 2, data: new Uint8Array(4 * 2 * 4).map((_, i) => (i % 4 === 3 ? 255 : 64))};
   const forA = regionReport(png, 'a', job.regions!);
   assert.deepEqual(Object.keys(forA.stats!), ['content']);
-  assert.deepEqual(forA.stats!.content, {meanLuma: 255, stdLuma: 0, p99Luma: 255, meanLstar: 100, aboveShare: 1, meanAlpha: 255, alphaNonZeroShare: 1});
+  assert.deepEqual(forA.stats!.content, {meanLuma: 64, stdLuma: 0, p99Luma: 64, meanLstar: 27.09, aboveShare: 0, meanAlpha: 255, alphaNonZeroShare: 1});
   assert.deepEqual(forA.crops.map((crop) => [crop.file, crop.png.width, crop.png.height]), [['regions/a-content.png', 2, 2]]);
+  assert.deepEqual([...forA.crops[0]!.png.data.subarray(0, 4)], [128, 128, 128, 255]); // lift 2 turns 64 into 128
   const forB = regionReport(png, 'b', job.regions!);
   assert.deepEqual(Object.keys(forB.stats!), ['content', 'corner']);
+  assert.equal(forB.stats!.corner!.aboveShare, 1); // its threshold 10, not the default 128
+  assert.deepEqual(forB.crops.map((crop) => crop.file), ['regions/b-content.png']); // corner has no lift, so no crop
   assert.equal(regionReport(png, 'a', []).stats, undefined);
+  // Two still/region pairs that name the same lifted crop are refused.
+  assert.throws(() => parseJob({stills: [{name: 'a-b', id: 'X'}, {name: 'a', id: 'Y'}], regions: [
+    {name: 'c', box: {x: 0, y: 0, w: 1, h: 1}, stills: ['a-b'], lift: 2}, {name: 'b-c', box: {x: 0, y: 0, w: 1, h: 1}, stills: ['a'], lift: 2},
+  ]}), /write regions\/a-b-c\.png/);
+  assert.equal(parseJob({stills: [{name: 'a-b', id: 'X'}, {name: 'a', id: 'Y'}], regions: [
+    {name: 'c', box: {x: 0, y: 0, w: 1, h: 1}, stills: ['a-b'], lift: 2}, {name: 'b-c', box: {x: 0, y: 0, w: 1, h: 1}, stills: ['a']},
+  ]}).regions!.length, 2); // without lift there is no crop to collide
 });
 
 test('stills job: a mockup places overlays by their box, bleed subtracted', () => {

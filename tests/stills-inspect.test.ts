@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -37,6 +37,9 @@ test('inspect: region stats of half black, half white, and a box outside refused
   assert.equal(stats.meanAlpha, 25.5);
   assert.equal(stats.alphaNonZeroShare, 0.5);
   assert.throws(() => regionStats(halves, {x: 2, y: 0, w: 3, h: 1}), /leaves the 4×2 image/);
+  // p99 by nearest rank: 200 grays of luma 0..199, rank ceil(0.99 · 200) = 198 holds 197 (the max is 199).
+  const grays = image(200, 1, (x) => [x, x, x, 255]);
+  assert.equal(regionStats(grays, {x: 0, y: 0, w: 200, h: 1}).p99Luma, 197);
 });
 
 test('inspect: contrast of white against black', () => {
@@ -65,6 +68,11 @@ test('inspect: a profile samples the segment, 128 samples at most, last point ke
   const diagonal = profile(steep, {x: 0, y: 0}, {x: 2, y: 4});
   assert.equal(diagonal.points, 5);
   assert.deepEqual(diagonal.lstar, [0, 0, 100, 0, 100]);
+  // Coordinates round (not floor): from (0,0) to (4,1) the midpoint has y = 0.5, which is pixel (2,1).
+  const flat = image(5, 2, (x, y) => (x === 2 && y === 1 ? [255, 255, 255, 255] : [0, 0, 0, 255]));
+  assert.deepEqual(profile(flat, {x: 0, y: 0}, {x: 4, y: 1}).lstar, [0, 0, 100, 0, 0]);
+  const upright = image(2, 5, (x, y) => (x === 1 && y === 2 ? [255, 255, 255, 255] : [0, 0, 0, 255]));
+  assert.deepEqual(profile(upright, {x: 0, y: 0}, {x: 1, y: 4}).lstar, [0, 0, 100, 0, 0]);
 });
 
 test('inspect: crops zoom by nearest pixel, lift, compose alpha and stay within 1600×900', () => {
@@ -131,6 +139,29 @@ test('inspect: crop and diff write where they say, relative to the current direc
     assert.deepEqual(diff, {a: 'a.png', b: 'a.png', identical: true, mean: 0, max: 0, changedShare: 0, changedBox: null, out: 'd.png'});
   } finally {
     rmSync(dir, {recursive: true, force: true});
+  }
+});
+
+test('inspect: crop and diff default to out/.scratch/inspect/, never next to the source', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'inspect-default-'));
+  const scratch = path.join(import.meta.dirname, '..', 'out', '.scratch', 'inspect');
+  const cropFile = path.join(scratch, 'inspect-test-a-1-0-2-2-z2-lift2.png');
+  const diffFile = path.join(scratch, 'diff-inspect-test-a-inspect-test-b.png');
+  try {
+    const bytes = PNG.sync.write(Object.assign(new PNG({width: 4, height: 2}), {data: Buffer.from(halves.data)}));
+    writeFileSync(path.join(dir, 'inspect-test-a.png'), bytes);
+    writeFileSync(path.join(dir, 'inspect-test-b.png'), bytes);
+    const crop = JSON.parse(inspect(['crop', 'inspect-test-a.png', '1,0,2,2', '--zoom', '2', '--lift', '2'], dir)) as {out: string};
+    assert.equal(crop.out, path.relative(dir, cropFile));
+    assert.ok(existsSync(cropFile), cropFile);
+    const diff = JSON.parse(inspect(['diff', 'inspect-test-a.png', 'inspect-test-b.png'], dir)) as {out: string};
+    assert.equal(diff.out, path.relative(dir, diffFile));
+    assert.ok(existsSync(diffFile), diffFile);
+    assert.deepEqual(readdirSync(dir).sort(), ['inspect-test-a.png', 'inspect-test-b.png']); // nothing next to the source
+  } finally {
+    rmSync(dir, {recursive: true, force: true});
+    rmSync(cropFile, {force: true});
+    rmSync(diffFile, {force: true});
   }
 });
 

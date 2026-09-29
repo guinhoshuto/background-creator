@@ -60,6 +60,10 @@ export const jobSchema = z.object({
 export type StillsJob = z.infer<typeof jobSchema>;
 export type StillSpec = z.infer<typeof stillSchema>;
 
+type Region = NonNullable<StillsJob['regions']>[number];
+const appliesTo = (region: Region, still: string) => region.stills === undefined || region.stills.includes(still);
+const regionCropFile = (still: string, region: string) => `regions/${still}-${region}.png`;
+
 const issuesText = (error: z.ZodError) =>
   error.issues.map((issue) => `${issue.path.length > 0 ? `${issue.path.join('.')}: ` : ''}${issue.message}`).join('; ');
 
@@ -97,12 +101,14 @@ export const parseJob = (raw: unknown): StillsJob => {
   const outs = [...(job.sheets ?? []), ...(job.mockups ?? [])].map((entry) => entry.out);
   const repeated = outs.find((out, i) => outs.indexOf(out) !== i);
   if (repeated) problems.push(`two sheets or mockups write ${repeated}`);
+  // Names may hold '-', so still a-b with region c and still a with region b-c name the same crop.
+  const crops = (job.regions ?? []).filter((region) => region.lift !== undefined)
+    .flatMap((region) => job.stills.filter((still) => appliesTo(region, still.name)).map((still) => regionCropFile(still.name, region.name)));
+  const clash = crops.find((file, i) => crops.indexOf(file) !== i);
+  if (clash) problems.push(`two lifted region crops write ${clash}; rename a still or a region`);
   if (problems.length > 0) throw new Error(`Invalid stills job: ${problems.join('; ')}.`);
   return job;
 };
-
-type Region = NonNullable<StillsJob['regions']>[number];
-const appliesTo = (region: Region, still: string) => region.stills === undefined || region.stills.includes(still);
 
 /** Every region box that leaves the canvas of a still it applies to (canvases by still name). */
 export const regionProblems = (job: StillsJob, canvases: ReadonlyMap<string, {width: number; height: number}>) =>
@@ -118,7 +124,7 @@ export const regionReport = (png: Rgba, still: string, regions: readonly Region[
   const crops: {file: string; png: PNG}[] = [];
   for (const region of regions.filter((r) => appliesTo(r, still))) {
     stats[region.name] = regionStats(png, region.box, region.threshold);
-    if (region.lift !== undefined) crops.push({file: `regions/${still}-${region.name}.png`, png: cropImage(png, region.box, {lift: region.lift})});
+    if (region.lift !== undefined) crops.push({file: regionCropFile(still, region.name), png: cropImage(png, region.box, {lift: region.lift})});
   }
   return {stats: Object.keys(stats).length > 0 ? stats : undefined, crops};
 };
