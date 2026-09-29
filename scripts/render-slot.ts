@@ -80,6 +80,18 @@ export const releaseRenderSlot = (dir = slotDir()) => {
 
 const noopHandle = (): SlotHandle => ({release: () => {}, inherited: true});
 
+const describeHolder = (owner: SlotOwner | null) => (owner
+  ? `held by pid ${owner.pid} (${owner.repo}: ${owner.command}) since ${owner.startedAt}`
+  : 'held by a process that is still writing its owner file');
+
+/** Who holds the slot now, as a phrase for messages ("held by pid …"); null when it is free or its owner is gone. */
+export const slotHolder = (dir = slotDir()): string | null => {
+  const owner = readOwner(dir);
+  if (owner) return alive(owner.pid) ? describeHolder(owner) : null;
+  try { statSync(dir); } catch { return null; }
+  return ageMs(dir) > UNWRITTEN_GRACE_MS ? null : describeHolder(null);
+};
+
 /**
  * Waits for the machine-wide render slot and takes it. The slot is released by `release()`, on
  * exit, and on SIGINT/SIGTERM. Nested calls in the same process and children of the owner
@@ -104,9 +116,7 @@ export const acquireRenderSlot = async (options: SlotOptions): Promise<SlotHandl
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       const owner = readOwner(dir);
       if (owner ? !alive(owner.pid) : ageMs(dir) > UNWRITTEN_GRACE_MS) { takeOverStale(dir, owner?.pid ?? null); continue; }
-      const holder = owner
-        ? `held by pid ${owner.pid} (${owner.repo}: ${owner.command}) since ${owner.startedAt}`
-        : 'held by a process that is still writing its owner file';
+      const holder = describeHolder(owner);
       if (options.wait === false) throw new Error(`Another render holds the render slot (${dir}), ${holder}. Run again when it ends.`);
       if (!warned) { log(`Waiting for the render slot, ${holder}.`); warned = true; }
       if (Date.now() - started > waitLimitMs) {

@@ -13,7 +13,7 @@ import {assertCanGoOn, assertCanStart} from './disk';
 import {expandSize} from './render-args';
 
 /** How to get out of a pack refused for disk: the build resumes where it stopped. */
-const PACK_RESUME = 'Free space (node_modules/.cache/webpack regenerates) and run the same command again; finished files will be skipped.';
+const PACK_RESUME = 'Free space (npm run clean -- --apply) and run the same command again; finished files will be skipped.';
 
 /**
  * Names become folder and file names, so they stay ASCII and shell-safe: lowercase words joined by

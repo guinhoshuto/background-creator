@@ -8,8 +8,8 @@ export const START_MIN_FREE_BYTES = 3 * 1024 ** 3;
 /** A job never leaves less than this: once its estimated output is written, and between the files of a long render. */
 export const RUN_MIN_FREE_BYTES = 2 * 1024 ** 3;
 
-/** The way out for a render refused for disk: the webpack cache is the space that comes back by itself. */
-export const FREE_SPACE_HINT = 'Free space (node_modules/.cache/webpack regenerates) and run again.';
+/** The way out for a render refused for disk: `npm run clean` lists the space that comes back by itself. */
+export const FREE_SPACE_HINT = 'Free space (npm run clean -- --apply) and run again.';
 
 /** Sizes as people read them in messages; the math is in binary units, so the label says GiB. */
 export const gibibytes = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1)} GiB`;

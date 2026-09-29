@@ -47,7 +47,7 @@ const render = (free: number) => {
 
 test('render: refuses below 3 GiB before anything renders, pointing at the way out', async () => {
   const low = render(3 * GiB - 1);
-  await assert.rejects(low.run, /a render needs at least 3\.0 GiB to start\. Free space \(node_modules\/\.cache\/webpack regenerates\) and run again\./);
+  await assert.rejects(low.run, /a render needs at least 3\.0 GiB to start\. Free space \(npm run clean -- --apply\) and run again\./);
   assert.deepEqual(low.exported, []);
   assert.deepEqual(low.asked, ['/nowhere/renders']);
   const enough = render(3 * GiB);

@@ -19,7 +19,8 @@
     "test": "tsx --test tests/*.test.ts",
     "validate:exports": "tsx scripts/validate-exports.ts",
     "stills": "tsx scripts/stills.ts",
-    "qa:kit": "tsx scripts/qa-kit.ts"
+    "qa:kit": "tsx scripts/qa-kit.ts",
+    "clean": "tsx scripts/clean.ts"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.529",

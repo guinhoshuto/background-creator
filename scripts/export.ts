@@ -10,13 +10,17 @@ import type {AssetLayout} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
 import {getCompositionMetadata, getExportPreset, hasAlpha, type OutputFormat} from '../src/settings';
 import {assetFileName, sizeTag} from '../src/sizes';
+import {pruneWebpackCache} from './clean-plan';
 import {ffmpegPath, runProcess} from './process';
 
 export const projectRoot = fileURLToPath(new URL('../', import.meta.url));
-export const createBundle = () => bundle({
-  entryPoint: path.join(projectRoot, 'src/index.ts'),
-  outDir: path.join(projectRoot, '.cache/bundle'),
-});
+export const createBundle = () => {
+  pruneWebpackCache(projectRoot);
+  return bundle({
+    entryPoint: path.join(projectRoot, 'src/index.ts'),
+    outDir: path.join(projectRoot, '.cache/bundle'),
+  });
+};
 
 /** Prefix of the per-export scratch directory; cleanup only ever removes a directory with it. */
 export const SCRATCH_PREFIX = '.asset-render-';
