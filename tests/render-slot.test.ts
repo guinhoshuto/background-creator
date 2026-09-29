@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import {spawn, spawnSync} from 'node:child_process';
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {HELD_ENV, acquireRenderSlot, releaseRenderSlot} from '../scripts/render-slot';
+import {HELD_ENV, acquireRenderSlot, clearStaleMutex, releaseMutex, releaseRenderSlot, takeMutex} from '../scripts/render-slot';
 
 // Every test uses its own temporary slot (RENDER_SLOT_DIR / `dir`), never ~/.cache/render-slot.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const holderScript = path.join(root, 'tests', 'helpers', 'render-slot-holder.ts');
+const racerScript = path.join(root, 'tests', 'helpers', 'render-slot-racer.ts');
 
 const tempSlot = (t: {after: (fn: () => void) => void}) => {
   const base = mkdtempSync(path.join(os.tmpdir(), 'render-slot-test-'));
@@ -164,4 +165,80 @@ test('SIGINT releases the slot', async (t) => {
   const {code} = await holder.exited;
   assert.equal(existsSync(dir), false);
   assert.equal(code, 130);
+});
+
+// Takeover mutex: a mutex is its directory's inode. The sightings below are what a process saw at
+// the path; 11 s is past the 10 s grace after which a mutex counts as left by a dead taker.
+const stranded = (mutex: string) => readdirSync(path.dirname(mutex)).filter((name) => name.includes('.stale-'));
+
+test('two clearers of one stale mutex: exactly one clears it, and the new mutex survives the other', (t) => {
+  const mutex = `${tempSlot(t)}.takeover`;
+  mkdirSync(mutex);
+  const seen = {ino: statSync(mutex).ino, ageMs: 11_000};
+  assert.equal(clearStaleMutex(mutex, seen), true);
+  // The loser comes before the winner has made a new mutex, then after.
+  assert.equal(clearStaleMutex(mutex, seen), false);
+  const fresh = takeMutex(mutex);
+  assert.notEqual(fresh, null);
+  assert.equal(clearStaleMutex(mutex, seen), false);
+  assert.equal(statSync(mutex).ino, fresh, 'the other clearer removed the new mutex');
+  assert.deepEqual(stranded(mutex), []);
+});
+
+test('a mutex replaced between the sighting and the clearing is not removed', (t) => {
+  const mutex = `${tempSlot(t)}.takeover`;
+  mkdirSync(mutex);
+  const seen = {ino: statSync(mutex).ino, ageMs: 11_000};
+  rmSync(mutex, {recursive: true});
+  const fresh = takeMutex(mutex);
+  assert.ok(fresh !== null && fresh !== seen.ino, 'the file system gave the new mutex the old inode');
+  assert.equal(clearStaleMutex(mutex, seen), false);
+  assert.equal(statSync(mutex).ino, fresh);
+  assert.deepEqual(stranded(mutex), []);
+});
+
+test('leaving the critical section never removes a mutex that is not this one', (t) => {
+  const mutex = `${tempSlot(t)}.takeover`;
+  const mine = takeMutex(mutex);
+  assert.notEqual(mine, null);
+  rmSync(mutex, {recursive: true});
+  const other = takeMutex(mutex);
+  assert.ok(other !== null && other !== mine);
+  assert.equal(releaseMutex(mutex, mine!), false);
+  assert.equal(statSync(mutex).ino, other, 'released the mutex of another process');
+  assert.equal(releaseMutex(mutex, other), true);
+  assert.equal(existsSync(mutex), false);
+  assert.deepEqual(stranded(mutex), []);
+});
+
+test('six racers taking over dead owner slots and stale mutexes never hold the slot together', async (t) => {
+  const dir = tempSlot(t);
+  const log = path.join(path.dirname(dir), 'log');
+  mkdirSync(log);
+  const gone = spawnSync(process.execPath, ['-e', '']).pid;
+  writeOwner(dir, gone);
+  mkdirSync(`${dir}.takeover`);
+  const old = new Date(Date.now() - 11_000);
+  utimesSync(`${dir}.takeover`, old, old);
+  const racers = Array.from({length: 6}, () => {
+    const child = spawn(process.execPath, ['--import', 'tsx', racerScript, log, '3', String(gone)], {
+      cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: {...process.env, RENDER_SLOT_DIR: dir, [HELD_ENV]: ''},
+    });
+    let output = '';
+    child.stdout.on('data', (chunk: Buffer) => { output += chunk.toString(); });
+    child.stderr.on('data', (chunk: Buffer) => { output += chunk.toString(); });
+    const ready = new Promise<void>((resolve) => { child.stdout.on('data', () => { if (output.includes('ready')) resolve(); }); });
+    const exited = new Promise<number | null>((resolve) => { child.on('exit', (code) => resolve(code)); });
+    return {ready, exited, output: () => output};
+  });
+  await Promise.all(racers.map((racer) => racer.ready));
+  writeFileSync(path.join(log, 'go'), '');
+  const codes = await Promise.all(racers.map((racer) => racer.exited));
+  assert.deepEqual(codes, [0, 0, 0, 0, 0, 0], racers.map((racer) => racer.output()).join(''));
+  const breaches = readdirSync(log).filter((name) => name.startsWith('breach-'));
+  assert.deepEqual(breaches, [], breaches.map((name) => readFileSync(path.join(log, name), 'utf8')).join(''));
+  assert.equal(readFileSync(path.join(log, 'entries'), 'utf8').trim().split('\n').length, 18);
+  // The last racer to leave either released the slot or left it to the dead pid.
+  if (existsSync(dir)) assert.equal(ownerPid(dir), gone);
+  assert.deepEqual(stranded(dir), []);
 });
