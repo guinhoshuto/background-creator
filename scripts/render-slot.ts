@@ -14,21 +14,29 @@
 // mkdir (ENOENT, EEXIST, and EINVAL on APFS when the directory is removed or replaced during the
 // create) means the directory at the path is not the one it made: it gives up and waits.
 //
-// Clearing a mutex whose mtime is older than 10 seconds (its taker died) first claims it with an
+// A mutex whose mtime is older than 10 seconds is cleared only when its taker died: while the pid in
+// its holder.json still runs (by the rule above for owner.json: a holder.json written before the last
+// boot is dead), it stays, however old, so a holder stopped for a while (a sleep of the Mac) keeps
+// its mutex. A holder.json naming the clearing process itself is an orphan it left, and a mutex
+// without a readable holder.json is judged by its age alone. Clearing first claims the mutex with an
 // atomic mkdir of <mutex>/clearing, then checks that the path still holds the inode it saw: only
 // one process claims a given directory, and a claim that landed in a newer mutex is taken back out
 // (rmdir) while that mutex stays at its path. The claimed mutex is removed as below. A claim older
-// than 10 seconds (its clearer died) is ignored, and the mutex is removed as below without one.
+// than 10 seconds (its clearer died) is ignored, and the mutex is removed as below without one. The
+// mkdir and rmdir of a claim change the mtime of the mutex, so a dead mutex can wait up to 10 more
+// seconds before it is cleared.
 //
 // Removing a mutex, whether leaving the critical section or clearing it, is never a plain rm of the
-// path: rename the path to a unique name (<slot>.takeover.stale-<pid>-<counter>), then compare the
-// inode of the moved directory with the inode seen before. The same inode: delete it. Another inode
-// (a live mutex someone made in between) is moved back when the path is still free, otherwise
-// deleted. Since a clearer claims first and checks the inode, another inode at the path only follows
-// a mutex whose holder was alive after all (stopped for more than 10 seconds, as in a sleep of the
-// Mac) or a clearer that died holding its claim. Only then, for a few syscalls, can a live mutex be
-// off its path (so two processes share the critical section), and the move back can replace a
-// mutex that was just made and is still an empty directory (whose maker then gives up, as above).
+// path: rename the path to a unique name (<slot>.takeover.stale-<pid>-<random hex>; a name taken
+// already, left by a process that died between the move and the delete, is traded for another, never
+// an error), then compare the inode of the moved directory with the inode seen before. The same
+// inode: delete it. Another inode (a live mutex someone made in between) is moved back when the path
+// is still free, otherwise deleted. Since a clearer leaves a mutex whose holder runs, claims first
+// and checks the inode, another inode at the path only follows a clearer that died holding its
+// claim. Only then, for a few syscalls, can a live mutex be off its path (so two processes share the
+// critical section), and the move back can replace a mutex that was just made and is still an empty
+// directory (whose maker then gives up, as above).
+import {randomBytes} from 'node:crypto';
 import {mkdirSync, readFileSync, renameSync, rmSync, rmdirSync, statSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -162,7 +170,15 @@ export const takeMutex = (mutex: string): number | null => {
   return markMutex(mutex);
 };
 
-let asideCount = 0;
+/**
+ * A name to move a mutex aside to. The random part never repeats across processes: a directory
+ * left by a process that died between the move and the delete does not collide with a later
+ * process that got the same pid.
+ */
+export const asideName = (mutex: string) => `${mutex}.stale-${process.pid}-${randomBytes(8).toString('hex')}`;
+const ASIDE_TRIES = 3;
+/** What rename answers when its target name is already taken by a directory or a file. */
+const NAME_TAKEN = new Set(['ENOTEMPTY', 'EEXIST', 'ENOTDIR', 'EISDIR']);
 
 /**
  * Deletes a mutex directory moved aside. A clearer whose path lookup ran before the move can still
@@ -178,16 +194,23 @@ const discardAside = (aside: string) => {
  * unique name first, and the moved directory is deleted only when its inode is `ino`. A live mutex
  * moved by mistake goes back when the path is still free. When that can happen is at the top of
  * this file. On a file system that reuses an inode at once (not APFS), a recreated mutex can match.
+ * A name already taken is replaced by another; when every try is taken, the mutex stays and the
+ * answer is false, never an error.
  */
-const removeMutexIfSame = (mutex: string, ino: number) => {
-  asideCount += 1;
-  const aside = `${mutex}.stale-${process.pid}-${asideCount}`;
-  try {
-    renameSync(mutex, aside);
-  } catch (error) {
-    if (errorCode(error) === 'ENOENT') return false;
-    throw error;
+const removeMutexIfSame = (mutex: string, ino: number, nameAside = asideName) => {
+  let aside: string | null = null;
+  for (let tries = 0; aside === null && tries < ASIDE_TRIES; tries += 1) {
+    const candidate = nameAside(mutex);
+    try {
+      renameSync(mutex, candidate);
+      aside = candidate;
+    } catch (error) {
+      const code = errorCode(error);
+      if (code === 'ENOENT') return false;
+      if (!NAME_TAKEN.has(code ?? '')) throw error;
+    }
   }
+  if (aside === null) return false;
   if (inodeOf(aside) === ino) {
     discardAside(aside);
     return true;
@@ -204,7 +227,24 @@ const removeMutexIfSame = (mutex: string, ino: number) => {
 };
 
 /** Leaves the critical section: removes the mutex only while the one at the path is still this one. */
-export const releaseMutex = (mutex: string, ino: number) => removeMutexIfSame(mutex, ino);
+export const releaseMutex = (mutex: string, ino: number, nameAside = asideName) => removeMutexIfSame(mutex, ino, nameAside);
+
+/**
+ * Whether the pid in the holder.json at the mutex path still runs, by the rule of ownerAlive: a
+ * holder.json written before the last boot is dead. False when holder.json is unreadable (age alone
+ * decides then) and when it names this process: a process clears a mutex only while it holds none,
+ * so its own holder.json there is an orphan it left (a mutex it gave up on or failed to move).
+ */
+const holderRuns = (mutex: string) => {
+  const file = path.join(mutex, HOLDER_FILE);
+  try {
+    const {pid} = JSON.parse(readFileSync(file, 'utf8')) as {pid?: unknown};
+    if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0 || pid === process.pid) return false;
+    return !(statSync(file).mtimeMs < bootTimeMs()) && alive(pid);
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Clears a mutex left by a taker that died, given what was seen at its path: nothing when the
@@ -214,6 +254,8 @@ export const releaseMutex = (mutex: string, ino: number) => removeMutexIfSame(mu
  */
 export const clearStaleMutex = (mutex: string, seen: MutexSighting) => {
   if (seen.ageMs <= UNWRITTEN_GRACE_MS) return false;
+  // Old but held by a process that still runs (stopped for a while, as in a sleep of the Mac).
+  if (holderRuns(mutex)) return false;
   const claim = path.join(mutex, CLAIM_DIR);
   try {
     mkdirSync(claim);

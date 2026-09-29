@@ -248,3 +248,63 @@ test('any error after the mutex mkdir means the mutex is not this one, never a c
   assert.equal(markMutex(mutex), null);
   assert.equal(ownMutexInode(mutex, 'any'), null);
 });
+
+test('a name left aside by a dead process with the same pid never makes leaving the mutex fail', (t) => {
+  const mutex = `${tempSlot(t)}.takeover`;
+  // What a process with this pid left when it died between the move aside and the delete, for any
+  // counter a per-process count would reach here.
+  for (let n = 1; n <= 300; n += 1) mkdirSync(path.join(`${mutex}.stale-${process.pid}-${n}`, 'holder.json'), {recursive: true});
+  const mine = takeMutex(mutex);
+  assert.notEqual(mine, null);
+  assert.equal(releaseMutex(mutex, mine!), true);
+  assert.equal(existsSync(mutex), false);
+  assert.equal(stranded(mutex).length, 300);
+});
+
+test('a name taken for the move aside is traded for another, and all of them taken is false, not an error', (t) => {
+  const mutex = `${tempSlot(t)}.takeover`;
+  const taken = `${mutex}.stale-taken`;
+  mkdirSync(path.join(taken, 'holder.json'), {recursive: true});
+  const mine = takeMutex(mutex);
+  assert.notEqual(mine, null);
+  assert.equal(releaseMutex(mutex, mine!, () => taken), false);
+  assert.equal(statSync(mutex).ino, mine, 'the mutex left its path although it was not removed');
+  let calls = 0;
+  assert.equal(releaseMutex(mutex, mine!, () => (calls++ === 0 ? taken : `${mutex}.stale-free`)), true);
+  assert.equal(existsSync(mutex), false);
+  assert.deepEqual(stranded(mutex), ['render-slot.takeover.stale-taken']);
+});
+
+/** A mutex left 11 s old (past the 10 s grace) whose holder.json names `pid`. */
+const agedMutexHeldBy = (mutex: string, pid: number) => {
+  mkdirSync(mutex);
+  writeFileSync(path.join(mutex, 'holder.json'), JSON.stringify({pid, token: 'held'}));
+  return {ino: statSync(mutex).ino, ageMs: 11_000};
+};
+
+test('an old mutex whose holder still runs is not cleared, with or without an old claim in it', (t) => {
+  const mutex = `${tempSlot(t)}.takeover`;
+  // The parent of this test process runs while the test does (a holder stopped by a sleep of the Mac).
+  const seen = agedMutexHeldBy(mutex, process.ppid);
+  assert.equal(clearStaleMutex(mutex, seen), false);
+  assert.equal(statSync(mutex).ino, seen.ino, 'cleared the mutex of a holder that still runs');
+  assert.deepEqual(readdirSync(mutex), ['holder.json'], 'left a claim in the mutex of a holder that still runs');
+  mkdirSync(path.join(mutex, 'clearing'));
+  const old = new Date(Date.now() - 11_000);
+  utimesSync(path.join(mutex, 'clearing'), old, old);
+  assert.equal(clearStaleMutex(mutex, seen), false);
+  assert.equal(statSync(mutex).ino, seen.ino, 'cleared, past an old claim, the mutex of a holder that still runs');
+  assert.deepEqual(stranded(mutex), []);
+});
+
+test('an old mutex whose holder is gone, or is this process that holds no mutex, is cleared', (t) => {
+  const base = tempSlot(t);
+  const gone = spawnSync(process.execPath, ['-e', '']).pid;
+  for (const [name, pid] of [['dead', gone], ['orphan', process.pid]] as const) {
+    const mutex = `${base}-${name}.takeover`;
+    const seen = agedMutexHeldBy(mutex, pid);
+    assert.equal(clearStaleMutex(mutex, seen), true, `kept the old mutex of the ${name} holder`);
+    assert.equal(existsSync(mutex), false);
+    assert.deepEqual(stranded(mutex), []);
+  }
+});
