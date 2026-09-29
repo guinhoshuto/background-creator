@@ -21,11 +21,19 @@ Language: everything in the repo is in English: code, docs, file names, commit m
 
 Overlays: decorative measurements are fixed px (they do not scale with the box; exceptions: the gradient period and the glass reflection width follow the area, with the same speed at every size); everything that leaves the box fits in the bleed; the border window is always transparent (except the mask `mask: true`, which is the opaque window itself for OBS); movement along the outline runs in whole turns, with its period in px. Ornaments (`ornaments`): each motif has a fixed px size (`ornamentSize`), limited by the free space of its slot (bleed, padding pockets, band), just as `radius` is limited to half the side; the limit depends on neither the frame nor the seed. `ornamentScale` enlarges all ornaments together (sizes, caps, strokes), measuring free space at the same scale; at 1 nothing changes. A secondary motif that does not fit its minimum is left out; if even the main one does not fit, the combination is refused with the way out. Ornaments never cover the text area or the window, and whatever leaves the box fits in the bleed.
 
+## Git
+
+- Commit locally on a `wip/<topic>` branch at the end of every green phase (typecheck, lint and the tests of what changed). Merge into `main` and push only with the owner's yes.
+- Workflows compare against `HEAD`, never against a snapshot in the scratchpad.
+- A session that changed code ends by showing `git status --short` and the proposed commit message.
+
 ## Agents on this machine (render and verification)
 
 - One render at a time on the machine, counting other sessions and other repos (`pgrep -fl` first). `render:pack` and `validate:exports` never run alongside another render.
 - `df -h /` before rendering; do not start with less than 3 GB free. The regenerable space is `node_modules/.cache/webpack` (up to ~5 GB; once deleted, it comes back on the next render).
 - Visual verification is `npm run stills -- <job.json>` (one bundle, one browser, many frames; format in `scripts/stills-job.ts`): stills, contact sheets, stream mockups, loop-seam checks (`seams`), determinism (`sequences`) and before/after against a git ref (`baseline: {ref: "HEAD"}`), plus `report.json`. It waits for other renders, holds a lock and refuses to leave less than 3 GB free. A whole pack: `npm run qa:kit -- <pack>`. Do not write another stills script, and never one `render:png --frame` per frame. Output defaults to `out/review/<date>-<job>/`, which the owner opens.
+- Missing a flag? Add it to the official script; never copy a script into `.cache` to change it.
+- Retire an old tool only after the new one is committed.
 - Full FFmpeg and FFprobe live in `/opt/homebrew/bin`. Do not use the ffmpeg from `@remotion/compositor-*` (no `rawvideo`) nor the wrapper in `.cache/webgl-tools/bin` (obsolete).
 - `validate:exports` samples 0.4 s with `defaultProps` per kind: run `--kind`/`--only` on what changed. It does not validate packs.
 - A custom script that renders WebGL passes `gl: 'angle'`, like `src/catalog.tsx:80`.
