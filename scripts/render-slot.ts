@@ -1,12 +1,25 @@
 // One heavy render at a time on this machine (8 GB of RAM), across repos and sessions.
 //
-// Protocol, so another repo can adopt it as is: the slot is the directory ~/.cache/render-slot
-// (RENDER_SLOT_DIR overrides it). Taking it is an atomic mkdir; inside, owner.json holds
-// {pid, repo, command, startedAt}. A slot whose pid is gone, or whose startedAt is before the last
-// boot (the pid was reused), is taken over, under the mutex <slot>.takeover (an atomic mkdir), and
-// only after checking again under it that the same dead owner still holds it. Only the owner removes
-// it. A child process started by the owner finds RENDER_SLOT_HELD=<owner pid> in its environment
-// and runs under the parent's slot instead of waiting for it.
+// One implementation for every repo. The source is ~/obsidian/AI/scripts/render-slot.ts; each repo
+// keeps a byte-identical copy (background-creator: scripts/render-slot.ts, se-dev-kit:
+// src/shared/render-slot.ts), because its build cannot reach the vault. Never edit a copy: edit the
+// source and run `python3 ~/obsidian/AI/scripts/render_slot_copias.py --write`; `--check` (and a
+// test in each repo) fails while a copy differs. Only node: imports, so it compiles under the
+// strictest tsconfig of the two repos.
+//
+// Protocol: the slot is the directory ~/.cache/render-slot (RENDER_SLOT_DIR overrides it). Taking it
+// is an atomic mkdir; inside, owner.json holds {protocol, pid, repo, command, startedAt}. A slot
+// whose pid is gone, or whose startedAt is before the last boot (the pid was reused), is taken over,
+// under the mutex <slot>.takeover (an atomic mkdir), and only after checking again under it that the
+// same dead owner still holds it. Only the owner removes it. A child process started by the owner
+// finds RENDER_SLOT_HELD=<owner pid> in its environment and runs under the parent's slot instead of
+// waiting for it.
+//
+// `protocol` is PROTOCOL below. Raise it whenever a change would let an older copy break the slot of
+// a newer one (a new file in the slot, another way to clear the mutex). An owner.json without it was
+// written by protocol 1 (the copies before 2026-09-30) and is judged as always. A slot written by a
+// newer protocol is never taken over here, even with its pid gone: this copy waits, and says to
+// update it.
 //
 // The takeover mutex is identified by the inode of its directory, never by its path. Right after
 // the mkdir its creator creates holder.json ({pid, token}) inside with an exclusive create, reads
@@ -43,7 +56,7 @@ import {mkdirSync, readFileSync, renameSync, rmSync, rmdirSync, statSync, writeF
 import os from 'node:os';
 import path from 'node:path';
 
-export type SlotOwner = {pid: number; repo: string; command: string; startedAt: string};
+export type SlotOwner = {protocol?: number; pid: number; repo: string; command: string; startedAt: string};
 export type SlotHandle = {release: () => void; inherited: boolean};
 export type SlotOptions = {
   command: string;
@@ -51,13 +64,14 @@ export type SlotOptions = {
   repo?: string;
   pollMs?: number;
   waitLimitMs?: number;
-  /** false: fail at once when another process holds the slot (`--no-wait`). */
+  /** false: fail at once with RENDER_SLOT_BUSY when another process holds the slot (`--no-wait`). */
   wait?: boolean;
   log?: (message: string) => void;
 };
 
 export const HELD_ENV = 'RENDER_SLOT_HELD';
-const REPO = 'background-creator';
+/** The protocol this copy writes and understands; see the top of this file. */
+export const PROTOCOL = 2;
 const POLL_MS = 2000;
 const WAIT_LIMIT_MS = 30 * 60 * 1000;
 /** An owner.json still missing after this long means its writer died between mkdir and write. */
@@ -70,6 +84,32 @@ const OWNER_FILE = 'owner.json';
 const STUCK_HINT = (dir: string, mutexPid: number | null = null) => (mutexPid === null
   ? `If no render is running, remove the slot by hand: rm -r ${dir}`
   : `If pid ${mutexPid} is not a render taking over this slot, remove the slot and its takeover mutex by hand: rm -r ${dir} ${dir}.takeover`);
+
+/** A render slot refusal: `code` names it (RENDER_SLOT_BUSY, RENDER_SLOT_TIMEOUT), `hint` is the way out. */
+export class RenderSlotError extends Error {
+  readonly code: string;
+  readonly detail: string;
+  readonly hint: string;
+
+  constructor(code: string, detail: string, hint: string) {
+    super(`${detail} ${hint}`);
+    this.name = 'RenderSlotError';
+    this.code = code;
+    this.detail = detail;
+    this.hint = hint;
+  }
+}
+
+/** The name of the package whose folder holds the working directory, else the folder's name. */
+export const defaultRepo = (from = process.cwd()) => {
+  for (let dir = from; ; dir = path.dirname(dir)) {
+    try {
+      const {name} = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')) as {name?: unknown};
+      if (typeof name === 'string' && name) return name;
+    } catch { /* no package.json here */ }
+    if (path.dirname(dir) === dir) return path.basename(from);
+  }
+};
 
 export const slotDir = () => process.env.RENDER_SLOT_DIR || path.join(os.homedir(), '.cache', 'render-slot');
 
@@ -110,7 +150,13 @@ const ageMs = (dir: string) => {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Whether `dir` is held by a dead owner (or by a writer that died before writing owner.json). */
-const isStale = (dir: string, owner: SlotOwner | null) => (owner ? !ownerAlive(owner) : ageMs(dir) > UNWRITTEN_GRACE_MS);
+/** Whether the owner was written by a newer protocol than this copy's, which never takes it over. */
+const newerProtocol = (owner: SlotOwner | null) => typeof owner?.protocol === 'number' && owner.protocol > PROTOCOL;
+
+const isStale = (dir: string, owner: SlotOwner | null) => {
+  if (newerProtocol(owner)) return false;
+  return owner ? !ownerAlive(owner) : ageMs(dir) > UNWRITTEN_GRACE_MS;
+};
 
 const errorCode = (error: unknown) => (error as NodeJS.ErrnoException).code;
 
@@ -317,9 +363,24 @@ export const releaseRenderSlot = (dir = slotDir()) => {
 
 const noopHandle = (): SlotHandle => ({release: () => {}, inherited: true});
 
-const describeHolder = (owner: SlotOwner | null) => (owner
-  ? `held by pid ${owner.pid} (${owner.repo}: ${owner.command}) since ${owner.startedAt}`
-  : 'held by a process that is still writing its owner file');
+export const describeSlotHolder = (owner: SlotOwner | null) => {
+  if (!owner) return 'held by a process that is still writing its owner file';
+  const held = `held by pid ${owner.pid} (${owner.repo}: ${owner.command}) since ${owner.startedAt}`;
+  return newerProtocol(owner)
+    ? `${held}, written by render-slot protocol ${owner.protocol} while this copy speaks ${PROTOCOL}: update this copy from ~/obsidian/AI/scripts/render-slot.ts`
+    : held;
+};
+
+const exists = (dir: string) => {
+  try { statSync(dir); return true; } catch { return false; }
+};
+
+/** Who holds the slot, when a live process does: undefined when it is free or stale (the next taker takes it over). */
+export const renderSlotHolder = (dir = slotDir()): {owner: SlotOwner | null} | undefined => {
+  if (!exists(dir)) return undefined;
+  const owner = readOwner(dir);
+  return isStale(dir, owner) ? undefined : {owner};
+};
 
 /**
  * Waits for the machine-wide render slot and takes it. The slot is released by `release()`, on
@@ -350,21 +411,21 @@ export const acquireRenderSlot = async (options: SlotOptions): Promise<SlotHandl
       // A dead owner's slot whose takeover waits on an old mutex of a pid that still runs.
       const blocker = stale ? blockingMutexHolder(`${dir}.takeover`) : null;
       const holder = blocker === null
-        ? describeHolder(owner)
-        : `${describeHolder(owner)}, whose takeover waits on the mutex ${dir}.takeover, held for over 10 seconds by pid ${blocker}, which still runs`;
+        ? describeSlotHolder(owner)
+        : `${describeSlotHolder(owner)}, whose takeover waits on the mutex ${dir}.takeover, held for over 10 seconds by pid ${blocker}, which still runs`;
       const hint = STUCK_HINT(dir, blocker);
-      if (options.wait === false) throw new Error(`Another render holds the render slot (${dir}), ${holder}. Run again when it ends. ${hint}`);
+      if (options.wait === false) throw new RenderSlotError('RENDER_SLOT_BUSY', `Another render holds the render slot (${dir}), ${holder}.`, `Run again when it ends. ${hint}`);
       if (!warned) { log(`Waiting for the render slot, ${holder}.`); warned = true; }
       if (blocker !== null && !warnedBlocked) { log(`The takeover of the render slot waits on pid ${blocker}. ${hint}`); warnedBlocked = true; }
       if (Date.now() - started > waitLimitMs) {
         // No promise of an automatic takeover while a mutex of a live pid blocks it.
-        const retry = blocker === null ? ' Run again when that render ends; a slot whose pid is gone is taken over automatically.' : '';
-        throw new Error(`Gave up after ${Math.round(waitLimitMs / 60_000)} minutes waiting for the render slot (${dir}), ${holder}.${retry} ${hint}`);
+        const retry = blocker === null ? 'Run again when that render ends; a slot whose pid is gone is taken over automatically. ' : '';
+        throw new RenderSlotError('RENDER_SLOT_TIMEOUT', `Gave up after ${Math.round(waitLimitMs / 60_000)} minutes waiting for the render slot (${dir}), ${holder}.`, `${retry}${hint}`);
       }
       await sleep(pollMs);
       continue;
     }
-    const owner: SlotOwner = {pid: process.pid, repo: options.repo ?? REPO, command: options.command, startedAt: new Date().toISOString()};
+    const owner: SlotOwner = {protocol: PROTOCOL, pid: process.pid, repo: options.repo ?? defaultRepo(), command: options.command, startedAt: new Date().toISOString()};
     const temporary = path.join(dir, `${OWNER_FILE}.tmp`);
     writeFileSync(temporary, `${JSON.stringify(owner, null, 2)}\n`);
     renameSync(temporary, path.join(dir, OWNER_FILE));
