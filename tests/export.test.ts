@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import path from 'node:path';
 import {EventEmitter} from 'node:events';
-import {existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {
   SCRATCH_PREFIX, assertExportable, buildSidecar, findScratchDirectories, guardScratch, motionText, publishInOrder,
@@ -256,4 +256,21 @@ test('CLI: --list agrupa por tipo com cabeçalhos em inglês', () => {
   assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders (border):']);
   assert.match(text, /^ {2}GradientLoop$/m);
   assert.match(text, /webcam-16x9: box 640×360, file 736×456; standard camera/);
+});
+
+test('a background rendered from a preset file is named after the preset, so two presets never share a file', () => {
+  const outputOf = (...args: string[]) => {
+    const file = args[args.indexOf('--props') + 1]!;
+    const props = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+    return resolveExport(buildExportOptions(parseRenderArgs(args), props)).output;
+  };
+  const aurora = outputOf('WebGLLoop', '--props', 'presets/webgl-aurora.json', '--format', 'mp4');
+  const caustics = outputOf('WebGLLoop', '--props', 'presets/webgl-caustics.json', '--format', 'mp4');
+  assert.equal(path.basename(aurora), 'WebGLLoop-webgl-aurora.mp4');
+  assert.equal(path.basename(caustics), 'WebGLLoop-webgl-caustics.mp4');
+  // --out still wins, and without a preset the name stays <Id>.<ext>.
+  assert.equal(outputOf('WebGLLoop', '--props', 'presets/webgl-aurora.json', '--format', 'mp4', '--out', '/tmp/clip.mp4'), '/tmp/clip.mp4');
+  assert.equal(path.basename(resolveExport(buildExportOptions(parseRenderArgs(['WebGLLoop', '--format', 'mp4']), {})).output), 'WebGLLoop.mp4');
+  // Sized kinds keep their size tag only: the workshop name rule of the naming plan.
+  assert.equal(path.basename(outputOf('BorderLoop', '--props', 'presets/border-neon.json', '--size', 'webcam-square', '--format', 'webm')), 'BorderLoop-webcam-square.webm');
 });

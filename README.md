@@ -117,7 +117,7 @@ Cada composição pertence a um tipo, definido em `src/kinds.ts`. O tipo decide 
 
 | Tipo | Pasta no Studio | Composições | Tamanho | `transparent` padrão |
 | --- | --- | --- | --- | --- |
-| `background` (fundos) | `backgrounds` | as 15 da primeira tabela | Fixo, 1920×1080 | `false` |
+| `background` (fundos) | `backgrounds` | as da primeira tabela | Fixo, 1920×1080 | `false` |
 | `chat` (fundos de chat) | `chat` | `ChatLoop` | Livre; começa em `chat-standard` | `true` |
 | `block` (blocos de texto) | `text-boxes` | `BlockLoop` | Livre; começa em `card` | `true` |
 | `border` (bordas e molduras) | `borders` | `BorderLoop` | Livre; começa em `webcam-16x9` | `true` |
@@ -351,7 +351,7 @@ npm run render:webm -- --list
 
 O formato do comando substitui `outputFormat` do JSON; `--duration` e `--seed` substituem os respectivos valores. A ordem de precedência é: JSON de `--props`, depois o tamanho de `--size`, depois `--width`, `--height` e `--bleed`. Sem `--out`, o destino segue o tipo:
 
-- Fundos: `out/<Composição>.<formato>`, por exemplo `out/VaporwaveLoop.webm`.
+- Fundos: `out/<Composição>.<formato>`, por exemplo `out/VaporwaveLoop.webm`; com `--props`, o nome do preset entra no fim: `out/WebGLLoop-webgl-aurora.mp4`.
 - Overlays num tamanho do catálogo: `out/<Composição>-<tamanho>.<formato>`, por exemplo `out/ChatLoop-chat-standard.webm`. Vale quando caixa, bleed, encaixe e forma coincidem exatamente com o tamanho (a mesma caixa 400×400 dá `webcam-square` ou `webcam-round`, conforme `shape`).
 - Overlays em tamanho livre: `out/<Composição>-<L>x<A>.<formato>`, com a largura e a altura da caixa, não do arquivo: `out/BlockLoop-800x120.webm`; num círculo fora do catálogo, a forma entra no nome: `out/BlockLoop-300x300-circle.webm`.
 
@@ -827,7 +827,7 @@ Para validar uma mudança visual, reproduza pelo menos dois ciclos no Studio. In
 4. Num overlay, escreva também `getLayout(props)`, pura e fonte única da geometria: `canvas`, `box`, `content`, `hole` (bordas), `header` (se houver) e `outset`, que nunca passa do bleed. Acrescente `getMotion` para a velocidade real e, se o asset tiver máscara, `getMask`.
 5. No componente, leia `useCurrentFrame()` e `useVideoConfig()`, desenhe o resultado da função e use a mesma regra de fundo das composições existentes (`hasAlpha`; nos overlays, `OverlayCanvas`).
 6. Registre a entrada em `src/catalog.tsx` (`backgroundCatalog` ou `overlayCatalog`) com `id`, `kind`, `component`, `schema`, `defaultProps: schema.parse({})` e, nos overlays, `getLayout` e `getMotion`. Em `src/Root.tsx`, adicione a `Composition` dentro do `<Folder name={kindPolicies.<tipo>.folder}>`, com `id="Nome"`, um objeto literal em `defaultProps` para permitir salvar os controles no Studio e, nos overlays, o `calculateMetadata` dos exemplos, que faz o canvas do Studio seguir `width`, `height` e `bleed`. O exporter lê os defaults efetivos da composição e aplica apenas os overrides solicitados.
-7. Acrescente presets em `presets/` (nos overlays, `presets/<tipo>-<tema>.json`, sem tamanho fixo, válidos no schema estrito em todos os tamanhos do tipo) e, se for o caso, o item no manifesto do pack; um tema novo entra também em `tests/helpers/themes.ts`: em `CLASSIC_THEMES` se não usa enfeites nem relâmpago, ou em `KIT_THEMES`, com o nome `halloween-<conjunto>`, se usa os enfeites desse conjunto; se o item do painel da Twitch no pack levar `props`, registre-as em `TWITCH_PROPS` de `tests/pack.test.ts`. A lista alimenta os testes de presets, de packs e de loop dos overlays.
+7. Acrescente presets em `presets/` (nos overlays, `presets/<tipo>-<tema>.json`, sem tamanho fixo, válidos no schema estrito em todos os tamanhos do tipo) e, se for o caso, o item no manifesto do pack; um tema novo entra também em `tests/helpers/themes.ts`: em `CLASSIC_THEMES` se não usa enfeites nem relâmpago, ou em `KIT_THEMES`, com o nome `halloween-<conjunto>`, se usa os enfeites desse conjunto; o item do painel da Twitch no pack só pode levar em `props` as chaves `transparent`, `paddingX` e `paddingY`. A lista alimenta os testes de presets, de packs e de loop dos overlays.
 8. Inclua a cena nas varreduras genéricas de `tests/backgrounds.test.ts` (determinismo por seed, periodicidade em `N`, velocidade na emenda, com `seamExempt` quando preciso, e valores válidos) e escreva os testes próprios: periodicidade em vários tamanhos e FPS, recusa no limite de velocidade, bleed respeitado, área de texto e janela. `tests/overlay-registry.test.ts` confere a ligação com o Root, os presets, o layout e os nomes. Valide a emenda no Studio e renderize uma amostra nos formatos necessários.
 
 `src/settings.ts` concentra a regra de alpha, os metadados e os presets de exportação; `src/kinds.ts` e `src/sizes.ts`, os tipos e os tamanhos. Mantenha os pacotes Remotion na mesma versão exata e preserve o lockfile para instalações reproduzíveis.

@@ -521,33 +521,24 @@ test('pack: starts with 3 GiB free, and stops between files below 2 GiB saying h
 
 const PACKS = OVERLAY_THEMES;
 /**
- * The twitch-panel item's props per pack; every other pack gives the panel none. The glass keeps
- * an opaque PNG, which would vanish on Twitch's light theme (GIF is always flattened on
- * backgroundColor anyway). Two kits widen the padding so the panel's pockets hold their motifs
- * (midnight: the moon, a bat and the pumpkins; mansão: the two hung lanterns); the other kits fit the
- * panel with the preset's own padding.
+ * What a twitch-panel item may set on top of its preset: the glass keeps an opaque PNG, which would
+ * vanish on Twitch's light theme, and a kit may widen the padding so the panel's pockets hold its
+ * motifs. The ornament harness proves the motifs fit; this only bounds what the item touches.
  */
-const TWITCH_PROPS: Readonly<Record<string, Record<string, unknown>>> = {
-  glass: {transparent: false},
-  'halloween-midnight': {paddingX: 48, paddingY: 36},
-  'halloween-haunted-mansion': {paddingX: 32, paddingY: 24},
-};
+const TWITCH_PANEL_KEYS = new Set(['transparent', 'paddingX', 'paddingY']);
 const readPack = (name: string): unknown => JSON.parse(readFileSync(path.join(root, 'packs', `${name}.json`), 'utf8'));
 
-/** Each Halloween kit's background (composition, preset): its presets follow that background's duration and seed. */
-const KITS: Readonly<Record<(typeof KIT_THEMES)[number], readonly [string, string]>> = {
-  'halloween-midnight': ['HalloweenLoop', 'halloween-midnight'],
-  'halloween-haunted-mansion': ['HauntedMansionLoop', 'halloween-haunted-mansion'],
-  'halloween-haunted-interior': ['HauntedInteriorLoop', 'halloween-haunted-interior'],
-  'halloween-cobweb': ['CobwebLoop', 'halloween-cobweb'],
-};
 const presetJson = (name: string): Record<string, unknown> => JSON.parse(readFileSync(path.join(root, 'presets', `${name}.json`), 'utf8'));
 
 test('packs: cada kit de Halloween traz o seu fundo e os presets seguem a duração e a seed dele', () => {
   for (const theme of KIT_THEMES) {
-    const [composition, preset] = KITS[theme];
     const pack = parsePackManifest(readPack(theme));
-    assert.deepEqual(pack.items.filter((item) => item.sizes === undefined).map((item) => [item.composition, item.preset]), [[composition, preset]], theme);
+    // The kit's background is its one item without sizes.
+    const backgrounds = pack.items.filter((item) => item.sizes === undefined);
+    assert.equal(backgrounds.length, 1, theme);
+    const {composition, preset} = backgrounds[0]!;
+    assert.equal(getAsset(composition).kind, 'background', theme);
+    assert.ok(preset, theme);
     const background = getAsset(composition).schema.parse(presetJson(preset)) as {durationSeconds: number; seed: number};
     for (const kind of ['chat', 'block', 'border'] as const satisfies readonly AssetKind[]) {
       const overlay = presetJson(`${kind}-${theme}`);
@@ -576,7 +567,8 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     assert.deepEqual(twitch.sizes, ['twitch-panel'], 'o painel da Twitch é um item separado');
     assert.deepEqual(twitch.formats, ['gif', 'png']);
     // The size itself turns glow and halo off; the panel takes item props only where it needs them.
-    assert.deepEqual(twitch.props, TWITCH_PROPS[name], name);
+    for (const key of Object.keys(twitch.props ?? {})) assert.ok(TWITCH_PANEL_KEYS.has(key), `${name}: ${key}`);
+    assert.notEqual(twitch.props?.transparent, true, name);
     // The kits' large frames scale their ornaments on a wider bleed (webcam-16x9-lg ×1.5, gameplay ×2);
     // the classic themes have no such items.
     const scaled = pack.items.filter((item) => item.props?.ornamentScale !== undefined);

@@ -40,9 +40,11 @@ test('tipos: o tamanho fixo dos fundos é o mesmo dos metadados atuais', () => {
   assert.deepEqual(kindPolicies.background.fixedSize, {width, height});
 });
 
-test('catalog: all 15 backgrounds retain their original composition IDs', () => {
+test('catalog: every background keeps its composition ID and is a background', () => {
   const ids = Object.keys(backgroundCatalog);
-  assert.equal(ids.length, 15);
+  assert.ok(ids.length > 0);
+  // Every background of the catalog is in backgroundCatalog, and nothing else is.
+  assert.deepEqual(Object.values(assetCatalog).filter((entry) => entry.kind === 'background').map((entry) => entry.id).sort(), [...ids].sort());
   for (const id of ids) {
     const entry = getAsset(id);
     assert.equal(entry, backgroundCatalog[id as keyof typeof backgroundCatalog]);

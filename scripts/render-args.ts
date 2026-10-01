@@ -101,6 +101,7 @@ export const buildExportOptions = (
     },
     ...(values.frame === undefined ? {} : {frame: Number(values.frame)}),
     output: values.out, overwrite: values.overwrite,
+    ...(values.props === undefined ? {} : {propsName: path.basename(values.props, path.extname(values.props))}),
   };
 };
 

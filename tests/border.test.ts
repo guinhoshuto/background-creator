@@ -20,24 +20,14 @@ import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './helpers/scene-scans';
 import {OVERLAY_THEMES} from './helpers/themes';
+import {rootDefaultProps} from './helpers/find-composition';
+import {RemotionRoot} from '../src/Root';
 
 const parse = (input: object): BorderLoopProps => borderLoopSchema.parse(input);
 const BORDER_SIZES = sizesForKind('border');
 const THEMES = OVERLAY_THEMES;
 const presetOf = (theme: string): Record<string, unknown> =>
   JSON.parse(readFileSync(new URL(`../presets/border-${theme}.json`, import.meta.url), 'utf8'));
-
-/** The literal Root.tsx registers: the composition's defaults, spelled out. */
-const ROOT_DEFAULT_PROPS = {
-  durationSeconds: 8, seed: 1, transparent: true, backgroundColor: '#0B0620', outputFormat: 'webm', width: 640, height: 360,
-  bleed: 48, guides: false, fit: 'window', shape: 'rectangle', mask: false, radius: 16, thickness: 10, fill: 'solid', fillColors: ['#120A38'], fillOpacity: 0.9,
-  fillScale: 12, fillSpeed: 24, fillAngle: 45, fillRise: false, fillLight: 0, strokeMotion: 'comets',
-  strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], strokeWidth: 4, dashLength: 18, gapLength: 12, cometSpacing: 640, cometTail: 320, gradientLength: 480,
-  strokeSpeed: 160, strokePulses: 1, strokeCore: 0.9, trackOpacity: 0.45, glow: 16, glowPulses: 0, glowStrength: 2.6, halo: 0, haloColor: '#A78BFA',
-  rimLight: 0, lines: 2, lineGap: 4, outerLineWidth: 2,
-  corners: 'brackets', cornerSize: 28, cornerGap: 6, gemSize: 14, cornerPulses: 1,
-  ornaments: 'none', ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C'], ornamentSize: 48, ornamentScale: 1, lightning: 0,
-};
 
 // ── Schema, sizes and registration ─────────────────────────────────────────────────────────
 
@@ -46,8 +36,9 @@ test('Borda: padrões = visual neon no tamanho webcam-16x9, iguais ao literal do
   // The integrator spreads this entry into assetCatalog: it must fit the catalog's contract.
   const entry: CatalogEntry = borderCatalogEntry;
   assert.equal(entry.getLayout, getBorderLayout);
-  assert.deepEqual(defaults, ROOT_DEFAULT_PROPS);
-  assert.deepEqual(borderLoopSchema.parse(ROOT_DEFAULT_PROPS), defaults);
+  const registered = rootDefaultProps(RemotionRoot(), 'BorderLoop');
+  assert.deepEqual(registered, defaults);
+  assert.equal(borderLoopSchema.strict().safeParse(registered).success, true);
   assert.deepEqual(borderCatalogEntry.defaultProps, defaults);
   assert.equal(borderCatalogEntry.id, 'BorderLoop');
   assert.equal(borderCatalogEntry.kind, 'border');
