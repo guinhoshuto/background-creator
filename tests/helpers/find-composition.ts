@@ -22,3 +22,14 @@ export const folderOf = (node: ReactNode, id: string, parent = ''): string | und
   }
   return undefined;
 };
+
+/**
+ * The defaultProps Root.tsx registers a composition with: a literal, since the Studio's "Save default
+ * props" edits a literal and never a computed object. Tests compare it with the schema's defaults
+ * instead of spelling it out again.
+ */
+export const rootDefaultProps = (root: ReactNode, id: string): Record<string, unknown> => {
+  const composition = findComposition<{id: string; defaultProps: Record<string, unknown>}>(root, id);
+  if (!composition) throw new Error(`${id} is not registered in the Studio.`);
+  return composition.props.defaultProps;
+};

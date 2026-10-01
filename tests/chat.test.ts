@@ -17,6 +17,8 @@ import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './helpers/scene-scans';
 import {OVERLAY_THEMES} from './helpers/themes';
+import {rootDefaultProps} from './helpers/find-composition';
+import {RemotionRoot} from '../src/Root';
 
 const THEMES = OVERLAY_THEMES;
 
@@ -26,22 +28,6 @@ const readPreset = (theme: string): Record<string, unknown> =>
 const PRESETS = Object.fromEntries(THEMES.map((theme) => [theme, readPreset(theme)])) as Record<(typeof THEMES)[number], Record<string, unknown>>;
 
 const CHAT_SIZES = sizesForKind('chat');
-
-/**
- * The literal defaultProps Root.tsx registers ChatLoop with (the Studio's "Save default props"
- * edits a literal, never a computed object); it must stay the schema's own defaults.
- */
-const ROOT_DEFAULT_PROPS = {
-  durationSeconds: 8, seed: 1, transparent: true, backgroundColor: '#0B0620', outputFormat: 'webm' as const,
-  width: 400, height: 600, bleed: 32, guides: false, radius: 16, padding: 16,
-  fill: 'gradient' as const, fillColors: ['#120A38', '#26105C', '#0A1C4E'], fillOpacity: 0.9, fillScale: 32,
-  fillSpeed: 16, fillAngle: 60, fillRise: false, fillLight: 0.05,
-  strokeMotion: 'comets' as const, strokeColors: ['#22D3EE', '#E879F9', '#A78BFA'], strokeWidth: 3,
-  dashLength: 16, gapLength: 12, cometSpacing: 640, cometTail: 320, gradientLength: 480, strokeSpeed: 160, strokePulses: 1,
-  strokeCore: 0.9, trackOpacity: 0.45, glow: 20, glowPulses: 1, glowStrength: 3, halo: 24, haloColor: '#A855F7', rimLight: 0,
-  headerHeight: 48, headerColor: '#E879F9', headerOpacity: 0.1, headerLineWidth: 2,
-  ornaments: 'none' as const, ornamentColors: ['#CFC6E4', '#F6EFD8', '#E8963C'], ornamentSize: 48, ornamentScale: 1, lightning: 0,
-};
 
 const parse = (input: object): ChatLoopProps => chatLoopSchema.parse(input);
 
@@ -376,8 +362,9 @@ test('Catálogo: entrada do chat, defaults do schema e o literal do Root', () =>
   assert.equal(chatCatalogEntry.schema, chatLoopSchema);
   assert.deepEqual(chatCatalogEntry.defaultProps, chatLoopSchema.parse({}));
   assert.deepEqual(chatLoopSchema.parse(chatCatalogEntry.defaultProps), chatCatalogEntry.defaultProps);
-  assert.deepEqual(ROOT_DEFAULT_PROPS, chatCatalogEntry.defaultProps);
-  assert.equal(chatLoopSchema.strict().safeParse(ROOT_DEFAULT_PROPS).success, true);
+  const registered = rootDefaultProps(RemotionRoot(), 'ChatLoop');
+  assert.deepEqual(registered, chatCatalogEntry.defaultProps);
+  assert.equal(chatLoopSchema.strict().safeParse(registered).success, true);
   const layout = chatCatalogEntry.getLayout(chatCatalogEntry.defaultProps);
   assert.deepEqual(layout.canvas, {width: 464, height: 664});
   // The kind policy: transparent WebM at chat-standard.
