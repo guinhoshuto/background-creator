@@ -1,5 +1,6 @@
-// Waiting for this machine's turn to render: no other heavy render running (the process list) AND the
-// machine-wide render slot (render-slot.ts) in hand. Kept free of the bundler and the renderer, so the
+// Waiting for this machine's turn to render: the machine free (the machine check shared by every repo,
+// machine-check.ts, or the process list where it is missing) AND the machine-wide render slot
+// (render-slot.ts) in hand. Kept free of the bundler and the renderer, so the
 // tests import it as is.
 //
 // The order matters. The process check is waited for holding nothing: a render that does not take the
@@ -9,6 +10,7 @@
 // is held. Busy then: release the slot, wait again and retry, all within one total time limit.
 import {execFileSync} from 'node:child_process';
 import {basename} from 'node:path';
+import {machineVerdict} from './machine-check';
 import type {SlotHandle} from './render-slot';
 
 /**
@@ -65,8 +67,15 @@ export const otherRenders = (processes: readonly ProcessInfo[], selfPid: number)
     .map(({pid, command}) => `${pid} ${command}`);
 };
 
-/** The other heavy renders running now, from `ps` (macOS and Linux). */
-export const busyProcesses = (): string[] => {
+/**
+ * Why this run should wait now, one line per reason; empty when the machine is free. The machine
+ * check shared by every repo (machine-check.ts) answers when it is on this machine: other renders,
+ * the render slot, the game, free memory and disk. Elsewhere, the other heavy renders from `ps`
+ * (macOS and Linux), as `${pid} ${command}` lines.
+ */
+export const busyProcesses = (verdict = machineVerdict): string[] => {
+  const answer = verdict(process.pid);
+  if (answer) return answer.reasons;
   let list: string;
   try {
     list = execFileSync('ps', ['-Aww', '-o', 'pid=,ppid=,command='], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
@@ -78,7 +87,7 @@ export const busyProcesses = (): string[] => {
 };
 
 export type TurnEffects = {
-  /** The other renders running right now (busyProcesses), never waiting. */
+  /** Why to wait right now, one line per reason (busyProcesses), never waiting; empty when free. */
   busy: () => string[];
   /** Takes the render slot, waiting at most `waitLimitMs` (or failing at once when `wait` is false). */
   acquire: (options: {wait: boolean; waitLimitMs: number}) => Promise<SlotHandle>;
@@ -110,8 +119,8 @@ export const takeRenderTurn = async ({wait, limitMs = TOTAL_LIMIT_MS, pollMs = P
   for (;;) {
     // The process check first, holding nothing.
     for (let busy = effects.busy(); busy.length > 0; busy = effects.busy()) {
-      if (!wait) throw new Error(`Another render is running on this machine (one heavy render at a time):\n${sample(busy)}\nRun again when it ends, or drop --no-wait to wait for it.`);
-      if (!warnedBusy) { log(`Waiting: another render is running on this machine (one at a time):\n${sample(busy)}`); warnedBusy = true; }
+      if (!wait) throw new Error(`The machine is busy (one heavy render at a time):\n${sample(busy)}\nRun again when it is free, or drop --no-wait to wait for it.`);
+      if (!warnedBusy) { log(`Waiting: the machine is busy (one heavy render at a time):\n${sample(busy)}`); warnedBusy = true; }
       if (now() >= deadline) throw giveUp();
       await effects.sleep(pollMs);
     }
@@ -127,8 +136,8 @@ export const takeRenderTurn = async ({wait, limitMs = TOTAL_LIMIT_MS, pollMs = P
       return slot;
     }
     slot.release();
-    if (!wait) throw new Error(`Another render started while this one took the render slot (one heavy render at a time):\n${sample(busy)}\nThe slot is released. Run again when it ends, or drop --no-wait to wait for it.`);
-    if (!warnedRetry) { log(`Released the render slot: another render started while waiting for it:\n${sample(busy)}\nWaiting for it to end, then taking the slot again.`); warnedRetry = true; }
+    if (!wait) throw new Error(`The machine got busy while this run took the render slot (one heavy render at a time):\n${sample(busy)}\nThe slot is released. Run again when it is free, or drop --no-wait to wait for it.`);
+    if (!warnedRetry) { log(`Released the render slot: the machine got busy while waiting for it:\n${sample(busy)}\nWaiting until it is free, then taking the slot again.`); warnedRetry = true; }
     if (now() >= deadline) throw giveUp();
   }
 };
