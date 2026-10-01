@@ -95,12 +95,15 @@ export const refineTravel = (check: TravelCheck, context: z.RefinementCtx) => {
   const share = frameShare(check.laps, check.durationInFrames, units);
   if (share <= MAX_FRAME_SHARE + 1e-12) return;
   const maxSpeed = maxSpeedFor(check.period, check.durationSeconds, check.durationInFrames, units);
-  const percent = Math.round(share * 100);
+  // Rounded, a share just past the limit would read as the limit itself (193 steps in 480 frames is 40.2%).
+  const limit = Math.round(MAX_FRAME_SHARE * 100);
+  const rounded = Math.round(share * 100);
+  const percent = rounded > limit ? `${rounded}%` : `more than ${limit}%`;
   context.addIssue({
     code: 'custom',
     path: [check.field],
     message: maxSpeed !== null && maxSpeed > 0
-      ? `Speed too high for ${check.subject}: each frame the pattern would move ${percent}% of the way to the next piece and would seem to go backwards or flicker. Use ${check.field} up to ${maxSpeed} px/s or ${check.otherFix}.`
-      : `Cycle too short for ${check.subject}: even one period per cycle would make the pattern move ${percent}% of the way to the next piece each frame, and it would seem to go backwards or flicker. Increase durationSeconds or ${check.otherFix}.`,
+      ? `Speed too high for ${check.subject}: each frame the pattern would move ${percent} of the way to the next piece and would seem to go backwards or flicker. Use ${check.field} up to ${maxSpeed} px/s or ${check.otherFix}.`
+      : `Cycle too short for ${check.subject}: even one period per cycle would make the pattern move ${percent} of the way to the next piece each frame, and it would seem to go backwards or flicker. Increase durationSeconds or ${check.otherFix}.`,
   });
 };

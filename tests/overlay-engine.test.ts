@@ -18,6 +18,7 @@ import {NAMED_SIZES, sizeProps, sizesForKind} from '../src/sizes';
 import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './helpers/scene-scans';
+import {refineTravel} from '../src/overlays/shared/motion';
 
 /** Every field the engine offers, as a kind would assemble them. */
 const kitSchema = z.object({
@@ -1022,4 +1023,18 @@ test('Acabamento: a força do brilho multiplica só o ganho; o alcance e a pulsa
   }
   assert.equal(kitSchema.safeParse({glowStrength: 3.5}).success, false);
   assert.match(renderPanel({glow: 12, glowStrength: 2}), new RegExp(`<feFuncA type="linear" slope="${GLOW_GAIN * 2}"`));
+});
+
+test('Aliasing: a share just past the limit never reads as the limit itself', () => {
+  const travel = (laps: number, durationInFrames: number) => z.object({}).superRefine((_, context) => refineTravel({
+    laps, period: 24, durationSeconds: durationInFrames / 60, durationInFrames,
+    field: 'strokeSpeed', subject: 'the dashes', otherFix: 'increase dashLength',
+  }, context));
+  // 193 periods in 480 frames is 40.2%: refused, and rounding would print the allowed 40%.
+  const nearLimit = travel(193, 480).safeParse({}).error!.issues[0]!.message;
+  assert.match(nearLimit, /move more than 40% of the way/);
+  assert.doesNotMatch(nearLimit, /move 40% of the way/);
+  // Well past the limit the share itself is printed.
+  assert.match(travel(240, 480).safeParse({}).error!.issues[0]!.message, /move 50% of the way/);
+  assert.equal(travel(192, 480).safeParse({}).success, true);
 });
