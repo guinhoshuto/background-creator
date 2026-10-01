@@ -81,6 +81,8 @@ export type ExportOptions = {
   format: OutputFormat;
   props?: Record<string, unknown>;
   output?: string;
+  /** The --props file's name without .json: a background without --out is named after it. */
+  propsName?: string;
   overwrite?: boolean;
   serveUrl?: string;
   /** PNG only: which frame of the loop becomes the still (default 0). */
@@ -111,8 +113,8 @@ export const resolveFrame = (format: OutputFormat, frame: number | undefined, du
   return still;
 };
 
-const defaultOutput = (asset: CatalogEntry, props: Record<string, unknown>, format: OutputFormat) =>
-  path.join(projectRoot, 'out', assetFileName({id: asset.id, kind: asset.kind, props, format}));
+const defaultOutput = (asset: CatalogEntry, props: Record<string, unknown>, format: OutputFormat, preset?: string) =>
+  path.join(projectRoot, 'out', assetFileName({id: asset.id, kind: asset.kind, props, format, preset}));
 
 /** The sidecar lives next to the file and names it, so each format gets its own. */
 export const sidecarPath = (output: string) => `${output}.json`;
@@ -158,7 +160,7 @@ export const resolveExport = (options: ExportOptions) => {
   const frame = resolveFrame(options.format, options.frame, getCompositionMetadata(props).durationInFrames);
   // Keep defaults out of inputProps so saved Studio defaults can take effect.
   const inputProps = Object.fromEntries(Object.entries(props).filter(([key]) => key in requestedProps));
-  const output = path.resolve(options.output ?? defaultOutput(asset, props, options.format));
+  const output = path.resolve(options.output ?? defaultOutput(asset, props, options.format, options.propsName));
   if (path.extname(output).toLowerCase() !== `.${options.format}`) {
     throw new Error(`The output needs the .${options.format} extension.`);
   }
@@ -219,7 +221,7 @@ export const exportAsset = async (options: ExportOptions) => {
   const frame = resolveFrame(options.format, options.frame, composition.durationInFrames);
   const preset = getExportPreset(props);
   // A saved Studio size can differ from the schema default the early name was based on.
-  const output = options.output ? resolved.output : path.resolve(defaultOutput(asset, props, options.format));
+  const output = options.output ? resolved.output : path.resolve(defaultOutput(asset, props, options.format, options.propsName));
   const layout = getLayoutOf(asset)?.(props) ?? null;
   const sidecar = layout ? sidecarPath(output) : null;
   if (layout && (layout.canvas.width !== composition.width || layout.canvas.height !== composition.height)) {

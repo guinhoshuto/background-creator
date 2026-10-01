@@ -114,12 +114,16 @@ export const sizeTag = (kind: AssetKind, props: SizedProps): string => {
 
 /**
  * The file name without extension: Remotion's `defaultOutName` appends the extension itself. A
- * window mask is tagged after its size: `BorderLoop-webcam-16x9-mask`.
+ * window mask is tagged after its size: `BorderLoop-webcam-16x9-mask`. A background rendered from a
+ * preset file carries the preset's name, so two presets of one composition never share a file:
+ * `WebGLLoop-webgl-aurora`.
  */
-export const assetFileStem = ({id, kind, props}: {id: string; kind: AssetKind; props: SizedProps}) =>
-  (kind === 'background' ? id : `${id}-${sizeTag(kind, props)}${props.mask === true ? '-mask' : ''}`);
+export const assetFileStem = ({id, kind, props, preset}: {id: string; kind: AssetKind; props: SizedProps; preset?: string}) =>
+  (kind === 'background'
+    ? (preset ? `${id}-${preset}` : id)
+    : `${id}-${sizeTag(kind, props)}${props.mask === true ? '-mask' : ''}`);
 
-/** Backgrounds keep <Id>.<ext>; sized kinds carry the size: <Id>-<sizeId|WxH>.<ext>. */
-export const assetFileName = ({id, kind, props, format}: {
-  id: string; kind: AssetKind; props: SizedProps; format: OutputFormat;
-}) => `${assetFileStem({id, kind, props})}.${format}`;
+/** Backgrounds keep <Id>[-<preset>].<ext>; sized kinds carry the size: <Id>-<sizeId|WxH>.<ext>. */
+export const assetFileName = ({id, kind, props, format, preset}: {
+  id: string; kind: AssetKind; props: SizedProps; format: OutputFormat; preset?: string;
+}) => `${assetFileStem({id, kind, props, preset})}.${format}`;

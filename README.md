@@ -351,7 +351,7 @@ npm run render:webm -- --list
 
 O formato do comando substitui `outputFormat` do JSON; `--duration` e `--seed` substituem os respectivos valores. A ordem de precedência é: JSON de `--props`, depois o tamanho de `--size`, depois `--width`, `--height` e `--bleed`. Sem `--out`, o destino segue o tipo:
 
-- Fundos: `out/<Composição>.<formato>`, por exemplo `out/VaporwaveLoop.webm`.
+- Fundos: `out/<Composição>.<formato>`, por exemplo `out/VaporwaveLoop.webm`; com `--props`, o nome do preset entra no fim: `out/WebGLLoop-webgl-aurora.mp4`.
 - Overlays num tamanho do catálogo: `out/<Composição>-<tamanho>.<formato>`, por exemplo `out/ChatLoop-chat-standard.webm`. Vale quando caixa, bleed, encaixe e forma coincidem exatamente com o tamanho (a mesma caixa 400×400 dá `webcam-square` ou `webcam-round`, conforme `shape`).
 - Overlays em tamanho livre: `out/<Composição>-<L>x<A>.<formato>`, com a largura e a altura da caixa, não do arquivo: `out/BlockLoop-800x120.webm`; num círculo fora do catálogo, a forma entra no nome: `out/BlockLoop-300x300-circle.webm`.
 
