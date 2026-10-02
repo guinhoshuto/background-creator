@@ -1,0 +1,15 @@
+# How the loop works
+
+Every composition uses only the current frame and a seed. The duration sets the full period of every motion; periodic functions keep position, look and speed continuous at the seam. Particles follow continuous paths, without vanishing and reappearing inside the image.
+
+For a cycle of `N` frames, the theoretical state of frame `N` matches frame `0`. The file holds only `0…N−1`: including frame `0` again at the end would create a small pause. So the last visible frame need not be a copy of the first; the passage between them must match a normal step of the animation.
+
+MP4, WebM and MOV hold one cycle; turn on repeat in the app that plays them. GIF already includes infinite repeat. For very short durations, there are few frames to represent the motion; prefer several seconds for a smooth background.
+
+In the overlays, the stroke effects run along the stroke's center line, a rounded rectangle of length `P = 2(W − 2r) + 2(H − 2r) + 2πr`, with W and H the width and height of that line and r the radius. Three rules keep the stroke seamless at any size:
+
+- **Whole laps.** The pattern (the `dashes`, the `comets`, the repeat of the `gradient` colors) fits a whole number of times in the stroke, and the cycle travels a whole number of those periods, at least one when `strokeSpeed` is above zero. So frame `N` is frame `0` again, and the speed is constant at the seam. The seed shifts the pattern's phase between 0.2 and 0.8 of a period, so that the swap of one dash for the next never falls on the loop seam; it never moves the box or the text areas.
+- **Spacing in px.** The period is requested in pixels (`dashLength + gapLength`, `cometSpacing`, `gradientLength`) and adjusted to the nearest one that closes the stroke. The number of comets and dashes follows from the size: a `label-sm` and a `title` of the same theme show the comets with the same space between them and the colors at the same scale, instead of stretching the drawing.
+- **Actual speed rounded and recorded.** Since the cycle's distance is rounded to whole periods, the actual speed differs a little from the requested one and varies from size to size: in the neon theme, the requested 160 px/s become 163.6 px/s on `chat-standard` and 147.7 px/s on `chat-tall`. The terminal, the position JSON, `--dry-run` and the pack manifest record the actual speed (`motion`). As with the dots and the checkerboard, one frame cannot move more than 40% of the way to the next dash or comet: the schema refuses the combination and says what to raise, without lowering the speed on its own.
+
+The fills follow the same principle: dots, stripes, damask and the sparkles' spin travel whole periods per cycle, the embers are reborn a whole number of times, the gradient sways once per cycle, and the glass reflection and the fog banks only jump while they are outside the area. Pulses of the stroke, the glow and the corners are always a whole number per cycle, and the ornaments (wings, flames, glass, dew, sway) move in whole harmonics of the cycle.

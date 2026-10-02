@@ -155,7 +155,7 @@ test('Pontos: cada direção move o padrão para o lado que o nome diz, na tela'
       if (signX !== 0 && signY !== 0) assert.ok(Math.abs(Math.abs(seen.x) - Math.abs(seen.y)) < 1e-9, `${direction}: 45°`);
     }
   }
-  // The presets move the way the README describes them.
+  // The presets move the way docs/themes/dots.md describes them.
   const moves = Object.fromEntries(PRESETS.map((filename) => {
     const props = dotGridLoopSchema.parse(JSON.parse(readFileSync(new URL(`../presets/${filename}`, import.meta.url), 'utf8')));
     return [filename, seenStep(props, 10, getCompositionMetadata(props).durationInFrames)];

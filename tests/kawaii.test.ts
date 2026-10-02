@@ -19,7 +19,7 @@ const drawnHalf = (item: ReturnType<typeof getKawaiiScene>[number]) => {
 test('Kawaii: os valores iniciais descrevem um doze segundos pastel', () => {
   const props = kawaiiLoopSchema.parse({});
   assert.equal(props.durationSeconds, 12);
-  assert.equal(props.seed, 7, 'a seed inicial precisa bater com o preset, o Root e o README');
+  assert.equal(props.seed, 7, 'a seed inicial precisa bater com o preset, o Root e docs/themes/kawaii.md');
   assert.equal(props.familyCount, 5);
   assert.equal(props.familyScale, 1);
   assert.equal(props.centerClearance, 0.5);
@@ -88,7 +88,7 @@ test('Kawaii: os limites dos controles mantêm a cena válida', () => {
   }
 });
 
-test('Kawaii: o retângulo reservado tem as medidas que o README publica', () => {
+test('Kawaii: o retângulo reservado tem as medidas que docs/themes/kawaii.md publica', () => {
   assert.deepEqual(getContentBox(0), {halfWidth: 430, halfHeight: 250});
   assert.deepEqual(getContentBox(1), {halfWidth: 640, halfHeight: 345});
   assert.deepEqual(getContentBox(0.5), {halfWidth: 535, halfHeight: 297.5});
