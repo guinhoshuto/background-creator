@@ -37,7 +37,7 @@ const readPreset = (filename: string): unknown =>
 const markupOf = (input: Record<string, unknown>, frame = 0) => renderToStaticMarkup(createElement(VaporwaveArtwork, {
   props: vaporwaveLoopSchema.parse(input), frame, durationInFrames: LENGTH,
 }));
-/** The README's title band: where a stream puts a centred title. */
+/** The title band in docs/themes/vaporwave.md: where a stream puts a centred title. */
 const TITLE_BAND = {left: 610, top: 470, right: 1310, bottom: 560} as const;
 /** The stops of a gradient in the rendered markup; SVG's defaults fill in what is omitted. */
 const gradientStops = (markup: string, id: string) => {
@@ -334,7 +334,7 @@ test('Vaporwave: os sólidos giram voltas inteiras por ciclo, sem saltos', () =>
 });
 
 test('Vaporwave: estrelas cadentes ficam na faixa de cima, voam para o lado oposto ao do sol e somem na emenda', () => {
-  // README: they always fly towards the side away from the sun; with the sun near an edge they
+  // docs/themes/vaporwave.md: they always fly towards the side away from the sun; with the sun near an edge they
   // move away from the disc the whole way, and with it near the middle they pass high above it.
   for (const sunPosition of [0.1, 0.2, 0.3, 0.45, 0.5, 0.55, 0.7, 0.8, 0.9]) {
     const sunX = getSunX(sunPosition);
@@ -522,7 +522,7 @@ test('Vaporwave: nenhum pico aparece atrás da copa das palmeiras do horizonte',
 
 test('Vaporwave: o sol padrão fica fora da área de conteúdo e o clássico se põe no centro', () => {
   const [sun] = pick(scene({}, 0), 'sun');
-  // README: at 0.9 the disc spans x 1580–1980, 70 px clear of the content area, 60 px cropped.
+  // docs/themes/vaporwave.md: at 0.9 the disc spans x 1580–1980, 70 px clear of the content area, 60 px cropped.
   assert.deepEqual([sun!.x - sun!.size, sun!.x + sun!.size], [1580, 1980]);
   assert.equal(sun!.x - sun!.size - CONTENT_BOX.right, 70);
   assert.equal(getSunX(0.1) + SUN_RADIUS, CONTENT_BOX.left - 70);
@@ -856,8 +856,8 @@ test('Vaporwave: calcular frames não altera os parâmetros nem resultados anter
   assert.deepEqual(getVaporwaveScene(props, 173, LENGTH), original);
 });
 
-test('Vaporwave: a área de conteúdo tem as medidas que o README publica', () => {
-  // README, "Vaporwave: horizonte neon": 1100×620 centred, x 410–1510, y 230–850.
+test('Vaporwave: a área de conteúdo tem as medidas que docs/themes/vaporwave.md publica', () => {
+  // docs/themes/vaporwave.md: 1100×620 centred, x 410–1510, y 230–850.
   assert.deepEqual(CONTENT_BOX, {left: 410, top: 230, right: 1510, bottom: 850});
   assert.equal(CONTENT_BOX.right - CONTENT_BOX.left, 1100);
   assert.equal(CONTENT_BOX.bottom - CONTENT_BOX.top, 620);
@@ -865,8 +865,8 @@ test('Vaporwave: a área de conteúdo tem as medidas que o README publica', () =
   assert.deepEqual([(TITLE_BAND.left + TITLE_BAND.right) / 2, TITLE_BAND.right - TITLE_BAND.left], [960, 700]);
 });
 
-test('Vaporwave: os números do README batem com as constantes', () => {
-  const readme = 'README, seção "Vaporwave: horizonte neon"';
+test('Vaporwave: os números de docs/themes/vaporwave.md batem com as constantes', () => {
+  const readme = 'docs/themes/vaporwave.md';
   assert.deepEqual([PLATE.inner.right - PLATE.inner.left, PLATE.inner.bottom - PLATE.inner.top], [980, 552], `${readme}: placa de 980×552`);
   assert.equal(PLATE.inner.left - PLATE.outer.left, 150, `${readme}: a placa se desfaz ao longo de 150 px`);
   assert.equal(SUN_CUT_DRIFT, 2, `${readme}: duas faixas por ciclo`);

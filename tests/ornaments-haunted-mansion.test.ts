@@ -193,7 +193,7 @@ test('haunted-mansion: onde cada motivo fica (braços, rosácea, lancetas, cerca
     // Only the side sconces (screens) hang from arms.
     assert.equal(motifs(placements, 'arm').length, motifs(placements, 'sconce').length, id);
   }
-  // The pack's padding on the Twitch panel (README): the lanterns grow from 22 to 32 px.
+  // The pack's padding on the Twitch panel (docs/packs.md): the lanterns grow from 22 to 32 px.
   assert.deepEqual(kitAt('twitch-panel').placements.map((placement) => `${placement.motif}@${placement.slot} ${placement.size}`),
     ['lantern-hung@TR 32', 'lantern-hung@TL 32'], 'kit twitch-panel');
   assert.deepEqual(kitAt('twitch-panel', {paddingX: 24, paddingY: 16}).placements.map((placement) => placement.size), [22, 22], 'twitch-panel sem o padding do pack');

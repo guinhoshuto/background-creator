@@ -299,7 +299,7 @@ const checkMarkup = (id: string, adapter: OrnamentKindAdapter, props: OrnamentPr
   }
 };
 
-/** README: the wash peaks at 0.16 × lightning on a panel and 0.35 × lightning on a border's band; the edge at 0.6. Hard-coded on purpose. */
+/** docs/overlays.md: the wash peaks at 0.16 × lightning on a panel and 0.35 × lightning on a border's band; the edge at 0.6. Hard-coded on purpose. */
 const FLASH_PEAKS = {panel: 0.16, band: 0.35, edge: 0.6};
 
 /**

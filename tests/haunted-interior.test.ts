@@ -453,8 +453,8 @@ test('Interior: exportação compartilha resolução, duração e regra de alpha
   }
 });
 
-test('Interior: os números do README batem com as constantes', () => {
-  const readme = 'README, seção "Halloween: interior da mansão"';
+test('Interior: os números de docs/themes/halloween-mansion-interior.md batem com as constantes', () => {
+  const readme = 'docs/themes/halloween-mansion-interior.md';
   assert.deepEqual(CONTENT_BOX, {left: 410, top: 230, right: 1510, bottom: 850}, `${readme}: área de 1100×620, x 410–1510, y 230–850`);
   assert.deepEqual([VP.x, VP.y], [960, 540], `${readme}: ponto de fuga em (960, 540)`);
   assert.deepEqual(TITLE_ZONE, {left: 610, top: 400, right: 1310, bottom: 650}, `${readme}: faixa de título x 610–1310, y 400–650`);

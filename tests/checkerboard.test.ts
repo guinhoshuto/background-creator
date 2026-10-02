@@ -269,7 +269,7 @@ test('Xadrez: cada direção move o tabuleiro para o lado que o nome diz, girado
       }
     }
   }
-  // At ±45° the squares stand as diamonds, and the diagonals run along the screen: the table in the README.
+  // At ±45° the squares stand as diamonds, and the diagonals run along the screen: the table in docs/themes/checkerboard.md.
   const onScreen = (angle: number, direction: string) => {
     const seen = seenStep(checkerboardLoopSchema.parse({angle, direction, speed: 60}), 100, 480);
     return [Math.sign(Math.round(seen.x * 1e6)) || 0, Math.sign(Math.round(seen.y * 1e6)) || 0];
@@ -282,7 +282,7 @@ test('Xadrez: cada direção move o tabuleiro para o lado que o nome diz, girado
   assert.deepEqual(onScreen(-45, 'up-left'), [-1, 0]);
   assert.deepEqual(onScreen(-45, 'up-right'), [0, -1]);
   assert.deepEqual(onScreen(-45, 'down-left'), [0, 1]);
-  // The presets move the way the README describes them.
+  // The presets move the way docs/themes/checkerboard.md describes them.
   const moves = Object.fromEntries(PRESETS.map((filename) => {
     const props = checkerboardLoopSchema.parse(readPreset(filename));
     return [filename, seenStep(props, 10, getCompositionMetadata(props).durationInFrames)];
@@ -351,7 +351,7 @@ test('Xadrez: velocidade alta demais para o tamanho da casa é recusada, nunca e
     }
   }
   assert.ok(refused > 0 && accepted > refused, `${accepted} aceitas, ${refused} recusadas`);
-  // The limits the README quotes for 16 px squares: rows and columns, then diagonals.
+  // The limits docs/themes/checkerboard.md quotes for 16 px squares: rows and columns, then diagonals.
   const limitFor = (direction: string, outputFormat: string) => {
     const issue = checkerboardLoopSchema.safeParse({direction, outputFormat, squareSize: 16, speed: 960}).error!.issues[0]!;
     return Number(/below (\d+) px\/s/.exec(issue.message)![1]);
