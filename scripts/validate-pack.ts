@@ -15,7 +15,7 @@ Reads back every file of the finished pack in out/packs/<name>/ and compares it 
 first the zip checks (every planned file there, its format's bytes, the manifest and props hashes),
 then each file with ffprobe and its first frame decoded: codec, width and height, FPS, frame count,
 duration, no audio, alpha (VP9 alpha tag and a transparent pixel, or fully opaque), a GIF that loops
-forever and the Twitch panel under 2.9 MB. Renders nothing and does not wait for the render slot.
+forever and a GIF or PNG Twitch panel under 2.9 MB. Renders nothing and does not wait for the render slot.
 
 Writes ${DEFAULT_VALIDATION_OUT}/<name>-pack.json (every file, its bytes and its issues).
 Exit 0: the pack is what the plan says; 1: something differs (all listed at once).

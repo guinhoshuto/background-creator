@@ -57,6 +57,8 @@ test('a GIF never keeps alpha, must loop forever and the Twitch panel stays unde
   // The ornamented panel measured on 2026-09-30: 2,972,501 B, over the limit.
   assert.match(mediaIssues(panel, {...gif, bytes: 2_972_501}).join(), /2972501 B, over the 2900000 B/);
   assert.match(mediaIssues(panel, {...gif, loopsForever: false}).join(), /does not loop forever/);
+  // A WebM panel cannot be uploaded to Twitch (an OBS overlay): no ceiling.
+  assert.deepEqual(mediaIssues({...panel, format: 'webm'}, {...GOOD, bytes: 3_535_617}), []);
   // The ceiling is the panel's: another GIF may be larger.
   assert.deepEqual(mediaIssues({...panel, size: 'card'}, {...gif, bytes: 5_000_000}), []);
 });
