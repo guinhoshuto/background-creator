@@ -22,6 +22,13 @@ export const createBundle = () => {
   });
 };
 
+/**
+ * How long one frame may take before Remotion gives up (its default is 30 s). A lower-third frame
+ * takes 0.33 s, yet on 2026-09-30, with the machine under load, frame 648 passed 30 s twice and
+ * killed a 1.5-hour pack run; a slow frame under memory pressure should wait, not fail the pack.
+ */
+export const FRAME_TIMEOUT_MS = 180_000;
+
 /** Prefix of the per-export scratch directory; cleanup only ever removes a directory with it. */
 export const SCRATCH_PREFIX = '.asset-render-';
 
@@ -213,8 +220,9 @@ export const exportAsset = async (options: ExportOptions) => {
   // Detect missing GIF encoder before spending time rendering hundreds of PNGs.
   if (options.format === 'gif') await runProcess(ffmpegPath(), ['-version']);
   const serveUrl = options.serveUrl ?? await createBundle();
+  const timeoutInMilliseconds = FRAME_TIMEOUT_MS;
   const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
-  const composition = await selectComposition({serveUrl, id: asset.id, inputProps, browserExecutable, chromiumOptions});
+  const composition = await selectComposition({serveUrl, id: asset.id, inputProps, browserExecutable, chromiumOptions, timeoutInMilliseconds});
   const props = asset.schema.strict().parse(composition.props);
   // Saved Studio defaults take part only now: check them like the requested props.
   assertExportable(props);
@@ -265,7 +273,7 @@ export const exportAsset = async (options: ExportOptions) => {
       // The still keeps alpha exactly when the shared rule says so: Canvas paints no backdrop then.
       await renderStill({
         serveUrl, composition, inputProps: props, browserExecutable, chromiumOptions,
-        frame, imageFormat: 'png', output: temporaryOutput, logLevel: 'error',
+        frame, imageFormat: 'png', output: temporaryOutput, logLevel: 'error', timeoutInMilliseconds,
       });
       progress(1);
     } else if (preset.codec === 'gif') {
@@ -273,7 +281,7 @@ export const exportAsset = async (options: ExportOptions) => {
       await renderFrames({
         serveUrl, composition, inputProps: props, browserExecutable, chromiumOptions,
         outputDir: framesDirectory, imageFormat: 'png', muted: true,
-        concurrency: 2, logLevel: 'error',
+        concurrency: 2, logLevel: 'error', timeoutInMilliseconds,
         onStart: () => undefined,
         onFrameUpdate: (count) => progress(count / composition.durationInFrames),
       });
@@ -302,7 +310,7 @@ export const exportAsset = async (options: ExportOptions) => {
         // Also required for ProRes: the VideoToolbox encoder cannot write yuva444p10le.
         hardwareAcceleration: 'disable', concurrency: 2,
         // One encoding pass also avoids alpha differences across independently encoded chunks.
-        disallowParallelEncoding: true, logLevel: 'error',
+        disallowParallelEncoding: true, logLevel: 'error', timeoutInMilliseconds,
         onProgress: ({progress: fraction}) => progress(fraction),
       });
     }
