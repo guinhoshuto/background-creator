@@ -565,7 +565,7 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     assert.deepEqual(blocks.flatMap((item) => item.sizes).sort(), ids('block').sort());
     const twitch = blocks.find((item) => item.sizes?.includes('twitch-panel'))!;
     assert.deepEqual(twitch.sizes, ['twitch-panel'], 'o painel da Twitch é um item separado');
-    assert.deepEqual(twitch.formats, ['gif', 'png']);
+    assert.deepEqual(twitch.formats, [kit ? 'webm' : 'gif', 'png'], name);
     // The size itself turns glow and halo off; the panel takes item props only where it needs them.
     for (const key of Object.keys(twitch.props ?? {})) assert.ok(TWITCH_PANEL_KEYS.has(key), `${name}: ${key}`);
     assert.notEqual(twitch.props?.transparent, true, name);
@@ -585,7 +585,7 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
         for (const item of items) assert.deepEqual(item.props, {ornaments: 'none'}, `${name}: ${kind} sem enfeites`);
       }
       const plainTwitch = byPreset(`block-${name}`, 'plain').find((item) => item.sizes?.includes('twitch-panel'))!;
-      assert.deepEqual([plainTwitch.sizes, plainTwitch.formats], [['twitch-panel'], ['gif', 'png']]);
+      assert.deepEqual([plainTwitch.sizes, plainTwitch.formats], [['twitch-panel'], ['webm', 'png']]);
     } else {
       assert.deepEqual(plain, [], name);
     }
@@ -621,11 +621,13 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
       assert.ok(file.canvas.width % 2 === 0 && file.canvas.height % 2 === 0, file.output);
     }
     const twitch = plan.filter((file) => file.size === 'twitch-panel');
+    // The Halloween kits ship the panel as WebM (owner, 2026-10-03: the ornamented GIF passed 2.9 MB).
+    const loop = kit ? 'webm' : 'gif';
     assert.deepEqual(twitch.map((file) => [path.posix.basename(file.output), file.canvas]), [
-      [`${name}-twitch-panel.gif`, {width: 320, height: 160}],
+      [`${name}-twitch-panel.${loop}`, {width: 320, height: 160}],
       [`${name}-twitch-panel.png`, {width: 320, height: 160}],
       ...(kit ? [
-        [`${name}-twitch-panel-plain.gif`, {width: 320, height: 160}],
+        [`${name}-twitch-panel-plain.${loop}`, {width: 320, height: 160}],
         [`${name}-twitch-panel-plain.png`, {width: 320, height: 160}],
       ] : []),
     ]);

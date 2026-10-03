@@ -29,7 +29,7 @@ Per theme: `presets/chat-<theme>.json`, `presets/block-<theme>.json`, `presets/b
 Pack shape (the manifests in `packs/halloween-*.json` are the source; `npm run render:pack -- <theme> --dry-run` lists the files):
 
 - The background item (webm, png).
-- With ornaments: `ChatLoop` at every chat size; `BlockLoop` at every block size except `twitch-panel`; `BlockLoop` at `["twitch-panel"]` alone (gif, png); `BorderLoop` at the webcam sizes and `gameplay`. Items are webm + png unless noted.
+- With ornaments: `ChatLoop` at every chat size; `BlockLoop` at every block size except `twitch-panel`; `BlockLoop` at `["twitch-panel"]` alone (webm, png; gif until 2026-10-03, see [Packs](packs.md)); `BorderLoop` at the webcam sizes and `gameplay`. Items are webm + png unless noted.
 - The Twitch panel takes item props only where its padding pockets need room for the motifs: `halloween-midnight` `{"paddingX": 48, "paddingY": 36}`, `halloween-haunted-mansion` `{"paddingX": 32, "paddingY": 24}`, none on the interior and cobweb kits.
 - The large frames scale their ornaments on a wider bleed: `webcam-16x9-lg` `{"bleed": 72, "ornamentScale": 1.5}`, `gameplay` `{"bleed": 96, "ornamentScale": 2}`.
 - The screen frames (`fullscreen`, `fullscreen-vertical`) ship only without ornaments: large enough ornaments there would eat the picture.

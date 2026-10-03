@@ -22,7 +22,7 @@
       "composition": "BlockLoop",
       "preset": "block-halloween-haunted-interior",
       "sizes": ["twitch-panel"],
-      "formats": ["gif", "png"]
+      "formats": ["webm", "png"]
     },
     {
       "composition": "BorderLoop",
@@ -64,7 +64,7 @@
       "composition": "BlockLoop",
       "preset": "block-halloween-haunted-interior",
       "sizes": ["twitch-panel"],
-      "formats": ["gif", "png"],
+      "formats": ["webm", "png"],
       "props": {"ornaments": "none"},
       "variant": "plain"
     },
