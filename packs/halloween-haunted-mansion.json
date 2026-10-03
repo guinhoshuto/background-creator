@@ -23,7 +23,7 @@
       "preset": "block-halloween-haunted-mansion",
       "sizes": ["twitch-panel"],
       "props": {"paddingX": 32, "paddingY": 24},
-      "formats": ["gif", "png"]
+      "formats": ["webm", "png"]
     },
     {
       "composition": "BorderLoop",
@@ -65,7 +65,7 @@
       "composition": "BlockLoop",
       "preset": "block-halloween-haunted-mansion",
       "sizes": ["twitch-panel"],
-      "formats": ["gif", "png"],
+      "formats": ["webm", "png"],
       "props": {"ornaments": "none"},
       "variant": "plain"
     },
