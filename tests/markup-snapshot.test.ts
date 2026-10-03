@@ -152,6 +152,15 @@ for (const background of HALLOWEEN_BACKGROUNDS) {
     }
     check(entries);
   });
+
+  test(`markup: ${background.name} draws no CSS blend mode in a transparent export`, () => {
+    // Over alpha a blend changes the anti-aliased edges of everything else, differently on each render.
+    const props = background.schema.parse({...readJson(background.preset), transparent: true});
+    const {durationInFrames: n, fps} = getCompositionMetadata(props as Parameters<typeof getCompositionMetadata>[0]);
+    for (let frame = 0; frame < n; frame += Math.ceil(n / 24)) {
+      assert.doesNotMatch(background.render(props, frame, n, fps), /mix-blend-mode/, `frame ${frame}`);
+    }
+  });
 }
 
 const OVERLAY_FRAMES: Record<string, ComponentType<{props: never; frame: number; durationInFrames: number}>> = {

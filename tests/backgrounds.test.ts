@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readdirSync, readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {getCheckerboardScene, checkerboardLoopSchema} from '../src/backgrounds/CheckerboardLoop';
 import {christmasLoopSchema, getChristmasScene} from '../src/backgrounds/ChristmasLoop';
@@ -475,4 +475,37 @@ test('loop helper rejects invalid frame counts instead of propagating NaN', () =
   }
   assert.throws(() => loopPhase(Number.NaN, 480));
   assert.throws(() => loopPhase(Number.POSITIVE_INFINITY, 480));
+});
+
+/**
+ * A CSS blend mode makes Chrome composite its group apart, so the pixels can depend on the frames
+ * rendered before (README, Known pitfalls). Backgrounds and overlays are plain SVG: only the uses
+ * listed here may blend, and none of them is measured yet (BGC-21). Measure a new one with
+ * `npm run stills` and `sequences` before adding it, and drop a line when its blend goes.
+ */
+const UNMEASURED_BLENDS: Record<string, number> = {
+  // `screen` on the light, opaque exports only (tests/markup-snapshot.test.ts checks transparent).
+  'src/backgrounds/CobwebLoop.tsx': 1,
+  // `color-dodge` on the flashes and the candelabra rim, opaque exports only (same check).
+  'src/backgrounds/HauntedInteriorLoop.tsx': 1,
+  // `soft-light` on the paper grain, in every format, transparent included.
+  'src/backgrounds/WutheringWavesLoop.tsx': 1,
+};
+
+const sourceFiles = (directory: string): string[] =>
+  readdirSync(new URL(`../${directory}/`, import.meta.url), {withFileTypes: true}).flatMap((entry) => {
+    if (entry.isDirectory()) return sourceFiles(`${directory}/${entry.name}`);
+    return /\.tsx?$/.test(entry.name) ? [`${directory}/${entry.name}`] : [];
+  });
+
+test('backgrounds and overlays use no CSS blend mode beyond the unmeasured ones listed', () => {
+  const found: Record<string, number> = {};
+  for (const file of sourceFiles('src')) {
+    const code = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const uses = code.match(/mixBlendMode|mix-blend-mode/g)?.length ?? 0;
+    if (uses > 0) found[file] = uses;
+  }
+  assert.deepEqual(found, UNMEASURED_BLENDS);
 });
