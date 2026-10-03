@@ -15,6 +15,9 @@ import {ffmpegPath, ffprobePath, runProcess} from './process';
  */
 export const TWITCH_PANEL_MAX_BYTES = 2_900_000;
 
+/** The formats Twitch's panel editor uploads; the ceiling applies to these only. */
+export const TWITCH_PANEL_FORMATS: readonly OutputFormat[] = ['gif', 'png'];
+
 export const CODEC_OF: Record<OutputFormat, string> = {webm: 'vp9', mp4: 'h264', mov: 'prores', gif: 'gif', png: 'png'};
 
 /** What one file holds, as read from disk; the pure check below compares it with the plan. */
@@ -68,7 +71,8 @@ export const mediaIssues = (file: PlannedFile, probe: MediaProbe): string[] => {
     issues.push(`has transparency (alpha ${probe.minAlpha}), expected opaque`);
   }
   if (file.format === 'gif' && probe.loopsForever !== true) issues.push('the GIF does not loop forever');
-  if (file.size === 'twitch-panel' && probe.bytes > TWITCH_PANEL_MAX_BYTES) {
+  // Only what the panel editor takes (JPG, PNG, GIF) is held to its ceiling; a WebM panel is an OBS overlay.
+  if (file.size === 'twitch-panel' && TWITCH_PANEL_FORMATS.includes(file.format) && probe.bytes > TWITCH_PANEL_MAX_BYTES) {
     issues.push(`${probe.bytes} B, over the ${TWITCH_PANEL_MAX_BYTES} B Twitch takes for a panel`);
   }
   return issues;
