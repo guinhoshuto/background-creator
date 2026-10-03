@@ -5,7 +5,7 @@ import {EventEmitter} from 'node:events';
 import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {
-  SCRATCH_PREFIX, assertExportable, buildSidecar, findScratchDirectories, guardScratch, motionText, publishInOrder,
+  FRAME_TIMEOUT_MS, SCRATCH_PREFIX, assertExportable, buildSidecar, findScratchDirectories, guardScratch, motionText, publishInOrder,
   removeScratchDirectories, resolveExport, sidecarPath,
 } from '../scripts/export';
 import {HELP_TEXT, buildExportOptions, expandSize, listText, parseRenderArgs} from '../scripts/render-args';
@@ -273,4 +273,12 @@ test('a background rendered from a preset file is named after the preset, so two
   assert.equal(path.basename(resolveExport(buildExportOptions(parseRenderArgs(['WebGLLoop', '--format', 'mp4']), {})).output), 'WebGLLoop.mp4');
   // Sized kinds keep their size tag only: the workshop name rule of the naming plan.
   assert.equal(path.basename(outputOf('BorderLoop', '--props', 'presets/border-neon.json', '--size', 'webcam-square', '--format', 'webm')), 'BorderLoop-webcam-square.webm');
+});
+
+test('every render call of the exporter waits FRAME_TIMEOUT_MS for a frame, not Remotion\'s 30 s', () => {
+  assert.equal(FRAME_TIMEOUT_MS, 180_000);
+  const source = readFileSync(path.join(import.meta.dirname, '..', 'scripts', 'export.ts'), 'utf8');
+  const calls = [...source.matchAll(/await (selectComposition|renderStill|renderFrames|renderMedia)\(\{([\s\S]*?)\}\)/g)];
+  assert.equal(calls.length, 4, calls.map((call) => call[1]).join());
+  for (const call of calls) assert.match(call[2]!, /\btimeoutInMilliseconds\b/, `${call[1]} has no timeoutInMilliseconds`);
 });
