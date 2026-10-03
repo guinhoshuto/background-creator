@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
-import {mkdir, readFile, writeFile} from 'node:fs/promises';
+import {mkdir, readFile, rename, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {renderStill, selectComposition} from '@remotion/renderer';
 import {PNG} from 'pngjs';
@@ -11,7 +11,7 @@ import {canvasOf, sizeProps, sizesForKind, type NamedSize} from '../src/sizes';
 import {FREE_SPACE_HINT, assertCanStart, freeBytes} from './disk';
 import {createBundle, exportAsset, projectRoot, resolveExport} from './export';
 import {compositedRgbError} from './image-comparison';
-import {ffmpegPath, ffprobePath, runProcess} from './process';
+import {assertFullFfmpeg, ffmpegPath, ffprobePath, runProcess} from './process';
 import {acquireRenderSlot, currentCommand, type SlotHandle} from './render-slot';
 import {parseValidateArgs} from './validate-args';
 
@@ -63,8 +63,7 @@ const main = async () => {
   const durationSeconds = Number(values.duration);
   assert(Number.isFinite(durationSeconds) && durationSeconds >= 0.1, 'Use --duration >= 0.1.');
   const kinds = values.kind === undefined ? ASSET_KINDS : [getKindPolicy(values.kind).kind];
-  await runProcess(ffmpegPath(), ['-version']);
-  await runProcess(ffprobePath(), ['-version']);
+  await assertFullFfmpeg();
   // Arguments and tools are checked first: a typo never waits 30 minutes for the slot.
   slot = await acquireRenderSlot({command: currentCommand()});
   // The same disk floor as every render, measured once the slot is held.
@@ -73,7 +72,12 @@ const main = async () => {
   const serveUrl = await createBundle();
   const report: Record<string, unknown>[] = [];
   const reportPath = path.join(destination, 'report.json');
-  await writeFile(reportPath, JSON.stringify(report));
+  // Written whole, then renamed: a stopped run leaves the last complete report, never half of one.
+  const saveReport = async () => {
+    await writeFile(`${reportPath}.tmp`, JSON.stringify(report, null, 2));
+    await rename(`${reportPath}.tmp`, reportPath);
+  };
+  await saveReport();
   // Strictly sequential: one render at a time keeps memory and disk use bounded.
   for (const kind of kinds) {
     // A kind with no compositions yet simply has nothing to validate.
@@ -198,7 +202,7 @@ const main = async () => {
             frames: isStill ? 1 : composition.durationInFrames, codec: stream.codec_name,
             minAlpha, maxAlpha, meanAlphaError, meanVisibleAlphaError, rgbErrorOnLight, rgbErrorOnDark,
           });
-          await writeFile(reportPath, JSON.stringify(report, null, 2));
+          await saveReport();
           console.log(`OK: ${path.basename(output)}; mean RGB error ${meanRgbError.toFixed(3)}`);
         }
       }

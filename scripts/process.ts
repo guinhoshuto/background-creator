@@ -18,3 +18,19 @@ export const runProcess = (executable: string, args: string[]): Promise<Buffer> 
       else resolve(Buffer.concat(chunks));
     });
   });
+
+/** Encoders and decoders the validators read alpha back with; the FFmpeg bundled with Remotion lacks them. */
+export const missingCodecs = (encoders: string, decoders: string) => [
+  ...['libvpx-vp9', 'prores_ks', 'gif'].filter((name) => !new RegExp(`\\b${name}\\b`).test(encoders)).map((name) => `encoder ${name}`),
+  ...['libvpx-vp9', 'prores', 'gif', 'png'].filter((name) => !new RegExp(`\\b${name}\\b`).test(decoders)).map((name) => `decoder ${name}`),
+];
+
+/** Fails before any work when ffprobe is missing or ffmpeg cannot read every shipped format back. */
+export const assertFullFfmpeg = async () => {
+  await runProcess(ffprobePath(), ['-version']);
+  const list = async (what: string) => (await runProcess(ffmpegPath(), ['-hide_banner', `-${what}`])).toString();
+  const missing = missingCodecs(await list('encoders'), await list('decoders'));
+  if (missing.length > 0) {
+    throw new Error(`${ffmpegPath()} has no ${missing.join(', ')}. Use the full FFmpeg in /opt/homebrew/bin (set FFMPEG_PATH and FFPROBE_PATH).`);
+  }
+};

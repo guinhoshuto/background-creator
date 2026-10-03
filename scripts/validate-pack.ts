@@ -6,7 +6,7 @@ import {projectRoot} from './export';
 import {PackContentsError, checkPackContents} from './pack-contents';
 import {existingManifestFile, parsePackManifest, planPack, realPackDeps} from './pack-plan';
 import {byteTotals, mediaIssues, probeMedia} from './pack-validate';
-import {ffmpegPath, ffprobePath, runProcess} from './process';
+import {assertFullFfmpeg} from './process';
 import {DEFAULT_VALIDATION_OUT} from './validate-args';
 
 const HELP_TEXT = `usage: npm run validate:pack -- <name|file.json>
@@ -30,11 +30,7 @@ const main = async () => {
   if (values.help) {console.log(HELP_TEXT); return;}
   if (positionals.length !== 1) throw new Error('Name one pack: npm run validate:pack -- <name|file.json>. Use --help.');
   // Tools first: a missing decoder fails before reading 100 files.
-  await runProcess(ffprobePath(), ['-version']);
-  const decoders = (await runProcess(ffmpegPath(), ['-hide_banner', '-decoders'])).toString();
-  if (!/\blibvpx-vp9\b/.test(decoders)) {
-    throw new Error(`${ffmpegPath()} has no libvpx-vp9 decoder, so VP9 alpha cannot be read back. Use the full FFmpeg in /opt/homebrew/bin (FFMPEG_PATH).`);
-  }
+  await assertFullFfmpeg();
   const manifest = parsePackManifest(JSON.parse(await readFile(existingManifestFile(positionals[0]!), 'utf8')));
   const plan = planPack(manifest, realPackDeps);
   const packLabel = path.posix.join('out', 'packs', manifest.name);

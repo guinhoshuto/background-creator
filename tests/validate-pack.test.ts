@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import {PNG} from 'pngjs';
 import type {PlannedFile} from '../scripts/pack-plan';
 import {TWITCH_PANEL_MAX_BYTES, mediaIssues, probeMedia, type MediaProbe} from '../scripts/pack-validate';
-import {ffmpegPath, runProcess} from '../scripts/process';
+import {assertFullFfmpeg, ffmpegPath, missingCodecs, runProcess} from '../scripts/process';
 
 // The pure check against literal probes, then tiny real files made by ffmpeg (no render).
 
@@ -107,4 +107,14 @@ test('real files read back: VP9 alpha, opaque VP9, a looping GIF and a PNG', asy
     assert.deepEqual(mediaIssues(stillFile, await probeMedia(still, 'png')), []);
     assert.match(mediaIssues({...stillFile, canvas: {width: 32, height: 16}}, await probeMedia(still, 'png')).join(), /16×16, expected 32×16/);
   });
+});
+
+test('the validators refuse an FFmpeg that cannot read every shipped format back', async () => {
+  const encoders = ' V....D libvpx-vp9           libvpx VP9 (codec vp9)\n V..... prores_ks            Apple ProRes (iCodec Pro) (codec prores)\n V....D gif                  GIF (Graphics Interchange Format)\n';
+  const decoders = ' V....D libvpx-vp9           libvpx VP9 (codec vp9)\n VFS..D prores               Apple ProRes (iCodec Pro)\n V....D gif                  GIF (Graphics Interchange Format)\n VFS..D png                  PNG (Portable Network Graphics) image\n';
+  assert.deepEqual(missingCodecs(encoders, decoders), []);
+  assert.deepEqual(missingCodecs(encoders, decoders.replace('libvpx-vp9', 'vp9')), ['decoder libvpx-vp9']);
+  assert.deepEqual(missingCodecs(encoders.replace('prores_ks', 'prores_aw'), decoders), ['encoder prores_ks']);
+  // The FFmpeg this machine runs the validators with has them all.
+  await assertFullFfmpeg();
 });
