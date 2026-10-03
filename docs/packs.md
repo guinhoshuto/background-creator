@@ -40,7 +40,7 @@ npm run render:pack -- pastel --only chat-column --overwrite
 npm run render:pack -- path/my-pack.json --dry-run
 ```
 
-`--dry-run` lists every planned file with its dimensions, FPS and frames (or the frame, for PNG), the actual motion speed and whether the file already exists, without rendering anything. `--only <text>` exports only the files whose path contains the text. `--overwrite` replaces finished files. A path ending in `.json` uses that manifest instead of `packs/<name>.json`. The result looks like this:
+`--dry-run` lists every planned file with its dimensions, FPS and frames (or the frame, for PNG), the actual motion speed and whether the file already exists, without rendering anything. `--only <text>` exports only the files whose path contains the text. `--overwrite` replaces finished files. A path ending in `.json` uses that manifest instead of `packs/<name>.json`. For a pack with ornaments, `npm run ornaments:report -- <pack>` lists, also without rendering, each file's motifs with their sizes and the room at their spot, and the motifs a small size drops. The result looks like this:
 
 ```text
 out/packs/neon/
