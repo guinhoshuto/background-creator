@@ -17,7 +17,7 @@ import {acquireRenderSlot, currentCommand} from './render-slot';
 import {busyProcesses, takeRenderTurn} from './render-turn';
 import {
   alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
-  seamVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
+  seamVerdict, sequenceVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
 } from './stills-job';
 
 type Browser = Awaited<ReturnType<typeof openBrowser>>;
@@ -197,7 +197,9 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
           results.push({frame, ...result, changedBox});
           if (sequence.heatmaps) writePng(path.join(outDir, 'sequences', `${sequence.name}-${frame}.png`), heatmap);
         }
-        (report.sequences as unknown[]).push({name: sequence.name, results});
+        const verdict = sequenceVerdict(results, sequence.tolerance);
+        if (!verdict.ok) console.log(`Sequence ${sequence.name}: up to ${verdict.maxDelta}/255 against a tolerance of ${sequence.tolerance} (frames ${verdict.over.join(', ')}).`);
+        (report.sequences as unknown[]).push({name: sequence.name, ...verdict, results});
         rmSync(dir, {recursive: true, force: true});
       }
     }
