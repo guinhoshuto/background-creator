@@ -16,8 +16,9 @@ import {meetsAccentSpan} from './midnight-place';
  *     BAT_MIN_SPAN there is no bat and the schema refuses.
  *   - Rectangles: on the top edge, right of centre, as near the TR corner as the room allows (its
  *     centre a little above the edge, in the bleed). Circles: on the ring at 45° (up and right),
- *     moving along the ring towards the top until it clears a round block's accent arc. Where the
- *     whole bat does not fit there, the roomiest corner slot (TR first) takes it, smaller.
+ *     moving along the ring towards the top until it clears a round block's accent arc. The TR
+ *     corner slot takes it where it has more room (a Twitch panel's pocket); another corner only
+ *     where neither holds even the smallest bat.
  *   - In front, clear of the text and the window. The fill is the background's (#080F18) with a
  *     lit rim in ornamentColors[1] (moonlight) towards the moon, up and to the right, and a thin
  *     edge in ornamentColors[0], so it reads over dark footage.
@@ -64,8 +65,8 @@ const firstFit = (frame: OrnamentFrame, points: readonly {x: number; y: number}[
 };
 
 const ANGLE_STEP = Math.PI / 90;
-/** Where the bat may go when its edge has no room for it: the corner slots (padding pockets on a Twitch panel), TR first. */
-const FALLBACK: readonly OrnamentCornerId[] = ['TR', 'TL', 'BR', 'BL'];
+/** Where the bat goes when neither its edge nor the TR corner slot holds it, in order. */
+const FALLBACK: readonly OrnamentCornerId[] = ['TL', 'BR', 'BL'];
 
 /** The bat's preferred spot: the top edge near TR, or the ring from 45° towards the top. */
 const edgeSpot = (frame: OrnamentFrame, ornamentSize: number, nominal: number, clear: (spot: Spot) => boolean): Spot | null => {
@@ -81,31 +82,38 @@ const edgeSpot = (frame: OrnamentFrame, ornamentSize: number, nominal: number, c
       for (const rho of rhos) points.push({x: cx + rho * Math.cos(angle), y: cy - rho * Math.sin(angle)});
     }
   } else {
-    // From just inside the TR corner's curve leftwards to the centre, a little above the top edge.
+    // Just inside the TR corner's curve first, then outwards along the top edge's right half (over
+    // the corner too, where a header leaves no room above it), a little above the edge.
     const radius = clampRadius(outline.radius, outline.width, outline.height);
-    const start = outline.x + outline.width - radius - 0.6 * ornamentSize;
+    const right = outline.x + outline.width;
     const middle = outline.x + outline.width / 2;
+    const start = Math.max(middle, right - radius - 0.6 * ornamentSize);
     const ys = scanAround(outline.y - 48, outline.y + 24, outline.y - 6);
-    for (let x = Math.max(start, middle); x >= middle - 1e-9; x -= 4) for (const y of ys) points.push({x, y});
+    for (const x of scanAround(middle, right + 0.3 * ornamentSize, start, 4)) for (const y of ys) points.push({x, y});
   }
   return firstFit(frame, points, nominal, clear);
 };
 
 /**
- * One bat: on its edge when the whole bat fits there; otherwise the roomiest of that spot and the
- * corner slots (TR, TL, BR, BL, earliest among equals), so a tight size still gets it, smaller.
+ * One bat by TR: the larger of its edge spot and the TR corner slot (a Twitch panel's pocket),
+ * smaller when the room is short; only when neither holds it, the first of TL, BR, BL that does.
  * None (the schema refuses) when even BAT_MIN_SPAN, or the nominal when smaller, fits nowhere.
  */
 export const placeHauntedMansion = (frame: OrnamentFrame, ornamentSize: number): OrnamentPlacement[] => {
   const nominal = batExtent(ornamentSize);
   const least = Math.min(batExtent(BAT_MIN_SPAN), floorHalf(nominal));
   const clear = (spot: Spot) => !meetsAccentSpan(frame, spot.x, spot.y, spot.extent);
-  let best = edgeSpot(frame, ornamentSize, nominal, clear);
-  if (!best || best.extent < nominal - 1e-9) {
-    for (const slot of FALLBACK) {
-      const fit = fitMotif(frame, cornerSlot(frame, slot), {motif: 'bat', layer: 'front', nominal, min: least, hero: true});
-      if (fit && clear(fit) && (!best || fit.extent > best.extent + 1e-9)) best = fit;
-    }
+  const corner = (slot: OrnamentCornerId) => {
+    const fit = fitMotif(frame, cornerSlot(frame, slot), {motif: 'bat', layer: 'front', nominal, min: least, hero: true});
+    return fit && clear(fit) ? fit : null;
+  };
+  const edge = edgeSpot(frame, ornamentSize, nominal, clear);
+  const tr = corner('TR');
+  let best: Spot | null = edge && edge.extent >= least - 1e-9 ? edge : null;
+  if (tr && (!best || tr.extent > best.extent + 1e-9)) best = tr;
+  for (const slot of FALLBACK) {
+    if (best) break;
+    best = corner(slot);
   }
   if (!best || best.extent < least - 1e-9) return [];
   return [{motif: 'bat', slot: 'TR', layer: 'front', x: best.x, y: best.y, extent: best.extent, size: Math.min(ornamentSize, batSpan(best.extent))}];
