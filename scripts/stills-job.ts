@@ -318,16 +318,16 @@ export const streamMockup = (
 /**
  * The default stream layouts, in 1920×1080 box coordinates, from the Halloween kits' art direction. One piece per
  * scene keeps its ornaments as the focus and the rest use the plain variant, so a scene never stacks ornaments on
- * every border.
+ * every border. Every scene sits on the kit's own background, as the buyer sees it behind the overlays.
  */
-const MOCK_LAYOUTS: {out: string; base: 'background' | string; layers: {size: string; variant?: string; x: number; y: number}[]}[] = [
-  {out: 'mock-chatting', base: 'background', layers: [
+const MOCK_LAYOUTS: {out: string; layers: {size: string; variant?: string; x: number; y: number}[]}[] = [
+  {out: 'mock-chatting', layers: [
     {size: 'webcam-16x9-lg', x: 80, y: 100}, {size: 'chat-standard', variant: 'plain', x: 1440, y: 100},
     {size: 'lower-third', variant: 'plain', x: 80, y: 820}]},
-  {out: 'mock-gameplay', base: '#3A4150', layers: [
+  {out: 'mock-gameplay', layers: [
     {size: 'gameplay', variant: 'plain', x: 48, y: 48}, {size: 'chat-standard', variant: 'plain', x: 1496, y: 32},
     {size: 'webcam-round-sm', x: 1556, y: 700}, {size: 'label', variant: 'plain', x: 40, y: 910}]},
-  {out: 'mock-screen', base: '#8E9AAB', layers: [{size: 'fullscreen', variant: 'plain', x: 0, y: 0}, {size: 'label-sm', x: 80, y: 960}]},
+  {out: 'mock-screen', layers: [{size: 'fullscreen', variant: 'plain', x: 0, y: 0}, {size: 'label-sm', x: 80, y: 960}]},
 ];
 
 const SHEETS: {out: string; kind: string; cols: number; width: number; bg: string}[] = [
@@ -385,10 +385,8 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
         const name = bySize.get(variant === undefined ? size : `${size}:${variant}`);
         return name === undefined ? [] : [{name, x, y}];
       });
-      if (layers.length === 0) continue;
-      const base = layout.base === 'background' ? backgroundStill : layout.base;
-      if (base === null) continue;
-      mockups.push({out: `${layout.out}-${frame}.png`, base, width: 1920, height: 1080, maxWidth: MAX_SHEET_WIDTH, layers});
+      if (layers.length === 0 || backgroundStill === null) continue;
+      mockups.push({out: `${layout.out}-${frame}.png`, base: backgroundStill, width: 1920, height: 1080, maxWidth: MAX_SHEET_WIDTH, layers});
     }
   }
   return {outDir: '.', stills, sheets, mockups} satisfies Omit<StillsJob, 'stills'> & {stills: StillSpec[]};

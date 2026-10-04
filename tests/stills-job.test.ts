@@ -141,6 +141,9 @@ test('qa:kit: the Halloween night pack becomes one job with sheets and mockups',
   assert.deepEqual(gameplay.layers.map((layer) => layer.name), ['gameplay-plain-0', 'chat-standard-plain-0', 'webcam-round-sm-0', 'label-plain-0']);
   const screen = job.mockups!.find((mockup) => mockup.out === 'mock-screen-0.png')!;
   assert.deepEqual(screen.layers.map((layer) => layer.name), ['fullscreen-plain-0', 'label-sm-0']);
+  // Every scene sits on the kit's own background, never on a flat color.
+  assert.deepEqual(job.mockups!.filter((mockup) => mockup.out.endsWith('-0.png')).map((mockup) => mockup.base),
+    ['bg-HalloweenLoop-0', 'bg-HalloweenLoop-0', 'bg-HalloweenLoop-0']);
   // Three backgrounds in one pack: one still each, told apart by their variant.
   const halloween = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/halloween.json'), 'utf8')));
   const backgrounds = parseJob(buildKitJob(planPack(halloween, realPackDeps), {frames: [0]})).stills.map((still) => still.name).filter((still) => still.startsWith('bg-'));
