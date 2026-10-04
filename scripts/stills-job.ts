@@ -315,15 +315,19 @@ export const streamMockup = (
 // ---------------------------------------------------------------------------------------------
 // The kit job (`npm run qa:kit`)
 
-/** The default stream layouts, in 1920×1080 box coordinates, from the Halloween kits' art direction. */
-const MOCK_LAYOUTS: {out: string; base: 'background' | string; layers: {size: string; x: number; y: number}[]}[] = [
+/**
+ * The default stream layouts, in 1920×1080 box coordinates, from the Halloween kits' art direction. One piece per
+ * scene keeps its ornaments as the focus and the rest use the plain variant, so a scene never stacks ornaments on
+ * every border.
+ */
+const MOCK_LAYOUTS: {out: string; base: 'background' | string; layers: {size: string; variant?: string; x: number; y: number}[]}[] = [
   {out: 'mock-chatting', base: 'background', layers: [
-    {size: 'webcam-16x9-lg', x: 80, y: 100}, {size: 'chat-standard', x: 1440, y: 100},
-    {size: 'lower-third', x: 80, y: 820}, {size: 'label', x: 1400, y: 780}, {size: 'circle-sm', x: 1680, y: 880}]},
+    {size: 'webcam-16x9-lg', x: 80, y: 100}, {size: 'chat-standard', variant: 'plain', x: 1440, y: 100},
+    {size: 'lower-third', variant: 'plain', x: 80, y: 820}]},
   {out: 'mock-gameplay', base: '#3A4150', layers: [
-    {size: 'gameplay', x: 48, y: 48}, {size: 'chat-standard', x: 1496, y: 32},
-    {size: 'webcam-round-sm', x: 1556, y: 700}, {size: 'label', x: 40, y: 910}]},
-  {out: 'mock-screen', base: '#8E9AAB', layers: [{size: 'fullscreen', x: 0, y: 0}, {size: 'label-sm', x: 80, y: 960}]},
+    {size: 'gameplay', variant: 'plain', x: 48, y: 48}, {size: 'chat-standard', variant: 'plain', x: 1496, y: 32},
+    {size: 'webcam-round-sm', x: 1556, y: 700}, {size: 'label', variant: 'plain', x: 40, y: 910}]},
+  {out: 'mock-screen', base: '#8E9AAB', layers: [{size: 'fullscreen', variant: 'plain', x: 0, y: 0}, {size: 'label-sm', x: 80, y: 960}]},
 ];
 
 const SHEETS: {out: string; kind: string; cols: number; width: number; bg: string}[] = [
@@ -366,8 +370,8 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
       const {outputFormat: _format, ...props} = file.props;
       void _format;
       stills.push({name: stillName, id: file.composition, props, frame});
-      // Mockups use the plain size, not a variant (plain and the like).
-      if (file.size !== undefined && file.variant === undefined) bySize.set(file.size, stillName);
+      // Mockups look pieces up by size and variant ("chat-standard", "chat-standard:plain").
+      if (file.size !== undefined) bySize.set(file.variant === undefined ? file.size : `${file.size}:${file.variant}`, stillName);
     }
     for (const sheet of SHEETS) {
       const names = files.filter(({file}) => file.kind === sheet.kind).map(({stem}) => `${stem}-${frame}`);
@@ -377,7 +381,10 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
     if (light.length > 0) sheets.push({out: `sheet-light-${frame}.png`, names: light, cols: light.length, width: 390, bg: 'light'});
     const backgroundStill = background ? `${background.stem}-${frame}` : null;
     for (const layout of MOCK_LAYOUTS) {
-      const layers = layout.layers.flatMap(({size, x, y}) => (bySize.has(size) ? [{name: bySize.get(size)!, x, y}] : []));
+      const layers = layout.layers.flatMap(({size, variant, x, y}) => {
+        const name = bySize.get(variant === undefined ? size : `${size}:${variant}`);
+        return name === undefined ? [] : [{name, x, y}];
+      });
       if (layers.length === 0) continue;
       const base = layout.base === 'background' ? backgroundStill : layout.base;
       if (base === null) continue;
