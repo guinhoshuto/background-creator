@@ -135,7 +135,12 @@ test('qa:kit: the Halloween night pack becomes one job with sheets and mockups',
     ['sheet-chat-0.png', 'sheet-block-0.png', 'sheet-border-0.png', 'sheet-light-0.png']);
   const chatting = job.mockups!.find((mockup) => mockup.out === 'mock-chatting-0.png')!;
   assert.equal(chatting.base, 'bg-HalloweenLoop-0');
-  assert.ok(chatting.layers.some((layer) => layer.name === 'chat-standard-0'));
+  // One focal piece keeps its ornaments; the others are plain, so the scene is not heavy.
+  assert.deepEqual(chatting.layers.map((layer) => layer.name), ['webcam-16x9-lg-0', 'chat-standard-plain-0', 'lower-third-plain-0']);
+  const gameplay = job.mockups!.find((mockup) => mockup.out === 'mock-gameplay-0.png')!;
+  assert.deepEqual(gameplay.layers.map((layer) => layer.name), ['gameplay-plain-0', 'chat-standard-plain-0', 'webcam-round-sm-0', 'label-plain-0']);
+  const screen = job.mockups!.find((mockup) => mockup.out === 'mock-screen-0.png')!;
+  assert.deepEqual(screen.layers.map((layer) => layer.name), ['fullscreen-plain-0', 'label-sm-0']);
   // Three backgrounds in one pack: one still each, told apart by their variant.
   const halloween = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/halloween.json'), 'utf8')));
   const backgrounds = parseJob(buildKitJob(planPack(halloween, realPackDeps), {frames: [0]})).stills.map((still) => still.name).filter((still) => still.startsWith('bg-'));
