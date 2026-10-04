@@ -34,6 +34,8 @@ export const jobSchema = z.object({
   sequences: z.array(z.object({
     name, still: name, from: z.number().int().min(0), to: z.number().int().min(0),
     heatmaps: z.boolean().default(false).describe('Write sequences/<name>-<frame>.png, |Δ|·16, for each frame that differs'),
+    tolerance: z.number().int().min(0).max(255).default(0)
+      .describe('Largest per-channel difference (0..255) still accepted; 0 demands byte for byte'),
   }).strict()).optional()
     .describe('renderFrames in one tab, compared byte for byte with fresh stills (determinism); a frame that differs reports its changedBox'),
   diffs: z.array(z.tuple([name, name])).optional(),
@@ -195,6 +197,18 @@ export const diffImages = (a: Rgba, b: Rgba) => {
     sameSize: true as const, identical: total === 0,
     mean: +(total / a.data.length).toFixed(4), max, changedShare: +(changed / a.data.length).toFixed(4),
   };
+};
+
+/**
+ * A sequence passes when no frame from the tab differs from its fresh still by more than the
+ * tolerance on any channel. Under `gl: 'angle'` a swaying shape drifts a little (BGC-24, README
+ * Known pitfalls), so those sequences carry the measured maximum instead of 0.
+ */
+export const sequenceVerdict = (results: readonly {frame: number; max?: number; sameSize: boolean}[], tolerance: number) => {
+  const sizeMismatch = results.filter((r) => !r.sameSize).map((r) => r.frame);
+  const maxDelta = Math.max(0, ...results.map((r) => r.max ?? 0));
+  const over = results.filter((r) => (r.max ?? 0) > tolerance).map((r) => r.frame);
+  return {tolerance, maxDelta, over, ok: sizeMismatch.length === 0 && over.length === 0};
 };
 
 /**

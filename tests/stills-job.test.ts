@@ -3,9 +3,10 @@ import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
 import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
+import {getAsset, getOpenGlRenderer} from '../src/catalog';
 import {
   MAX_SHEET_WIDTH, buildKitJob, contactSheet, diffImages, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
-  seamVerdict, sheetGeometry, streamMockup, wrapFrame, type Rgba,
+  seamVerdict, sequenceVerdict, sheetGeometry, streamMockup, wrapFrame, type Rgba,
 } from '../scripts/stills-job';
 
 const solid = (width: number, height: number, rgba: [number, number, number, number]): Rgba => {
@@ -139,4 +140,29 @@ test('qa:kit: the Halloween night pack becomes one job with sheets and mockups',
   const halloween = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/halloween.json'), 'utf8')));
   const backgrounds = parseJob(buildKitJob(planPack(halloween, realPackDeps), {frames: [0]})).stills.map((still) => still.name).filter((still) => still.startsWith('bg-'));
   assert.deepEqual(backgrounds, ['bg-HalloweenLoop-midnight-0', 'bg-HauntedMansionLoop-haunted-mansion-0', 'bg-CobwebLoop-cobweb-0']);
+});
+
+test('a sequence passes only while every frame stays within its tolerance', () => {
+  const frames = (...maxes: number[]) => maxes.map((max, frame) => ({frame, sameSize: true, max}));
+  assert.equal(sequenceVerdict(frames(0, 0, 0), 0).ok, true);
+  assert.deepEqual(sequenceVerdict(frames(0, 1, 0), 0), {tolerance: 0, maxDelta: 1, over: [1], ok: false});
+  assert.deepEqual(sequenceVerdict(frames(3, 24, 0), 24), {tolerance: 24, maxDelta: 24, over: [], ok: true});
+  assert.deepEqual(sequenceVerdict(frames(3, 25, 0), 24).over, [1]);
+  assert.equal(sequenceVerdict([{frame: 0, sameSize: false}], 255).ok, false);
+});
+
+/**
+ * The determinism jobs (`npm run stills -- tests/determinism-<name>.json`), measured on 2026-10-04
+ * (BGC-24). Cobweb is byte for byte since its <svg> remounts every frame. Wuthering Waves renders
+ * under ANGLE, where its swaying lotus flower drifts up to 24/255 from a fresh still (15 with the
+ * flower held still): Chrome's GPU raster, not the drawing. A job shares one browser, so a job held
+ * to 0 must not include an ANGLE composition: under ANGLE even the keyed Cobweb drifts.
+ */
+test('the determinism jobs keep their measured tolerances, and the exact one stays off ANGLE', () => {
+  const jobOf = (name: string) => parseJob(JSON.parse(readFileSync(new URL(`./determinism-${name}.json`, import.meta.url), 'utf8')));
+  const toleranceOf = (name: string) => jobOf(name).sequences!.map((sequence) => sequence.tolerance);
+  assert.deepEqual(toleranceOf('cobweb'), [0]);
+  assert.deepEqual(toleranceOf('wuthering-waves'), [24]);
+  assert.deepEqual(jobOf('cobweb').stills.map((still) => getOpenGlRenderer(getAsset(still.id))), [null]);
+  assert.deepEqual(jobOf('wuthering-waves').stills.map((still) => getOpenGlRenderer(getAsset(still.id))), ['angle']);
 });

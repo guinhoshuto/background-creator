@@ -1,0 +1,5 @@
+{
+  "outDir": "../out/.scratch/determinism-cobweb",
+  "stills": [{"name": "cobweb-opaque", "id": "CobwebLoop", "preset": "halloween-cobweb", "props": {"transparent": false}}],
+  "sequences": [{"name": "cobweb", "still": "cobweb-opaque", "from": 0, "to": 29, "tolerance": 0}]
+}
