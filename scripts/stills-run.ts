@@ -12,6 +12,7 @@ import {kindPolicies} from '../src/kinds';
 import {FREE_SPACE_HINT, RUN_MIN_FREE_BYTES, START_MIN_FREE_BYTES, assertCanStart, freeBytes, gibibytes} from './disk';
 import {projectRoot} from './export';
 import {expandSize} from './render-args';
+import {diffDetail} from './pixel-stats';
 import {acquireRenderSlot, currentCommand} from './render-slot';
 import {busyProcesses, takeRenderTurn} from './render-turn';
 import {
@@ -188,7 +189,13 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
           const frame = sequence.from + index;
           const fresh = path.join(dir, `fresh-${frame}.png`);
           await renderOne(serveUrl, p, frame, fresh);
-          results.push({frame, ...diffImages(readPng(path.join(dir, file)), readPng(fresh))});
+          const [fromTab, alone] = [readPng(path.join(dir, file)), readPng(fresh)];
+          const result = diffImages(fromTab, alone);
+          if (!result.sameSize || result.identical) { results.push({frame, ...result}); continue; }
+          // Where the drift sits points at the element that carries it (BGC-24).
+          const {changedBox, heatmap} = diffDetail(fromTab, alone, 16);
+          results.push({frame, ...result, changedBox});
+          if (sequence.heatmaps) writePng(path.join(outDir, 'sequences', `${sequence.name}-${frame}.png`), heatmap);
         }
         (report.sequences as unknown[]).push({name: sequence.name, results});
         rmSync(dir, {recursive: true, force: true});

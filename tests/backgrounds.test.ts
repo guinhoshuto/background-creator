@@ -486,8 +486,8 @@ test('loop helper rejects invalid frame counts instead of propagating NaN', () =
  */
 const MEASURED_BLENDS: Record<string, number> = {
   // `screen` on the light, opaque exports only (tests/markup-snapshot.test.ts checks transparent).
-  // 29 of 30 frames differ by up to 14/255 on a few pixels, and 28 of 30 still do without the
-  // blend: the drift comes from elsewhere in the drawing, not from the blend.
+  // 29 of 30 frames differed by up to 14/255 on a few pixels, with or without the blend: the
+  // drift came from Chrome's partial repaint, gone since the <svg> remounts every frame (BGC-24).
   'src/backgrounds/CobwebLoop.tsx': 1,
   // `color-dodge` on the flashes and the candelabra rim, opaque exports only (same check).
   // Identical byte for byte over a lightning strike (frames 165–194).

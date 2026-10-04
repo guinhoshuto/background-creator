@@ -31,8 +31,11 @@ export const jobSchema = z.object({
   baseline: z.object({ref: z.string().min(1).default('HEAD')}).strict().optional()
     .describe('Also render every still at this git ref and diff it against the working tree'),
   seams: z.array(name).optional().describe('Stills whose loop seam (N−1 → 0) is compared with a normal step (0 → 1)'),
-  sequences: z.array(z.object({name, still: name, from: z.number().int().min(0), to: z.number().int().min(0)}).strict()).optional()
-    .describe('renderFrames in one tab, compared byte for byte with fresh stills (determinism)'),
+  sequences: z.array(z.object({
+    name, still: name, from: z.number().int().min(0), to: z.number().int().min(0),
+    heatmaps: z.boolean().default(false).describe('Write sequences/<name>-<frame>.png, |Δ|·16, for each frame that differs'),
+  }).strict()).optional()
+    .describe('renderFrames in one tab, compared byte for byte with fresh stills (determinism); a frame that differs reports its changedBox'),
   diffs: z.array(z.tuple([name, name])).optional(),
   sheets: z.array(z.object({
     out: outFile, names: z.array(name).min(1), cols: z.number().int().min(1).default(2),

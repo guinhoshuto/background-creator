@@ -783,3 +783,15 @@ test('Teias: o export mantém a regra de alpha e a duração compartilhadas com 
     }
   }
 });
+
+test('the drawing remounts every frame, so a render tab rasters it whole like a fresh still', () => {
+  // BGC-24: with one <svg> kept across frames, 28 of 30 frames from one tab differed from fresh
+  // stills by up to 29/255 along Chrome's 256 px tile seams; with a key per frame, none did.
+  const props = cobwebLoopSchema.parse({});
+  const keys = [0, 1, 359].map((frame) => {
+    const canvas = CobwebFrame({props, frame, durationInFrames: 720}) as {props: {children: {type: unknown; key: string | null}}};
+    assert.equal(canvas.props.children.type, 'svg');
+    return canvas.props.children.key;
+  });
+  assert.deepEqual(keys, ['0', '1', '359']);
+});
