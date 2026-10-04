@@ -319,7 +319,7 @@ export const streamMockup = (
 const MOCK_LAYOUTS: {out: string; base: 'background' | string; layers: {size: string; x: number; y: number}[]}[] = [
   {out: 'mock-chatting', base: 'background', layers: [
     {size: 'webcam-16x9-lg', x: 80, y: 100}, {size: 'chat-standard', x: 1440, y: 100},
-    {size: 'lower-third', x: 80, y: 820}, {size: 'label', x: 1400, y: 780}, {size: 'circle-sm', x: 1680, y: 880}]},
+    {size: 'lower-third', x: 80, y: 820}]},
   {out: 'mock-gameplay', base: '#3A4150', layers: [
     {size: 'gameplay', x: 48, y: 48}, {size: 'chat-standard', x: 1496, y: 32},
     {size: 'webcam-round-sm', x: 1556, y: 700}, {size: 'label', x: 40, y: 910}]},
