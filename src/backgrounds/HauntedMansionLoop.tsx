@@ -118,12 +118,23 @@ export const getHauntedMansionScene = (
   ];
 };
 
+/**
+ * The bat's drawing, in its own units (origin at the shoulders, 86 wide tip to tip, wing tips at
+ * (±43, −16)): exported so the overlay kit (the 'haunted-mansion' ornaments) draws the same bat.
+ */
+export const MANSION_BAT = {
+  wings: 'M0 0 Q-19-23-43-16 Q-29-8-34 6 Q-19-3-17 13 Q-7 5 0 9 Q7 5 17 13 Q19-3 34 6 Q29-8 43-16 Q19-23 0 0Z',
+  body: 'M-5-7 L-4-14 L0-10 L4-14 L5-7 Q9 5 0 13 Q-9 5-5-7Z',
+  span: 86,
+  fill: '#080F18',
+} as const;
+
 const Bat = ({x, y, scale, rotation, flap, opacity}: HauntedMansionElement) => (
-  <g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${scale})`} opacity={opacity} fill="#080F18">
+  <g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${scale})`} opacity={opacity} fill={MANSION_BAT.fill}>
     <g transform={`scale(1 ${flap})`}>
-      <path d="M0 0 Q-19-23-43-16 Q-29-8-34 6 Q-19-3-17 13 Q-7 5 0 9 Q7 5 17 13 Q19-3 34 6 Q29-8 43-16 Q19-23 0 0Z" />
+      <path d={MANSION_BAT.wings} />
     </g>
-    <path d="M-5-7 L-4-14 L0-10 L4-14 L5-7 Q9 5 0 13 Q-9 5-5-7Z" />
+    <path d={MANSION_BAT.body} />
   </g>
 );
 
