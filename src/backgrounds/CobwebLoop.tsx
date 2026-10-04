@@ -461,7 +461,10 @@ export const CobwebFrame = ({props, frame, durationInFrames}: {
 
   return (
     <Canvas {...props}>
-      <svg width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
+      {/* A new <svg> per frame makes Chrome raster the whole drawing, as in a fresh still. Kept
+          across frames, one tab repaints only the invalidated tiles, and their seams over the moon
+          gradients drift up to 29/255 from a fresh still (BGC-24, README Known pitfalls). */}
+      <svg key={frame} width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
         <defs>
           <radialGradient id="cobweb-sky" gradientUnits="userSpaceOnUse" cx={MOON.x} cy={MOON.y} r="1500">
             <stop stopColor={silk} stopOpacity="0.2" />

@@ -27,6 +27,10 @@ test('stills job: defaults, and every reference must name a still', () => {
   assert.throws(() => parseJob({stills: [{name: 'a', id: 'X'}], sheets: [{out: '../x.png', names: ['a']}]}), /Invalid stills job/);
   assert.throws(() => parseJob({stills: []}), /Invalid stills job/);
   assert.deepEqual(parseJob({stills: [{name: 'a', id: 'X'}], baseline: {}}).baseline, {ref: 'HEAD'});
+  // Heatmaps are opt-in: 30 full-size PNGs per sequence would eat the disk floor (BGC-24).
+  const sequence = {name: 's', still: 'a', from: 0, to: 29};
+  assert.equal(parseJob({stills: [{name: 'a', id: 'X'}], sequences: [sequence]}).sequences![0]!.heatmaps, false);
+  assert.equal(parseJob({stills: [{name: 'a', id: 'X'}], sequences: [{...sequence, heatmaps: true}]}).sequences![0]!.heatmaps, true);
 });
 
 test('stills job: outDir is relative to the job file, else out/review/<date>-<job>', () => {
