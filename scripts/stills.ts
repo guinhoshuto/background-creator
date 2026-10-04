@@ -12,7 +12,8 @@ Options:
   --no-wait   fail instead of waiting when another render is running on this machine
   -h, --help  show this help
 
-Measure PNGs (region stats, L* profile, crop, diff; CPU only, no slot): npm run stills -- inspect --help`;
+Measure PNGs (region stats, L* profile, crop, diff; CPU only, no slot): npm run stills -- inspect --help
+Review page with a caption per image (CPU only, no slot): npm run stills -- index --help`;
 
 const main = async () => {
   const args = process.argv.slice(2);
@@ -20,6 +21,11 @@ const main = async () => {
     // Its own module, loaded alone: the render modules (bundler, renderer) never load for a measure.
     const {inspect} = await import('./stills-inspect');
     console.log(inspect(args.slice(1)));
+    return;
+  }
+  if (args[0] === 'index') {
+    const {stillsIndex} = await import('./stills-index');
+    console.log(stillsIndex(args.slice(1)));
     return;
   }
   const {values, positionals} = parseArgs({
