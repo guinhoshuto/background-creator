@@ -2,6 +2,8 @@
 
 Local Remotion, React and TypeScript project for looping animated backgrounds (1920×1080) and stream overlays (chat, text blocks, borders) with transparency, sold in packs.
 
+Product and market: the store, its runbook and one note per pack live in the vault (`~/obsidian/Projects/Cacare.co/index.md`, `system.md`, `Overlays/`); the market research is `~/obsidian/Path/knowledge base/Animated Streaming Backgrounds na Etsy.md`. Delivered zips sit in the R2 bucket `etsy` at `packs/<pack>/<sha8>/<pack>-overlay-pack.zip`, served publicly at `https://cacare.co/packs/<pack>/<sha8>/<pack>-overlay-pack.zip`; that link goes in the buyer's guide PDF.
+
 - `src/settings.ts`: shared parameters, duration/FPS, alpha rule and export presets.
 - `src/kinds.ts`: asset kinds (Studio folder, size, default alpha); `src/sizes.ts`: named sizes.
 - `src/`: catalog and compositions; `src/overlays/`: ChatLoop, BlockLoop, BorderLoop and the shared engine in `shared/` (themed ornaments in `shared/ornaments/`, one set per name in `sets/` (`<name>.tsx` plus helpers `<name>-*.ts(x)`)).
