@@ -505,9 +505,9 @@ test('pack: starts with 3 GiB free, and stops between files below 2 GiB saying h
     /Not enough free disk in out: .* a render needs at least 3\.0 GiB to start/,
   );
   assert.deepEqual(refused.exported, []);
-  // Start, before the first file, before the second: the floor while running is 2 GiB, not 3.
+  // Start, before the first file, before the second: below 2 GiB a running pack stops, whatever the file.
   const run = fakeRun({}, 3 * GiB);
-  const free = [3 * GiB, 2 * GiB, 2 * GiB - 1];
+  const free = [3 * GiB, 3 * GiB, 2 * GiB - 1];
   run.effects.freeBytes = async () => free.shift() ?? 0;
   await assert.rejects(
     runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'}),
@@ -517,6 +517,19 @@ test('pack: starts with 3 GiB free, and stops between files below 2 GiB saying h
   // The first file is already in the manifest, so the same command resumes after it.
   const saved = run.disk.get('out/packs/test/manifest.json') as {files: unknown[]};
   assert.equal(saved.files.length, 1);
+});
+
+test('pack: a 1080p file is refused before it renders when its frames would leave less than 2 GiB', async () => {
+  const GiB = 1024 ** 3;
+  // The first planned file is a 1920×1080 WebM of 480 frames: about 1 GiB of frames before its encode.
+  const run = fakeRun({}, 3 * GiB);
+  const free = [3 * GiB, 2.9 * GiB];
+  run.effects.freeBytes = async () => free.shift() ?? 0;
+  await assert.rejects(
+    runPack({manifest: manifest([]), plan: samplePlan(), fullPlan: samplePlan(), overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'}),
+    /2\.9 GiB free, the next file needs up to 1\.0 GiB and 2\.0 GiB must stay free\. .*run the same command again/,
+  );
+  assert.deepEqual(run.exported, []);
 });
 
 const PACKS = OVERLAY_THEMES;
