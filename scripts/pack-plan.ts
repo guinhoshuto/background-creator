@@ -10,6 +10,7 @@ import type {AssetMotion} from '../src/overlays/shared/motion';
 import {getCompositionMetadata, hasAlpha, outputFormatSchema, type OutputFormat} from '../src/settings';
 import {NAMED_SIZES, getSize, sizeTag, sizesForKind} from '../src/sizes';
 import {assertCanGoOn, assertCanStart} from './disk';
+import {diskNeed} from './pack-estimate';
 import {expandSize} from './render-args';
 
 /** How to get out of a pack refused for disk: the build resumes where it stopped. */
@@ -553,8 +554,8 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
         : `${counter} ${file.output}: already exists, skipping.`);
       skipped += 1;
     } else {
-      // Checked again per file: one pack can take many gigabytes.
-      assertCanGoOn({free: await effects.freeBytes(), where: diskLabel, then: PACK_RESUME});
+      // Checked again per file, against what this file takes: one pack can take many gigabytes.
+      assertCanGoOn({free: await effects.freeBytes(), estimate: diskNeed(file), where: diskLabel, then: PACK_RESUME});
       effects.log(changed
         ? `${counter} ${file.output}: Warning: its props changed since it was rendered; rendering it again.`
         : `${counter} ${file.output}`);

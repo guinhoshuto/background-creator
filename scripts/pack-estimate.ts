@@ -1,4 +1,5 @@
 import type {OutputFormat} from '../src/settings';
+import {frameScratchBytes} from './disk';
 import type {PlannedFile} from './pack-plan';
 
 /** One format's cost: a fixed part per file plus a part per megapixel-frame (width × height × frames / 10^6). */
@@ -39,6 +40,12 @@ export const estimateFile = (file: Costed): {bytes: number; seconds: number} | n
     seconds: rate.seconds.perFile + rate.seconds.perMegapixelFrame * amount,
   };
 };
+
+/**
+ * The most one render takes from the disk while it runs: its frames before the encode plus the
+ * file it writes (none for a format never measured). The disk floor checks against this.
+ */
+export const diskNeed = (file: Costed) => frameScratchBytes(file) + (estimateFile(file)?.bytes ?? 0);
 
 const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;
 

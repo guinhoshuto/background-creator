@@ -1,11 +1,12 @@
 import path from 'node:path';
 import {parseArgs} from 'node:util';
-import {assetCatalog, getAsset} from '../src/catalog';
+import {assetCatalog, getAsset, getLayoutOf} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
-import {outputFormatSchema} from '../src/settings';
+import {getCompositionMetadata, outputFormatSchema} from '../src/settings';
 import {canvasOf, getSize, sizeProps, sizesForKind} from '../src/sizes';
 import {FREE_SPACE_HINT, assertCanStart} from './disk';
 import type {ExportOptions} from './export';
+import {diskNeed} from './pack-estimate';
 
 export const HELP_TEXT = `usage: npm run render:<webm|mov|png|mp4|gif> -- <composition> [options]
 
@@ -105,6 +106,20 @@ export const buildExportOptions = (
   };
 };
 
+/**
+ * The file a render writes, as the disk floor needs it (format, canvas, frames), from the requested
+ * props and the schema defaults, without opening the bundle. Saved Studio defaults may still change
+ * it inside the render; the floor is checked before that.
+ */
+export const plannedRender = (options: ExportOptions) => {
+  const asset = getAsset(options.compositionId);
+  const props = asset.schema.strict().parse({...options.props, outputFormat: options.format});
+  const canvas = getLayoutOf(asset)?.(props).canvas ?? getKindPolicy(asset.kind).fixedSize;
+  if (!canvas) throw new Error(`${asset.id} does not report its file size.`);
+  const {durationInFrames} = getCompositionMetadata({durationSeconds: props.durationSeconds as number, outputFormat: options.format});
+  return {format: options.format, canvas, frames: durationInFrames};
+};
+
 /** Every side effect of `npm run render:*`, injected so the flow is tested without rendering. */
 export type RenderEffects = {
   readProps: (file: string) => Promise<unknown>;
@@ -129,9 +144,11 @@ export const runRender = async (args: string[], {defaultOutDirectory, effects}: 
   const rawProps = values.props ? await effects.readProps(values.props) : {};
   const options = buildExportOptions({values, positionals}, rawProps);
   const directory = options.output === undefined ? defaultOutDirectory : path.dirname(path.resolve(options.output));
+  // The frames kept before the encode count, not only the file: 1080p for 12 s keeps over 1 GiB.
+  const need = diskNeed(plannedRender(options));
   // Measured inside the slot: a render that waited 30 minutes for another one sees the disk it left.
   await effects.withRenderSlot(async () => {
-    assertCanStart({free: effects.freeBytes(directory), where: path.relative(process.cwd(), directory) || '.', then: FREE_SPACE_HINT});
+    assertCanStart({free: effects.freeBytes(directory), estimate: need, where: path.relative(process.cwd(), directory) || '.', then: FREE_SPACE_HINT});
     await effects.exportAsset(options);
   });
 };
