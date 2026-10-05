@@ -25,7 +25,39 @@ import {
 
 export const NEUTRAL = {ornamentSize: 48, lightning: 0.7, durationSeconds: 12, seed: 7};
 /** The ornamentSize extremes the neutral base also runs every case at (the schema's range). */
-const SIZE_EXTREMES = [ORNAMENT_SIZE_RANGE.min, ORNAMENT_SIZE_RANGE.max];
+export const SIZE_EXTREMES = [ORNAMENT_SIZE_RANGE.min, ORNAMENT_SIZE_RANGE.max];
+/** The border radii every named border size runs at. */
+const BORDER_RADII = [0, 16, 200];
+
+/**
+ * What a run checks. The full suite takes the defaults; `npm run test:kit` narrows one set through
+ * the environment, for seconds instead of a minute while working on it (BGC-15):
+ * ORNAMENT_HARNESS_RADII (border radii, comma separated), ORNAMENT_HARNESS_SIZES (ornamentSize
+ * values) and ORNAMENT_HARNESS_DENSE=off (only the sample frames, not every frame and half frame).
+ */
+export type HarnessScope = {radii: readonly number[]; ornamentSizes: readonly number[]; dense: boolean};
+
+const numbers = (name: string, text: string) => {
+  const values = text.split(',').map((part) => Number(part.trim()));
+  if (!text.trim() || values.some((value) => !Number.isFinite(value) || value < 0)) {
+    throw new Error(`${name} takes non-negative numbers separated by commas, got "${text}".`);
+  }
+  return values;
+};
+
+/** The scope from the environment; anything unset keeps the full suite's value. */
+export const harnessScope = (env: Record<string, string | undefined> = process.env): HarnessScope => {
+  const dense = env.ORNAMENT_HARNESS_DENSE;
+  if (dense !== undefined && dense !== 'on' && dense !== 'off') throw new Error(`ORNAMENT_HARNESS_DENSE takes on or off, got "${dense}".`);
+  return {
+    radii: env.ORNAMENT_HARNESS_RADII === undefined ? BORDER_RADII : numbers('ORNAMENT_HARNESS_RADII', env.ORNAMENT_HARNESS_RADII),
+    ornamentSizes: env.ORNAMENT_HARNESS_SIZES === undefined
+      ? [NEUTRAL.ornamentSize, ...SIZE_EXTREMES] : numbers('ORNAMENT_HARNESS_SIZES', env.ORNAMENT_HARNESS_SIZES),
+    dense: dense !== 'off',
+  };
+};
+
+const SCOPE = harnessScope();
 
 /**
  * An input to check; `mustFit`: the hero must fit (every named size with the kind's defaults, the
@@ -40,11 +72,11 @@ const ROUND_SCREENS: readonly Record<string, unknown>[] = [
 ];
 
 /** Every named size, the border's radii 0/16/200 on each and small round screen frames, and the round blocks with each accent. */
-const variants = (adapter: OrnamentKindAdapter): Case[] => {
+const variants = (adapter: OrnamentKindAdapter, radii: readonly number[] = SCOPE.radii): Case[] => {
   const cases: Case[] = adapter.sizes.map((size) => ({label: size.id, input: sizeProps(size), mustFit: true}));
   if (adapter.kind === 'border') {
     for (const size of adapter.sizes) {
-      for (const radius of [0, 16, 200]) cases.push({label: `${size.id} radius ${radius}`, input: {...sizeProps(size), radius}, mustFit: true});
+      for (const radius of radii) cases.push({label: `${size.id} radius ${radius}`, input: {...sizeProps(size), radius}, mustFit: true});
     }
     ROUND_SCREENS.forEach((input, index) => cases.push({label: `tela redonda ${index}`, input}));
   }
@@ -94,32 +126,41 @@ const checkPlacements = (id: string, frame: OrnamentFrame, placements: readonly 
   }
 };
 
-/** One frame's ornament elements against the contract (types.ts). */
+/** A failed element check, its message built only now. */
+const elementFail = (id: string, element: OrnamentElement, what: string): never =>
+  assert.fail(`${id} ${element.type}#${element.anchor}${what}`);
+
+/**
+ * One frame's ornament elements against the contract (types.ts). The dense check calls this for
+ * every element of every frame and half frame, so each message is built only on failure: the eager
+ * template strings were most of the 43 s the cobweb borders took (BGC-15).
+ */
 const checkElements = (
   id: string, set: OrnamentSetId, frame: OrnamentFrame, placements: readonly OrnamentPlacement[], elements: readonly OrnamentElement[],
 ) => {
+  const prefix = `${set}-`;
   for (const element of elements) {
-    const where = `${id} ${element.type}#${element.anchor}`;
-    assert.ok(typeof element.type === 'string' && element.type.startsWith(`${set}-`), `${where}: tipo com o prefixo do conjunto`);
+    if (!(typeof element.type === 'string' && element.type.startsWith(prefix))) elementFail(id, element, ': tipo com o prefixo do conjunto');
     const placement = placements[element.anchor];
-    assert.ok(placement, `${where}: anchor aponta um lugar`);
-    assert.equal(element.layer, placement.layer, `${where}: camada do lugar`);
-    for (const [key, value] of Object.entries(element)) {
-      assert.ok(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value)), `${where}.${key}: plano e finito`);
-      if (key.startsWith('radius')) assert.ok((value as number) > 0, `${where}.${key} > 0`);
+    if (!placement) return elementFail(id, element, ': anchor aponta um lugar');
+    if (element.layer !== placement.layer) elementFail(id, element, `: camada do lugar (${element.layer} ≠ ${placement.layer})`);
+    for (const key in element) {
+      const value = (element as Record<string, unknown>)[key];
+      if (!(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value)))) elementFail(id, element, `.${key}: plano e finito`);
+      if (key.startsWith('radius') && !((value as number) > 0)) elementFail(id, element, `.${key} > 0`);
     }
-    assert.ok(element.opacity >= 0 && element.opacity <= 1, `${where}: opacidade`);
-    assert.ok(element.lightOpacity >= 0 && element.lightOpacity <= 1, `${where}: opacidade da luz`);
-    assert.ok(element.reach >= 0 && element.light >= 0, `${where}: alcances`);
+    if (!(element.opacity >= 0 && element.opacity <= 1)) elementFail(id, element, ': opacidade');
+    if (!(element.lightOpacity >= 0 && element.lightOpacity <= 1)) elementFail(id, element, ': opacidade da luz');
+    if (!(element.reach >= 0 && element.light >= 0)) elementFail(id, element, ': alcances');
     const reach = Math.hypot(element.x - placement.x, element.y - placement.y) + Math.max(element.reach, element.light);
-    assert.ok(reach <= placement.extent + 1e-6, `${where}: cabe no lugar (${reach} > ${placement.extent})`);
+    if (!(reach <= placement.extent + 1e-6)) elementFail(id, element, `: cabe no lugar (${reach} > ${placement.extent})`);
     // In front only: the back layer is clipped to outside the cover, which holds every text area.
     // Unreachable today (checkPlacements keeps a front circle extent + 1 px from the text, and the
     // light stays inside the extent), kept as a guard should either rule loosen.
     if (element.layer === 'front' && element.light > 0 && meetsKeepOut(frame, element.x, element.y, element.light)) {
-      assert.ok(element.lightOpacity <= MAX_CONTENT_OPACITY + 1e-9, `${where}: luz sobre o texto no máximo ${MAX_CONTENT_OPACITY}`);
+      if (!(element.lightOpacity <= MAX_CONTENT_OPACITY + 1e-9)) elementFail(id, element, `: luz sobre o texto no máximo ${MAX_CONTENT_OPACITY}`);
     }
-    if (frame.glow === 0) assert.equal(element.light, 0, `${where}: sem brilho (painel da Twitch), sem luz`);
+    if (frame.glow === 0 && element.light !== 0) elementFail(id, element, ': sem brilho (painel da Twitch), sem luz');
   }
 };
 
@@ -129,7 +170,7 @@ const checkElements = (
  * frame. Returns whether the input was accepted.
  */
 const checkCase = (
-  adapter: OrnamentKindAdapter, set: OrnamentSetId, id: string, input: Record<string, unknown>, {mustFit = false, dense = true} = {},
+  adapter: OrnamentKindAdapter, set: OrnamentSetId, id: string, input: Record<string, unknown>, {mustFit = false, dense = SCOPE.dense} = {},
 ) => {
   const issues = adapter.issues(input);
   if (issues.length > 0) {
@@ -158,7 +199,6 @@ const checkCase = (
   // place() itself is deterministic: called afresh (bypassing the registry's memo, which would hand
   // back the same frozen array) it lays out the same, as a separate render worker would.
   const fresh = () => ornamentSet.place(frame, {ornamentSize: props.ornamentSize});
-  assert.deepEqual(fresh(), placements, `${id}: place() determinístico`);
   assert.deepEqual(fresh(), placements, `${id}: place() determinístico`);
   // A border's back layer tucks under the band: its cover is the whole outer edge (window and screen).
   if (adapter.kind === 'border') assert.deepEqual(frame.cover, {path: roundRectPath(frame.outline), fillRule: 'nonzero'}, `${id}: a faixa esconde os de trás`);
@@ -197,16 +237,20 @@ const checkCase = (
     for (let at = 0; at <= n; at++) {
       const elements = ornamentSet.build(frame, placements, props, at, n);
       if (previous && middle) {
-        previous.forEach((element, index) => {
-          for (const [key, value] of Object.entries(element)) {
+        for (let index = 0; index < previous.length; index++) {
+          const element = previous[index] as Record<string, unknown>;
+          const halfElement = middle[index] as Record<string, unknown>;
+          const nextElement = elements[index] as Record<string, unknown>;
+          for (const key in element) {
+            const value = element[key];
             // The lightning's envelopes rise within 40 ms: a strike is a jump by design.
             if (typeof value !== 'number' || key === 'flash' || key === 'cold') continue;
-            const half = middle![index]![key] as number;
-            const next = elements[index]![key] as number;
+            const half = halfElement[key] as number;
+            const next = nextElement[key] as number;
             // The message is built only on failure: an eager template string cost +45 % on this file.
             if (Math.abs(half - (value + next) / 2) > 0.02 + 0.25 * Math.abs(next - value)) assert.fail(`${id} ${element.type}.${key}: salto entre ${at - 1} e ${at}`);
           }
-        });
+        }
       }
       if (at === n) break; // frame N is frame 0: only its continuity with N−1 is checked
       middle = ornamentSet.build(frame, placements, props, at + 0.5, n);
@@ -339,12 +383,39 @@ const ornamentSampler = (adapter: OrnamentKindAdapter, base: Record<string, unkn
     return [...back, ...front, ...flash] as unknown as Scene;
   };
 
+/** The neutral base on every size and variant of one kind, at each of `ornamentSizes` (none: no test). */
+const registerSizeCases = (set: OrnamentSetId, kindName: OrnamentKindName, ornamentSizes: readonly number[]) => {
+  if (ornamentSizes.length === 0) return;
+  const adapter = ORNAMENT_KINDS[kindName];
+  test(`ornaments [${set}] ${kindName}: cada tamanho aceita (a tela redonda pequena pode recusar com a saída), lugares fixos e dentro dos limites, elementos e clarão válidos (ornamentSize ${ornamentSizes.join(', ')})`, () => {
+    for (const ornamentSize of ornamentSizes) {
+      for (const {label, input, mustFit} of variants(adapter)) {
+        checkCase(adapter, set, `[${set}] ${kindName} ${label} ornamentSize ${ornamentSize}`, {...NEUTRAL, ornaments: set, ornamentSize, ...input}, {mustFit});
+      }
+    }
+  });
+};
+
+/**
+ * Only the size cases of a set on `kinds`, at `ornamentSizes`: a file of its own runs them in
+ * parallel with the rest of the set (the cobweb borders at the extremes, BGC-15).
+ */
+export const registerOrnamentSizeCases = (
+  set: OrnamentSetId, {kinds, ornamentSizes}: {kinds: readonly OrnamentKindName[]; ornamentSizes: readonly number[]},
+) => {
+  for (const kindName of kinds) registerSizeCases(set, kindName, ornamentSizes.filter((size) => SCOPE.ornamentSizes.includes(size)));
+};
+
 /**
  * Registers the harness's tests for one set on `kinds` (all three by default): the neutral base on
- * every size and variant, the generic scans, the markup and the flash, the border's mask, and the
- * kit's presets (`halloween-<set>`).
+ * every size and variant at `ornamentSizes` (the default, the neutral one and the schema's extremes;
+ * [] leaves the size cases to registerOrnamentSizeCases), the generic scans, the markup and the
+ * flash, the border's mask, and the kit's presets (`halloween-<set>`).
  */
-export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KIND_NAMES}: {kinds?: readonly OrnamentKindName[]} = {}) => {
+export const registerOrnamentHarness = (
+  set: OrnamentSetId,
+  {kinds = ORNAMENT_KIND_NAMES, ornamentSizes = SCOPE.ornamentSizes}: {kinds?: readonly OrnamentKindName[]; ornamentSizes?: readonly number[]} = {},
+) => {
   if (kinds.includes('chat')) {
     test(`ornaments [${set}]: o mínimo do principal cabe em todo tamanho nomeado (≤ 12 px)`, () => {
       assert.ok(ORNAMENT_REGISTRY[set].minExtent > 0 && ORNAMENT_REGISTRY[set].minExtent <= 12, `${set}: minExtent ${ORNAMENT_REGISTRY[set].minExtent}`);
@@ -353,13 +424,7 @@ export const registerOrnamentHarness = (set: OrnamentSetId, {kinds = ORNAMENT_KI
 
   for (const kindName of kinds) {
     const adapter = ORNAMENT_KINDS[kindName];
-    test(`ornaments [${set}] ${kindName}: cada tamanho aceita (a tela redonda pequena pode recusar com a saída), lugares fixos e dentro dos limites, elementos e clarão válidos`, () => {
-      for (const ornamentSize of [NEUTRAL.ornamentSize, ...SIZE_EXTREMES]) {
-        for (const {label, input, mustFit} of variants(adapter)) {
-          checkCase(adapter, set, `[${set}] ${kindName} ${label} ornamentSize ${ornamentSize}`, {...NEUTRAL, ornaments: set, ornamentSize, ...input}, {mustFit});
-        }
-      }
-    });
+    registerSizeCases(set, kindName, ornamentSizes.filter((size) => SCOPE.ornamentSizes.includes(size)));
 
     test(`ornaments [${set}] ${kindName}: em todo tamanho nomeado, enfeites e clarão periódicos, sem salto na emenda, markup limpo`, () => {
       for (const size of adapter.sizes) {
