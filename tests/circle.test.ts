@@ -536,16 +536,19 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
     for (const id of ROUND_BORDERS) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/${name}-${id}.${format}`), `${name}: ${id}.${format}`);
       if (kit) for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/${name}-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
-      const mask = plan.find((file) => file.output.endsWith(`masks/${name}-${id}-mask.png`))!;
+      // OBS stretches the mask to the camera, so every round webcam shares one disc, named after
+      // webcam-round and drawn at the widest round size.
+      const mask = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-round-mask.png`))!;
       assert.ok(mask, `${name}: máscara de ${id}`);
-      assert.deepEqual([mask.exportProps.shape, mask.exportProps.radius, mask.canvas.width], ['circle', getSize(id).width / 2, getSize(id).width]);
+      assert.deepEqual([mask.exportProps.shape, mask.exportProps.radius, mask.canvas.width], ['circle', 280, 560]);
       for (const file of plan.filter((entry) => entry.size === id && entry.role !== 'mask')) assert.equal(file.mask, mask.output);
     }
     // The square webcam keeps its own (rounded-rect) mask.
     const square = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-square-mask.png`))!;
     assert.equal(square.exportProps.shape, 'rectangle');
-    // Kits: the background, 25 sizes with ornaments (no screens) and 27 without, in two formats, plus the nine masks, shared by both.
-    assert.equal(plan.length, name === 'halloween' ? 69 : kit ? 2 + 2 * 25 + 2 * 27 + 9 : 65, name);
+    assert.ok(!plan.some((file) => /round-(sm|lg)-mask/.test(file.output)), `${name}: um disco só`);
+    // Kits: the background, 25 sizes with ornaments (no screens) and 27 without, in two formats, plus the seven masks, shared by both.
+    assert.equal(plan.length, name === 'halloween' ? 67 : kit ? 2 + 2 * 25 + 2 * 27 + 7 : 63, name);
   }
 });
 

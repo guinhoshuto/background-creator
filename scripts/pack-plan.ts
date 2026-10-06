@@ -136,11 +136,25 @@ const assertVariantKeepsSize = (kind: AssetKind, piece: string, variant: string 
 };
 
 /**
- * One mask the pack needs: its props, the item that first asked for it (`where`), how many planned
- * files come before it (`after`) and every file that uses it.
+ * One mask the pack needs: the sizes that share it (with each one's mask props and radius), the
+ * item that first asked for it (`where`), how many planned files come before it (`after`) and
+ * every file that uses it.
  */
 type MaskRequest = {
-  asset: PackAsset; sizeId: string; radius: number; props: Record<string, unknown>; after: number; users: PlannedFile[]; where: string;
+  asset: PackAsset; sizes: Map<string, {props: Record<string, unknown>; radius: number; width: number}>;
+  after: number; users: PlannedFile[]; where: string;
+};
+
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+
+/**
+ * OBS's Image Mask stretches the PNG to the camera, so two windows give the same mask when they
+ * have the same aspect and the same radius in proportion to the width: every round webcam is one
+ * disc. A rounded rectangle of another size is not, because the radius is in fixed px.
+ */
+const maskShapeKey = (width: number, height: number, radius: number) => {
+  const divisor = gcd(width, height);
+  return `${width / divisor}:${height / divisor}|${radius / width}`;
 };
 
 /** OBS masks get a folder of their own in the pack, whatever the border's. */
@@ -224,9 +238,11 @@ const itemSizePatch = (asset: PackAsset, sizeId: string) => {
  * named for the buyer by `deliveryFileName`, in the kind's folder or the size's own.
  *
  * A window border (a named size with fit 'window') also needs its OBS mask. The mask depends only
- * on the window (box and clamped radius), so the pack plans it once per size and radius, right
- * after the first file that needs it, as `masks/<pack>-<size>-mask.png`; when one pack holds the
- * same size with several radii, each mask is tagged with its radius: `<pack>-<size>-mask-radius-<radius>.png`.
+ * on the window's shape once stretched (`maskShapeKey`), so the pack plans it once per shape, right
+ * after the first item that needs it, as `masks/<pack>-<size>-mask.png`: named after the shortest
+ * size id that shares it (webcam-round for the three round webcams) and drawn at the widest one,
+ * since OBS scales it anyway. When one size names several masks (several radii), each is tagged
+ * with that size's radius: `<pack>-<size>-mask-radius-<radius>.png`.
  */
 export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] => {
   const planned: PlannedFile[] = [];
@@ -307,9 +323,11 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
         const maskProps = sizeId === undefined ? null : asset.mask?.(parsed) ?? null;
         if (sizeId !== undefined && maskProps) {
           const radius = Number(maskProps.radius);
-          const key = `${sizeId}|${radius}`;
-          const request = masks.get(key) ?? {asset, sizeId, radius, props: maskProps, after: 0, users: [], where};
-          // The mask comes right after the last format of the first item and size that need it.
+          const width = Number(maskProps.width);
+          const key = maskShapeKey(width, Number(maskProps.height), radius);
+          const request: MaskRequest = masks.get(key) ?? {asset, sizes: new Map(), after: 0, users: [], where};
+          if (!request.sizes.has(sizeId)) request.sizes.set(sizeId, {props: maskProps, radius, width});
+          // The mask comes right after the last format of the first item that needs it.
           if (request.where === where) request.after = planned.length;
           request.users.push(entry);
           masks.set(key, request);
@@ -319,14 +337,20 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
   });
   if (masks.size === 0) return planned;
 
-  const radiiBySize = new Map<string, Set<number>>();
-  for (const {sizeId, radius} of masks.values()) radiiBySize.set(sizeId, (radiiBySize.get(sizeId) ?? new Set()).add(radius));
+  // The name: the shortest size id of the shape (the first one on a tie); the drawing: the widest.
+  const nameOf = (request: MaskRequest) => [...request.sizes.keys()].reduce((best, id) => (id.length < best.length ? id : best));
+  const widest = (request: MaskRequest) => [...request.sizes.values()].reduce((best, size) => (size.width > best.width ? size : best));
+  const masksBySize = new Map<string, number>();
+  for (const request of masks.values()) masksBySize.set(nameOf(request), (masksBySize.get(nameOf(request)) ?? 0) + 1);
   const inserts = new Map<number, PlannedFile[]>();
   for (const request of masks.values()) {
-    const {asset, sizeId, radius, where} = request;
+    const {asset, where} = request;
+    const sizeId = nameOf(request);
+    const {radius} = request.sizes.get(sizeId)!;
+    const {props} = widest(request);
     const exportProps = (() => {
       try {
-        return asset.parse(request.props);
+        return asset.parse(props);
       } catch (error) {
         const message = error instanceof z.ZodError ? issuesText(error) : error instanceof Error ? error.message : String(error);
         throw new Error(`${where}: the mask of ${sizeId} is invalid: ${message}`);
@@ -336,7 +360,7 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
     if (!canvas) throw new Error(`${where}: the composition does not report the mask size.`);
     const file = deliveryFileName({
       pack: manifest.name, role: 'mask', size: getSize(sizeId).id, format: 'png',
-      ...(radiiBySize.get(sizeId)!.size > 1 ? {radius} : {}),
+      ...(masksBySize.get(sizeId)! > 1 ? {radius} : {}),
     });
     const output = path.posix.join('out', 'packs', manifest.name, MASK_FOLDER, file);
     const previous = seen.get(output);
@@ -346,7 +370,7 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
     const {fps, durationInFrames} = getCompositionMetadata({durationSeconds: exportProps.durationSeconds as number, outputFormat: 'png'});
     const mask: PlannedFile = {
       composition: asset.id, kind: asset.kind, folder: MASK_FOLDER, size: sizeId, format: 'png',
-      props: request.props, exportProps, output, canvas: {...canvas}, fps, frames: durationInFrames, frame: 0, role: 'mask',
+      props, exportProps, output, canvas: {...canvas}, fps, frames: durationInFrames, frame: 0, role: 'mask',
     };
     for (const user of request.users) user.mask = output;
     inserts.set(request.after, [...(inserts.get(request.after) ?? []), mask]);
