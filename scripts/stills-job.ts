@@ -320,7 +320,7 @@ export const streamMockup = (
  * scene keeps its ornaments as the focus and the rest use the plain variant, so a scene never stacks ornaments on
  * every border. Every scene sits on the kit's own background, as the buyer sees it behind the overlays.
  */
-const MOCK_LAYOUTS: {out: string; layers: {size: string; variant?: string; x: number; y: number}[]}[] = [
+export const MOCK_LAYOUTS: {out: string; layers: {size: string; variant?: string; x: number; y: number}[]}[] = [
   {out: 'mock-chatting', layers: [
     {size: 'webcam-16x9-lg', x: 80, y: 100}, {size: 'chat-standard', variant: 'plain', x: 1440, y: 100},
     {size: 'lower-third', variant: 'plain', x: 80, y: 820}]},
