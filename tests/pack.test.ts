@@ -623,11 +623,12 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     const plan = planPack(pack, realPackDeps);
     const backgrounds = pack.items.filter((item) => item.sizes === undefined).length;
     // Each sized item × its sizes × its formats, plus each background × its formats, plus the OBS
-    // mask of each of the nine window sizes (the two screen frames have none). The Halloween kits
-    // hold every size twice (with ornaments, screens excepted, and plain), sharing the masks.
+    // masks of the nine window sizes: seven, since the three round webcams share one disc (the two
+    // screen frames have none). The Halloween kits hold every size twice (with ornaments, screens
+    // excepted, and plain), sharing the masks.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
     const sizes = kit ? (5 + 10 + 9 + 1) + (5 + 10 + 11 + 1) : 5 + 10 + 11 + 1;
-    assert.equal(plan.length, 2 * backgrounds + 2 * sizes + 9, name);
+    assert.equal(plan.length, 2 * backgrounds + 2 * sizes + 7, name);
     assert.equal(new Set(plan.map((file) => file.output)).size, plan.length);
     for (const file of plan) {
       assert.ok(file.output.startsWith(`out/packs/${name}/`), file.output);
@@ -694,20 +695,23 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
     const plan = planPack(parsePackManifest(readPack(name)), realPackDeps);
     const masks = plan.filter((file) => file.role === 'mask');
     const windows = sizesForKind('border').filter((size) => size.props?.fit !== 'screen');
-    // One mask per window size, shared by the kits' two variants (in the order their sizes first appear).
-    assert.deepEqual(masks.map((file) => file.output).sort(), windows.map((size) => `out/packs/${name}/masks/${name}-${size.id}-mask.png`).sort(), name);
+    // One mask per window size, shared by the kits' two variants, except the round webcams, which
+    // share webcam-round's disc, drawn at the widest of them (OBS stretches it to the camera).
+    const SHARED_DISC = ['webcam-round-sm', 'webcam-round-lg'];
+    const maskSizeOf = (id: string) => (SHARED_DISC.includes(id) ? 'webcam-round' : id);
+    assert.deepEqual(masks.map((file) => file.output).sort(), windows.filter((size) => !SHARED_DISC.includes(size.id))
+      .map((size) => `out/packs/${name}/masks/${name}-${size.id}-mask.png`).sort(), name);
     for (const mask of masks) {
-      const size = windows.find((entry) => entry.id === mask.size)!;
+      const size = windows.find((entry) => entry.id === (mask.size === 'webcam-round' ? 'webcam-round-lg' : mask.size))!;
       assert.deepEqual(mask.canvas, {width: size.width, height: size.height}, 'do tamanho da câmera');
       assert.deepEqual([mask.format, mask.frame, mask.composition, mask.folder], ['png', 0, 'BorderLoop', 'masks']);
       assert.deepEqual(
         [mask.exportProps.mask, mask.exportProps.bleed, mask.exportProps.outputFormat, mask.exportProps.transparent],
         [true, 0, 'png', true],
       );
-      // Right after the last format of its size.
+      // Right after the last format of the first item that needs it.
       const index = plan.indexOf(mask);
-      assert.equal(plan[index - 1]!.size, mask.size);
-      assert.notEqual(plan[index - 1]!.role, 'mask');
+      assert.equal(plan[index - 1]!.mask, mask.output);
       const entry = packFileEntry(mask, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), null);
       assert.equal(entry.role, 'mask');
       assert.equal(entry.motion, undefined);
@@ -715,9 +719,9 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
     }
     for (const file of plan.filter((entry) => entry.composition === 'BorderLoop' && entry.role !== 'mask')) {
       const isWindow = windows.some((size) => size.id === file.size);
-      assert.equal(file.mask, isWindow ? `out/packs/${name}/masks/${name}-${file.size}-mask.png` : undefined, file.output);
+      assert.equal(file.mask, isWindow ? `out/packs/${name}/masks/${name}-${maskSizeOf(file.size!)}-mask.png` : undefined, file.output);
       const entry = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), null);
-      assert.equal(entry.mask, isWindow ? `masks/${name}-${file.size}-mask.png` : undefined, file.output);
+      assert.equal(entry.mask, isWindow ? `masks/${name}-${maskSizeOf(file.size!)}-mask.png` : undefined, file.output);
       // Even with a sidecar that names another mask file (older exports did), the pack's own mask wins.
       const sidecar = {...entry, mask: `BorderLoop-${file.size}-mask.png`, hole: entry.hole};
       const fromSidecar = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), sidecar);
@@ -754,6 +758,29 @@ test('packs: a máscara depende só do tamanho e do raio; raios diferentes no me
   const pastel = mixed.find((file) => file.output === 'out/packs/test/borders/test-webcam-16x9.png')!;
   assert.equal(pastel.mask, 'out/packs/test/masks/test-webcam-16x9-mask-radius-24.png');
   assert.equal(filterPlan(mixed, 'webcam-square').filter((file) => file.role === 'mask').length, 2, '--only leva as máscaras do tamanho');
+});
+
+test('packs: OBS estica a máscara, então só a forma em proporção decide quem a divide', () => {
+  const border = (sizes: string[], format: 'webm' | 'png', radius: number) => ({
+    composition: 'BorderLoop', preset: 'border-neon', props: {radius}, sizes, formats: [format],
+  });
+  const masksOf = (plan: PlannedFile[]) => plan.filter((file) => file.role === 'mask')
+    .map((file) => [path.posix.basename(file.output), file.canvas.width, file.exportProps.radius]);
+  // Same aspect, same radius in px: 16 px on 640 is not 16 px on 960 once stretched, so two masks.
+  const fixed = planPack(manifest([border(['webcam-16x9', 'webcam-16x9-lg'], 'webm', 16)]), realPackDeps);
+  assert.deepEqual(masksOf(fixed), [['test-webcam-16x9-mask.png', 640, 16], ['test-webcam-16x9-lg-mask.png', 960, 16]]);
+  // The radius in proportion (16 on 640, 24 on 960): one mask, named after the shorter id, drawn at the wider.
+  const scaled = planPack(manifest([border(['webcam-16x9'], 'webm', 16), border(['webcam-16x9-lg'], 'png', 24)]), realPackDeps);
+  assert.deepEqual(masksOf(scaled), [['test-webcam-16x9-mask.png', 960, 24]]);
+  assert.deepEqual(scaled.filter((file) => file.role !== 'mask').map((file) => file.mask), [
+    'out/packs/test/masks/test-webcam-16x9-mask.png', 'out/packs/test/masks/test-webcam-16x9-mask.png',
+  ]);
+  // Round webcams are always one disc, whatever the radius asked.
+  const round = planPack(manifest([border(['webcam-round-sm', 'webcam-round', 'webcam-round-lg'], 'webm', 16)]), realPackDeps);
+  assert.deepEqual(masksOf(round), [['test-webcam-round-mask.png', 560, 280]]);
+  // Another aspect never shares: the 4:3 and the square webcam keep their own.
+  const aspects = planPack(manifest([border(['webcam-4x3', 'webcam-square'], 'webm', 0)]), realPackDeps);
+  assert.deepEqual(masksOf(aspects).map(([name]) => name), ['test-webcam-4x3-mask.png', 'test-webcam-square-mask.png']);
 });
 
 test('every real pack plans only buyer-rule names', () => {
