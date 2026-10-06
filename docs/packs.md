@@ -98,3 +98,16 @@ npm run zip:pack -- halloween-midnight           # writes out/deliveries/hallowe
 - **`--check`** exits 0 when the zip is up to date, 2 when there is none or it differs, and 1 when a check fails.
 - **Size and time, before the render.** `npm run render:pack -- <pack> --dry-run` ends with the estimated MiB and minutes per variant and for the whole plan, and what is left to render, from the halloween-noite render measured on 2026-09-26 (`scripts/pack-estimate.ts`; mp4 and mov are not measured yet). The zip weighs what the files weigh, since it stores them uncompressed. `zip:pack` has no `--dry-run`.
 - **Where it goes.** A kit is about 1 GB and an Etsy listing takes 5 files of 20 MB, so the zip goes to R2 and its link goes into the pack guide (`<pack>-guide.pdf`), the only file of the listing.
+
+## Listing video
+
+```bash
+npm run qa:kit -- halloween-midnight --video mock-chatting   # out/review/<date>-qa-halloween-midnight/mock-chatting.mp4
+npm run qa:kit -- halloween-midnight --video all --dry-run   # the scenes and the pieces still to render
+```
+
+- **What it is.** The stream mockups of `qa:kit` (`MOCK_LAYOUTS` in `scripts/stills-job.ts`: mock-chatting, mock-gameplay, mock-screen), animated: the pack's own `.webm` files composited by FFmpeg at the same box positions, each minus its own bleed, one background loop long, as an H.264 MP4 at 1920×1080. Frame 0 is the still mockup, so the listing cover (made from `mock-chatting-0.png` by the thumbnail generator) and its video start on the same image.
+- **Missing pieces** are rendered first, one `render:pack -- <pack> --only <file>` each, into `out/packs/<pack>/`; a scene the pack does not plan, or a piece whose loop differs from the background's, is refused with the reason.
+- **Loops over 14.5 s** (the thumbnail generator's longest listing video; Etsy takes 15 s) also get `<mock>-listing.mp4`: the first 14.5 s, with the last second faded into the loop's own last second, which runs into frame 0, so the replay does not jump (`scripts/mock-video.ts`).
+- **Into the listing:** in the generator's `listings/<pack>.json`, `"video": {"image": 0, "seconds": <loop or 14.5>, "override": {"media": {"src": "<the mp4>", "poster": 0}}}`, then `npm run render -- listings/<pack>.json --video-only` there.
+- It takes the render slot for the compositing, and `--frames` does not apply.
