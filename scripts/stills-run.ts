@@ -14,7 +14,7 @@ import {projectRoot} from './export';
 import {expandSize} from './render-args';
 import {diffDetail} from './pixel-stats';
 import {acquireRenderSlot, currentCommand} from './render-slot';
-import {busyProcesses, takeRenderTurn} from './render-turn';
+import {busyOutsideSlot, busyProcesses, takeRenderTurn} from './render-turn';
 import {
   alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
   seamVerdict, sequenceVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
@@ -113,7 +113,8 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
     // No other render running and the slot held (render-turn.ts has the order and why).
     const slot = await takeRenderTurn({wait}, {
       busy: busyProcesses,
-      acquire: ({wait: waitForSlot, waitLimitMs}) => acquireRenderSlot({command: currentCommand(), wait: waitForSlot, waitLimitMs}),
+      outsideSlot: busyOutsideSlot,
+      acquire: ({wait: waitForSlot, waitLimitMs, since}) => acquireRenderSlot({command: currentCommand(), wait: waitForSlot, waitLimitMs, since}),
       sleep,
       // Measured inside the slot: after waiting for another render, the disk is what that render left.
       whileHeld: () => assertCanStart({free: freeBytes(outDir), estimate, where: shown, then: FREE_SPACE_HINT}),

@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {machineCheckScript, machineVerdict, parseVerdict} from '../scripts/machine-check';
-import {busyProcesses} from '../scripts/render-turn';
+import {MACHINE_CHECK_ENV, machineCheckScript, machineVerdict, parseVerdict} from '../scripts/machine-check';
+import {busyOutsideSlot, busyProcesses} from '../scripts/render-turn';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -28,6 +28,30 @@ test('a busy answer (exit 3) gives its reasons, and the check is asked for this 
   const script = fakeCheck(t, {livre: false, motivos: ['o jogo está aberto'], reasons: ['the game (Client-Mac-Shipping) is open']}, 3);
   const verdict = machineVerdict(4242, script);
   assert.deepEqual(verdict, {free: false, reasons: ['the game (Client-Mac-Shipping) is open', 'argv --json --familia 4242']});
+});
+
+test('outsideSlot asks the check only for what the render slot does not cover (--fora-da-trava)', (t) => {
+  const script = fakeCheck(t, {livre: false, motivos: [], reasons: []}, 3);
+  assert.deepEqual(machineVerdict(4242, script, {outsideSlot: true})?.reasons, ['argv --json --familia 4242 --fora-da-trava']);
+  assert.deepEqual(machineVerdict(4242, script, {outsideSlot: false})?.reasons, ['argv --json --familia 4242']);
+});
+
+test('busyOutsideSlot asks --fora-da-trava and busyProcesses the whole check, both for this run\'s family', (t) => {
+  const script = fakeCheck(t, {livre: false, motivos: [], reasons: []}, 3);
+  const previous = process.env[MACHINE_CHECK_ENV];
+  process.env[MACHINE_CHECK_ENV] = script;
+  t.after(() => { if (previous === undefined) delete process.env[MACHINE_CHECK_ENV]; else process.env[MACHINE_CHECK_ENV] = previous; });
+  assert.deepEqual(busyOutsideSlot(), [`argv --json --familia ${process.pid} --fora-da-trava`]);
+  assert.deepEqual(busyProcesses(), [`argv --json --familia ${process.pid}`]);
+});
+
+test('without the check, busyOutsideSlot falls back to the process list and asks who holds the slot', () => {
+  let asked = 0;
+  const fallback = busyOutsideSlot(() => null, () => { asked += 1; return undefined; });
+  assert.equal(asked, 1);
+  assert.ok(Array.isArray(fallback) && fallback.every((line) => /^\d+ /.test(line)), JSON.stringify(fallback));
+  assert.deepEqual(busyOutsideSlot(() => ({free: true, reasons: []}), () => { asked += 1; return undefined; }), []);
+  assert.equal(asked, 1, 'asked for the slot holder although the check answered');
 });
 
 test('a free answer (exit 0) has no reason', (t) => {
