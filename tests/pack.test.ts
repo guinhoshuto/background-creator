@@ -13,7 +13,7 @@ import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
 import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
-import {BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, STATIC_ONLY, expectedPackFiles} from './helpers/themes';
+import {BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -605,7 +605,7 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
       assert.deepEqual(plain, [], name);
     }
     for (const item of pack.items.filter((entry) => !entry.sizes?.includes('twitch-panel'))) {
-      const still = (STATIC_ONLY[name as keyof typeof STATIC_ONLY] ?? []).includes(item.composition);
+      const still = isStaticOnly(name, item.composition);
       assert.deepEqual(item.formats, still ? ['png'] : ['webm', 'png'], `${name}/${item.composition}: mov é opcional`);
     }
     const backgrounds = pack.items.filter((item) => item.sizes === undefined);
@@ -631,9 +631,7 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     // excepted, and plain), sharing the masks, and no Twitch panel.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
     const sizes = kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1;
-    // A static-only composition drops its WebM: chat 5 + 5 sizes, border 9 + 11.
-    const stills = (STATIC_ONLY[name as keyof typeof STATIC_ONLY] ?? [])
-      .reduce((sum, composition) => sum + ({ChatLoop: 5 + 5, BorderLoop: 9 + 11} as Record<string, number>)[composition]!, 0);
+    const stills = droppedWebms(name);
     assert.equal(plan.length, 2 * backgrounds + 2 * sizes - stills + 7, name);
     assert.equal(new Set(plan.map((file) => file.output)).size, plan.length);
     for (const file of plan) {
@@ -648,7 +646,7 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     ]);
     if (kit) {
       // The scaled frames keep their box and widen the file by the item's bleed; the twins keep the size's.
-      const ext = (STATIC_ONLY[name as keyof typeof STATIC_ONLY] ?? []).includes('BorderLoop') ? 'png' : 'webm';
+      const ext = isStaticOnly(name, 'BorderLoop') ? 'png' : 'webm';
       const canvasOf = (file: string) => plan.find((entry) => entry.output === `out/packs/${name}/borders/${file}`)!.canvas;
       assert.deepEqual(canvasOf(`${name}-gameplay.${ext}`), {width: 1440 + 2 * 96, height: 810 + 2 * 96});
       assert.deepEqual(canvasOf(`${name}-gameplay-plain.${ext}`), {width: 1440 + 2 * 48, height: 810 + 2 * 48});
