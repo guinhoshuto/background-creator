@@ -10,7 +10,7 @@
       "composition": "ChatLoop",
       "preset": "chat-halloween-haunted-interior",
       "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
-      "formats": ["webm", "png"]
+      "formats": ["png"]
     },
     {
       "composition": "BlockLoop",
@@ -22,27 +22,27 @@
       "composition": "BorderLoop",
       "preset": "border-halloween-haunted-interior",
       "sizes": ["webcam-16x9", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical"],
-      "formats": ["webm", "png"]
+      "formats": ["png"]
     },
     {
       "composition": "BorderLoop",
       "preset": "border-halloween-haunted-interior",
       "sizes": ["webcam-16x9-lg"],
-      "formats": ["webm", "png"],
+      "formats": ["png"],
       "props": {"bleed": 72, "ornamentScale": 1.5}
     },
     {
       "composition": "BorderLoop",
       "preset": "border-halloween-haunted-interior",
       "sizes": ["gameplay"],
-      "formats": ["webm", "png"],
+      "formats": ["png"],
       "props": {"bleed": 96, "ornamentScale": 2}
     },
     {
       "composition": "ChatLoop",
       "preset": "chat-halloween-haunted-interior",
       "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
-      "formats": ["webm", "png"],
+      "formats": ["png"],
       "props": {"ornaments": "none"},
       "variant": "plain"
     },
@@ -58,7 +58,7 @@
       "composition": "BorderLoop",
       "preset": "border-halloween-haunted-interior",
       "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
-      "formats": ["webm", "png"],
+      "formats": ["png"],
       "props": {"ornaments": "none"},
       "variant": "plain"
     }

@@ -13,7 +13,7 @@ import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
 import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
-import {BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, expectedPackFiles} from './helpers/themes';
+import {BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, STATIC_ONLY, expectedPackFiles} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -605,7 +605,8 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
       assert.deepEqual(plain, [], name);
     }
     for (const item of pack.items.filter((entry) => !entry.sizes?.includes('twitch-panel'))) {
-      assert.deepEqual(item.formats, ['webm', 'png'], `${name}/${item.composition}: mov é opcional`);
+      const still = (STATIC_ONLY[name as keyof typeof STATIC_ONLY] ?? []).includes(item.composition);
+      assert.deepEqual(item.formats, still ? ['png'] : ['webm', 'png'], `${name}/${item.composition}: mov é opcional`);
     }
     const backgrounds = pack.items.filter((item) => item.sizes === undefined);
     assert.ok(backgrounds.length >= 1, `${name}: o pack traz o fundo do tema`);
@@ -630,7 +631,10 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     // excepted, and plain), sharing the masks, and no Twitch panel.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
     const sizes = kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1;
-    assert.equal(plan.length, 2 * backgrounds + 2 * sizes + 7, name);
+    // A static-only composition drops its WebM: chat 5 + 5 sizes, border 9 + 11.
+    const stills = (STATIC_ONLY[name as keyof typeof STATIC_ONLY] ?? [])
+      .reduce((sum, composition) => sum + ({ChatLoop: 5 + 5, BorderLoop: 9 + 11} as Record<string, number>)[composition]!, 0);
+    assert.equal(plan.length, 2 * backgrounds + 2 * sizes - stills + 7, name);
     assert.equal(new Set(plan.map((file) => file.output)).size, plan.length);
     for (const file of plan) {
       assert.ok(file.output.startsWith(`out/packs/${name}/`), file.output);
@@ -644,12 +648,13 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     ]);
     if (kit) {
       // The scaled frames keep their box and widen the file by the item's bleed; the twins keep the size's.
+      const ext = (STATIC_ONLY[name as keyof typeof STATIC_ONLY] ?? []).includes('BorderLoop') ? 'png' : 'webm';
       const canvasOf = (file: string) => plan.find((entry) => entry.output === `out/packs/${name}/borders/${file}`)!.canvas;
-      assert.deepEqual(canvasOf(`${name}-gameplay.webm`), {width: 1440 + 2 * 96, height: 810 + 2 * 96});
-      assert.deepEqual(canvasOf(`${name}-gameplay-plain.webm`), {width: 1440 + 2 * 48, height: 810 + 2 * 48});
-      assert.deepEqual(canvasOf(`${name}-webcam-16x9-lg.webm`), {width: 960 + 2 * 72, height: 540 + 2 * 72});
-      assert.deepEqual(canvasOf(`${name}-fullscreen-plain.webm`), {width: 1920, height: 1080});
-      assert.ok(!plan.some((file) => file.output.endsWith(`${name}-fullscreen.webm`)), `${name}: telas só sem enfeites`);
+      assert.deepEqual(canvasOf(`${name}-gameplay.${ext}`), {width: 1440 + 2 * 96, height: 810 + 2 * 96});
+      assert.deepEqual(canvasOf(`${name}-gameplay-plain.${ext}`), {width: 1440 + 2 * 48, height: 810 + 2 * 48});
+      assert.deepEqual(canvasOf(`${name}-webcam-16x9-lg.${ext}`), {width: 960 + 2 * 72, height: 540 + 2 * 72});
+      assert.deepEqual(canvasOf(`${name}-fullscreen-plain.${ext}`), {width: 1920, height: 1080});
+      assert.ok(!plan.some((file) => file.output.endsWith(`${name}-fullscreen.${ext}`)), `${name}: telas só sem enfeites`);
     }
   }
 });
@@ -818,8 +823,8 @@ test('every real pack plans only buyer-rule names', () => {
       if (base!.length > longest.length) longest = base!;
     }
   }
-  assert.equal(longest, 'halloween-haunted-interior-fullscreen-vertical-plain.webm');
-  assert.equal(longest.length, 57);
+  assert.equal(longest, 'halloween-haunted-mansion-fullscreen-vertical-plain.webm');
+  assert.equal(longest.length, 56);
 });
 
 // A refusal points the way out: an unknown pack name lists the packs that exist (plan rule 4.1.10).

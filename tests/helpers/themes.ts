@@ -20,6 +20,14 @@ export const OVERLAY_THEMES: readonly OverlayTheme[] = [...CLASSIC_THEMES, ...KI
 /** presets/{chat,block,border}-*.json the file list must hold, sorted: every theme's three presets, exactly. */
 export const expectedPresetFiles = (): string[] => PRESET_KINDS.flatMap((kind) => OVERLAY_THEMES.map((theme) => `${kind}-${theme}.json`)).sort();
 
+/**
+ * Overlay compositions a kit ships as a still PNG only, with no WebM: in Haunted Interior the
+ * animated chat and borders added little and aliased badly (owner, 2026-10-07).
+ */
+export const STATIC_ONLY: Readonly<Partial<Record<KitTheme, readonly string[]>>> = {
+  'halloween-haunted-interior': ['ChatLoop', 'BorderLoop'],
+};
+
 /** Packs of backgrounds only, sold apart from the kits: `halloween-backgrounds` holds the four kits' backgrounds. */
 export const BACKGROUND_PACKS = ['halloween-backgrounds'] as const;
 
