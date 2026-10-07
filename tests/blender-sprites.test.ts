@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {
   BLENDER_BIN_ENV, DEFAULT_BLENDER_BIN, decideSprite, dryRunText, parseFrameRange, parseSpriteRegistry, planSprites,
-  readWebpInfo, resolveBlender, runSprites, spriteHash, type SpriteAsset, type SpriteChoice, type SpriteEffects, type SpriteManifest,
+  readWebpInfo, resolveBlender, runSprites, spriteHash, spriteSources, type SpriteAsset, type SpriteChoice, type SpriteEffects, type SpriteManifest,
   type SpriteRegistry,
 } from '../scripts/blender-sprites-plan';
 
@@ -70,8 +70,8 @@ test('registry: a typo, a wrong set and a wrong loop are named in one message', 
   });
 });
 
-test('hash: follows the asset entry and every Python file, not the key order or the other assets', () => {
-  const files = [{name: 'studio.py', content: 'studio'}, {name: 'heart.py', content: 'heart'}];
+test('hash: follows the asset entry and the Python it runs, not the key order or the other assets', () => {
+  const files = [{name: 'sprites.py', content: 'import studio\n'}, {name: 'studio.py', content: 'studio'}, {name: 'heart.py', content: 'import pillow\n'}];
   const base = spriteHash(parsed({heart: heart()}), 'heart', files);
   assert.match(base, /^[0-9a-f]{64}$/);
   // Parsing writes the fields in one fixed order; the hash must not lean on it (a refactor would re-render every asset).
@@ -80,8 +80,32 @@ test('hash: follows the asset entry and every Python file, not the key order or 
   const reordered: SpriteRegistry = {...parsed({heart: heart()}), assets: {star: {...entry, module: 'sparkle'}, heart: reversed}};
   assert.equal(spriteHash(reordered, 'heart', [...files].reverse()), base);
   assert.notEqual(spriteHash(parsed({heart: {...heart(), size: 512}}), 'heart', files), base);
-  assert.notEqual(spriteHash(parsed({heart: heart()}), 'heart', [{name: 'studio.py', content: 'studio, edited'}, files[1]!]), base);
+  assert.notEqual(spriteHash(parsed({heart: heart()}), 'heart', [files[0]!, {name: 'studio.py', content: 'studio, edited'}, files[2]!]), base);
   assert.notEqual(spriteHash(parsed({heart: heart()}), 'heart', [...files, {name: 'pillow.py', content: 'pillow'}]), base);
+});
+
+test('hash: only the Python an asset runs, its imports followed to the end', () => {
+  const files = [
+    {name: 'sprites.py', content: 'import bpy  # noqa: E402\nimport studio  # noqa: E402\n'},
+    {name: 'studio.py', content: 'import bpy\n'},
+    {name: 'camcorder.py', content: 'from __future__ import annotations\nimport numpy as np\nimport phone\n'},
+    {name: 'phone.py', content: 'import studio, shapes as sh\n'},
+    {name: 'shapes.py', content: 'def star():\n    from pillow import chaikin\n'},
+    {name: 'pillow.py', content: 'import numpy as np\n'},
+    {name: 'bubbles.py', content: 'import shapes\n'},
+  ];
+  assert.deepEqual(spriteSources('camcorder', files).map((file) => file.name).sort(),
+    ['camcorder.py', 'phone.py', 'pillow.py', 'shapes.py', 'sprites.py', 'studio.py']);
+  const registry = parsed({camcorder: {...heart(), module: 'camcorder'}});
+  const base = spriteHash(registry, 'camcorder', files);
+  const edited = (name: string) => files.map((file) => (file.name === name ? {name, content: `${file.content}# edited\n`} : file));
+  // Another asset's module, remodelled or retired, leaves the camcorder's sprites up to date.
+  assert.equal(spriteHash(registry, 'camcorder', edited('bubbles.py')), base);
+  assert.equal(spriteHash(registry, 'camcorder', files.filter((file) => file.name !== 'bubbles.py')), base);
+  // Whatever it runs does not: sprites.py, the module, and imports two steps away, aliased or inside a function.
+  for (const name of ['sprites.py', 'studio.py', 'camcorder.py', 'phone.py', 'shapes.py', 'pillow.py']) {
+    assert.notEqual(spriteHash(registry, 'camcorder', edited(name)), base, name);
+  }
 });
 
 test('plan: --only names known assets, the module must exist, and overrides mark a smoke render incomplete', () => {

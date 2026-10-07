@@ -241,11 +241,38 @@ const canonical = (value: unknown): string => {
 
 export type PythonFile = {name: string; content: string | Uint8Array};
 
-/** sha256 over the asset's registry entry (with the set's fps and loop) and every Python file of the set, sorted by name. */
+/** `import a, b as c` or `from a import x`, at any indentation (a helper may import inside a function). */
+const IMPORT_LINE = /^[ \t]*(?:import[ \t]+([\w., \t]+)|from[ \t]+([\w.]+)[ \t]+import\b)/gm;
+
+/**
+ * The set's Python files one asset's render runs: sprites.py, the asset's module (which sprites.py imports
+ * by name) and, transitively, every module of the set folder they import. Editing or retiring another
+ * asset's module leaves this asset's sprites up to date; editing studio.py or a helper it uses does not.
+ */
+export const spriteSources = (module: string, pythonFiles: readonly PythonFile[]): PythonFile[] => {
+  const byName = new Map(pythonFiles.map((file) => [file.name, file]));
+  const needed = new Set<string>();
+  const visit = (name: string) => {
+    const file = byName.get(name);
+    if (!file || needed.has(name)) return;
+    needed.add(name);
+    const text = typeof file.content === 'string' ? file.content : new TextDecoder().decode(file.content);
+    for (const match of text.matchAll(IMPORT_LINE)) {
+      const names = match[1] === undefined ? [match[2]!] : match[1].split(',').map((part) => part.trim().split(/\s+as\s+/)[0]!);
+      for (const imported of names) visit(`${imported.split('.')[0]}.py`);
+    }
+  };
+  visit('sprites.py');
+  visit(`${module}.py`);
+  return pythonFiles.filter((file) => needed.has(file.name));
+};
+
+/** sha256 over the asset's registry entry (with the set's fps and loop) and the Python files its render runs (spriteSources), sorted by name. */
 export const spriteHash = (registry: SpriteRegistry, id: string, pythonFiles: readonly PythonFile[]) => {
   const hash = createHash('sha256');
   hash.update(canonical({set: registry.set, fps: registry.fps, loopFrames: registry.loopFrames, id, asset: registry.assets[id]}));
-  for (const file of [...pythonFiles].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+  const sources = spriteSources(registry.assets[id]!.module, pythonFiles);
+  for (const file of sources.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
     hash.update(`\0${file.name}\0`);
     hash.update(file.content);
   }
