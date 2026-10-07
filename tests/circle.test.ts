@@ -26,7 +26,7 @@ import {
 } from '../src/sizes';
 import {cornersOf} from './helpers/glow-brute';
 import {assertSeamVelocity, type Sampler} from './helpers/scene-scans';
-import {OVERLAY_THEMES} from './helpers/themes';
+import {OVERLAY_THEMES, droppedWebms, isStaticOnly} from './helpers/themes';
 
 /**
  * Round blocks and round webcam borders: the shape prop, the round named sizes, the text area in
@@ -520,7 +520,7 @@ test('CLI: --size webcam-round e circulo nomeiam o arquivo, e a máscara sai com
 
 // ── Packs ───────────────────────────────────────────────────────────────────────────────────
 
-test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda leva a sua máscara', () => {
+test('Packs: os tamanhos redondos entram em webm e png (bordas estáticas só em png), e cada câmera redonda leva a sua máscara', () => {
   for (const name of THEMES) {
     const manifest = JSON.parse(readFileSync(new URL(`../packs/${name}.json`, import.meta.url), 'utf8')) as PackManifest;
     const plan = planPack(manifest, realPackDeps);
@@ -533,9 +533,11 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
     for (const id of ROUND_BLOCKS.filter(() => kit)) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/${name}-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
     }
+    // A kit may ship its borders as still PNG only (STATIC_ONLY).
+    const borderFormats = isStaticOnly(name, 'BorderLoop') ? ['png'] : ['webm', 'png'];
     for (const id of ROUND_BORDERS) {
-      for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/${name}-${id}.${format}`), `${name}: ${id}.${format}`);
-      if (kit) for (const format of ['webm', 'png']) assert.ok(files.includes(`borders/${name}-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
+      for (const format of borderFormats) assert.ok(files.includes(`borders/${name}-${id}.${format}`), `${name}: ${id}.${format}`);
+      if (kit) for (const format of borderFormats) assert.ok(files.includes(`borders/${name}-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
       // OBS stretches the mask to the camera, so every round webcam shares one disc, named after
       // webcam-round and drawn at the widest round size.
       const mask = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-round-mask.png`))!;
@@ -548,7 +550,8 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
     assert.equal(square.exportProps.shape, 'rectangle');
     assert.ok(!plan.some((file) => /round-(sm|lg)-mask/.test(file.output)), `${name}: um disco só`);
     // Kits: the background, 24 sizes with ornaments (no screens, no Twitch panel) and 26 without, in two formats, plus the seven masks, shared by both.
-    assert.equal(plan.length, name === 'halloween' ? 67 : kit ? 2 + 2 * 24 + 2 * 26 + 7 : 63, name);
+    const stills = droppedWebms(name);
+    assert.equal(plan.length, (name === 'halloween' ? 67 : kit ? 2 + 2 * 24 + 2 * 26 + 7 : 63) - stills, name);
   }
 });
 
