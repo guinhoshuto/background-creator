@@ -547,8 +547,8 @@ test('Packs: os tamanhos redondos entram em webm e png, e cada câmera redonda l
     const square = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-square-mask.png`))!;
     assert.equal(square.exportProps.shape, 'rectangle');
     assert.ok(!plan.some((file) => /round-(sm|lg)-mask/.test(file.output)), `${name}: um disco só`);
-    // Kits: the background, 25 sizes with ornaments (no screens) and 27 without, in two formats, plus the seven masks, shared by both.
-    assert.equal(plan.length, name === 'halloween' ? 67 : kit ? 2 + 2 * 25 + 2 * 27 + 7 : 63, name);
+    // Kits: the background, 24 sizes with ornaments (no screens, no Twitch panel) and 26 without, in two formats, plus the seven masks, shared by both.
+    assert.equal(plan.length, name === 'halloween' ? 67 : kit ? 2 + 2 * 24 + 2 * 26 + 7 : 63, name);
   }
 });
 

@@ -19,13 +19,6 @@
       "formats": ["webm", "png"]
     },
     {
-      "composition": "BlockLoop",
-      "preset": "block-halloween-midnight",
-      "sizes": ["twitch-panel"],
-      "props": {"paddingX": 48, "paddingY": 36},
-      "formats": ["webm", "png"]
-    },
-    {
       "composition": "BorderLoop",
       "preset": "border-halloween-midnight",
       "sizes": ["webcam-16x9", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical"],
@@ -57,14 +50,6 @@
       "composition": "BlockLoop",
       "preset": "block-halloween-midnight",
       "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
-      "formats": ["webm", "png"],
-      "props": {"ornaments": "none"},
-      "variant": "plain"
-    },
-    {
-      "composition": "BlockLoop",
-      "preset": "block-halloween-midnight",
-      "sizes": ["twitch-panel"],
       "formats": ["webm", "png"],
       "props": {"ornaments": "none"},
       "variant": "plain"

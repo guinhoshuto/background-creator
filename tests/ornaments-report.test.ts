@@ -15,8 +15,8 @@ const HALLOWEEN_PACKS = ['halloween-midnight', 'halloween-haunted-mansion', 'hal
 test('ornaments report: one row per file with ornaments, never the plain variant nor a mask', () => {
   for (const pack of HALLOWEEN_PACKS) {
     const rows = rowsOf(pack);
-    // 5 chats + 10 blocks + the Twitch panel + 9 borders, each once whatever its formats.
-    assert.equal(rows.length, 25, pack);
+    // 5 chats + 10 blocks + 9 borders (no Twitch panel since 2026-10-06), each once whatever its formats.
+    assert.equal(rows.length, 24, pack);
     assert.deepEqual(rows.filter((row) => row.name.endsWith('-plain') || row.name.startsWith('masks/')).map((row) => row.name), [], pack);
   }
 });
@@ -78,7 +78,7 @@ test('ornaments report: the text lists each file, its motifs and the totals', ()
   assert.match(text, /^chat\/halloween-midnight-chat-compact {2}424×544 file, 360×480 box {2}midnight, ornamentSize 64, ornamentScale 1$/m);
   assert.match(text, /^ {2}TR {5}moon {11}back {6}63\.6 {6}35 {6}35$/m);
   assert.match(text, /^ {2}dropped here: ember, star, star-small$/m);
-  assert.match(text, /^halloween-midnight: 25 files with ornaments, 237 motifs; 18 files drop a motif/m);
+  assert.match(text, /^halloween-midnight: 24 files with ornaments, 232 motifs; 17 files drop a motif/m);
 });
 
 test('ornaments report CLI: an unknown pack is refused with the options', () => {

@@ -29,11 +29,11 @@ Per theme: `presets/chat-<theme>.json`, `presets/block-<theme>.json`, `presets/b
 Pack shape (the manifests in `packs/halloween-*.json` are the source; `npm run render:pack -- <theme> --dry-run` lists the files):
 
 - The background item (webm, png).
-- With ornaments: `ChatLoop` at every chat size; `BlockLoop` at every block size except `twitch-panel`; `BlockLoop` at `["twitch-panel"]` alone (webm, png; gif until 2026-10-03, see [Packs](packs.md)); `BorderLoop` at the webcam sizes and `gameplay`. Items are webm + png unless noted.
-- The Twitch panel takes item props only where its padding pockets need room for the motifs: `halloween-midnight` `{"paddingX": 48, "paddingY": 36}`, `halloween-haunted-mansion` `{"paddingX": 32, "paddingY": 24}`, none on the interior and cobweb kits.
+- With ornaments: `ChatLoop` at every chat size; `BlockLoop` at every block size except `twitch-panel`; `BorderLoop` at the webcam sizes and `gameplay`. Items are webm + png unless noted.
+- No Twitch panel in the kits since 2026-10-06 (the owner's call). Until then it shipped as its own item (webm and png; gif until 2026-10-03), with padding props in midnight (`{"paddingX": 48, "paddingY": 36}`) and haunted-mansion (`{"paddingX": 32, "paddingY": 24}`).
 - The large frames scale their ornaments on a wider bleed: `webcam-16x9-lg` `{"bleed": 72, "ornamentScale": 1.5}`, `gameplay` `{"bleed": 96, "ornamentScale": 2}`.
 - The screen frames (`fullscreen`, `fullscreen-vertical`) ship only without ornaments: large enough ornaments there would eat the picture.
-- A `plain` variant of every chat, block, Twitch panel and border size (screens included) with the preset and `{"ornaments": "none"}`, in `<pack>-<size>-plain.<ext>`. The OBS masks are shared by both variants.
+- A `plain` variant of every chat, block and border size (screens included, the Twitch panel excepted) with the preset and `{"ornaments": "none"}`, in `<pack>-<size>-plain.<ext>`. The OBS masks are shared by both variants.
 
 See [packs.md](packs.md) for variants, masks and delivery.
 
@@ -191,7 +191,7 @@ Decisions from the build phases (P0 foundation, P3 integration, P5 review fixes)
 
 ### P3: integration
 
-- **The Twitch panel's item props are explicit.** `tests/pack.test.ts` allows only `transparent`, `paddingX` and `paddingY` in its item props, never `transparent: true`; the midnight and mansion kits use them so their motifs grow in the padding pockets (the mansion's lanterns go from 22 to 32 px, pinned in `tests/ornaments-haunted-mansion.test.ts`).
+- **The Twitch panel's item props are explicit.** `tests/pack.test.ts` allows only `transparent`, `paddingX` and `paddingY` in its item props, never `transparent: true`. The kits no longer ship the panel; the rule still holds for the classic themes.
 - **Buyer margin.** Motifs live in the bleed, so the theme pages tell buyers to keep the bleed free around frames and panels in the scene, including against the screen edge and between pieces.
 - **Lightning sync in OBS.** OBS media sources restart when a scene becomes active again, so overlays flash with the interior background only when they start together: same scene, same restart option.
 

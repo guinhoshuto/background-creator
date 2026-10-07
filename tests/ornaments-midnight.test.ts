@@ -81,7 +81,6 @@ test('[midnight] kit: quais motivos ficam em cada tamanho e com que tamanho (pre
     circle: want(2, 0),
     'circle-lg': want(2, 0),
     // The Twitch panel (with the pack's padding 48 × 36): the moon in front (Ø46, 6 px in from the edge), one bat, three pumpkins.
-    'twitch-panel': want(1, 0),
     'webcam-16x9': want(2, 3, 1),
     // The large frames scale the kit (webcam-16x9-lg ×1.5 with bleed 72, gameplay ×2 with bleed 96):
     // in the set's own space they hold the motifs of a webcam-16x9.
@@ -112,7 +111,7 @@ test('[midnight] kit: quais motivos ficam em cada tamanho e com que tamanho (pre
     if (frame.circle && size.kind === 'block') assert.equal(moon.size, props.ornamentSize, `${size.id}: lua no tamanho do preset`);
     else assert.ok(moon.extent >= 0.85 * room - 1e-9, `${size.id}: lua ${moon.extent} de ${room}`);
     // Secondaries: fixed px caps (never scaled with the box), minimums, and the kit's targets
-    // (bats ≥ 29 px, pumpkins ≥ 32 px), the Twitch panel included (with the pack's padding).
+    // (bats ≥ 29 px, pumpkins ≥ 32 px).
     for (const placement of placements) {
       if (placement.motif === 'bat') {
         assert.ok(placement.size >= 29 - 1e-9 && placement.size <= BAT_MAX_SPANS[0] + 1e-9, `${size.id}: morcego ${placement.size}`);
@@ -120,12 +119,6 @@ test('[midnight] kit: quais motivos ficam em cada tamanho e com que tamanho (pre
       if (placement.motif.startsWith('pumpkin')) {
         assert.ok(placement.size >= 32 - 1e-9 && placement.size <= PUMPKIN_MAX.large + 1e-9, `${size.id}: abóbora ${placement.size}`);
       }
-    }
-    // The Twitch panel (no bleed): the front moon keeps 7 px from the image's edges (4 px inside
-    // the 3 px stroke), so neither the edge nor the stroke's corner cuts it.
-    if (size.id === 'twitch-panel') {
-      assert.equal(moon.layer, 'front');
-      assert.ok(moon.x + moon.size / 2 <= 313 + 1e-9 && moon.y - moon.size / 2 >= 7 - 1e-9, `twitch-panel: lua ${moon.x}, ${moon.y}, Ø${moon.size}`);
     }
   }
   // Too small an ornamentSize leaves the moon alone (every secondary is under its minimum).
