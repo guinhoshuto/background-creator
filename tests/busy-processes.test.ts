@@ -60,6 +60,23 @@ test('another session: its shell is not busy, its remotion render and its headle
   ]);
 });
 
+test('with the slot owner\'s pid, its tree is left out (waited for in the queue), a render outside it is not', () => {
+  // A pack chain holds the slot: its node process, the Chrome it renders with and that Chrome's helper.
+  // Above it, a time wrapper whose command line carries the pattern; beside it, a waiter's Chrome.
+  const CHAIN: Array<[number, number, string]> = [
+    [8000, 1, '/usr/bin/time node remotion render chain-parent'],
+    [8100, 8000, 'node /repo/node_modules/tsx/dist/cli.mjs scripts/pack.ts halloween'],
+    [8200, 8100, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new --remote-debugging-pipe'],
+    [8300, 8200, '/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --type=renderer --headless'],
+  ];
+  const list = parseProcessList(ps([...OWN, ...OTHER, ...CHAIN]));
+  const pids = (lines: string[]) => lines.map((line) => line.split(' ')[0]);
+  assert.deepEqual(pids(otherRenders(list, SELF, 8100)), ['5100', '5200', '8000']);
+  assert.deepEqual(pids(otherRenders(list, SELF)), ['5100', '5200', '8000', '8200', '8300']);
+  // An owner pid that no longer runs leaves everything counted.
+  assert.deepEqual(pids(otherRenders(list, SELF, 9999)), ['5100', '5200', '8000', '8200', '8300']);
+});
+
 test('shells and searches that only mention the pattern are wrappers, whatever the path or a login dash', () => {
   const wrappers: Array<[number, number, string]> = [
     [6000, 1, '/usr/bin/pgrep -fl Chrome.*--headless|remotion render|dist/cli/index.js'],

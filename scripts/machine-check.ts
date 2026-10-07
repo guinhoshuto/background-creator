@@ -3,7 +3,9 @@
 // with the machine's limits in one place, and exits 0 when the machine is free and 3 when a render
 // should wait, with the reasons in English under `reasons` of its --json. Where the vault is not
 // (another machine), `machineVerdict` answers null and the caller falls back to its own check.
-// MACHINE_CHECK overrides the script's path (the tests use a fake one).
+// MACHINE_CHECK overrides the script's path (the tests use a fake one). With `outsideSlot`, it asks
+// --fora-da-trava: the answer for a run about to wait for the render slot in its queue, which leaves out
+// the slot, its queue and the renders of the slot owner's tree (all waited for in the queue).
 import {execFileSync} from 'node:child_process';
 import {existsSync} from 'node:fs';
 import os from 'node:os';
@@ -29,15 +31,21 @@ export const parseVerdict = (text: string): MachineVerdict | null => {
   return {free: false, reasons: reasons.length > 0 ? reasons : ['the machine check says to wait, without a reason']};
 };
 
+export type VerdictOptions = {
+  /** Only what the render slot does not cover (--fora-da-trava), for a run that waits for the slot in its queue. */
+  outsideSlot?: boolean;
+};
+
 /**
  * The machine check's verdict, with `familyPid` and everything it started counted as this run's own
  * work, never as another render. Null when the check is not on this machine or gave no answer.
  */
-export const machineVerdict = (familyPid = process.pid, script = machineCheckScript()): MachineVerdict | null => {
+export const machineVerdict = (familyPid = process.pid, script = machineCheckScript(), {outsideSlot = false}: VerdictOptions = {}): MachineVerdict | null => {
   if (!existsSync(script)) return null;
+  const args = [script, '--json', '--familia', String(familyPid), ...(outsideSlot ? ['--fora-da-trava'] : [])];
   let output: string;
   try {
-    output = execFileSync('python3', [script, '--json', '--familia', String(familyPid)], {encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'ignore']});
+    output = execFileSync('python3', args, {encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'ignore']});
   } catch (error) {
     // Exit 3 is the busy answer, with the JSON on stdout.
     output = String((error as {stdout?: unknown}).stdout ?? '');

@@ -3,15 +3,26 @@
 // (render-slot.ts) in hand. Kept free of the bundler and the renderer, so the
 // tests import it as is.
 //
-// The order matters. The process check is waited for holding nothing: a render that does not take the
-// slot yet (Chrome, the se-dev-kit CLI) may itself be waiting for the slot, and holding it while
-// waiting on the check would deadlock. But waiting for the slot can take minutes, and a render that
-// does not take the slot may start meanwhile, so the check runs again, without waiting, once the slot
-// is held. Busy then: release the slot, wait again and retry, all within one total time limit.
+// The order matters, in three steps, all within one total time limit:
+// 1. Wait, holding nothing (no slot, no ticket in its queue), for what the slot does not cover
+//    (outsideSlot: the machine check's --fora-da-trava): renders outside the slot owner's tree, the game,
+//    the disk, and memory while the slot is free. A render that does not take the slot yet (a Chrome
+//    another stills opened, the se-dev-kit CLI) may itself be waiting in the queue: waiting for it while
+//    holding a ticket ahead of it would deadlock. The slot, its queue and the owner's own renders are
+//    left to step 2: waiting for them outside the queue lost this run's place to a pack chain taking
+//    the slot again between kits (HAR-61).
+// 2. Take the slot in its queue, with `since`, the moment this run first asked for it.
+// 3. With the slot held, the whole machine check (busy): memory, and a render that started meanwhile.
+//    Busy, it waits up to HELD_GRACE_MS with the slot in hand: right after the render before it, memory
+//    comes back within seconds, and giving the slot back then handed it to a pack chain's next kit,
+//    which arrives in a second or two with no ticket ahead of it. The grace is bounded, so a render
+//    outside the slot that waits in the queue (an open Chrome) cannot deadlock it. Still busy: release
+//    the slot, sleep one poll (never a hot loop of take and release when step 1 says free and step 3
+//    busy), wait as in step 1 and go back to the queue with the same `since`.
 import {execFileSync} from 'node:child_process';
 import {basename} from 'node:path';
 import {machineVerdict} from './machine-check';
-import type {SlotHandle} from './render-slot';
+import {renderSlotHolder, type SlotHandle} from './render-slot';
 
 /**
  * Heavy renders that do not take the render slot: headless Chrome (SE Widget Studio, thumbnails, an
@@ -36,18 +47,24 @@ export const parseProcessList = (text: string): ProcessInfo[] => text.split('\n'
 const WRAPPER = /^-?(sh|bash|zsh|dash|ksh|fish|pgrep|pkill|grep|egrep|rg|caffeinate)$/;
 const executable = (command: string) => basename(command.trimStart().split(/\s+/, 1)[0] ?? '');
 
+/** `root` and everything it started. Safe against ppid cycles. */
+const treeOf = (processes: readonly ProcessInfo[], root: number) => {
+  const children = new Map<number, number[]>();
+  for (const {pid, ppid} of processes) children.set(ppid, [...(children.get(ppid) ?? []), pid]);
+  const tree = new Set<number>();
+  const pending = [root];
+  for (let pid = pending.pop(); pid !== undefined; pid = pending.pop()) {
+    if (tree.has(pid)) continue;
+    tree.add(pid);
+    pending.push(...(children.get(pid) ?? []));
+  }
+  return tree;
+};
+
 /** `selfPid`, the processes above it (below launchd) and everything it started. Safe against ppid cycles. */
 const familyOf = (processes: readonly ProcessInfo[], selfPid: number) => {
   const parents = new Map(processes.map(({pid, ppid}) => [pid, ppid]));
-  const children = new Map<number, number[]>();
-  for (const {pid, ppid} of processes) children.set(ppid, [...(children.get(ppid) ?? []), pid]);
-  const own = new Set<number>();
-  const pending = [selfPid];
-  for (let pid = pending.pop(); pid !== undefined; pid = pending.pop()) {
-    if (own.has(pid)) continue;
-    own.add(pid);
-    pending.push(...(children.get(pid) ?? []));
-  }
+  const own = treeOf(processes, selfPid);
   const ancestors = new Set<number>();
   for (let pid = parents.get(selfPid); pid !== undefined && pid > 1 && !ancestors.has(pid); pid = parents.get(pid)) ancestors.add(pid);
   return new Set([...own, ...ancestors]);
@@ -57,13 +74,16 @@ const familyOf = (processes: readonly ProcessInfo[], selfPid: number) => {
  * The other heavy renders, as `${pid} ${command}` lines (the shape of `pgrep -fl`): processes whose
  * full command matches BUSY_PATTERN, except this run's own family and the wrappers above. The shell
  * that runs an agent's command is an ancestor, and its command line often contains the pattern (the
- * machine check chained before `npm run stills`): counting it made stills wait for itself.
+ * machine check chained before `npm run stills`): counting it made stills wait for itself. With
+ * `slotOwnerPid`, the tree of the render slot's owner is left out too: its renders are waited for in
+ * the slot's queue (busyOutsideSlot).
  */
-export const otherRenders = (processes: readonly ProcessInfo[], selfPid: number): string[] => {
+export const otherRenders = (processes: readonly ProcessInfo[], selfPid: number, slotOwnerPid?: number): string[] => {
   const busy = new RegExp(BUSY_PATTERN);
   const own = familyOf(processes, selfPid);
+  const slotTree = slotOwnerPid === undefined ? new Set<number>() : treeOf(processes, slotOwnerPid);
   return processes
-    .filter(({pid, command}) => !own.has(pid) && busy.test(command) && !WRAPPER.test(executable(command)))
+    .filter(({pid, command}) => !own.has(pid) && !slotTree.has(pid) && busy.test(command) && !WRAPPER.test(executable(command)))
     .map(({pid, command}) => `${pid} ${command}`);
 };
 
@@ -75,7 +95,21 @@ export const otherRenders = (processes: readonly ProcessInfo[], selfPid: number)
  */
 export const busyProcesses = (verdict = machineVerdict): string[] => {
   const answer = verdict(process.pid);
-  if (answer) return answer.reasons;
+  return answer ? answer.reasons : rendersFromPs();
+};
+
+/**
+ * Why this run should wait before it asks for the render slot (step 1 at the top), one line per reason:
+ * busyProcesses without the slot, its queue and the slot owner's tree, and without memory while another
+ * process holds the slot. Elsewhere, the other heavy renders from `ps` outside the tree of the slot's
+ * live owner.
+ */
+export const busyOutsideSlot = (verdict = machineVerdict, holder = renderSlotHolder): string[] => {
+  const answer = verdict(process.pid, undefined, {outsideSlot: true});
+  return answer ? answer.reasons : rendersFromPs(holder()?.owner?.pid);
+};
+
+const rendersFromPs = (slotOwnerPid?: number): string[] => {
   let list: string;
   try {
     list = execFileSync('ps', ['-Aww', '-o', 'pid=,ppid=,command='], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
@@ -83,14 +117,19 @@ export const busyProcesses = (verdict = machineVerdict): string[] => {
     // Fails open: no list, nothing busy. The render slot still serializes the renders that take it.
     return [];
   }
-  return otherRenders(parseProcessList(list), process.pid);
+  return otherRenders(parseProcessList(list), process.pid, slotOwnerPid);
 };
 
 export type TurnEffects = {
-  /** Why to wait right now, one line per reason (busyProcesses), never waiting; empty when free. */
+  /** Why to wait right now with the slot held, one line per reason (busyProcesses), never waiting; empty when free. */
   busy: () => string[];
-  /** Takes the render slot, waiting at most `waitLimitMs` (or failing at once when `wait` is false). */
-  acquire: (options: {wait: boolean; waitLimitMs: number}) => Promise<SlotHandle>;
+  /** Why to wait before asking for the slot (busyOutsideSlot), never waiting; empty when free. */
+  outsideSlot: () => string[];
+  /**
+   * Takes the render slot in its queue, waiting at most `waitLimitMs` (or failing at once when `wait` is
+   * false). `since` is this run's place in the queue, the same on every round (render-slot.ts).
+   */
+  acquire: (options: {wait: boolean; waitLimitMs: number; since: number}) => Promise<SlotHandle>;
   sleep: (ms: number) => Promise<void>;
   now?: () => number;
   log?: (message: string) => void;
@@ -103,6 +142,8 @@ export type TurnOptions = {wait: boolean; limitMs?: number; pollMs?: number};
 // Long enough to wait out a whole kit of another pack chain, which gives way between kits (render-slot.ts).
 const TOTAL_LIMIT_MS = 4 * 60 * 60 * 1000;
 const POLL_MS = 10_000;
+// How long step 3 waits with the slot held before it gives the slot back (see the top).
+export const HELD_GRACE_MS = 60_000;
 
 const sample = (busy: readonly string[]) => busy.slice(0, 3).map((line) => `  ${line.slice(0, 140)}`).join('\n');
 
@@ -117,16 +158,23 @@ export const takeRenderTurn = async ({wait, limitMs = TOTAL_LIMIT_MS, pollMs = P
   const giveUp = () => new Error(`Gave up after ${Math.round(limitMs / 60_000)} minutes waiting for the other render to end.`);
   let warnedBusy = false;
   let warnedRetry = false;
+  let since: number | undefined;
   for (;;) {
-    // The process check first, holding nothing.
-    for (let busy = effects.busy(); busy.length > 0; busy = effects.busy()) {
+    // Step 1, holding nothing.
+    for (let busy = effects.outsideSlot(); busy.length > 0; busy = effects.outsideSlot()) {
       if (!wait) throw new Error(`The machine is busy (one heavy render at a time):\n${sample(busy)}\nRun again when it is free, or drop --no-wait to wait for it.`);
       if (!warnedBusy) { log(`Waiting: the machine is busy (one heavy render at a time):\n${sample(busy)}`); warnedBusy = true; }
       if (now() >= deadline) throw giveUp();
       await effects.sleep(pollMs);
     }
-    const slot = await effects.acquire({wait, waitLimitMs: Math.max(0, deadline - now())});
-    const busy = effects.busy();
+    // Step 2: the place in the queue is fixed by the first round that gets here.
+    since ??= now();
+    const slot = await effects.acquire({wait, waitLimitMs: Math.max(0, deadline - now()), since});
+    // Step 3, with the slot held, for at most HELD_GRACE_MS.
+    let busy = effects.busy();
+    for (const graceEnd = Math.min(now() + HELD_GRACE_MS, deadline); wait && busy.length > 0 && now() < graceEnd; busy = effects.busy()) {
+      await effects.sleep(pollMs);
+    }
     if (busy.length === 0) {
       try {
         effects.whileHeld?.();
@@ -140,5 +188,6 @@ export const takeRenderTurn = async ({wait, limitMs = TOTAL_LIMIT_MS, pollMs = P
     if (!wait) throw new Error(`The machine got busy while this run took the render slot (one heavy render at a time):\n${sample(busy)}\nThe slot is released. Run again when it is free, or drop --no-wait to wait for it.`);
     if (!warnedRetry) { log(`Released the render slot: the machine got busy while waiting for it:\n${sample(busy)}\nWaiting until it is free, then taking the slot again.`); warnedRetry = true; }
     if (now() >= deadline) throw giveUp();
+    await effects.sleep(pollMs);
   }
 };
