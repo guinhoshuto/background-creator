@@ -13,7 +13,6 @@ import bpy
 import numpy as np
 from mathutils import Matrix, Vector
 
-import heart
 import pillow
 import shapes
 import studio
@@ -128,7 +127,7 @@ def _charms(root, start: Vector, materials) -> None:
     star.location = Vector(path[-1]) + Vector((0.02, -0.02, -0.18))
     star.rotation_euler = (0.0, math.radians(14.0), 0.0)
     studio.assign(star, materials["star"])
-    small = pillow.inflate("Charm heart", heart.outline(240) * 0.13, depth=0.06, rings=24, centre=(0.0, 0.01))
+    small = pillow.inflate("Charm heart", shapes.heart_outline(240) * 0.13, depth=0.06, rings=24, centre=(0.0, 0.01))
     small.parent = root
     small.location = Vector(path[1]) + Vector((-0.17, -0.03, -0.12))
     small.rotation_euler = (0.0, math.radians(-20.0), 0.0)

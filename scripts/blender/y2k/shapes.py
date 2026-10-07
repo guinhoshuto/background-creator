@@ -118,6 +118,16 @@ def star_outline(points: int = 5, inner: float = 0.5, count: int = 400, round_pa
     return fit(resample(smooth, count), width=2.0)
 
 
+def heart_outline(count: int = 480) -> np.ndarray:
+    """The classic heart curve, its tip and cleft softened a little, 2 units wide (the charms)."""
+    from pillow import chaikin, fit, resample
+    t = np.linspace(0.0, 2 * math.pi, 2400, endpoint=False)
+    x = 16 * np.sin(t) ** 3
+    y = 13 * np.cos(t) - 5 * np.cos(2 * t) - 2 * np.cos(3 * t) - np.cos(4 * t)
+    points = chaikin(resample(np.stack([x, y], axis=1), 240), 2)
+    return fit(resample(points, count), width=2.0)
+
+
 def strip(name: str, centre, across, widths, columns: int = 9, offsets=None, thickness: float = 0.014,
           parent: bpy.types.Object | None = None, notch: float = 0.0, subdivide: int = 1) -> bpy.types.Object:
     """A ribbon: centre (N, 3) is its middle line, across (N, 3) unit vectors along its width and

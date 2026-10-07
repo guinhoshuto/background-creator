@@ -12,26 +12,15 @@ import os
 
 import bow
 import bubbles
-import butterfly
 import camcorder
 import cassette
-import cd
-import heart
 import phone
 import pixel
 import pouch
-import sparkle
 import studio
 
 # name: (builder, rotation in degrees XYZ, location, frame, studio options)
 POSES = {
-    # Round 1 (2026-10-07, all turned down by the owner; kept until he answers round 2).
-    "heart": (heart.build, (-6.0, 0.0, 24.0), (0, 0, 0), 0, {}),
-    "heart-jelly": (lambda: heart.build(studio.candy("Heart candy", color="#FF5FAE", density=4.0)),
-                    (-6.0, 0.0, -20.0), (0, 0, 0), 0, {}),
-    "cd": (cd.build, (-28.0, 0.0, 32.0), (0, 0, 0), 0, {"transparent_glass": True}),
-    "butterfly": (butterfly.build, (-18.0, 0.0, -14.0), (0, 0, 0), 30, {}),
-    "sparkle": (sparkle.build, (8.0, 0.0, 18.0), (0, 0, 0), 0, {}),
     # Round 2: the NewJeans elements, in daylight.
     "camcorder": (camcorder.build, (-8.0, 0.0, 38.0), (0.1, 0.0, 0.2), 0, {"light": "daylight", "distance": 9.0}),
     "pouch": (pouch.build, (-12.0, 0.0, -32.0), (-0.1, 0.0, 0.25), 0, {"light": "daylight", "distance": 9.0}),

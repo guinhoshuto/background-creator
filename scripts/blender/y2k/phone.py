@@ -11,7 +11,6 @@ import math
 import bpy
 import numpy as np
 
-import heart
 import pillow
 import shapes
 import studio
@@ -118,7 +117,7 @@ def _strap(base, cord_material, bead_materials, charm_material) -> None:
             continue
         bead = shapes.sphere(f"Bead {i}", size, point, parent=base, squash=0.85 if i % 2 else 1.0)
         studio.assign(bead, bead_materials[i % len(bead_materials)])
-    charm = pillow.inflate("Heart charm", heart.outline(240) * 0.24, depth=0.1, rings=28,
+    charm = pillow.inflate("Heart charm", shapes.heart_outline(240) * 0.24, depth=0.1, rings=28,
                            centre=(0.0, 0.01))
     charm.parent = base
     charm.location = path[-1] + (0.0, 0.0, -0.18)

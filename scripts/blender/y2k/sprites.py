@@ -1,7 +1,7 @@
 """Sprite frames for the Y2K background: one asset of sprites.json, rendered headless to WEBP RGBA.
 
     <blender> --factory-startup -b --python-exit-code 1 --python scripts/blender/y2k/sprites.py -- \\
-        --asset heart --out <dir> [--frames 0:4] [--size 128] [--samples 8]
+        --asset camcorder --out <dir> [--frames 0:4] [--size 128] [--samples 8]
 
 `npm run blender:sprites -- y2k` (scripts/blender-sprites.ts) runs it, one Blender process per asset
 inside the render slot, and checks every frame it writes. --frames, --size and --samples override

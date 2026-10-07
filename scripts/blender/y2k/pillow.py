@@ -1,4 +1,4 @@
-"""Inflate a closed 2D outline into a puffy, watertight mesh: the balloon heart, the sparkle, wings.
+"""Inflate a closed 2D outline into a puffy, watertight mesh: the pouch body and the puffy charms.
 
 The height is a membrane under pressure (Poisson's equation, solved on the outline's own polar
 mesh with cotangent weights), so the surface has no crease along the medial axis, which chrome
