@@ -3,6 +3,7 @@
 // size, and the local cleanup only when asked. Every step is idempotent, so a stopped run resumes.
 import path from 'node:path';
 import {zipFileName} from './pack-contents';
+import {PACK_COUNTER_PATTERN} from './pack-plan';
 import type {MachineVerdict} from './machine-check';
 
 export const DEFAULT_REMOTE = 'cf-r2:etsy';
@@ -33,6 +34,8 @@ export type ShipEffects = {
   writeState: (state: ShipState) => Promise<void>;
   now: () => Date;
   log: (message: string) => void;
+  /** Called before a pack's render:pack, so the watch band reads that pack's render log. */
+  rendering: (pack: string) => Promise<void>;
 };
 
 export type ShipOptions = {remote: string; deleteLocal: boolean};
@@ -65,8 +68,35 @@ export const waitForMachine = async (effects: ShipEffects, pack: string) => {
   }
 };
 
+/** The log of one step, in .cache/ship-pack/: `<pack>-render-pack.log` holds the render's `[n/m]`. */
+export const stepLogName = (pack: string, script: string) => `${pack}-${script.replace(':', '-')}.log`;
+
+/** One job of ~/.claude/watch.json, in the shape the watch band reads. */
+export type WatchEntry = {
+  id: string; label: string; pid: number; cmd: string; log: string;
+  progress: {dir: string; prefix: string; suffix: string; pattern: string};
+};
+
+/**
+ * The run's entry in the watch band, its progress read from the render log of the pack being rendered:
+ * the newest `<pack>…-render-pack.log` in the log folder, its last `[n/m]`.
+ */
+export const watchEntryOf = (packs: readonly string[], pack: string, {pid, logDirectory, progressLog}: {pid: number; logDirectory: string; progressLog: string}): WatchEntry => {
+  const renderLog = stepLogName(pack, 'render:pack');
+  return {
+    id: `ship-pack-${packs.join('-')}`,
+    // The pack being rendered: the band shows the render's [n/m] without a name (the prefix is all of it).
+    label: `ship:pack ${pack}${packs.length > 1 ? ` (${packs.indexOf(pack) + 1}/${packs.length} packs)` : ''}`,
+    pid,
+    // The band checks that the pid still runs this script, so a reused pid never reads as running.
+    cmd: 'ship-pack.ts',
+    log: progressLog,
+    progress: {dir: logDirectory, prefix: pack, suffix: renderLog.slice(pack.length), pattern: PACK_COUNTER_PATTERN},
+  };
+};
+
 const step = async (effects: ShipEffects, pack: string, script: string, args: string[] = []) => {
-  const logName = `${pack}-${script.replace(':', '-')}.log`;
+  const logName = stepLogName(pack, script);
   const code = await effects.npm(script, [pack, ...args], logName);
   if (code !== 0) throw new ShipError(`${script} ${pack} failed (exit ${code}); see .cache/ship-pack/${logName}.`);
 };
@@ -113,6 +143,7 @@ export const shipPack = async (pack: string, options: ShipOptions, effects: Ship
   } else {
     await waitForMachine(effects, pack);
     effects.log(`${pack}: render:pack`);
+    await effects.rendering(pack);
     await step(effects, pack, 'render:pack');
     effects.log(`${pack}: validate:pack`);
     await step(effects, pack, 'validate:pack');
@@ -150,4 +181,47 @@ export const shipPacks = async (packs: readonly string[], options: ShipOptions, 
   }
   effects.log(`done: ${shipped.map((record) => record.url).join(' ')}`);
   return {code: 0, shipped};
+};
+
+// An outside signal (BGC-29: a SIGTERM ended a run with exit 143 and left no trace of who sent it).
+// Node never sees the sender's pid (no siginfo), so the run writes what points to it: its parent then
+// and at the start, its process group, and every kill, pkill or killall running at that moment, e.g.
+// the shell of another session still on the line that sent it.
+
+export type ProcessRow = {pid: number; ppid: number; pgid: number; command: string};
+
+/** The rows of `ps -axo pid=,ppid=,pgid=,command=`. */
+export const parsePs = (text: string): ProcessRow[] => text.split('\n').flatMap((line) => {
+  const match = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/.exec(line);
+  return match ? [{pid: Number(match[1]), ppid: Number(match[2]), pgid: Number(match[3]), command: match[4]!.trim()}] : [];
+});
+
+const KILLER = /(^|[\s;&|('"/])(kill|pkill|killall)(\s|$)/;
+
+/** The processes that may have sent the signal: any running kill, pkill or killall but the run's own children. */
+export const signalSuspects = (rows: readonly ProcessRow[], pid: number) =>
+  rows.filter((row) => row.ppid !== pid && KILLER.test(row.command));
+
+const cut = (text: string, max = 160) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+
+/** A suspect's command around its kill: an agent's shell line starts with boilerplate that would hide it. */
+const aroundKill = (command: string, max = 160) => {
+  const at = command.search(KILLER);
+  return at <= 40 ? cut(command, max) : `…${cut(command.slice(at - 40), max - 1)}`;
+};
+
+/** The progress.log line of a received signal: the signal, the time, the parent and the suspects. */
+export const signalReport = ({signal, pid, ppid, startParent, rows, at}: {
+  signal: string; pid: number; ppid: number; startParent: {pid: number; command: string}; rows: readonly ProcessRow[]; at: string;
+}) => {
+  const parent = rows.find((row) => row.pid === ppid);
+  const self = rows.find((row) => row.pid === pid);
+  const parentText = ppid === startParent.pid
+    ? `ppid ${ppid} (${parent ? `\`${cut(parent.command, 80)}\`` : 'gone'})`
+    : `ppid ${ppid}, was ${startParent.pid} \`${cut(startParent.command, 80)}\` at the start (that parent is gone)`;
+  const suspects = signalSuspects(rows, pid);
+  const senders = suspects.length > 0
+    ? `possible senders: ${suspects.map((row) => `${row.pid} \`${aroundKill(row.command)}\` (ppid ${row.ppid})`).join('; ')}`
+    : 'no kill, pkill or killall was running any more (the sender had ended; Node cannot read its pid)';
+  return `received ${signal} at ${at}: pid ${pid}, ${parentText}, pgid ${self?.pgid ?? '?'}; ${senders}`;
 };

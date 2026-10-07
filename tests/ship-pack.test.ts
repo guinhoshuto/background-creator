@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
-import {spawnSync} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
+import {chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
+import {packCounter} from '../scripts/pack-plan';
 import {
-  MACHINE_WAIT_MS, parseLsjson, publicUrlOf, shipPacks, uploadArgs, type RemoteFile, type ShipEffects, type ShipState,
+  MACHINE_WAIT_MS, parseLsjson, parsePs, publicUrlOf, shipPacks, signalReport, signalSuspects, uploadArgs, watchEntryOf,
+  type RemoteFile, type ShipEffects, type ShipState,
 } from '../scripts/ship-plan';
 
 // The whole chain against a fake npm, a fake machine check and a fake R2 kept in memory; no render, no upload.
@@ -14,6 +19,8 @@ const OTHER_SHA = '99999999'.repeat(8);
 
 type World = {
   calls: string[];
+  /** Step logs and watch-band updates, in order: `log <name>` and `watch <pack>`. */
+  trail: string[];
   logs: string[];
   local: Map<string, {bytes: number; sha256: string}>;
   remote: Map<string, RemoteFile[]>;
@@ -26,11 +33,12 @@ type World = {
 const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}}: {
   npmCodes?: Record<string, number>; uploadBytes?: number; busy?: string[][]; state?: ShipState;
 } = {}): World => {
-  const w: World = {calls: [], logs: [], local: new Map(), remote: new Map(), state: {...state}, sleeps: [], effects: undefined as unknown as ShipEffects};
+  const w: World = {calls: [], trail: [], logs: [], local: new Map(), remote: new Map(), state: {...state}, sleeps: [], effects: undefined as unknown as ShipEffects};
   const verdicts = [...busy];
   w.effects = {
-    npm: async (script, args) => {
+    npm: async (script, args, logName) => {
       w.calls.push(`npm ${script} ${args.join(' ')}`);
+      w.trail.push(`log ${logName}`);
       const code = npmCodes[script] ?? 0;
       // The real zip:pack writes the zip; the fake one only when it succeeds.
       if (script === 'zip:pack' && code === 0) w.local.set(`out/deliveries/${args[0]}-overlay-pack.zip`, {bytes: 1000, sha256: SHA});
@@ -60,6 +68,7 @@ const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}}: {
     writeState: async (next) => {w.state = next;},
     now: () => new Date('2026-10-04T12:00:00Z'),
     log: (message) => {w.logs.push(message);},
+    rendering: async (pack) => {w.trail.push(`watch ${pack}`);},
   };
   return w;
 };
@@ -175,4 +184,95 @@ test('the command refuses before any step: --help lists the options, files and u
   assert.match(cli('packs/x.json').stderr, /not files/);
   assert.match(cli('no-such-pack').stderr, /Unknown pack: no-such-pack/);
   assert.match(cli().stderr, /Name at least one pack/);
+});
+
+/** The watch band's choice of file (hooks/rows.ts in ~/.claude/skills/watch-band): name and newest. */
+const bandReads = (entry: ReturnType<typeof watchEntryOf>, names: string[]) =>
+  names.filter((name) => name.startsWith(entry.progress.prefix) && name.endsWith(entry.progress.suffix));
+
+test('the watch band follows the render log of the pack being rendered, and finds its [n/m]', async () => {
+  const w = world();
+  assert.equal((await shipPacks(['kit', 'next'], options, w.effects)).code, 0);
+  const paths = {pid: 7, logDirectory: '/r/.cache/ship-pack', progressLog: '/r/.cache/ship-pack/progress.log'};
+  // Each pack points the band at its own render log before render:pack writes to it.
+  for (const pack of ['kit', 'next']) {
+    const at = w.trail.indexOf(`watch ${pack}`);
+    assert(at >= 0 && w.trail[at + 1] === `log ${pack}-render-pack.log`, `watch ${pack} right before its render: ${w.trail.join(', ')}`);
+  }
+  const logs = w.trail.filter((item) => item.startsWith('log ')).map((item) => item.slice(4));
+  const entry = watchEntryOf(['kit', 'next'], 'next', paths);
+  assert.deepEqual(bandReads(entry, [...logs, 'progress.log', 'rclone.log']), ['next-render-pack.log']);
+  assert.equal(entry.progress.dir, paths.logDirectory);
+  // The band strips prefix and suffix from the name: together they are the whole render log name.
+  assert.equal(entry.progress.prefix + entry.progress.suffix, 'next-render-pack.log');
+  assert.deepEqual({id: entry.id, label: entry.label, pid: entry.pid, cmd: entry.cmd, log: entry.log},
+    {id: 'ship-pack-kit-next', label: 'ship:pack next (2/2 packs)', pid: 7, cmd: 'ship-pack.ts', log: paths.progressLog});
+  assert.equal(watchEntryOf(['kit'], 'kit', paths).label, 'ship:pack kit');
+  // The band keeps the last match of the pattern in the log render:pack writes.
+  const renderLog = `${packCounter(5, 113)} out/packs/next/a.webm\n  Render: 90%\n${packCounter(6, 113)} out/packs/next/b.webm\n`;
+  const found = [...renderLog.matchAll(new RegExp(entry.progress.pattern, 'g'))].map((match) => `${match[1]}/${match[2]}`);
+  assert.deepEqual(found, ['6/113', '7/113']);
+});
+
+const PS = [
+  '    1     0     1 /sbin/launchd',
+  '  500   400   500 -zsh',
+  '  610   500   610 node /x/node_modules/.bin/tsx scripts/ship-pack.ts kit',
+  '  611   610   610 npm run -s render:pack -- kit',
+  '  612   610   610 /bin/kill -0 611',
+  `  720   700   720 /bin/zsh -c source /tmp/snap && setopt ${'X'.repeat(80)} && eval 'pkill -f tsx; sleep 1'`,
+  '  721   700   721 /bin/zsh -c eval \'npm run killall-tests\'',
+  '  730   700   730 /usr/bin/killall node',
+  '',
+].join('\n');
+
+test('ps rows: the kill, pkill or killall running then are the suspects, never children of the run or a name that only contains kill', () => {
+  const rows = parsePs(PS);
+  assert.equal(rows.length, 8);
+  assert.deepEqual(rows[2], {pid: 610, ppid: 500, pgid: 610, command: 'node /x/node_modules/.bin/tsx scripts/ship-pack.ts kit'});
+  assert.deepEqual(signalSuspects(rows, 610).map((row) => row.pid), [720, 730]);
+});
+
+test('a signal line names the signal, the time, the parent then and at the start, the group and the suspects', () => {
+  const rows = parsePs(PS);
+  const line = signalReport({signal: 'SIGTERM', pid: 610, ppid: 500, startParent: {pid: 500, command: '-zsh'}, rows, at: '2026-10-06 19:37:48'});
+  assert.match(line, /^received SIGTERM at 2026-10-06 19:37:48: pid 610, ppid 500 \(`-zsh`\), pgid 610; possible senders: 720 `…X+ && eval 'pkill -f tsx; sleep 1'` \(ppid 700\); 730 `\/usr\/bin\/killall node` \(ppid 700\)$/);
+  // The parent died first (the shell that started the run): ppid is launchd now, and the line says so.
+  const orphan = signalReport({signal: 'SIGHUP', pid: 610, ppid: 1, startParent: {pid: 500, command: '-zsh'}, rows: rows.filter((row) => row.pid < 612), at: 't'});
+  assert.match(orphan, /ppid 1, was 500 `-zsh` at the start \(that parent is gone\), pgid 610; no kill, pkill or killall was running/);
+});
+
+test('kill -TERM from outside: the run logs the signal with the sender and ends with 143', async () => {
+  const scratch = mkdtempSync(path.join(os.tmpdir(), 'ship-signal-'));
+  try {
+    // A fake npm that only waits: no step renders, whatever stage the signal finds the run in.
+    const bin = path.join(scratch, 'bin');
+    spawnSync('mkdir', [bin]);
+    writeFileSync(path.join(bin, 'npm'), '#!/bin/sh\nexec sleep 30\n');
+    chmodSync(path.join(bin, 'npm'), 0o755);
+    const logDir = path.join(scratch, 'logs');
+    const pack = 'halloween-cobweb';
+    const child = spawn(path.join(root, 'node_modules', '.bin', 'tsx'), ['scripts/ship-pack.ts', pack], {
+      cwd: root, env: {...process.env, PATH: `${bin}:${process.env.PATH}`, HOME: scratch, SHIP_PACK_LOG_DIR: logDir}, stdio: 'ignore',
+    });
+    const progress = path.join(logDir, 'progress.log');
+    for (let i = 0; i < 300 && !(existsSync(progress) && readFileSync(progress, 'utf8').includes('start ship:pack')); i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    // The sender: a shell that stays on its line a moment, like another session's Bash running pkill then more.
+    const sender = spawn('/bin/sh', ['-c', `kill -TERM ${child.pid}; sleep 2`]);
+    const code = await new Promise<number | null>((resolve) => child.on('exit', (exit) => resolve(exit)));
+    sender.kill();
+    assert.equal(code, 143);
+    // The step it was running got the signal too: no orphan keeps rendering (here, the fake npm's sleep).
+    const orphans = spawnSync('pgrep', ['-f', `^sleep 30$`], {encoding: 'utf8'}).stdout.trim().split('\n').filter(Boolean)
+      .filter((pid) => spawnSync('ps', ['-o', 'ppid=', '-p', pid], {encoding: 'utf8'}).stdout.trim() === '1');
+    assert.deepEqual(orphans, []);
+    const log = readFileSync(progress, 'utf8');
+    // tsx relays the signal to the node process it runs: that one logs it, the tsx wrapper as its parent.
+    assert.match(log, new RegExp(`received SIGTERM at \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d: pid \\d+, ppid ${child.pid} .*possible senders: .*\\b${sender.pid} \`/bin/sh -c kill -TERM ${child.pid}; sleep 2\``));
+    assert.match(log, /ps snapshot .*signal-.*\.ps\.txt/);
+  } finally {
+    rmSync(scratch, {recursive: true, force: true});
+  }
 });

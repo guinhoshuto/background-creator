@@ -535,6 +535,10 @@ export type PackRunEffects = {
  * `plan` is what this run renders (an --only slice or all of it); `fullPlan` is the pack's whole
  * plan, before --only: manifest entries it no longer has are pruned before the first save.
  */
+/** The `[n/m]` that starts each file's line in the render log; the watch band reads it with PACK_COUNTER_PATTERN. */
+export const packCounter = (index: number, total: number) => `[${index + 1}/${total}]`;
+export const PACK_COUNTER_PATTERN = '\\[(\\d+)/(\\d+)\\]';
+
 export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effects, diskLabel, target = manifest.name}: {
   manifest: PackManifest; plan: readonly PlannedFile[]; fullPlan: readonly PlannedFile[]; overwrite: boolean;
   deps: PackDeps; effects: PackRunEffects; diskLabel: string;
@@ -562,7 +566,7 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
   let rendered = 0;
   let skipped = 0;
   for (const [index, file] of plan.entries()) {
-    const counter = `[${index + 1}/${plan.length}]`;
+    const counter = packCounter(index, plan.length);
     const relative = path.posix.relative(packRoot, file.output);
     const sidecar = `${file.output}.json`;
     const asset = deps.getAsset(file.composition);

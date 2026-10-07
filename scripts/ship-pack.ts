@@ -1,4 +1,4 @@
-import {execFile, spawn} from 'node:child_process';
+import {execFile, spawn, spawnSync, type ChildProcess} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {appendFileSync, closeSync, createReadStream, existsSync, openSync} from 'node:fs';
 import {mkdir, readFile, rename, rm, stat, writeFile} from 'node:fs/promises';
@@ -9,7 +9,9 @@ import {freeBytes, gibibytes} from './disk';
 import {projectRoot} from './export';
 import {machineVerdict} from './machine-check';
 import {existingManifestFile, parsePackManifest} from './pack-plan';
-import {DEFAULT_REMOTE, packFolderOf, parseLsjson, shipPacks, uploadArgs, zipPathOf, type ShipEffects, type ShipState} from './ship-plan';
+import {
+  DEFAULT_REMOTE, packFolderOf, parseLsjson, parsePs, shipPacks, signalReport, uploadArgs, watchEntryOf, zipPathOf, type ShipEffects, type ShipState,
+} from './ship-plan';
 
 const SHIP_HELP_TEXT = `usage: npm run ship:pack -- <name> [<name>...] [options]
 
@@ -21,7 +23,9 @@ a zip already on R2 with the same bytes is not uploaded twice.
 
 Writes .cache/ship-pack/progress.log (one line per step and per wait), one log per step and the
 shipped links in .cache/ship-pack/state.json; adds the run to ~/.claude/watch.json and, at the end,
-calls the vault's fim_job.py when it is on this machine.
+calls the vault's fim_job.py when it is on this machine. A SIGTERM, SIGINT or SIGHUP from outside is
+logged with the time, the parent and any kill, pkill or killall running then, with a ps snapshot beside
+the log; the running step gets the same signal, and the run ends with 128 + the signal number.
 Packs shipped before ship:pack existed are not in state.json.
 
 Options:
@@ -30,7 +34,8 @@ Options:
   --dry-run          says what each pack would do, running nothing
   -h, --help         shows this help`;
 
-const LOG_DIRECTORY = path.join(projectRoot, '.cache', 'ship-pack');
+// SHIP_PACK_LOG_DIR: the tests' own folder, so a test run never writes the real log and state.
+const LOG_DIRECTORY = process.env.SHIP_PACK_LOG_DIR || path.join(projectRoot, '.cache', 'ship-pack');
 const PROGRESS_LOG = path.join(LOG_DIRECTORY, 'progress.log');
 const STATE_FILE = path.join(LOG_DIRECTORY, 'state.json');
 const rclone = () => process.env.RCLONE || 'rclone';
@@ -49,11 +54,15 @@ const log = (message: string) => {
   appendFileSync(PROGRESS_LOG, line);
 };
 
+/** The step running now, which an outside signal reaches too: an orphaned render would keep the render slot. */
+let running: ChildProcess | null = null;
+
 const run = (command: string, args: string[], logFile: string) => new Promise<number>((resolve, reject) => {
   const fd = openSync(logFile, 'a');
   const child = spawn(command, args, {cwd: projectRoot, stdio: ['ignore', fd, fd]});
-  child.on('error', (error) => {closeSync(fd); reject(error);});
-  child.on('close', (code) => {closeSync(fd); resolve(code ?? 1);});
+  running = child;
+  child.on('error', (error) => {closeSync(fd); running = null; reject(error);});
+  child.on('close', (code) => {closeSync(fd); running = null; resolve(code ?? 1);});
 });
 
 const capture = (command: string, args: string[]) => new Promise<{code: number; stdout: string; stderr: string}>((resolve) => {
@@ -68,16 +77,17 @@ const sha256Of = (file: string) => new Promise<string>((resolve, reject) => {
   createReadStream(file).on('data', (chunk) => hash.update(chunk)).on('error', reject).on('end', () => resolve(hash.digest('hex')));
 });
 
-/** Adds this run to the watch band; the agent removes it once the result is checked. */
-const addToWatch = async (packs: string[]) => {
+/**
+ * Puts this run in the watch band, its progress read from the render log of `pack`; called again before
+ * each pack's render. The agent removes the entry once the result is checked.
+ */
+const watchRun = async (packs: string[], pack: string) => {
   const file = path.join(os.homedir(), '.claude', 'watch.json');
   if (!existsSync(file)) return;
   try {
     const data = JSON.parse(await readFile(file, 'utf8')) as {jobs?: {id: string}[]};
-    const id = `ship-pack-${packs.join('-')}`;
-    const jobs = (data.jobs ?? []).filter((job) => job.id !== id);
-    // cmd: the band checks that the pid still runs this script, so a reused pid never reads as running.
-    jobs.push({id, label: `ship:pack ${packs.join(' ')}`, pid: process.pid, cmd: 'ship-pack.ts', log: PROGRESS_LOG} as {id: string});
+    const entry = watchEntryOf(packs, pack, {pid: process.pid, logDirectory: LOG_DIRECTORY, progressLog: PROGRESS_LOG});
+    const jobs = [...(data.jobs ?? []).filter((job) => job.id !== entry.id), entry];
     // A temporary name of this process: other writers of watch.json (the vault's maquina_livre.py --esperar) use their own.
     const temporary = `${file}.${process.pid}.tmp`;
     await writeFile(temporary, `${JSON.stringify({...data, jobs}, null, 2)}\n`);
@@ -88,10 +98,38 @@ const addToWatch = async (packs: string[]) => {
 };
 
 /** The vault's end of a detached job: the end line in progress.log, a line in today's note and a notification. */
-const finish = async (code: number) => {
+const finish = async (code: number, reason?: string) => {
   const script = path.join(os.homedir(), 'obsidian', 'AI', 'scripts', 'fim_job.py');
   if (!existsSync(script)) return;
-  await capture('python3', [script, '--tarefa', 'ship-pack', '--rc', String(code), '--log', PROGRESS_LOG]);
+  await capture('python3', [script, '--tarefa', 'ship-pack', '--rc', String(code), '--log', PROGRESS_LOG, ...(reason ? ['--motivo', reason] : [])]);
+};
+
+const commandOf = (pid: number) => spawnSync('ps', ['-o', 'command=', '-p', String(pid)], {encoding: 'utf8'}).stdout?.trim() || '?';
+
+/**
+ * Logs an outside signal before the run ends (BGC-29). Synchronous ps first: the sender's shell may
+ * end a moment later. The snapshot goes beside the log for a closer look.
+ */
+const watchSignals = (startParent: {pid: number; command: string}) => {
+  const onSignal = async (signal: NodeJS.Signals) => {
+    const ps = spawnSync('ps', ['-axo', 'pid=,ppid=,pgid=,command='], {encoding: 'utf8'}).stdout ?? '';
+    const now = new Date();
+    const report = signalReport({signal, pid: process.pid, ppid: process.ppid, startParent, rows: parsePs(ps), at: stamp(now)});
+    const snapshot = path.join(LOG_DIRECTORY, `signal-${stamp(now).replace(/[ :]/g, '-')}.ps.txt`);
+    try {
+      appendFileSync(snapshot, ps);
+    } catch {
+      // The line in the log is what matters; a missing snapshot never hides it.
+    }
+    const shown = path.relative(projectRoot, snapshot);
+    log(`${report}; ps snapshot ${shown.startsWith('..') ? snapshot : shown}`);
+    running?.kill(signal);
+    const code = 128 + os.constants.signals[signal];
+    process.exitCode = code;
+    await finish(code, report.replace(/^received /, ''));
+    process.exit(code);
+  };
+  for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP'] as const) process.once(signal, (name) => void onSignal(name));
 };
 
 const effects: ShipEffects = {
@@ -125,6 +163,7 @@ const effects: ShipEffects = {
   },
   now: () => new Date(),
   log,
+  rendering: async () => {},
 };
 
 const main = async () => {
@@ -155,7 +194,9 @@ const main = async () => {
     console.log(`Would run render:pack, validate:pack and zip:pack, then upload to ${values.remote}/packs/<name>/<sha8>/${values['delete-local'] ? ' and delete the local zip and pack folder' : ''}.`);
     return;
   }
-  await addToWatch(packs);
+  watchSignals({pid: process.ppid, command: commandOf(process.ppid)});
+  effects.rendering = (pack) => watchRun(packs, pack);
+  await watchRun(packs, packs[0]!);
   log(`start ship:pack ${packs.join(' ')}${values['delete-local'] ? ' --delete-local' : ''}`);
   const {code} = await shipPacks(packs, {remote: values.remote, deleteLocal: values['delete-local']}, effects);
   process.exitCode = code;
