@@ -13,7 +13,7 @@ import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
 import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
-import {KIT_THEMES, OVERLAY_THEMES, expectedPackFiles} from './helpers/themes';
+import {BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, expectedPackFiles} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -654,8 +654,23 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
   }
 });
 
+test('packs: halloween-backgrounds traz o fundo de cada kit de Halloween, como no kit, em mp4, webm e png', () => {
+  const pack = parsePackManifest(readPack('halloween-backgrounds'));
+  // The kit's background is its one item without sizes; this pack sells it with the same composition and preset.
+  const kitBackground = (theme: string) => parsePackManifest(readPack(theme)).items.find((item) => item.sizes === undefined)!;
+  assert.deepEqual(pack.items.map((item) => [item.composition, item.preset, item.variant, item.props]), KIT_THEMES.map((theme) => {
+    const background = kitBackground(theme);
+    return [background.composition, background.preset, theme.replace(/^halloween-/, ''), background.props];
+  }));
+  // Backgrounds only, so no masks: per background the mp4 (it plays anywhere), the webm the kits use and the still.
+  const plan = planPack(pack, realPackDeps);
+  assert.deepEqual(plan.map((file) => file.output), pack.items.flatMap((item) => ['mp4', 'webm', 'png'].map((format) =>
+    `out/packs/halloween-backgrounds/backgrounds/halloween-backgrounds-background-${item.variant}.${format}`)));
+  for (const file of plan) assert.deepEqual(file.canvas, {width: 1920, height: 1080}, file.output);
+});
+
 test('packs: cada arquivo exporta todas as props do schema, sem herdar os defaults salvos no Studio', () => {
-  for (const name of PACKS) {
+  for (const name of [...PACKS, ...BACKGROUND_PACKS]) {
     for (const file of planPack(parsePackManifest(readPack(name)), realPackDeps)) {
       const keys = Object.keys(getAsset(file.composition).defaultProps).sort();
       assert.deepEqual(Object.keys(file.exportProps).sort(), keys, file.output);

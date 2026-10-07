@@ -1,0 +1,29 @@
+{
+  "name": "halloween-backgrounds",
+  "items": [
+    {
+      "composition": "HalloweenLoop",
+      "preset": "halloween-midnight",
+      "formats": ["mp4", "webm", "png"],
+      "variant": "midnight"
+    },
+    {
+      "composition": "HauntedMansionLoop",
+      "preset": "halloween-haunted-mansion",
+      "formats": ["mp4", "webm", "png"],
+      "variant": "haunted-mansion"
+    },
+    {
+      "composition": "HauntedInteriorLoop",
+      "preset": "halloween-haunted-interior",
+      "formats": ["mp4", "webm", "png"],
+      "variant": "haunted-interior"
+    },
+    {
+      "composition": "CobwebLoop",
+      "preset": "halloween-cobweb",
+      "formats": ["mp4", "webm", "png"],
+      "variant": "cobweb"
+    }
+  ]
+}
