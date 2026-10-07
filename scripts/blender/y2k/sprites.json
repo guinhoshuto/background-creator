@@ -1,0 +1,16 @@
+{
+  "set": "y2k",
+  "fps": 60,
+  "loopFrames": 480,
+  "assets": {
+    "heart": {
+      "module": "heart",
+      "size": 640,
+      "samples": 96,
+      "transparentGlass": false,
+      "pose": [-6, 0, 24],
+      "motion": {"kind": "sway", "axis": "Z", "degrees": 18, "cycles": 1},
+      "period": 480
+    }
+  }
+}

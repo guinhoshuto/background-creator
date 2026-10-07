@@ -7,3 +7,5 @@ build/
 .env.*
 !.env.example
 __pycache__/
+# Blender sprites (npm run blender:sprites): regenerated, never in git.
+public/sprites/
