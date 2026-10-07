@@ -100,7 +100,8 @@ export type TurnEffects = {
 
 export type TurnOptions = {wait: boolean; limitMs?: number; pollMs?: number};
 
-const TOTAL_LIMIT_MS = 30 * 60 * 1000;
+// Long enough to wait out a whole kit of another pack chain, which gives way between kits (render-slot.ts).
+const TOTAL_LIMIT_MS = 4 * 60 * 60 * 1000;
 const POLL_MS = 10_000;
 
 const sample = (busy: readonly string[]) => busy.slice(0, 3).map((line) => `  ${line.slice(0, 140)}`).join('\n');

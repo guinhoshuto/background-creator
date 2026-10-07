@@ -76,9 +76,12 @@ const addToWatch = async (packs: string[]) => {
     const data = JSON.parse(await readFile(file, 'utf8')) as {jobs?: {id: string}[]};
     const id = `ship-pack-${packs.join('-')}`;
     const jobs = (data.jobs ?? []).filter((job) => job.id !== id);
-    jobs.push({id, label: `ship:pack ${packs.join(' ')}`, pid: process.pid, log: PROGRESS_LOG} as {id: string});
-    await writeFile(`${file}.tmp`, `${JSON.stringify({...data, jobs}, null, 2)}\n`);
-    await rename(`${file}.tmp`, file);
+    // cmd: the band checks that the pid still runs this script, so a reused pid never reads as running.
+    jobs.push({id, label: `ship:pack ${packs.join(' ')}`, pid: process.pid, cmd: 'ship-pack.ts', log: PROGRESS_LOG} as {id: string});
+    // A temporary name of this process: other writers of watch.json (the vault's maquina_livre.py --esperar) use their own.
+    const temporary = `${file}.${process.pid}.tmp`;
+    await writeFile(temporary, `${JSON.stringify({...data, jobs}, null, 2)}\n`);
+    await rename(temporary, file);
   } catch (error) {
     console.error(`watch.json not updated: ${error instanceof Error ? error.message : error}`);
   }
