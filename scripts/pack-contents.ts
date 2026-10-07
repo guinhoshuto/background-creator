@@ -41,11 +41,14 @@ const LOCAL_HEADER = 30;
 const CENTRAL_HEADER = 46;
 const END_RECORD = 22;
 
-/** The zip a pack is sold as: out/deliveries/<pack>-overlay-pack.zip. */
-export const zipFileName = (pack: string) => `${pack}-overlay-pack.zip`;
+/**
+ * The zip a pack is sold as: out/deliveries/<pack>-overlay-pack-v<N>.zip. The version in the name lets
+ * the Mac, the external drive, R2 and the listing be checked to hold the same delivery.
+ */
+export const zipFileName = (pack: string, version: number) => `${pack}-overlay-pack-v${version}.zip`;
 
 /** Where an interrupted write leaves its bytes; the next run removes it first. */
-export const partialFileName = (pack: string) => `.${zipFileName(pack)}.partial`;
+export const partialFileName = (pack: string, version: number) => `.${zipFileName(pack, version)}.partial`;
 
 export class PackContentsError extends Error {}
 
@@ -404,15 +407,15 @@ export type ZipPackEffects = {
  * 0 written or already up to date; with `check`, 0 up to date and 2 missing or different. Throws
  * PackContentsError when a check fails (exit 1): nothing is written then.
  */
-export const zipPack = async ({pack, plan, packDirectory, deliveriesDirectory, packLabel, zipLabel, check, effects}: {
-  pack: string; plan: readonly PlannedFile[]; packDirectory: string; deliveriesDirectory: string;
+export const zipPack = async ({pack, version, plan, packDirectory, deliveriesDirectory, packLabel, zipLabel, check, effects}: {
+  pack: string; version: number; plan: readonly PlannedFile[]; packDirectory: string; deliveriesDirectory: string;
   packLabel?: string; zipLabel?: string; check: boolean; effects: ZipPackEffects;
 }): Promise<{code: 0 | 2; sha256: string; zip: string}> => {
-  const name = zipFileName(pack);
+  const name = zipFileName(pack, version);
   assertZipName(name);
   const zip = path.join(deliveriesDirectory, name);
   const label = zipLabel ?? zip;
-  const partial = path.join(deliveriesDirectory, partialFileName(pack));
+  const partial = path.join(deliveriesDirectory, partialFileName(pack, version));
   if (!check) await rm(partial, {force: true});
 
   const {entries, warnings} = await checkPackContents({pack, plan, packDirectory, ...(packLabel === undefined ? {} : {packLabel})});

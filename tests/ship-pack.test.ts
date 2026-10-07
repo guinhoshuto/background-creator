@@ -7,8 +7,8 @@ import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {packCounter} from '../scripts/pack-plan';
 import {
-  MACHINE_WAIT_MS, parseLsjson, parsePs, publicUrlOf, shipPacks, signalReport, signalSuspects, uploadArgs, watchEntryOf,
-  type RemoteFile, type ShipEffects, type ShipState,
+  MACHINE_WAIT_MS, decideShip, parseLsjson, parseLsjsonTree, parsePs, publicUrlOf, shipPacks, signalReport, signalSuspects, uploadArgs, watchEntryOf,
+  type RemoteFile, type ShipEffects, type ShippedPack, type ShipState,
 } from '../scripts/ship-plan';
 
 // The whole chain against a fake npm, a fake machine check and a fake R2 kept in memory; no render, no upload.
@@ -30,8 +30,8 @@ type World = {
 };
 
 /** A fake world. `npmCodes` fails a step by name; `uploadBytes` makes R2 keep another size; `busy` checks say wait first. */
-const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}}: {
-  npmCodes?: Record<string, number>; uploadBytes?: number; busy?: string[][]; state?: ShipState;
+const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}, version = 1}: {
+  npmCodes?: Record<string, number>; uploadBytes?: number; busy?: string[][]; state?: ShipState; version?: number;
 } = {}): World => {
   const w: World = {calls: [], trail: [], logs: [], local: new Map(), remote: new Map(), state: {...state}, sleeps: [], effects: undefined as unknown as ShipEffects};
   const verdicts = [...busy];
@@ -41,7 +41,7 @@ const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}}: {
       w.trail.push(`log ${logName}`);
       const code = npmCodes[script] ?? 0;
       // The real zip:pack writes the zip; the fake one only when it succeeds.
-      if (script === 'zip:pack' && code === 0) w.local.set(`out/deliveries/${args[0]}-overlay-pack.zip`, {bytes: 1000, sha256: SHA});
+      if (script === 'zip:pack' && code === 0) w.local.set(`out/deliveries/${args[0]}-overlay-pack-v${version}.zip`, {bytes: 1000, sha256: SHA});
       if (script === 'render:pack' && code === 0) w.local.set(`out/packs/${args[0]}`, {bytes: 0, sha256: ''});
       return code;
     },
@@ -57,6 +57,8 @@ const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}}: {
       return file.sha256;
     },
     remoteList: async (directory) => [...(w.remote.get(directory) ?? [])],
+    remoteTree: async (directory) => [...w.remote].filter(([folder]) => folder.startsWith(`${directory}/`))
+      .flatMap(([folder, files]) => files.map((file) => ({name: `${folder.slice(directory.length + 1)}/${file.name}`, size: file.size}))),
     upload: async (relative, key) => {
       w.calls.push(`upload ${relative} ${key}`);
       const directory = key.slice(0, key.lastIndexOf('/'));
@@ -74,32 +76,37 @@ const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}}: {
 };
 
 const options = {remote: 'cf-r2:etsy', deleteLocal: false};
-const KEY = 'cf-r2:etsy/packs/kit/abcdef01/kit-overlay-pack.zip';
+const KIT = {name: 'kit', version: 1};
+const NEXT = {name: 'next', version: 1};
+const ZIP = 'out/deliveries/kit-overlay-pack-v1.zip';
+const KEY = 'cf-r2:etsy/packs/kit/abcdef01/kit-overlay-pack-v1.zip';
+/** The state a v1 ship of `kit` leaves. */
+const SHIPPED_V1 = {version: 1, sha256: SHA, key: KEY, url: 'https://cacare.co/packs/kit/abcdef01/kit-overlay-pack-v1.zip', bytes: 1000, shippedAt: 'x'};
 
 test('a pack goes through render, validate, zip, upload under its sha8, and is recorded', async () => {
   const w = world();
-  const {code, shipped} = await shipPacks(['kit'], options, w.effects);
+  const {code, shipped} = await shipPacks([KIT], options, w.effects);
   assert.equal(code, 0);
-  assert.deepEqual(w.calls, ['npm render:pack kit', 'npm validate:pack kit', 'npm zip:pack kit', `upload out/deliveries/kit-overlay-pack.zip ${KEY}`]);
-  assert.equal(shipped[0]!.url, 'https://cacare.co/packs/kit/abcdef01/kit-overlay-pack.zip');
-  assert.deepEqual(w.state.kit, {sha256: SHA, key: KEY, url: shipped[0]!.url, bytes: 1000, shippedAt: '2026-10-04T12:00:00.000Z'});
+  assert.deepEqual(w.calls, ['npm render:pack kit', 'npm validate:pack kit', 'npm zip:pack kit', `upload ${ZIP} ${KEY}`]);
+  assert.equal(shipped[0]!.url, 'https://cacare.co/packs/kit/abcdef01/kit-overlay-pack-v1.zip');
+  assert.deepEqual(w.state.kit, {version: 1, sha256: SHA, key: KEY, url: shipped[0]!.url, bytes: 1000, shippedAt: '2026-10-04T12:00:00.000Z'});
   // Without --delete-local nothing local goes.
-  assert(w.local.has('out/deliveries/kit-overlay-pack.zip') && w.local.has('out/packs/kit'));
+  assert(w.local.has(ZIP) && w.local.has('out/packs/kit'));
 });
 
 test('--delete-local removes the zip and the pack folder only after the upload is checked', async () => {
   const w = world();
-  assert.equal((await shipPacks(['kit'], {...options, deleteLocal: true}, w.effects)).code, 0);
-  assert.deepEqual(w.calls.slice(-2), ['rm out/deliveries/kit-overlay-pack.zip', 'rm out/packs/kit']);
-  assert(!w.local.has('out/deliveries/kit-overlay-pack.zip') && !w.local.has('out/packs/kit'));
+  assert.equal((await shipPacks([KIT], {...options, deleteLocal: true}, w.effects)).code, 0);
+  assert.deepEqual(w.calls.slice(-2), [`rm ${ZIP}`, 'rm out/packs/kit']);
+  assert(!w.local.has(ZIP) && !w.local.has('out/packs/kit'));
 });
 
 test('a size on R2 that differs from the local zip stops the chain and keeps every local file', async () => {
   const w = world({uploadBytes: 999});
-  const {code} = await shipPacks(['kit', 'next'], {...options, deleteLocal: true}, w.effects);
+  const {code} = await shipPacks([KIT, NEXT], {...options, deleteLocal: true}, w.effects);
   assert.equal(code, 1);
   assert(!w.calls.some((call) => call.startsWith('rm ')));
-  assert(w.local.has('out/deliveries/kit-overlay-pack.zip'));
+  assert(w.local.has(ZIP));
   assert.equal(w.state.kit, undefined);
   assert(w.logs.some((line) => /FAILED kit: .*999 B on R2 and 1000 B here/.test(line)));
   assert(w.logs.includes('not started: next'));
@@ -108,7 +115,7 @@ test('a size on R2 that differs from the local zip stops the chain and keeps eve
 
 test('a failed step stops before the next one and before the next pack', async () => {
   const w = world({npmCodes: {'validate:pack': 1}});
-  const {code} = await shipPacks(['kit', 'next'], options, w.effects);
+  const {code} = await shipPacks([KIT, NEXT], options, w.effects);
   assert.equal(code, 1);
   assert.deepEqual(w.calls, ['npm render:pack kit', 'npm validate:pack kit']);
   assert(w.logs.some((line) => /FAILED kit: validate:pack kit failed \(exit 1\); see \.cache\/ship-pack\/kit-validate-pack\.log/.test(line)));
@@ -117,54 +124,103 @@ test('a failed step stops before the next one and before the next pack', async (
 test('a remote folder that already holds something else is never written to', async () => {
   const w = world();
   w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'other.zip', size: 5}]);
-  assert.equal((await shipPacks(['kit'], options, w.effects)).code, 1);
+  assert.equal((await shipPacks([KIT], options, w.effects)).code, 1);
   assert(!w.calls.some((call) => call.startsWith('upload')));
   assert(w.logs.some((line) => /already holds other\.zip \(5 B\); nothing was uploaded/.test(line)));
 });
 
 test('resume: the same bytes already on R2 are not uploaded again', async () => {
   const w = world();
-  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack.zip', size: 1000}]);
-  assert.equal((await shipPacks(['kit'], options, w.effects)).code, 0);
+  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack-v1.zip', size: 1000}]);
+  assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
   assert(!w.calls.some((call) => call.startsWith('upload')));
   assert.equal(w.state.kit?.key, KEY);
 });
 
 test('resume: the same name with another size on R2 is refused, not taken as shipped', async () => {
   const w = world();
-  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack.zip', size: 400}]);
-  assert.equal((await shipPacks(['kit'], {...options, deleteLocal: true}, w.effects)).code, 1);
+  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack-v1.zip', size: 400}]);
+  assert.equal((await shipPacks([KIT], {...options, deleteLocal: true}, w.effects)).code, 1);
   assert(!w.calls.some((call) => call.startsWith('upload') || call.startsWith('rm ')));
   assert.equal(w.state.kit, undefined);
 });
 
 test('resume: a local zip this run already shipped skips the build and only checks R2 and cleans up', async () => {
-  const w = world({state: {kit: {sha256: SHA, key: KEY, url: publicUrlOf('kit', SHA), bytes: 1000, shippedAt: 'x'}}});
-  w.local.set('out/deliveries/kit-overlay-pack.zip', {bytes: 1000, sha256: SHA});
-  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack.zip', size: 1000}]);
-  assert.equal((await shipPacks(['kit'], {...options, deleteLocal: true}, w.effects)).code, 0);
+  const w = world({state: {kit: SHIPPED_V1}});
+  w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack-v1.zip', size: 1000}]);
+  assert.equal((await shipPacks([KIT], {...options, deleteLocal: true}, w.effects)).code, 0);
   assert(!w.calls.some((call) => call.startsWith('npm') || call.startsWith('upload')));
-  assert(w.calls.includes('rm out/deliveries/kit-overlay-pack.zip'));
+  assert(w.calls.includes(`rm ${ZIP}`));
 });
 
-test('a changed pack is built again even when an older zip was shipped', async () => {
-  const w = world({state: {kit: {sha256: OTHER_SHA, key: 'old', url: 'old', bytes: 1, shippedAt: 'x'}}});
-  w.local.set('out/deliveries/kit-overlay-pack.zip', {bytes: 1000, sha256: SHA});
-  assert.equal((await shipPacks(['kit'], options, w.effects)).code, 0);
+test('a local zip other than the one shipped is built again', async () => {
+  const w = world({state: {kit: {...SHIPPED_V1, sha256: OTHER_SHA}}});
+  w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
   assert(w.calls.includes('npm render:pack kit'));
   assert.equal(w.state.kit?.sha256, SHA);
 });
 
-test('a pack shipped before with nothing local left is skipped', async () => {
-  const w = world({state: {kit: {sha256: SHA, key: KEY, url: publicUrlOf('kit', SHA), bytes: 1000, shippedAt: 'x'}}});
-  assert.equal((await shipPacks(['kit'], options, w.effects)).code, 0);
+test('a version shipped before with nothing local left is skipped', async () => {
+  const w = world({state: {kit: SHIPPED_V1}});
+  assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
   assert.deepEqual(w.calls, []);
-  assert(w.logs.some((line) => /already shipped .* skipped/.test(line)));
+  assert(w.logs.some((line) => /v1 already shipped .* skipped/.test(line)));
+  assert.equal(publicUrlOf(KIT, SHA), SHIPPED_V1.url);
+});
+
+test('a raised version ships again, with nothing local left, under its own name', async () => {
+  const w = world({state: {kit: SHIPPED_V1}, version: 2});
+  w.effects.sha256 = async () => OTHER_SHA;
+  assert.equal((await shipPacks([{name: 'kit', version: 2}], options, w.effects)).code, 0);
+  assert.deepEqual(w.calls, ['npm render:pack kit', 'npm validate:pack kit', 'npm zip:pack kit',
+    'upload out/deliveries/kit-overlay-pack-v2.zip cf-r2:etsy/packs/kit/99999999/kit-overlay-pack-v2.zip']);
+  assert.equal(w.state.kit?.version, 2);
+});
+
+test('a record from before versions ships again as the manifest version (2026-10-07: it used to be skipped)', async () => {
+  const legacy: ShippedPack = {...SHIPPED_V1};
+  delete legacy.version;
+  const w = world({state: {kit: {...legacy, key: 'cf-r2:etsy/packs/kit/abcdef01/kit-overlay-pack.zip'}}});
+  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack.zip', size: 1000}]);
+  w.effects.sha256 = async () => OTHER_SHA;
+  assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
+  assert(w.calls.includes('npm render:pack kit'));
+  assert.equal(w.state.kit?.version, 1);
+});
+
+test('a version below the one shipped is refused before any step', async () => {
+  const w = world({state: {kit: {...SHIPPED_V1, version: 3}}});
+  assert.equal((await shipPacks([{name: 'kit', version: 2}], options, w.effects)).code, 1);
+  assert.deepEqual(w.calls, []);
+  assert(w.logs.some((line) => /v3 was shipped .* says v2; set "version" to 4/.test(line)));
+});
+
+test('the same version already on R2 with other content is refused: the version was not raised', async () => {
+  const w = world();
+  w.remote.set('cf-r2:etsy/packs/kit/99999999', [{name: 'kit-overlay-pack-v1.zip', size: 800}]);
+  assert.equal((await shipPacks([KIT], {...options, deleteLocal: true}, w.effects)).code, 1);
+  assert(!w.calls.some((call) => call.startsWith('upload') || call.startsWith('rm ')));
+  assert(w.logs.some((line) => /kit-overlay-pack-v1\.zip is already on R2 with other content \(cf-r2:etsy\/packs\/kit\/99999999\/kit-overlay-pack-v1\.zip\).*Raise "version"/.test(line)));
+  assert.equal(w.state.kit, undefined);
+});
+
+test('decideShip: skip, resume and build, the answer the run and --dry-run share', async () => {
+  const w = world();
+  const decide = async (state: ShipState, version = 1) => (await decideShip({name: 'kit', version}, state, w.effects)).action;
+  assert.equal(await decide({}), 'build');
+  assert.equal(await decide({kit: SHIPPED_V1}), 'skip');
+  assert.equal(await decide({kit: SHIPPED_V1}, 2), 'build');
+  w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  assert.equal(await decide({kit: SHIPPED_V1}), 'resume');
+  assert.equal(await decide({kit: {...SHIPPED_V1, sha256: OTHER_SHA}}), 'build');
+  await assert.rejects(decide({kit: SHIPPED_V1}, 0), /set "version" to 2/);
 });
 
 test('a busy machine waits, logging each new reason once', async () => {
   const w = world({busy: [['game open'], ['game open'], ['low disk']]});
-  assert.equal((await shipPacks(['kit'], options, w.effects)).code, 0);
+  assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
   assert.deepEqual(w.sleeps, [MACHINE_WAIT_MS, MACHINE_WAIT_MS, MACHINE_WAIT_MS]);
   assert.deepEqual(w.logs.filter((line) => line.startsWith('waiting')), ['waiting before kit: game open', 'waiting before kit: low disk']);
   assert.equal(w.calls[0], 'npm render:pack kit');
@@ -174,6 +230,8 @@ test('rclone: copyto with the bucket check off, and lsjson read without folders'
   assert.deepEqual(uploadArgs('/a/kit.zip', 'cf-r2:etsy/packs/kit/abcdef01/kit.zip'), ['copyto', '--s3-no-check-bucket', '/a/kit.zip', 'cf-r2:etsy/packs/kit/abcdef01/kit.zip']);
   const answer = '[\n{"Path":"kit.zip","Name":"kit.zip","Size":1080722880,"MimeType":"application/zip","IsDir":false},\n{"Path":"5965039d","Name":"5965039d","Size":-1,"IsDir":true}\n]';
   assert.deepEqual(parseLsjson(answer), [{name: 'kit.zip', size: 1080722880}]);
+  const tree = '[\n{"Path":"5965039d/kit-overlay-pack.zip","Name":"kit-overlay-pack.zip","Size":10,"IsDir":false}\n]';
+  assert.deepEqual(parseLsjsonTree(tree), [{name: '5965039d/kit-overlay-pack.zip', size: 10}]);
 });
 
 test('the command refuses before any step: --help lists the options, files and unknown packs are refused', () => {
@@ -186,13 +244,32 @@ test('the command refuses before any step: --help lists the options, files and u
   assert.match(cli().stderr, /Name at least one pack/);
 });
 
+test('--dry-run says what the run would do: skip a version shipped with nothing local, build a record from before versions', () => {
+  const scratch = mkdtempSync(path.join(os.tmpdir(), 'ship-dry-'));
+  try {
+    const pack = 'halloween-cobweb';
+    const version = (JSON.parse(readFileSync(path.join(root, 'packs', `${pack}.json`), 'utf8')) as {version: number}).version;
+    const dry = (record: Record<string, unknown>) => {
+      writeFileSync(path.join(scratch, 'state.json'), JSON.stringify({[pack]: {sha256: SHA, key: 'k', url: 'u', bytes: 1, shippedAt: 'x', ...record}}));
+      // A pack folder or zip in the checkout would change the answer; this test needs neither.
+      return spawnSync('npx', ['tsx', 'scripts/ship-pack.ts', pack, '--dry-run'], {cwd: root, encoding: 'utf8', env: {...process.env, SHIP_PACK_LOG_DIR: scratch}}).stdout;
+    };
+    if (!existsSync(path.join(root, 'out', 'packs', pack))) {
+      assert.match(dry({version}), new RegExp(`^${pack} v${version}: v${version} shipped before \\(u\\); would skip it`, 'm'));
+    }
+    assert.match(dry({}), new RegExp(`^${pack} v${version}: v\\? shipped before \\(u\\); would run render:pack, validate:pack and zip:pack, then upload out/deliveries/${pack}-overlay-pack-v${version}\\.zip`, 'm'));
+  } finally {
+    rmSync(scratch, {recursive: true, force: true});
+  }
+});
+
 /** The watch band's choice of file (hooks/rows.ts in ~/.claude/skills/watch-band): name and newest. */
 const bandReads = (entry: ReturnType<typeof watchEntryOf>, names: string[]) =>
   names.filter((name) => name.startsWith(entry.progress.prefix) && name.endsWith(entry.progress.suffix));
 
 test('the watch band follows the render log of the pack being rendered, and finds its [n/m]', async () => {
   const w = world();
-  assert.equal((await shipPacks(['kit', 'next'], options, w.effects)).code, 0);
+  assert.equal((await shipPacks([KIT, NEXT], options, w.effects)).code, 0);
   const paths = {pid: 7, logDirectory: '/r/.cache/ship-pack', progressLog: '/r/.cache/ship-pack/progress.log'};
   // Each pack points the band at its own render log before render:pack writes to it.
   for (const pack of ['kit', 'next']) {

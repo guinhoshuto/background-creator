@@ -1,5 +1,6 @@
 {
   "name": "halloween-haunted-mansion",
+  "version": 1,
   "items": [
     {
       "composition": "HauntedMansionLoop",

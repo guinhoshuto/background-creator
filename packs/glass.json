@@ -1,5 +1,6 @@
 {
   "name": "glass",
+  "version": 1,
   "items": [
     {
       "composition": "GradientLoop",

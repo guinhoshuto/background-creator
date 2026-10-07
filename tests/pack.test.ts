@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {resolveExport} from '../scripts/export';
 import {
-  dryRunText, existingManifestFile, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
+  deliveryVersion, dryRunText, existingManifestFile, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
   realPackDeps, runPack, scratchText, type PackAsset, type PackDeps, type PackManifest, type PlannedFile, type PackRunEffects,
 } from '../scripts/pack-plan';
 import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
@@ -670,6 +670,17 @@ test('packs: halloween-backgrounds traz o fundo de cada kit de Halloween, como n
   assert.deepEqual(plan.map((file) => file.output), pack.items.flatMap((item) => ['mp4', 'webm', 'png'].map((format) =>
     `out/packs/halloween-backgrounds/backgrounds/halloween-backgrounds-background-${item.variant}.${format}`)));
   for (const file of plan) assert.deepEqual(file.canvas, {width: 1920, height: 1080}, file.output);
+});
+
+test('packs: todo manifesto real tem versão, e zip e ship recusam um sem ela', () => {
+  // The version names the delivery zip (<pack>-overlay-pack-v<N>.zip), decided 2026-10-07.
+  for (const name of [...PACKS, ...BACKGROUND_PACKS]) {
+    const version = deliveryVersion(parsePackManifest(readPack(name)));
+    assert.ok(Number.isInteger(version) && version >= 1, name);
+  }
+  const unversioned = parsePackManifest({name: 'kit', items: [{composition: 'ChatLoop', formats: ['png']}]});
+  assert.throws(() => deliveryVersion(unversioned), /packs\/kit\.json has no "version": add "version": 1/);
+  assert.throws(() => parsePackManifest({name: 'kit', version: 0, items: [{composition: 'ChatLoop', formats: ['png']}]}), /version/);
 });
 
 test('packs: cada arquivo exporta todas as props do schema, sem herdar os defaults salvos no Studio', () => {
