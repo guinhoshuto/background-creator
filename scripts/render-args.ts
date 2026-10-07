@@ -146,7 +146,7 @@ export const runRender = async (args: string[], {defaultOutDirectory, effects}: 
   const directory = options.output === undefined ? defaultOutDirectory : path.dirname(path.resolve(options.output));
   // The frames kept before the encode count, not only the file: 1080p for 12 s keeps over 1 GiB.
   const need = diskNeed(plannedRender(options));
-  // Measured inside the slot: a render that waited 30 minutes for another one sees the disk it left.
+  // Measured inside the slot: a render that waited hours for another one sees the disk it left.
   await effects.withRenderSlot(async () => {
     assertCanStart({free: effects.freeBytes(directory), estimate: need, where: path.relative(process.cwd(), directory) || '.', then: FREE_SPACE_HINT});
     await effects.exportAsset(options);

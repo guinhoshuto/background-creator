@@ -53,7 +53,7 @@ const main = async () => {
     ...(propsFile === undefined ? {} : {props: {label: path.basename(propsFile, path.extname(propsFile)), props: await readPropsFile(propsFile)}}),
   });
   await assertFullFfmpeg();
-  // Arguments and tools are checked first: a typo never waits 30 minutes for the slot.
+  // Arguments and tools are checked first: a typo never waits hours for the slot.
   slot = await acquireRenderSlot({command: currentCommand()});
   // The same disk floor as every render, measured once the slot is held.
   assertCanStart({free: freeBytes(destination), where: path.relative(process.cwd(), destination) || '.', then: FREE_SPACE_HINT});

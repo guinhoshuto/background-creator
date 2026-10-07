@@ -76,13 +76,14 @@ test('a failed disk check releases the slot', async () => {
   assert.equal(machine.isHeld(), false);
 });
 
-test('the 30-minute limit covers every round of waiting, not each one', async () => {
+test('the 4-hour limit covers every round of waiting, not each one', async () => {
   // pgrep busy until minute 20; the slot takes 5 minutes; by then another render runs for good.
   const machine = fakeMachine({busyAt: (minute) => minute < 20 || minute >= 24, slotWaitMs: 5 * MINUTE});
-  await assert.rejects(takeRenderTurn({wait: true}, machine.effects), /Gave up after 30 minutes/);
+  // Four hours, a whole kit of a pack chain (about 2.4 hours): a short run waits it out instead of giving up.
+  await assert.rejects(takeRenderTurn({wait: true}, machine.effects), /Gave up after 240 minutes/);
   assert.equal(machine.isHeld(), false);
   // One poll (10 s) of slack past the limit, no more.
-  assert.ok(machine.minutes() <= 30 + 10 / 60, `gave up at minute ${machine.minutes()}`);
-  // The slot wait gets only what is left of the 30 minutes.
-  assert.ok(machine.acquireLimits.every((limit) => limit <= 10 * MINUTE), `slot wait limits: ${machine.acquireLimits.map((limit) => limit / MINUTE)} min`);
+  assert.ok(machine.minutes() <= 240 + 10 / 60, `gave up at minute ${machine.minutes()}`);
+  // The slot wait gets only what is left of the 4 hours.
+  assert.ok(machine.acquireLimits.every((limit) => limit <= 220 * MINUTE), `slot wait limits: ${machine.acquireLimits.map((limit) => limit / MINUTE)} min`);
 });
