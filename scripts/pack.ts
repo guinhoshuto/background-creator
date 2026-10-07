@@ -6,6 +6,7 @@ import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeSc
 import {estimateText} from './pack-estimate';
 import {dryRunText, existingManifestFile, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
 import {withRenderSlot} from './render-slot';
+import {checkSprites, spriteNeedsOf, spriteRefusalText} from './sprite-check';
 
 const PACK_HELP_TEXT = `usage: npm run render:pack -- <name|file.json> [options]
 
@@ -48,6 +49,9 @@ const main = async () => {
   // The whole plan, before --only: the manifest keeps only the entries it has.
   const fullPlan = planPack(manifest, realPackDeps);
   const plan = filterPlan(fullPlan, values.only);
+  // Sprites come from Blender, outside the plan: a pack ships only complete, current ones.
+  const spriteNeeds = spriteNeedsOf(plan);
+  const spriteIssues = checkSprites(projectRoot, spriteNeeds, true);
 
   const packDirectory = fromRoot(path.posix.join('out', 'packs', manifest.name));
   // Scratch directories live outside the pack folder, on the same disk (out/) so results link or rename.
@@ -61,11 +65,14 @@ const main = async () => {
     console.log(`Pack: ${manifest.name}`);
     console.log(dryRunText(plan, existing));
     console.log(estimateText(plan, existing));
+    if (spriteIssues.length > 0) console.log(spriteRefusalText('The real run refuses these sprites', spriteIssues, spriteNeeds));
     // A dry run changes nothing: it only says what the real run will clean up.
     const leftovers = (await Promise.all(scratchRoots.map(findScratchDirectories))).flat();
     if (leftovers.length > 0) console.log(scratchText(leftovers.length, 'will-be-removed'));
     return;
   }
+
+  if (spriteIssues.length > 0) throw new Error(spriteRefusalText('The sprites are not ready to ship', spriteIssues, spriteNeeds));
 
   const statTarget = () => existingAncestor(packDirectory);
   // One bundle for the whole pack; exportAsset reuses its serveUrl for every file.

@@ -59,15 +59,16 @@ test('catalog: every background keeps its composition ID and is a background', (
   assert.throws(() => getAsset('__proto__'), /Unknown composition/);
 });
 
-test('Studio: cada composição fica na pasta do seu tipo, com metadados de fundo intactos', () => {
+test('Studio: cada composição fica na pasta do seu tipo, com metadados de fundo intactos', async () => {
   const root = RemotionRoot();
   type Registered = {id: string; width: number; height: number; fps: number; durationInFrames: number;
-    calculateMetadata: (options: {props: Record<string, unknown>}) => Record<string, unknown>};
+    calculateMetadata: (options: {props: Record<string, unknown>}) => Record<string, unknown> | Promise<Record<string, unknown>>};
   for (const entry of Object.values(assetCatalog)) {
     assert.equal(folderOf(root, entry.id), kindPolicies[entry.kind].folder, entry.id);
     const composition = findComposition<Registered>(root, entry.id);
     assert.ok(composition, `${entry.id} precisa estar registrada no Studio`);
-    const metadata = composition.props.calculateMetadata({props: entry.defaultProps});
+    // Y2KLoop reads its sprite manifests there, so its metadata comes as a promise.
+    const metadata = await composition.props.calculateMetadata({props: entry.defaultProps});
     // Backgrounds keep full HD and <Id>; sized kinds open at their layout's canvas, named by size.
     const layout = getLayoutOf(entry);
     const canvas = layout ? layout(entry.defaultProps).canvas : {width: 1920, height: 1080};

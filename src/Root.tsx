@@ -1,4 +1,5 @@
 import {Composition, Folder} from 'remotion';
+import {loadY2KSprites} from './backgrounds/y2k/sprites';
 import {backgroundCatalog, getAsset, getLayoutOf, overlayCatalog} from './catalog';
 import {kindPolicies} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
@@ -20,6 +21,7 @@ const dotGrid = backgroundCatalog.DotGridLoop;
 const checkerboard = backgroundCatalog.CheckerboardLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
+const y2k = backgroundCatalog.Y2KLoop;
 const chat = overlayCatalog.ChatLoop;
 const block = overlayCatalog.BlockLoop;
 const border = overlayCatalog.BorderLoop;
@@ -52,6 +54,19 @@ const metadataFor = <Props extends MetadataProps>(id: string, props: Props) => {
 export const RemotionRoot = () => (
   <>
     <Folder name={kindPolicies.background.folder}>
+      {/* The sprite manifests are read in calculateMetadata, before the first frame: frames depend only on the props. */}
+      <Composition
+        id="Y2KLoop"
+        component={y2k.component}
+        schema={y2k.schema}
+        defaultProps={y2k.defaultProps}
+        {...getCompositionMetadata(y2k.defaultProps)}
+        calculateMetadata={async ({props}: {props: typeof y2k.defaultProps}) => {
+          const parsed = y2k.schema.parse(props);
+          const sprites = await loadY2KSprites(parsed.layout.map((layer) => layer.asset));
+          return {...metadataFor(y2k.id, parsed), props: {...parsed, sprites}};
+        }}
+      />
       <Composition
         id="WutheringWavesLoop"
         component={wutheringWaves.component}

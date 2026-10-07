@@ -13,6 +13,8 @@ import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
 import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
+import {Y2KLoop, y2kLoopSchema, type Y2KLoopProps} from './backgrounds/Y2KLoop';
+import {Y2K_SET} from './backgrounds/y2k/sprites';
 import type {AssetKind} from './kinds';
 import {blockCatalogEntry} from './overlays/block';
 import {borderCatalogEntry} from './overlays/border';
@@ -131,7 +133,20 @@ export const backgroundCatalog = {
     schema: geometricLoopSchema,
     defaultProps: geometricLoopSchema.parse({}),
   },
+  Y2KLoop: {
+    id: 'Y2KLoop',
+    kind: 'background',
+    component: Y2KLoop,
+    schema: y2kLoopSchema,
+    defaultProps: y2kLoopSchema.parse({}),
+    // Blender sprites under public/sprites/y2k/ (gitignored): packs and validate:exports check their
+    // manifests before a render (scripts/sprite-check.ts).
+    sprites: (props: Y2KLoopProps) => ({set: Y2K_SET, assets: props.layout.map((layer) => layer.asset)}),
+  },
 } as const satisfies Record<string, CatalogEntry>;
+
+/** The Blender sprites one file shows: the set (scripts/blender/<set>/) and the assets of its layout. */
+export type SpriteNeed = {set: string; assets: readonly string[]};
 
 /**
  * What every registered composition provides. `gl` picks Chrome's OpenGL backend; `getLayout`
@@ -150,6 +165,8 @@ export type CatalogEntry = {
   getMotion?(props: never): AssetMotion;
   /** The props of the still mask that goes with a file (a window border's OBS mask), or null. */
   getMask?(props: never): Record<string, unknown> | null;
+  /** The Blender sprites a file shows; packs and validate:exports check them before a render. */
+  sprites?(props: never): SpriteNeed;
 };
 
 export type BackgroundId = keyof typeof backgroundCatalog;
@@ -185,6 +202,10 @@ export const getMotionOf = (asset: CatalogEntry): ((props: Record<string, unknow
 /** The mask props that go with a composition's file (see CatalogEntry.getMask); null when it has none. */
 export const getMaskOf = (asset: CatalogEntry): ((props: Record<string, unknown>) => Record<string, unknown> | null) | null =>
   asset.getMask ? (asset.getMask as (props: Record<string, unknown>) => Record<string, unknown> | null) : null;
+
+/** The Blender sprites a composition's file shows (set and assets); null when it draws everything in code. */
+export const getSpritesOf = (asset: CatalogEntry): ((props: Record<string, unknown>) => SpriteNeed) | null =>
+  asset.sprites ? (asset.sprites as (props: Record<string, unknown>) => SpriteNeed) : null;
 
 export const getAsset = (id: string): Asset => {
   if (!Object.prototype.hasOwnProperty.call(assetCatalog, id)) {

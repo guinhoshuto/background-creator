@@ -19,6 +19,8 @@ export const createBundle = () => {
   return bundle({
     entryPoint: path.join(projectRoot, 'src/index.ts'),
     outDir: path.join(projectRoot, '.cache/bundle'),
+    // Link public/ instead of copying it into every bundle: the Blender sprites alone run to hundreds of MB.
+    symlinkPublicDir: true,
   });
 };
 

@@ -1,0 +1,14 @@
+{
+  "durationSeconds": 8,
+  "transparent": false,
+  "backgroundColor": "#C9A8F0",
+  "outputFormat": "webm",
+  "plateColors": ["#A9D6FF", "#C9A8F0", "#FF8EC4"],
+  "plateAngle": -35,
+  "bloom": 0.4,
+  "bloomX": 0.38,
+  "bloomY": 0.52,
+  "bloomRadius": 0.62,
+  "shadowColor": "#5A3A7A",
+  "shadowOpacity": 0.34
+}

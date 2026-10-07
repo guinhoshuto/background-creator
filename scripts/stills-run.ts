@@ -69,7 +69,8 @@ const onSignal = () => { runCleanups(); process.exit(130); };
 const makeBundle = async (root: string, tag: string) => {
   const outDir = path.join(projectRoot, '.cache', `stills-bundle-${tag}-${process.pid}`);
   cleanups.push(() => rmSync(outDir, {recursive: true, force: true}));
-  return bundle({entryPoint: path.join(root, 'src/index.ts'), outDir, enableCaching: false});
+  // Linked, not copied: public/ holds the Blender sprites (README, Known pitfalls).
+  return bundle({entryPoint: path.join(root, 'src/index.ts'), outDir, enableCaching: false, symlinkPublicDir: true});
 };
 
 /** A detached worktree of `ref` that shares this checkout's node_modules. */

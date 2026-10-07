@@ -443,3 +443,34 @@ export const runSprites = async ({choices, root, script, effects}: {
   }
   return results;
 };
+
+/**
+ * Why a render may not use these sprites, one line per asset, each with the command that fixes it;
+ * [] when it may. Every render needs each manifest. A pack (`ship`) also refuses a smoke render
+ * (complete: false) and a stale one, whose scriptHash is not what the registry and the Python give
+ * today; an asset the registry does not list has no such hash, so it is refused too.
+ */
+export const spriteProblems = ({need, registry, pythonFiles, readManifest, ship}: {
+  need: {set: string; assets: readonly string[]}; registry: SpriteRegistry | null; pythonFiles: readonly PythonFile[];
+  readManifest: (asset: string) => unknown; ship: boolean;
+}): string[] => {
+  const problems: string[] = [];
+  for (const asset of [...new Set(need.assets)].sort()) {
+    const file = path.posix.join(SPRITES_ROOT, need.set, asset, 'manifest.json');
+    const fix = `npm run blender:sprites -- ${need.set} --only ${asset}`;
+    const manifest = readManifest(asset);
+    if (manifest === null || manifest === undefined) {
+      problems.push(`${asset}: no sprites (${file} is missing). Render them: ${fix}.`);
+    } else if (!isRecord(manifest)) {
+      problems.push(`${asset}: ${file} is unreadable. Render it again: ${fix}.`);
+    } else if (ship && manifest.complete !== true) {
+      const frames = Array.isArray(manifest.frameRange) ? manifest.frameRange.join(':') : '?';
+      problems.push(`${asset}: a smoke render (complete: false, frames ${frames}) never ships. Render the full sprite: ${fix}.`);
+    } else if (ship && (registry === null || !Object.prototype.hasOwnProperty.call(registry.assets, asset))) {
+      problems.push(`${asset}: not in scripts/blender/${need.set}/sprites.json, so nothing says its sprite is current. Register it, then: ${fix}.`);
+    } else if (ship && registry !== null && manifest.scriptHash !== spriteHash(registry, asset, pythonFiles)) {
+      problems.push(`${asset}: stale sprite (sprites.json or the Python changed since it was rendered). Render it again: ${fix}.`);
+    }
+  }
+  return problems;
+};

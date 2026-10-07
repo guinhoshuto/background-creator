@@ -12,6 +12,7 @@ import {FREE_SPACE_HINT, assertCanStart, freeBytes} from './disk';
 import {createBundle, exportAsset, projectRoot, resolveExport} from './export';
 import {compositedRgbError} from './image-comparison';
 import {assertFullFfmpeg, ffmpegPath, ffprobePath, runProcess} from './process';
+import {checkSprites, spriteNeedsOf, spriteRefusalText} from './sprite-check';
 import {acquireRenderSlot, currentCommand, type SlotHandle} from './render-slot';
 import {VALIDATE_HELP_TEXT, parseValidateArgs} from './validate-args';
 import {fixtureProps, planFixtures, shippedPresetPairs} from './validate-fixtures';
@@ -52,6 +53,14 @@ const main = async () => {
     pairs: values.presets ? shippedPresetPairs(projectRoot) : [],
     ...(propsFile === undefined ? {} : {props: {label: path.basename(propsFile, path.extname(propsFile)), props: await readPropsFile(propsFile)}}),
   });
+  // Sprites come from Blender (gitignored): a composition that shows them is refused here, before the slot.
+  const spriteNeeds = spriteNeedsOf(fixtures.map((fixture) => ({
+    composition: fixture.asset.id, exportProps: fixtureProps(fixture, durationSeconds, sizeProps),
+  })));
+  const spriteIssues = checkSprites(projectRoot, spriteNeeds, false);
+  if (spriteIssues.length > 0) {
+    throw new Error(`${spriteRefusalText('Cannot validate without the sprites', spriteIssues, spriteNeeds)}\nOr validate other compositions: --composition <id>.`);
+  }
   await assertFullFfmpeg();
   // Arguments and tools are checked first: a typo never waits hours for the slot.
   slot = await acquireRenderSlot({command: currentCommand()});
