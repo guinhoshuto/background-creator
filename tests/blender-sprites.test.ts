@@ -8,8 +8,8 @@ import {
 } from '../scripts/blender-sprites-plan';
 
 const heart = () => ({
-  module: 'heart', size: 640, samples: 96, transparentGlass: false, pose: [-6, 0, 24],
-  motion: {kind: 'sway', axis: 'Z', degrees: 18, cycles: 1}, period: 480,
+  module: 'heart', builder: 'build', size: 640, samples: 96, transparentGlass: false, light: 'candy', distance: 7, location: [0, 0, 0],
+  pose: [-6, 0, 24], motion: {kind: 'sway', axis: 'Z', degrees: 18, cycles: 1}, period: 480,
 });
 const registryWith = (assets: Record<string, unknown>) => ({set: 'y2k', fps: 60, loopFrames: 480, assets});
 const parsed = (assets: Record<string, unknown>) => parseSpriteRegistry(registryWith(assets), 'y2k');
@@ -18,8 +18,24 @@ const PYTHON = ['heart.py', 'sparkle.py', 'sprites.py', 'studio.py'];
 test('registry: the committed sprites.json is valid', () => {
   const data: unknown = JSON.parse(readFileSync(new URL('../scripts/blender/y2k/sprites.json', import.meta.url), 'utf8'));
   const registry = parseSpriteRegistry(data, 'y2k');
-  assert.deepEqual(registry.assets.heart?.motion, {kind: 'sway', axis: 'Z', degrees: 18, cycles: 1});
-  assert.equal(registry.assets.heart?.period, 480);
+  assert.deepEqual(Object.keys(registry.assets), ['camcorder', 'pouch', 'cassette', 'gum', 'soap', 'cursor', 'pixel-sparkle', 'phone', 'bow']);
+  assert.deepEqual(registry.assets.gum && [registry.assets.gum.module, registry.assets.gum.builder], ['bubbles', 'build_gum']);
+  // Only the soap film needs transparent glass; everything of the NewJeans round is lit by daylight.
+  assert.deepEqual(Object.entries(registry.assets).filter(([, asset]) => asset.transparentGlass).map(([id]) => id), ['soap']);
+  assert.ok(Object.values(registry.assets).every((asset) => asset.light === 'daylight'));
+});
+
+test('registry: the builder, the light, the distance and the location are checked, with the way out', () => {
+  assert.doesNotThrow(() => parsed({gum: {...heart(), module: 'bubbles', builder: 'build_gum', light: 'daylight', distance: 8, location: [0.1, 0, -0.2]}}));
+  assert.throws(() => parsed({heart: {...heart(), builder: 'build()'}}), /assets\.heart\.builder: "build\(\)" must name the module's function/);
+  assert.throws(() => parsed({heart: {...heart(), light: 'sunset'}}), /assets\.heart\.light: "sunset" must be one of the studio's lights, "candy" or "daylight"/);
+  assert.throws(() => parsed({heart: {...heart(), distance: 0.5}}), /assets\.heart\.distance: 0\.5 must be the camera's distance/);
+  assert.throws(() => parsed({heart: {...heart(), distance: '7'}}), /assets\.heart\.distance: "7" must be/);
+  assert.throws(() => parsed({heart: {...heart(), location: [0, 0]}}), /assets\.heart\.location: \[0,0\] must be the root's position/);
+  assert.throws(() => parsed({heart: {...heart(), location: [0, 0, null]}}), /assets\.heart\.location: \[0,0,null\] must be/);
+  const withoutBuilder: Record<string, unknown> = heart();
+  delete withoutBuilder.builder;
+  assert.throws(() => parsed({heart: withoutBuilder}), /assets\.heart\.builder: undefined must name/);
 });
 
 test('registry: a period that does not divide 480 is refused, with the field and the way out', () => {
@@ -126,10 +142,10 @@ test('dry run: one line per asset and the total of what renders, in MiB and minu
     {plan: first!, hash: 'a', decision: {render: true, reason: 'not rendered yet'}},
     {plan: second!, hash: 'b', decision: {render: false, reason: 'up to date'}},
   ], 'Blender: /b.');
-  assert.match(text, /render heart: heart\.py, frames 0:480 of 480, 640 px, 96 samples, sway Z ±18° ×1 -> public\/sprites\/y2k\/heart\/ \(not rendered yet\), ~56\.3 MiB, ~1 h 14 min/);
-  assert.match(text, /^ {2}skip {3}star: sparkle\.py, frames 0:120 of 120, .*spin Z ×1 \(symmetry 4\).*\(up to date\)$/m);
-  // Only heart counts: 480 × 640² × 0.3 B = 56.3 MiB; 100 s of Metal kernels + 15 s to start + 480 × (1 + 8) s = 74 min.
-  assert.match(text, /To render: 1 asset\(s\), 480 frames, ~56\.3 MiB, ~1 h 14 min/);
+  assert.match(text, /render heart: heart\.py build\(\), frames 0:480 of 480, 640 px, 96 samples, sway Z ±18° ×1 -> public\/sprites\/y2k\/heart\/ \(not rendered yet\), ~37\.5 MiB, ~58 min/);
+  assert.match(text, /^ {2}skip {3}star: sparkle\.py build\(\), frames 0:120 of 120, .*spin Z ×1 \(symmetry 4\).*\(up to date\)$/m);
+  // Only heart counts: 480 × 640² × 0.2 B = 37.5 MiB; 100 s of Metal kernels + 15 s to start + 480 × (1 + 6) s = 57.9 min.
+  assert.match(text, /To render: 1 asset\(s\), 480 frames, ~37\.5 MiB, ~58 min/);
 });
 
 const SCRIPT = '/repo/scripts/blender/y2k/sprites.py';

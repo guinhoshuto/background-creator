@@ -229,11 +229,17 @@ def add_card(scene: bpy.types.Scene, name: str, color: str, strength: float,
     return card
 
 
+# The lights build_studio knows; sprites.json's "light" picks one (scripts/blender-sprites-plan.ts checks it).
+LIGHTS = ("candy", "daylight")
+
+
 def build_studio(size: tuple[int, int] = (768, 768), samples: int = 128,
                  distance: float = 7.0, transparent_glass: bool = False, light: str = "candy") -> bpy.types.Scene:
     """candy: pink key, lilac fill, cold rim, white strip on top, hot pink floor (made for chrome).
     daylight: a white key with a pink fill and a baby-blue rim, so pastel plastic keeps its own
     colour and only its edges pick up the palette (the NewJeans round)."""
+    if light not in LIGHTS:
+        raise ValueError(f"light {light!r}: build_studio knows {', '.join(LIGHTS)}.")
     scene = reset_scene()
     setup_render(scene, size, samples, transparent_glass)
     add_camera(scene, distance=distance)

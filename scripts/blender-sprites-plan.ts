@@ -20,12 +20,16 @@ export const RESULT_PREFIX = 'sprites: result ';
 
 /**
  * Disk per pixel of the square, per frame: WEBP at quality 90 with alpha, where the empty corners cost
- * little. The smoke test (heart, 128 px, 8 samples, 2026-10-07) measured 0.169 B (2.7 KiB a frame); the
- * estimate keeps the SPEC's 0.3 until a full-size render measures it.
+ * little. Measured at full size on the nine Y2K assets (2026-10-07): 0.032 B (camcorder) to 0.166 B (the
+ * soap film, whose see-through pixels are never empty); 0.2 keeps the disk floor on the safe side.
  */
-export const SPRITE_BYTES_PER_PIXEL = 0.3;
-/** Cycles on Metal at 640 px and 96 samples, once the kernels are compiled: ~8 s a frame (README Known pitfalls). */
-export const REFERENCE_FRAME_SECONDS = 8;
+export const SPRITE_BYTES_PER_PIXEL = 0.2;
+/**
+ * Cycles on Metal at 640 px and 96 samples, once the kernels are loaded. Measured at full size on the nine
+ * Y2K assets (2026-10-07), less the overhead and scaled to 640 px: 1.6 to 6.2 s a frame, 5 s the median
+ * (pouch, 640 px: 6.3 s with the overhead); 6 s keeps the estimate a little long.
+ */
+export const REFERENCE_FRAME_SECONDS = 6;
 const REFERENCE_PIXELS = 640 * 640;
 const REFERENCE_SAMPLES = 96;
 /** What a frame costs at any size (scene update, denoiser, writing the file): 0.6 to 1.1 s on the smoke test. */
@@ -43,14 +47,21 @@ export type SpriteMotion =
   | {kind: 'sway'; axis: Axis; degrees: number; cycles: number}
   | {kind: 'spin'; axis: Axis; turns: number; symmetry: number}
   | {kind: 'none'};
+/** studio.build_studio's lights (scripts/blender/y2k/studio.py, LIGHTS). */
+export const SPRITE_LIGHTS = ['candy', 'daylight'] as const;
+export type SpriteLight = (typeof SPRITE_LIGHTS)[number];
 export type SpriteAsset = {
-  module: string; size: number; samples: number; transparentGlass: boolean;
+  /** The module of the set folder and its function that builds the asset and returns the root. */
+  module: string; builder: string;
+  size: number; samples: number; transparentGlass: boolean;
+  /** The studio: its light and the camera's distance; the root's location centres the asset in the square. */
+  light: SpriteLight; distance: number; location: [number, number, number];
   pose: [number, number, number]; motion: SpriteMotion; period: number;
 };
 export type SpriteRegistry = {set: string; fps: number; loopFrames: number; assets: Record<string, SpriteAsset>};
 
 const ROOT_KEYS = ['set', 'fps', 'loopFrames', 'assets'];
-const ASSET_KEYS = ['module', 'size', 'samples', 'transparentGlass', 'pose', 'motion', 'period'];
+const ASSET_KEYS = ['module', 'builder', 'size', 'samples', 'transparentGlass', 'light', 'distance', 'location', 'pose', 'motion', 'period'];
 const MOTION_KEYS: Record<SpriteMotion['kind'], string[]> = {
   sway: ['kind', 'axis', 'degrees', 'cycles'], spin: ['kind', 'axis', 'turns', 'symmetry'], none: ['kind'],
 };
@@ -60,6 +71,8 @@ const MODULE_NAME = /^[a-z_][a-z0-9_]*$/;
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const isWhole = (value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
+const isTriple = (value: unknown): value is [number, number, number] =>
+  Array.isArray(value) && value.length === 3 && value.every((item) => typeof item === 'number' && Number.isFinite(item));
 const gcd = (a: number, b: number): number => (b === 0 ? Math.abs(a) : gcd(b, a % b));
 const shown = (value: unknown) => JSON.stringify(value) ?? String(value);
 type Fail = (field: string, message: string) => void;
@@ -121,14 +134,20 @@ const parseAsset = (id: string, raw: unknown, fail: Fail): SpriteAsset | null =>
     return null;
   }
   for (const key of Object.keys(raw)) if (!ASSET_KEYS.includes(key)) problem(key, `unknown field; an asset takes ${ASSET_KEYS.join(', ')}.`);
-  const {module, size, samples, transparentGlass, pose, period} = raw;
+  const {module, builder, size, samples, transparentGlass, light, distance, location, pose, period} = raw;
   if (typeof module !== 'string' || !MODULE_NAME.test(module)) problem('module', `${shown(module)} must name a Python module of the set folder, e.g. "heart" for heart.py.`);
+  if (typeof builder !== 'string' || !MODULE_NAME.test(builder)) problem('builder', `${shown(builder)} must name the module's function that builds the asset and returns its root, e.g. "build" or "build_gum".`);
   if (!isWhole(size, 16, 4096) || size % 2 !== 0) problem('size', `${shown(size)} must be the square's side, an even number of px from 16 to 4096.`);
   if (!isWhole(samples, 1, 4096)) problem('samples', `${shown(samples)} must be a whole number of Cycles samples from 1 to 4096.`);
   if (typeof transparentGlass !== 'boolean') problem('transparentGlass', 'must be true or false: true only for colourless plastic (README Known pitfalls).');
-  if (!Array.isArray(pose) || pose.length !== 3 || !pose.every((angle) => typeof angle === 'number' && Number.isFinite(angle))) {
-    problem('pose', `${shown(pose)} must be three rotations in degrees, [x, y, z].`);
+  if (!SPRITE_LIGHTS.includes(light as SpriteLight)) {
+    problem('light', `${shown(light)} must be one of the studio's lights, ${SPRITE_LIGHTS.map((name) => `"${name}"`).join(' or ')}: daylight keeps pastel plastic its own colour (README Known pitfalls).`);
   }
+  if (typeof distance !== 'number' || !Number.isFinite(distance) || distance < 1 || distance > 100) {
+    problem('distance', `${shown(distance)} must be the camera's distance in Blender units, from 1 to 100 (the 85 mm lens shows a square 0.42 × distance wide).`);
+  }
+  if (!isTriple(location)) problem('location', `${shown(location)} must be the root's position in Blender units, [x, y, z]: it centres the asset in the square.`);
+  if (!isTriple(pose)) problem('pose', `${shown(pose)} must be three rotations in degrees, [x, y, z].`);
   const motion = parseMotion(raw.motion, under(problem, 'motion'));
   if (!isWhole(period, 1) || SPRITE_LOOP_FRAMES % period !== 0) {
     problem('period', `${shown(period)} must be a whole number of frames that divides ${SPRITE_LOOP_FRAMES}, e.g. ${SPRITE_LOOP_FRAMES}, 240, 160 or 120.`);
@@ -138,8 +157,9 @@ const parseAsset = (id: string, raw: unknown, fail: Fail): SpriteAsset | null =>
   }
   if (!ok || !motion) return null;
   return {
-    module: module as string, size: size as number, samples: samples as number, transparentGlass: transparentGlass as boolean,
-    pose: pose as [number, number, number], motion, period: period as number,
+    module: module as string, builder: builder as string, size: size as number, samples: samples as number,
+    transparentGlass: transparentGlass as boolean, light: light as SpriteLight, distance: distance as number,
+    location: location as [number, number, number], pose: pose as [number, number, number], motion, period: period as number,
   };
 };
 
@@ -291,7 +311,7 @@ export type SpriteChoice = {plan: PlannedSprite; hash: string; decision: SpriteD
 export const dryRunText = (set: string, choices: readonly SpriteChoice[], blenderStatus: string) => {
   const lines = [`Sprites ${set}: ${choices.length} asset(s). ${blenderStatus}`];
   for (const {plan, decision} of choices) {
-    const what = `${plan.id}: ${plan.asset.module}.py, frames ${plan.range.start}:${plan.range.end} of ${plan.asset.period}, ${plan.size} px, ${plan.samples} samples, ${describeMotion(plan.asset.motion)} -> ${plan.output}/`;
+    const what = `${plan.id}: ${plan.asset.module}.py ${plan.asset.builder}(), frames ${plan.range.start}:${plan.range.end} of ${plan.asset.period}, ${plan.size} px, ${plan.samples} samples, ${describeMotion(plan.asset.motion)} -> ${plan.output}/`;
     if (!decision.render) {
       lines.push(`  skip   ${what} (${decision.reason})`);
       continue;

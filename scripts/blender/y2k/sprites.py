@@ -7,11 +7,13 @@
 inside the render slot, and checks every frame it writes. --frames, --size and --samples override
 the registry for smoke tests only.
 
-The pose and the motion become a driver on the frame with a simple expression, which Blender
-evaluates without Python (a factory-startup Blender runs no Python drivers), linear in time, so
-frame 480 equals frame 0 and the scene plays the same loop if it is opened in the GUI. Each frame is
-checked against the registry before it renders: a driver that did not evaluate stops the run instead
-of rendering a still sprite.
+The registry entry picks the studio (light, camera distance), the module's builder and the root's
+location, as stills.py's POSES did for the mock. The pose and the motion become a driver on the frame
+with a simple expression, which Blender evaluates without Python (a factory-startup Blender runs no
+Python drivers), linear in time, so frame 480 equals frame 0 and the scene plays the same loop if it is
+opened in the GUI. Before the first render, every frame of the period is checked to keep the asset
+inside the square (check_fit); each frame is checked against the registry before it renders: a driver
+that did not evaluate stops the run instead of rendering a still sprite.
 """
 from __future__ import annotations
 
@@ -28,10 +30,15 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 import bpy  # noqa: E402
+import numpy as np  # noqa: E402  (bundled with Blender)
 
 import studio  # noqa: E402
 
 AXES = "XYZ"
+# The asset's vertices, projected by the camera, keep this much of the half-frame clear of every edge
+# (0.02 is 1% of the side: 6 px of a 640 px sprite), so no frame of the motion is cut at the border.
+FIT_MARGIN = 0.02
+GEOMETRY = {"MESH", "CURVE", "SURFACE", "FONT", "META"}
 # The runner shows the lines that start with this prefix and reads the result line
 # (scripts/blender-sprites-plan.ts, PROGRESS_PREFIX and RESULT_PREFIX).
 PREFIX = "sprites:"
@@ -119,6 +126,42 @@ def check_rotation(root: bpy.types.Object, entry: dict, frame: int, loop_frames:
                            f"({degrees(want)}): the motion driver did not evaluate.")
 
 
+def check_fit(scene: bpy.types.Scene, root: bpy.types.Object, period: int, name: str) -> None:
+    """Every frame of the period, before any render: the farthest vertex from the centre, in camera
+    coordinates (1 is the frame's edge), must stay within 1 - FIT_MARGIN. A sway or a spin that swings a
+    corner out of the square would cut the sprite at its border for the whole render."""
+    parts = [obj for obj in (root, *root.children_recursive) if obj.type in GEOMETRY]
+    if not parts:
+        raise RuntimeError(f"{name}: the builder's root has no geometry under it to frame.")
+    camera = scene.camera
+    started = time.monotonic()
+    worst, worst_frame, worst_edge = 0.0, 0, ""
+    for frame in range(period):
+        scene.frame_set(frame)
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        view = np.array(camera.calc_matrix_camera(depsgraph, x=scene.render.resolution_x, y=scene.render.resolution_y)) \
+            @ np.array(camera.matrix_world.inverted())
+        for obj in parts:
+            evaluated = obj.evaluated_get(depsgraph)
+            mesh = evaluated.to_mesh()
+            count = len(mesh.vertices)
+            if count:
+                coords = np.empty(count * 3, dtype=np.float32)
+                mesh.vertices.foreach_get("co", coords)
+                points = np.c_[coords.reshape(count, 3), np.ones(count)] @ (view @ np.array(evaluated.matrix_world)).T
+                x, y = points[:, 0] / points[:, 3], points[:, 1] / points[:, 3]
+                for reach, edge in ((x.max(), "right"), (-x.min(), "left"), (y.max(), "top"), (-y.min(), "bottom")):
+                    if reach > worst:
+                        worst, worst_frame, worst_edge = float(reach), frame, edge
+            evaluated.to_mesh_clear()
+    say(f"{name}: reaches {worst:.3f} of the half-frame ({worst_edge} edge) at frame {worst_frame}, limit {1 - FIT_MARGIN:.2f} "
+        f"({period} frames checked in {time.monotonic() - started:.1f} s)")
+    if worst > 1 - FIT_MARGIN:
+        raise RuntimeError(f"{name}: at frame {worst_frame} the asset reaches {worst:.3f} of the half-frame at the "
+                           f"{worst_edge} edge, past {1 - FIT_MARGIN:.2f}, and the sprite would be cut there. Lower "
+                           "motion.degrees, raise distance or move location in sprites.json.")
+
+
 def use_webp(scene: bpy.types.Scene) -> None:
     """WEBP with alpha at quality 90, enum ids read from bl_rna before they are assigned."""
     settings = scene.render.image_settings
@@ -143,10 +186,17 @@ def main() -> None:
     size = entry["size"] if args.size is None else args.size
     samples = entry["samples"] if args.samples is None else args.samples
     os.makedirs(args.out, exist_ok=True)
-    scene = studio.build_studio(size=(size, size), samples=samples, transparent_glass=entry["transparentGlass"])
+    scene = studio.build_studio(size=(size, size), samples=samples, distance=entry["distance"],
+                                transparent_glass=entry["transparentGlass"], light=entry["light"])
     use_webp(scene)
-    root = importlib.import_module(entry["module"]).build()
+    builder = getattr(importlib.import_module(entry["module"]), entry["builder"], None)
+    if not callable(builder):
+        raise RuntimeError(f"{entry['module']}.py has no function {entry['builder']}(): fix assets.{args.asset}.builder "
+                           "in sprites.json.")
+    root = builder()
+    root.location = entry["location"]
     drive(root, entry, loop_frames)
+    check_fit(scene, root, entry["period"], args.asset)
     say(f"{args.asset}: frames {frames.start}:{frames.stop} of {entry['period']}, {size} px, {samples} samples, "
         f"motion {entry['motion']['kind']}, Blender {bpy.app.version_string}, device {scene.cycles.device}")
     seconds = []
