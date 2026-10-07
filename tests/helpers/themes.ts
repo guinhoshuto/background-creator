@@ -20,5 +20,8 @@ export const OVERLAY_THEMES: readonly OverlayTheme[] = [...CLASSIC_THEMES, ...KI
 /** presets/{chat,block,border}-*.json the file list must hold, sorted: every theme's three presets, exactly. */
 export const expectedPresetFiles = (): string[] => PRESET_KINDS.flatMap((kind) => OVERLAY_THEMES.map((theme) => `${kind}-${theme}.json`)).sort();
 
-/** packs/*.json the file list must hold, sorted: every theme's pack, exactly. */
-export const expectedPackFiles = (): string[] => OVERLAY_THEMES.map((theme) => `${theme}.json`).sort();
+/** Packs of backgrounds only, sold apart from the kits: `halloween-backgrounds` holds the four kits' backgrounds. */
+export const BACKGROUND_PACKS = ['halloween-backgrounds'] as const;
+
+/** packs/*.json the file list must hold, sorted: every theme's pack and every background pack, exactly. */
+export const expectedPackFiles = (): string[] => [...OVERLAY_THEMES, ...BACKGROUND_PACKS].map((name) => `${name}.json`).sort();
