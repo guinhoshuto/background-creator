@@ -81,6 +81,8 @@ test('--no-wait fails at once when a render started while taking the slot, and l
   });
   assert.equal(machine.isHeld(), false);
   assert.deepEqual(machine.events, ['acquire', 'release']);
+  // At once: no grace with the slot held.
+  assert.equal(machine.minutes(), 2);
 });
 
 test('a failed disk check releases the slot', async () => {
@@ -123,11 +125,29 @@ test('a run that gives the slot back asks again with the moment it first asked: 
   assert.equal(machine.minutes(), 15);
 });
 
+test('memory short for a moment after the render before it is waited for with the slot held, not given away', async () => {
+  // The slot owner's render ends at minute 5; memory comes back 40 s later. Giving the slot back then
+  // let a pack chain's next kit, arriving with no ticket ahead of it, take the turn (HAR-61).
+  const machine = fakeMachine({busyAt: (minute) => minute < 5 + 40 / 60, outsideAt: () => false, slotWaitMs: 5 * MINUTE});
+  await takeRenderTurn({wait: true}, machine.effects);
+  assert.deepEqual(machine.events, ['acquire', 'disk (held)']);
+  assert.ok(machine.minutes() < 6, `took the turn at minute ${machine.minutes()}`);
+});
+
+test('free outside the slot but busy with it: each round sleeps, never a hot loop of take and release', async () => {
+  // Step 1 free, step 3 busy for good (a check that only the whole machine sees): 30 minutes of rounds.
+  const machine = fakeMachine({busyAt: () => true, outsideAt: () => false});
+  await assert.rejects(takeRenderTurn({wait: true, limitMs: 30 * MINUTE}, machine.effects), /Gave up after 30 minutes/);
+  assert.equal(machine.isHeld(), false);
+  // One round is the grace (1 minute) and one poll (10 s): 26 rounds at most in 30 minutes.
+  const rounds = machine.events.filter((event) => event === 'acquire').length;
+  assert.ok(rounds <= 26, `${rounds} rounds in 30 minutes`);
+});
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 test('a stills that comes while a pack chain renders kit 1 goes before kit 2 (HAR-61)', async (t) => {
   const base = mkdtempSync(path.join(os.tmpdir(), 'render-turn-test-'));
-  t.after(() => rmSync(base, {recursive: true, force: true}));
   const dir = path.join(base, 'render-slot');
   const marker = `har61-chain-${process.pid}`;
   const log = path.join(base, 'chain.log');
@@ -137,7 +157,9 @@ test('a stills that comes while a pack chain renders kit 1 goes before kit 2 (HA
     cwd: root, encoding: 'utf8', env: {...process.env, RENDER_SLOT_DIR: dir, [HELD_ENV]: ''},
   }).trim());
   const running = () => { try { process.kill(chainPid, 0); return true; } catch { return false; } };
+  // Hooks run in the order they are registered: the chain stops before its folder goes.
   t.after(() => { if (running()) process.kill(chainPid); });
+  t.after(() => rmSync(base, {recursive: true, force: true}));
   const output = () => (existsSync(log) ? readFileSync(log, 'utf8') : '');
   const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
   for (const started = Date.now(); !output().includes('kit1 held'); await pause(20)) {

@@ -12,9 +12,13 @@
 //    left to step 2: waiting for them outside the queue lost this run's place to a pack chain taking
 //    the slot again between kits (HAR-61).
 // 2. Take the slot in its queue, with `since`, the moment this run first asked for it.
-// 3. With the slot held, the whole machine check (busy), without waiting: memory, and a render that
-//    started meanwhile. Busy then: release the slot, wait as in step 1 and go back to the queue with
-//    the same `since`, so the round does not cost this run its place.
+// 3. With the slot held, the whole machine check (busy): memory, and a render that started meanwhile.
+//    Busy, it waits up to HELD_GRACE_MS with the slot in hand: right after the render before it, memory
+//    comes back within seconds, and giving the slot back then handed it to a pack chain's next kit,
+//    which arrives in a second or two with no ticket ahead of it. The grace is bounded, so a render
+//    outside the slot that waits in the queue (an open Chrome) cannot deadlock it. Still busy: release
+//    the slot, sleep one poll (never a hot loop of take and release when step 1 says free and step 3
+//    busy), wait as in step 1 and go back to the queue with the same `since`.
 import {execFileSync} from 'node:child_process';
 import {basename} from 'node:path';
 import {machineVerdict} from './machine-check';
@@ -138,6 +142,8 @@ export type TurnOptions = {wait: boolean; limitMs?: number; pollMs?: number};
 // Long enough to wait out a whole kit of another pack chain, which gives way between kits (render-slot.ts).
 const TOTAL_LIMIT_MS = 4 * 60 * 60 * 1000;
 const POLL_MS = 10_000;
+// How long step 3 waits with the slot held before it gives the slot back (see the top).
+export const HELD_GRACE_MS = 60_000;
 
 const sample = (busy: readonly string[]) => busy.slice(0, 3).map((line) => `  ${line.slice(0, 140)}`).join('\n');
 
@@ -164,8 +170,11 @@ export const takeRenderTurn = async ({wait, limitMs = TOTAL_LIMIT_MS, pollMs = P
     // Step 2: the place in the queue is fixed by the first round that gets here.
     since ??= now();
     const slot = await effects.acquire({wait, waitLimitMs: Math.max(0, deadline - now()), since});
-    // Step 3, with the slot held.
-    const busy = effects.busy();
+    // Step 3, with the slot held, for at most HELD_GRACE_MS.
+    let busy = effects.busy();
+    for (const graceEnd = Math.min(now() + HELD_GRACE_MS, deadline); wait && busy.length > 0 && now() < graceEnd; busy = effects.busy()) {
+      await effects.sleep(pollMs);
+    }
     if (busy.length === 0) {
       try {
         effects.whileHeld?.();
@@ -179,5 +188,6 @@ export const takeRenderTurn = async ({wait, limitMs = TOTAL_LIMIT_MS, pollMs = P
     if (!wait) throw new Error(`The machine got busy while this run took the render slot (one heavy render at a time):\n${sample(busy)}\nThe slot is released. Run again when it is free, or drop --no-wait to wait for it.`);
     if (!warnedRetry) { log(`Released the render slot: the machine got busy while waiting for it:\n${sample(busy)}\nWaiting until it is free, then taking the slot again.`); warnedRetry = true; }
     if (now() >= deadline) throw giveUp();
+    await effects.sleep(pollMs);
   }
 };
