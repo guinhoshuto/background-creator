@@ -17,7 +17,7 @@ const manifest = parsePackManifest(JSON.parse(readFileSync(path.join(ROOT, 'pack
 const rows = ornamentRows(manifest, realPackDeps);
 
 test('haunted-mansion: every ornamented file of the kit has exactly one bat, and nothing else', () => {
-  assert.equal(rows.length, 25);
+  assert.equal(rows.length, 24);
   for (const row of rows) assert.deepEqual(row.motifs.map((motif) => motif.motif), ['bat'], row.name);
 });
 
@@ -36,10 +36,10 @@ test('haunted-mansion: the bat flies by the top right corner of every file (the 
   }
 });
 
-test('haunted-mansion: the bat reads at overlay sizes (at least 40 px of wingspan, 26 on the Twitch panel, 86 on gameplay)', () => {
+test('haunted-mansion: the bat reads at overlay sizes (at least 40 px of wingspan, 86 on gameplay)', () => {
   for (const row of rows) {
     const span = row.motifs[0]!.size;
-    const least = row.name.includes('twitch-panel') ? 26 : row.name.endsWith('-gameplay') ? 86 : 40;
+    const least = row.name.endsWith('-gameplay') ? 86 : 40;
     assert.ok(span >= least, `${row.name}: wingspan ${span.toFixed(1)} px < ${least}`);
   }
 });

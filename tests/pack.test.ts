@@ -575,13 +575,17 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     // The kits' screen frames come only without ornaments: large enough ornaments would eat the picture.
     assert.deepEqual(byPreset(`border-${name}`).flatMap((item) => item.sizes).sort(), ids('border').filter((id) => !kit || !screens.has(id)).sort());
     const blocks = byPreset(`block-${name}`);
-    assert.deepEqual(blocks.flatMap((item) => item.sizes).sort(), ids('block').sort());
-    const twitch = blocks.find((item) => item.sizes?.includes('twitch-panel'))!;
-    assert.deepEqual(twitch.sizes, ['twitch-panel'], 'o painel da Twitch é um item separado');
-    assert.deepEqual(twitch.formats, [kit ? 'webm' : 'gif', 'png'], name);
-    // The size itself turns glow and halo off; the panel takes item props only where it needs them.
-    for (const key of Object.keys(twitch.props ?? {})) assert.ok(TWITCH_PANEL_KEYS.has(key), `${name}: ${key}`);
-    assert.notEqual(twitch.props?.transparent, true, name);
+    // The Halloween kits ship no Twitch panel (owner, 2026-10-06); the classic themes do.
+    const blockIds = ids('block').filter((id) => !kit || id !== 'twitch-panel');
+    assert.deepEqual(blocks.flatMap((item) => item.sizes).sort(), blockIds.sort());
+    if (!kit) {
+      const twitch = blocks.find((item) => item.sizes?.includes('twitch-panel'))!;
+      assert.deepEqual(twitch.sizes, ['twitch-panel'], 'o painel da Twitch é um item separado');
+      assert.deepEqual(twitch.formats, ['gif', 'png'], name);
+      // The size itself turns glow and halo off; the panel takes item props only where it needs them.
+      for (const key of Object.keys(twitch.props ?? {})) assert.ok(TWITCH_PANEL_KEYS.has(key), `${name}: ${key}`);
+      assert.notEqual(twitch.props?.transparent, true, name);
+    }
     // The kits' large frames scale their ornaments on a wider bleed (webcam-16x9-lg ×1.5, gameplay ×2);
     // the classic themes have no such items.
     const scaled = pack.items.filter((item) => item.props?.ornamentScale !== undefined);
@@ -594,11 +598,9 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     if (kit) {
       for (const kind of ['chat', 'block', 'border'] as const) {
         const items = byPreset(`${kind}-${name}`, 'plain');
-        assert.deepEqual(items.flatMap((item) => item.sizes).sort(), ids(kind).sort(), `${name}: ${kind} sem enfeites`);
+        assert.deepEqual(items.flatMap((item) => item.sizes).sort(), (kind === 'block' ? blockIds : ids(kind)).sort(), `${name}: ${kind} sem enfeites`);
         for (const item of items) assert.deepEqual(item.props, {ornaments: 'none'}, `${name}: ${kind} sem enfeites`);
       }
-      const plainTwitch = byPreset(`block-${name}`, 'plain').find((item) => item.sizes?.includes('twitch-panel'))!;
-      assert.deepEqual([plainTwitch.sizes, plainTwitch.formats], [['twitch-panel'], ['webm', 'png']]);
     } else {
       assert.deepEqual(plain, [], name);
     }
@@ -625,9 +627,9 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     // Each sized item × its sizes × its formats, plus each background × its formats, plus the OBS
     // masks of the nine window sizes: seven, since the three round webcams share one disc (the two
     // screen frames have none). The Halloween kits hold every size twice (with ornaments, screens
-    // excepted, and plain), sharing the masks.
+    // excepted, and plain), sharing the masks, and no Twitch panel.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
-    const sizes = kit ? (5 + 10 + 9 + 1) + (5 + 10 + 11 + 1) : 5 + 10 + 11 + 1;
+    const sizes = kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1;
     assert.equal(plan.length, 2 * backgrounds + 2 * sizes + 7, name);
     assert.equal(new Set(plan.map((file) => file.output)).size, plan.length);
     for (const file of plan) {
@@ -635,15 +637,10 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
       assert.ok(file.canvas.width % 2 === 0 && file.canvas.height % 2 === 0, file.output);
     }
     const twitch = plan.filter((file) => file.size === 'twitch-panel');
-    // The Halloween kits ship the panel as WebM (owner, 2026-10-03: the ornamented GIF passed 2.9 MB).
-    const loop = kit ? 'webm' : 'gif';
-    assert.deepEqual(twitch.map((file) => [path.posix.basename(file.output), file.canvas]), [
-      [`${name}-twitch-panel.${loop}`, {width: 320, height: 160}],
+    // The Halloween kits ship no Twitch panel (owner, 2026-10-06).
+    assert.deepEqual(twitch.map((file) => [path.posix.basename(file.output), file.canvas]), kit ? [] : [
+      [`${name}-twitch-panel.gif`, {width: 320, height: 160}],
       [`${name}-twitch-panel.png`, {width: 320, height: 160}],
-      ...(kit ? [
-        [`${name}-twitch-panel-plain.${loop}`, {width: 320, height: 160}],
-        [`${name}-twitch-panel-plain.png`, {width: 320, height: 160}],
-      ] : []),
     ]);
     if (kit) {
       // The scaled frames keep their box and widen the file by the item's bleed; the twins keep the size's.

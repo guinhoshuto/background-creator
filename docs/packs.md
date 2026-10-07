@@ -6,14 +6,14 @@ A pack is everything a [theme](overlays.md#themes) ships, sold as a zip (see [De
 
 | Pack | Background | Item props |
 | --- | --- | --- |
-| `halloween-midnight` | `HalloweenLoop` (`halloween-midnight`) | panel `{"paddingX": 48, "paddingY": 36}`; `gameplay` and `webcam-16x9-lg` enlarged |
-| `halloween-haunted-mansion` | `HauntedMansionLoop` (`halloween-haunted-mansion`) | panel `{"paddingX": 32, "paddingY": 24}`; `gameplay` and `webcam-16x9-lg` enlarged |
+| `halloween-midnight` | `HalloweenLoop` (`halloween-midnight`) | `gameplay` and `webcam-16x9-lg` enlarged |
+| `halloween-haunted-mansion` | `HauntedMansionLoop` (`halloween-haunted-mansion`) | `gameplay` and `webcam-16x9-lg` enlarged |
 | `halloween-haunted-interior` | `HauntedInteriorLoop` (`halloween-haunted-interior`) | `gameplay` and `webcam-16x9-lg` enlarged |
 | `halloween-cobweb` | `CobwebLoop` (`halloween-cobweb`) | `gameplay` and `webcam-16x9-lg` enlarged |
 
-Each kit ships in two versions. **With ornaments:** the background, the chat in every size, the blocks in every size with the Twitch panel apart, and the borders of every camera and of `gameplay`; the screen frames are left out, because there the ornaments could only grow by thickening the band over the screen. **Without ornaments:** every size of chat, blocks, panel and borders, the two screens included, with the preset and `"ornaments": "none"`, in the files `<pack>-<size>-plain.<ext>`. The camera masks serve both versions and follow the preset's `radius`. The kits themselves are documented in [Halloween kits](kits-halloween.md).
+Each kit ships in two versions. **With ornaments:** the background, the chat in every size, the blocks in every size but the Twitch panel, and the borders of every camera and of `gameplay`; the screen frames are left out, because there the ornaments could only grow by thickening the band over the screen. **Without ornaments:** every size of chat, blocks (the Twitch panel excepted) and borders, the two screens included, with the preset and `"ornaments": "none"`, in the files `<pack>-<size>-plain.<ext>`. The camera masks serve both versions and follow the preset's `radius`. The kits ship no Twitch panel (the owner's call on 2026-10-06). The kits themselves are documented in [Halloween kits](kits-halloween.md).
 
-On large frames, ornaments in fixed px would look tiny. That is why `gameplay` ships with `{"bleed": 96, "ornamentScale": 2}` and `webcam-16x9-lg` with `{"bleed": 72, "ornamentScale": 1.5}`: the ornaments keep the same proportion as on `webcam-16x9`, and the file gains the margin they need (1632×1002 and 1104×684; the window stays 1440×810 and 960×540). Leave that margin free around the frame in the scene. On the Twitch panel of `midnight` and `haunted-mansion`, more padding makes the ornaments grow in the pockets (in `midnight`, a bat and the small pumpkin come in; in `haunted-mansion`, the bat grows).
+On large frames, ornaments in fixed px would look tiny. That is why `gameplay` ships with `{"bleed": 96, "ornamentScale": 2}` and `webcam-16x9-lg` with `{"bleed": 72, "ornamentScale": 1.5}`: the ornaments keep the same proportion as on `webcam-16x9`, and the file gains the margin they need (1632×1002 and 1104×684; the window stays 1440×810 and 960×540). Leave that margin free around the frame in the scene.
 
 An example manifest, smaller than the ones in `packs/` (which ask for every size):
 
