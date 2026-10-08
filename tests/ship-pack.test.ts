@@ -92,6 +92,9 @@ test('a pack goes through render, validate, zip, upload under its sha8, and is r
   assert.deepEqual(w.state.kit, {version: 1, sha256: SHA, key: KEY, url: shipped[0]!.url, bytes: 1000, shippedAt: '2026-10-04T12:00:00.000Z'});
   // Without --delete-local nothing local goes.
   assert(w.local.has(ZIP) && w.local.has('out/packs/kit'));
+  // Every line names the pack (a version object once printed as [object Object]).
+  assert(w.logs.includes(`kit: uploading 1000 B to ${KEY}`) && w.logs.includes(`kit: uploaded and checked ${KEY} (1000 B)`), w.logs.join('\n'));
+  assert(!w.logs.some((line) => line.includes('[object')));
 });
 
 test('--delete-local removes the zip and the pack folder only after the upload is checked', async () => {

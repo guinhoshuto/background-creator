@@ -151,20 +151,20 @@ const uploadChecked = async (effects: ShipEffects, {pack, zip, sha256, bytes, re
   }
   const before = await effects.remoteList(directory);
   if (before.some((file) => file.name === name && file.size === bytes) && before.length === 1) {
-    effects.log(`${pack}: ${key} already holds these ${bytes} B, no upload`);
+    effects.log(`${pack.name}: ${key} already holds these ${bytes} B, no upload`);
     return key;
   }
   if (before.length > 0) {
     throw new ShipError(`${directory}/ already holds ${before.map((file) => `${file.name} (${file.size} B)`).join(', ')}; nothing was uploaded. Look at it before shipping again.`);
   }
-  effects.log(`${pack}: uploading ${bytes} B to ${key}`);
+  effects.log(`${pack.name}: uploading ${bytes} B to ${key}`);
   await effects.upload(zip, key);
   const after = await effects.remoteList(directory);
   const uploaded = after.find((file) => file.name === name);
   if (!uploaded) throw new ShipError(`${key} is missing after the upload; the local files were kept.`);
   if (uploaded.size !== bytes) throw new ShipError(`${key} has ${uploaded.size} B on R2 and ${bytes} B here; the local files were kept.`);
   if (after.length !== 1) throw new ShipError(`${directory}/ holds more than the zip after the upload; the local files were kept.`);
-  effects.log(`${pack}: uploaded and checked ${key} (${bytes} B)`);
+  effects.log(`${pack.name}: uploaded and checked ${key} (${bytes} B)`);
   return key;
 };
 
