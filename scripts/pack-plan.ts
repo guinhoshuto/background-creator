@@ -47,6 +47,8 @@ export const packItemSchema = z.object({
 
 export const packManifestSchema = z.object({
   name: z.string().regex(slug, 'The pack name becomes a folder and starts every file name: use lowercase letters, digits and single hyphens.'),
+  version: z.number().int().min(1).optional()
+    .describe('Version of the delivery, in the zip name (<pack>-overlay-pack-v<N>.zip); raise it whenever the zip content changes'),
   items: z.array(packItemSchema).min(1).describe('What the pack exports, in order'),
 }).strict();
 
@@ -212,6 +214,14 @@ const describeItem = (item: PackItem, index: number) => `Item ${index + 1} (${it
 /** zod issues flattened into one line per problem, with the field path. */
 const issuesText = (error: z.ZodError) =>
   error.issues.map((issue) => `${issue.path.length > 0 ? `${issue.path.join('.')}: ` : ''}${issue.message}`).join('; ');
+
+/** The version a pack ships as: zip:pack and ship:pack refuse a manifest without one. */
+export const deliveryVersion = (manifest: PackManifest): number => {
+  if (manifest.version === undefined) {
+    throw new Error(`packs/${manifest.name}.json has no "version": add "version": 1 (or the next number after the one shipped) before zipping or shipping.`);
+  }
+  return manifest.version;
+};
 
 export const parsePackManifest = (raw: unknown): PackManifest => {
   const result = packManifestSchema.safeParse(raw);

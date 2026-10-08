@@ -1,6 +1,7 @@
 // The delivery chain of `npm run ship:pack`, apart from the script so tests run it with a fake rclone:
 // render:pack, validate:pack and zip:pack, the upload to R2 under the zip's sha8, the check of key and
 // size, and the local cleanup only when asked. Every step is idempotent, so a stopped run resumes.
+// The manifest's version names the zip (<pack>-overlay-pack-v<N>.zip) and says when a pack ships again.
 import path from 'node:path';
 import {zipFileName} from './pack-contents';
 import {PACK_COUNTER_PATTERN} from './pack-plan';
@@ -15,8 +16,11 @@ export const MACHINE_WAIT_MS = 60_000;
 export type RemoteFile = {name: string; size: number};
 
 /** What one pack left on R2, kept in the state file so a later run knows it was shipped. */
-export type ShippedPack = {sha256: string; key: string; url: string; bytes: number; shippedAt: string};
+export type ShippedPack = {version?: number; sha256: string; key: string; url: string; bytes: number; shippedAt: string};
 export type ShipState = Record<string, ShippedPack>;
+
+/** A pack to ship: its name and the version its manifest asks for. */
+export type PackToShip = {name: string; version: number};
 
 export type ShipEffects = {
   /** Runs `npm run -s <script> -- <args>`, its output in the named log; resolves with the exit code. */
@@ -28,6 +32,8 @@ export type ShipEffects = {
   sha256: (relative: string) => Promise<string>;
   /** The files directly under a remote folder (none when it does not exist). */
   remoteList: (directory: string) => Promise<RemoteFile[]>;
+  /** Every file under a remote folder, at any depth, `name` being its path inside it (none when it does not exist). */
+  remoteTree: (directory: string) => Promise<RemoteFile[]>;
   upload: (relative: string, key: string) => Promise<void>;
   removeLocal: (relative: string) => Promise<void>;
   readState: () => Promise<ShipState>;
@@ -42,14 +48,42 @@ export type ShipOptions = {remote: string; deleteLocal: boolean};
 
 export class ShipError extends Error {}
 
-export const zipPathOf = (pack: string) => path.posix.join('out', 'deliveries', zipFileName(pack));
+export const zipPathOf = ({name, version}: PackToShip) => path.posix.join('out', 'deliveries', zipFileName(name, version));
 export const packFolderOf = (pack: string) => path.posix.join('out', 'packs', pack);
 export const remoteDirectoryOf = (remote: string, pack: string, sha256: string) => `${remote}/packs/${pack}/${sha256.slice(0, 8)}`;
-export const publicUrlOf = (pack: string, sha256: string) => `${PUBLIC_ORIGIN}/packs/${pack}/${sha256.slice(0, 8)}/${zipFileName(pack)}`;
+export const publicUrlOf = ({name, version}: PackToShip, sha256: string) =>
+  `${PUBLIC_ORIGIN}/packs/${name}/${sha256.slice(0, 8)}/${zipFileName(name, version)}`;
+
+/**
+ * What a run does with one pack, the same answer for the run and for --dry-run:
+ * - skip: this version was shipped and nothing local is left;
+ * - resume: the local zip is the one this version shipped, so only the R2 check and the cleanup are left;
+ * - build: anything else, including a version above the one shipped (or a record from before versions).
+ * A version below the one shipped is refused: the manifest went back, and its zip name would repeat an old one.
+ */
+export type ShipDecision = {action: 'skip' | 'resume' | 'build'; shipped?: ShippedPack};
+
+export const decideShip = async (pack: PackToShip, state: ShipState, effects: Pick<ShipEffects, 'localSize' | 'sha256'>): Promise<ShipDecision> => {
+  const shipped = state[pack.name];
+  if (shipped?.version !== undefined && pack.version < shipped.version) {
+    throw new ShipError(`${pack.name}: v${shipped.version} was shipped (${shipped.url}) and packs/${pack.name}.json says v${pack.version}; set "version" to ${shipped.version + 1} for a new delivery.`);
+  }
+  const sameVersion = shipped !== undefined && shipped.version === pack.version;
+  if (!sameVersion) return {action: 'build', ...(shipped ? {shipped} : {})};
+  const zip = zipPathOf(pack);
+  const zipBytes = await effects.localSize(zip);
+  if (zipBytes === null && await effects.localSize(packFolderOf(pack.name)) === null) return {action: 'skip', shipped};
+  if (zipBytes !== null && await effects.sha256(zip) === shipped.sha256) return {action: 'resume', shipped};
+  return {action: 'build', shipped};
+};
 
 /** The files of an `rclone lsjson` answer, folders left out. */
 export const parseLsjson = (text: string): RemoteFile[] =>
   (JSON.parse(text) as {Name: string; Size: number; IsDir: boolean}[]).filter((entry) => !entry.IsDir).map((entry) => ({name: entry.Name, size: entry.Size}));
+
+/** The files of an `rclone lsjson -R --files-only` answer, each named by its path inside the listed folder. */
+export const parseLsjsonTree = (text: string): RemoteFile[] =>
+  (JSON.parse(text) as {Path: string; Size: number; IsDir: boolean}[]).filter((entry) => !entry.IsDir).map((entry) => ({name: entry.Path, size: entry.Size}));
 
 /** The upload: copyto names the key exactly, and the bucket check needs a permission the token lacks. */
 export const uploadArgs = (file: string, key: string) => ['copyto', '--s3-no-check-bucket', file, key];
@@ -101,11 +135,20 @@ const step = async (effects: ShipEffects, pack: string, script: string, args: st
   if (code !== 0) throw new ShipError(`${script} ${pack} failed (exit ${code}); see .cache/ship-pack/${logName}.`);
 };
 
-/** Uploads unless the key already holds these bytes; refuses a folder that holds anything else. */
-const uploadChecked = async (effects: ShipEffects, {pack, zip, sha256, bytes, remote}: {pack: string; zip: string; sha256: string; bytes: number; remote: string}) => {
-  const directory = remoteDirectoryOf(remote, pack, sha256);
-  const name = zipFileName(pack);
+/**
+ * Uploads unless the key already holds these bytes; refuses a folder that holds anything else, and a
+ * version already on R2 under another sha8: same version, other content means the version was not raised.
+ */
+const uploadChecked = async (effects: ShipEffects, {pack, zip, sha256, bytes, remote}: {pack: PackToShip; zip: string; sha256: string; bytes: number; remote: string}) => {
+  const directory = remoteDirectoryOf(remote, pack.name, sha256);
+  const name = zipFileName(pack.name, pack.version);
   const key = `${directory}/${name}`;
+  const sha8 = sha256.slice(0, 8);
+  const elsewhere = (await effects.remoteTree(`${remote}/packs/${pack.name}`))
+    .filter((file) => file.name.endsWith(`/${name}`) && file.name !== `${sha8}/${name}`);
+  if (elsewhere.length > 0) {
+    throw new ShipError(`${name} is already on R2 with other content (${elsewhere.map((file) => `${remote}/packs/${pack.name}/${file.name}`).join(', ')}); nothing was uploaded. Raise "version" in packs/${pack.name}.json for a new delivery.`);
+  }
   const before = await effects.remoteList(directory);
   if (before.some((file) => file.name === name && file.size === bytes) && before.length === 1) {
     effects.log(`${pack}: ${key} already holds these ${bytes} B, no upload`);
@@ -126,55 +169,51 @@ const uploadChecked = async (effects: ShipEffects, {pack, zip, sha256, bytes, re
 };
 
 /** One pack, every step. Throws ShipError at the first failure, before any local file is removed. */
-export const shipPack = async (pack: string, options: ShipOptions, effects: ShipEffects) => {
+export const shipPack = async (pack: PackToShip, options: ShipOptions, effects: ShipEffects) => {
   const zip = zipPathOf(pack);
-  const folder = packFolderOf(pack);
-  const state = await effects.readState();
-  const shipped = state[pack];
-  const zipBytes = await effects.localSize(zip);
-  if (shipped && zipBytes === null && await effects.localSize(folder) === null) {
-    effects.log(`${pack}: already shipped (${shipped.url}) and nothing local is left; skipped`);
-    return shipped;
+  const folder = packFolderOf(pack.name);
+  const {action, shipped} = await decideShip(pack, await effects.readState(), effects);
+  if (action === 'skip') {
+    effects.log(`${pack.name}: v${pack.version} already shipped (${shipped!.url}) and nothing local is left; skipped`);
+    return shipped!;
   }
-  // A zip this run already uploaded skips the build: only the R2 check and the cleanup are left.
-  const resumed = shipped !== undefined && zipBytes !== null && await effects.sha256(zip) === shipped.sha256;
-  if (resumed) {
-    effects.log(`${pack}: the local zip is the one shipped at ${shipped.url}; checking R2`);
+  if (action === 'resume') {
+    effects.log(`${pack.name}: the local zip is the one shipped at ${shipped!.url}; checking R2`);
   } else {
-    await waitForMachine(effects, pack);
-    effects.log(`${pack}: render:pack`);
-    await effects.rendering(pack);
-    await step(effects, pack, 'render:pack');
-    effects.log(`${pack}: validate:pack`);
-    await step(effects, pack, 'validate:pack');
-    effects.log(`${pack}: zip:pack`);
-    await step(effects, pack, 'zip:pack');
+    await waitForMachine(effects, pack.name);
+    effects.log(`${pack.name}: render:pack (v${pack.version})`);
+    await effects.rendering(pack.name);
+    await step(effects, pack.name, 'render:pack');
+    effects.log(`${pack.name}: validate:pack`);
+    await step(effects, pack.name, 'validate:pack');
+    effects.log(`${pack.name}: zip:pack`);
+    await step(effects, pack.name, 'zip:pack');
   }
   const bytes = await effects.localSize(zip);
   if (bytes === null) throw new ShipError(`${zip} is missing after zip:pack.`);
   const sha256 = await effects.sha256(zip);
   const key = await uploadChecked(effects, {pack, zip, sha256, bytes, remote: options.remote});
-  const record: ShippedPack = {sha256, key, url: publicUrlOf(pack, sha256), bytes, shippedAt: effects.now().toISOString()};
-  await effects.writeState({...await effects.readState(), [pack]: record});
-  effects.log(`${pack}: shipped ${record.url}`);
+  const record: ShippedPack = {version: pack.version, sha256, key, url: publicUrlOf(pack, sha256), bytes, shippedAt: effects.now().toISOString()};
+  await effects.writeState({...await effects.readState(), [pack.name]: record});
+  effects.log(`${pack.name}: shipped ${record.url}`);
   if (options.deleteLocal) {
     await effects.removeLocal(zip);
     await effects.removeLocal(folder);
-    effects.log(`${pack}: deleted ${zip} and ${folder}`);
+    effects.log(`${pack.name}: deleted ${zip} and ${folder}`);
   }
   return record;
 };
 
 /** Every pack in order; the first failure stops the chain, and later packs are not started. */
-export const shipPacks = async (packs: readonly string[], options: ShipOptions, effects: ShipEffects): Promise<{code: 0 | 1; shipped: ShippedPack[]}> => {
+export const shipPacks = async (packs: readonly PackToShip[], options: ShipOptions, effects: ShipEffects): Promise<{code: 0 | 1; shipped: ShippedPack[]}> => {
   const shipped: ShippedPack[] = [];
-  for (const pack of packs) {
+  for (const [index, pack] of packs.entries()) {
     try {
       shipped.push(await shipPack(pack, options, effects));
     } catch (error) {
       // Any failure, ours or rclone's, ends in the log: a detached run has nobody watching its stderr.
-      effects.log(`FAILED ${pack}: ${error instanceof Error ? error.message : String(error)}`);
-      const left = packs.slice(packs.indexOf(pack) + 1);
+      effects.log(`FAILED ${pack.name}: ${error instanceof Error ? error.message : String(error)}`);
+      const left = packs.slice(index + 1).map((next) => next.name);
       if (left.length > 0) effects.log(`not started: ${left.join(', ')}`);
       return {code: 1, shipped};
     }

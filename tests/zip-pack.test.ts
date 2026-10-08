@@ -67,14 +67,14 @@ type Pack = Awaited<ReturnType<typeof makePack>>;
 const run = (pack: Pack, options: {check?: boolean; plan?: readonly PlannedFile[]; effects?: Partial<ZipPackEffects>} = {}) => {
   const logs: string[] = [];
   const result = zipPack({
-    pack: 'test', plan: options.plan ?? PLAN, packDirectory: pack.packDirectory,
+    pack: 'test', version: 3, plan: options.plan ?? PLAN, packDirectory: pack.packDirectory,
     deliveriesDirectory: pack.deliveriesDirectory, check: options.check ?? false,
     effects: {freeBytes: async () => 100 * GiB, log: (message) => logs.push(message), ...options.effects},
   });
   return {result, logs};
 };
 
-const zipPath = (pack: Pack) => path.join(pack.deliveriesDirectory, zipFileName('test'));
+const zipPath = (pack: Pack) => path.join(pack.deliveriesDirectory, zipFileName('test', 3));
 const entryNames = async (pack: Pack) => readCentralDirectory(await readFile(zipPath(pack))).map((entry) => entry.name);
 
 const withPack = async (body: (pack: Pack) => Promise<void>, plan?: readonly PlannedFile[]) => {
@@ -232,6 +232,9 @@ test('buyer file names are enforced', async () => {
   assert.match(buyerPathIssues(['chat/test-a.png', 'borders/test-a.png'], 'test').join('\n'), /same file name/);
   assert.doesNotThrow(() => assertZipName(`${'a'.repeat(66)}.zip`));
   assert.throws(() => assertZipName(`${'a'.repeat(67)}.zip`), /71 characters, over the 70/);
+  // The version is in the name, so the Mac, the drive, R2 and the listing can be compared by name.
+  assert.equal(zipFileName('test', 3), 'test-overlay-pack-v3.zip');
+  assert.equal(partialFileName('test', 3), '.test-overlay-pack-v3.zip.partial');
   const bad = [file('text-boxes/BlockLoop-card.png', 'png'), ...PLAN.slice(1)];
   await withPack(async (pack) => {
     await assert.rejects(run(pack, {plan: bad}).result, /text-boxes\/BlockLoop-card\.png: not a buyer file name/);
@@ -279,7 +282,7 @@ test('interrupted write leaves the old zip intact', () => withPack(async (pack) 
   };
   await assert.rejects(run(pack, {effects: {writeChunk}}).result, /disk went away/);
   assert.deepEqual(await readFile(zipPath(pack)), before);
-  assert.deepEqual(await readdir(pack.deliveriesDirectory), [zipFileName('test')]);
+  assert.deepEqual(await readdir(pack.deliveriesDirectory), [zipFileName('test', 3)]);
 }));
 
 test('refuses over 4 GiB', () => {
@@ -307,12 +310,12 @@ test('refuses a file that changes between passes', () => withPack(async (pack) =
 }));
 
 test('a refused run writes nothing and only clears an old partial zip; --check leaves even that', () => withPack(async (pack) => {
-  const partial = path.join(pack.deliveriesDirectory, partialFileName('test'));
+  const partial = path.join(pack.deliveriesDirectory, partialFileName('test', 3));
   await mkdir(pack.deliveriesDirectory, {recursive: true});
   await writeFile(partial, 'left by an interrupted write');
   const refused = [...PLAN, file('backgrounds/test-extra.png', 'png')];
   await assert.rejects(run(pack, {check: true, plan: refused}).result, /Missing 1 planned files/);
-  assert.deepEqual(await readdir(pack.deliveriesDirectory), [partialFileName('test')]);
+  assert.deepEqual(await readdir(pack.deliveriesDirectory), [partialFileName('test', 3)]);
   await assert.rejects(run(pack, {plan: refused}).result, /Missing 1 planned files/);
   assert.deepEqual(await readdir(pack.deliveriesDirectory), []);
 }));

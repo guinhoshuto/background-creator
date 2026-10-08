@@ -8,18 +8,21 @@ import {parseArgs} from 'node:util';
 import {freeBytes, gibibytes} from './disk';
 import {projectRoot} from './export';
 import {machineVerdict} from './machine-check';
-import {existingManifestFile, parsePackManifest} from './pack-plan';
+import {deliveryVersion, existingManifestFile, parsePackManifest} from './pack-plan';
 import {
-  DEFAULT_REMOTE, packFolderOf, parseLsjson, parsePs, shipPacks, signalReport, uploadArgs, watchEntryOf, zipPathOf, type ShipEffects, type ShipState,
+  DEFAULT_REMOTE, decideShip, parseLsjson, parseLsjsonTree, parsePs, shipPacks, signalReport, uploadArgs, watchEntryOf, zipPathOf, type ShipEffects, type ShipState,
 } from './ship-plan';
 
 const SHIP_HELP_TEXT = `usage: npm run ship:pack -- <name> [<name>...] [options]
 
 Ships each pack in order: waits for the machine check, then render:pack (finished files are skipped),
-validate:pack and zip:pack; uploads the zip to <remote>/packs/<name>/<sha8>/<name>-overlay-pack.zip
+validate:pack and zip:pack; uploads the zip to <remote>/packs/<name>/<sha8>/<name>-overlay-pack-v<N>.zip
 with rclone, reads it back and compares name and size, and records the public link. The first failure
 stops the chain and keeps every local file. Run it again to resume: each step skips what is done, and
 a zip already on R2 with the same bytes is not uploaded twice.
+
+N is "version" in packs/<name>.json. A version already shipped, with nothing local left, is skipped; to
+ship a changed pack, raise the version. The same version on R2 with other content is refused.
 
 Writes .cache/ship-pack/progress.log (one line per step and per wait), one log per step and the
 shipped links in .cache/ship-pack/state.json; adds the run to ~/.claude/watch.json and, at the end,
@@ -29,7 +32,7 @@ the log; the running step gets the same signal, and the run ends with 128 + the 
 Packs shipped before ship:pack existed are not in state.json.
 
 Options:
-  --delete-local     after a checked upload, deletes out/deliveries/<name>-overlay-pack.zip and out/packs/<name>/
+  --delete-local     after a checked upload, deletes out/deliveries/<name>-overlay-pack-v<N>.zip and out/packs/<name>/
   --remote <remote>  rclone remote and bucket (default ${DEFAULT_REMOTE})
   --dry-run          says what each pack would do, running nothing
   -h, --help         shows this help`;
@@ -151,6 +154,12 @@ const effects: ShipEffects = {
     if (code !== 0) throw new Error(`rclone lsjson ${directory}/ failed (exit ${code}): ${stderr.trim()}`);
     return parseLsjson(stdout);
   },
+  remoteTree: async (directory) => {
+    const {code, stdout, stderr} = await capture(rclone(), ['lsjson', '-R', '--files-only', `${directory}/`]);
+    if (code === 3) return [];
+    if (code !== 0) throw new Error(`rclone lsjson -R ${directory}/ failed (exit ${code}): ${stderr.trim()}`);
+    return parseLsjsonTree(stdout);
+  },
   upload: async (relative, key) => {
     const code = await run(rclone(), uploadArgs(fromRoot(relative), key), path.join(LOG_DIRECTORY, 'rclone.log'));
     if (code !== 0) throw new Error(`rclone copyto failed (exit ${code}); see .cache/ship-pack/rclone.log.`);
@@ -181,24 +190,32 @@ const main = async () => {
   if (new Set(positionals).size !== positionals.length) throw new Error('A pack is named twice.');
   if (positionals.some((name) => name.endsWith('.json'))) throw new Error('ship:pack takes pack names from packs/, not files: the name is part of the R2 key.');
   // Every name is checked before the first render: a typo in the third pack never waits for the first two.
-  const packs = await Promise.all(positionals.map(async (name) => parsePackManifest(JSON.parse(await readFile(existingManifestFile(name), 'utf8'))).name));
+  const toShip = await Promise.all(positionals.map(async (name) => {
+    const manifest = parsePackManifest(JSON.parse(await readFile(existingManifestFile(name), 'utf8')));
+    return {name: manifest.name, version: deliveryVersion(manifest)};
+  }));
+  const packs = toShip.map((pack) => pack.name);
   await mkdir(LOG_DIRECTORY, {recursive: true});
   const state = await effects.readState();
   if (values['dry-run']) {
-    for (const pack of packs) {
-      const zip = await effects.localSize(zipPathOf(pack));
-      const folder = await effects.localSize(packFolderOf(pack));
-      const shipped = state[pack] ? `shipped before: ${state[pack]!.url}` : 'not shipped yet';
-      console.log(`${pack}: ${shipped}; local zip ${zip === null ? 'missing' : `${zip} B`}; pack folder ${folder === null ? 'missing' : 'present'}`);
+    // The run's own decision, so the dry run never promises a render the run would skip.
+    for (const pack of toShip) {
+      const {action, shipped} = await decideShip(pack, state, effects);
+      const before = shipped ? `v${shipped.version ?? '?'} shipped before (${shipped.url})` : 'not shipped yet';
+      const then = values['delete-local'] ? ' and delete the local zip and pack folder' : '';
+      console.log(`${pack.name} v${pack.version}: ${before}; ${{
+        skip: 'would skip it: nothing local is left (raise "version" to ship a changed pack)',
+        resume: `would check the local zip on R2${then}`,
+        build: `would run render:pack, validate:pack and zip:pack, then upload ${zipPathOf(pack)} to ${values.remote}/packs/${pack.name}/<sha8>/${then}`,
+      }[action]}`);
     }
-    console.log(`Would run render:pack, validate:pack and zip:pack, then upload to ${values.remote}/packs/<name>/<sha8>/${values['delete-local'] ? ' and delete the local zip and pack folder' : ''}.`);
     return;
   }
   watchSignals({pid: process.ppid, command: commandOf(process.ppid)});
   effects.rendering = (pack) => watchRun(packs, pack);
   await watchRun(packs, packs[0]!);
   log(`start ship:pack ${packs.join(' ')}${values['delete-local'] ? ' --delete-local' : ''}`);
-  const {code} = await shipPacks(packs, {remote: values.remote, deleteLocal: values['delete-local']}, effects);
+  const {code} = await shipPacks(toShip, {remote: values.remote, deleteLocal: values['delete-local']}, effects);
   process.exitCode = code;
   await finish(code);
 };
