@@ -19,9 +19,10 @@ contact sheet per kind, a light sheet and stream mockups, in out/review/<date>-q
 Options:
   --frames <a,b>  frames to render (default: 0 and 43% of the background's loop)
   --video <mocks> instead of the stills, animated stream mockups (all, or names such as
-                  mock-chatting) built from the pack's .webm files, one loop long; a missing
-                  piece is rendered first with render:pack. A loop over 14.5 s also gets a
-                  <mock>-listing.mp4 for the listing video, its last second faded into frame 0
+                  mock-chatting) built from the pack's .webm files, one loop long (a piece the
+                  pack ships only as .png stays still); a missing piece is rendered first with
+                  render:pack. A loop over 14.5 s also gets a <mock>-listing.mp4 for the
+                  listing video, its last second faded into frame 0
   --dry-run       write job.json and list the stills, render nothing
   --no-wait       fail instead of waiting when another render is running on this machine
   -h, --help      show this help`;

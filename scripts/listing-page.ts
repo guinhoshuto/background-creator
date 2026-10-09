@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {projectRoot} from './export';
-import {ListingError, listingCopies, parseListing, planListing, renderListingPage, type ShippedZip} from './listing-plan';
+import {ListingError, listingCopies, parseListing, planListing, renderListingPage, type PackInputs, type ShippedZip} from './listing-plan';
 import {existingManifestFile, parsePackManifest} from './pack-plan';
 
 const HELP_TEXT = `usage: npm run listing:page -- <pack...> [--name <folder>] [--check]
@@ -18,6 +18,8 @@ and the guide; plus <pack>/listing.txt and the media it names. npm run clean nev
   media    the thumbnail generator's out/<pack>/: NN-<template>.jpg, video.mp4, the guide and its .png
   zip      .cache/ship-pack/state.json (ship:pack): link, bytes, version; the guide must be
            <pack>-guide-v<N>.pdf for that version (guide.pdf for a zip shipped before versioning)
+  bundle   front matter "bundle: <pack>, <pack>…" (2 to 5 packs already shipped): no zip of its own; its
+           digital files are the guides of its packs, each from out/<pack>/, and {{ZIP_SIZE}} is their sum
 
 Every problem is listed at once and nothing is written.
 
@@ -46,6 +48,14 @@ const main = async () => {
   if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`--name "${name}": lowercase letters, digits and hyphens only.`);
 
   const state = existsSync(values.state) ? JSON.parse(await readFile(values.state, 'utf8')) as Record<string, ShippedZip> : {};
+  const thumbsOf = async (pack: string) => {
+    const thumbs = path.join(values.thumbs, pack);
+    return {thumbFiles: existsSync(thumbs) ? await readdir(thumbs) : [], thumbsLabel: thumbs};
+  };
+  const packInputs = async (pack: string): Promise<PackInputs> => {
+    const manifest = parsePackManifest(JSON.parse(await readFile(existingManifestFile(pack), 'utf8')));
+    return {manifestVersion: manifest.version, shipped: state[pack], ...(await thumbsOf(pack))};
+  };
   const plans = [];
   const problems: string[] = [];
   for (const pack of positionals) {
@@ -53,10 +63,12 @@ const main = async () => {
       const file = path.join(projectRoot, 'listings', `${pack}.md`);
       if (!existsSync(file)) throw new ListingError(`listings/${pack}.md does not exist: write the listing text there (format: --help).`);
       const listing = parseListing(await readFile(file, 'utf8'), `listings/${pack}.md`);
-      const manifest = parsePackManifest(JSON.parse(await readFile(existingManifestFile(pack), 'utf8')));
-      const thumbs = path.join(values.thumbs, pack);
-      const thumbFiles = existsSync(thumbs) ? await readdir(thumbs) : [];
-      plans.push({thumbs, plan: planListing(listing, {manifestVersion: manifest.version, shipped: state[pack], thumbFiles, thumbsLabel: thumbs})});
+      // A bundle has no manifest or zip of its own: each pack it sells brings its own.
+      const inputs = listing.bundle.length === 0 ? await packInputs(pack) : {
+        manifestVersion: undefined, shipped: undefined, ...(await thumbsOf(pack)),
+        members: Object.fromEntries(await Promise.all(listing.bundle.map(async (id) => [id, await packInputs(id)] as const))),
+      };
+      plans.push(planListing(listing, inputs));
     } catch (error) {
       problems.push(error instanceof Error ? error.message : String(error));
     }
@@ -64,18 +76,18 @@ const main = async () => {
   if (problems.length > 0) throw new ListingError(problems.join('\n'));
 
   const out = path.join(projectRoot, 'out', 'listings', name);
-  for (const {plan} of plans) {
-    console.log(`${plan.listing.pack}: ${plan.photos.length} photos, video, ${plan.guide}, ${plan.listing.title.length}-character title, ${plan.listing.tags.length} tags`);
+  for (const plan of plans) {
+    console.log(`${plan.listing.pack}: ${plan.photos.length} photos, video, ${plan.files.map((file) => file.guide).join(', ')}, ${plan.listing.title.length}-character title, ${plan.listing.tags.length} tags`);
   }
   if (values.check) {console.log(`All checks passed. Would write ${path.relative(projectRoot, out)}/index.html.`); return;}
-  for (const {thumbs, plan} of plans) {
+  for (const plan of plans) {
     const folder = path.join(out, plan.listing.pack);
     await mkdir(folder, {recursive: true});
-    for (const file of listingCopies(plan)) await copyFile(path.join(thumbs, file), path.join(folder, file));
+    for (const {from, file} of listingCopies(plan)) await copyFile(path.join(values.thumbs, from, file), path.join(folder, file));
     await writeFile(path.join(folder, 'listing.txt'), plan.text);
   }
   const title = plans.length === 1 ? `${name} · Etsy listing` : `${name} · Etsy listings`;
-  await writeFile(path.join(out, 'index.html'), renderListingPage(title, plans.map(({plan}) => plan)));
+  await writeFile(path.join(out, 'index.html'), renderListingPage(title, plans));
   console.log(path.join(out, 'index.html'));
 };
 

@@ -2,15 +2,18 @@ import path from 'node:path';
 
 /**
  * The Etsy listing of a pack: its text lives in listings/<pack>.md (versioned), its media comes from the
- * thumbnail generator's out/<pack>/, and the zip's size and link from ship:pack's state. Pure: the CLI
+ * thumbnail generator's out/<pack>/, and the zip's size and link from ship:pack's state. A bundle listing
+ * (front matter "bundle") sells packs already shipped: its photos and video come from out/<bundle>/, and
+ * its digital files are the guides of its packs, each from out/<pack>/. Pure: the CLI
  * (scripts/listing-page.ts) reads the files and writes out/listings/<name>/.
  */
 
-/** Etsy's limits: a title of at most 140 characters, exactly 13 tags of at most 20, at most 20 photos. */
+/** Etsy's limits: a title of at most 140 characters, exactly 13 tags of at most 20, at most 20 photos, at most 5 digital files. */
 export const TITLE_MAX = 140;
 export const TAG_COUNT = 13;
 export const TAG_MAX = 20;
 export const PHOTO_MAX = 20;
+export const DIGITAL_FILE_MAX = 5;
 // Etsy takes letters, numbers, spaces, hyphens, apostrophes and ™©® in a tag.
 const TAG_CHARACTERS = /^[\p{L}\p{N} '\-™©®]+$/u;
 const PRICE_FORMAT = /^US\$ \d+\.\d{2}$/;
@@ -24,6 +27,8 @@ export type Listing = {
   pack: string;
   price: string;
   caption: string;
+  /** Front matter "bundle": the packs a bundle sells, one guide each; empty for a pack's own listing. */
+  bundle: string[];
   title: string;
   tags: string[];
   description: string;
@@ -92,12 +97,20 @@ export const parseListing = (text: string, file: string): Listing => {
   if (price && !PRICE_FORMAT.test(price)) problems.push(`price "${price}" is not like "US$ 12.99"`);
   const pack = fields.get('pack') ?? '';
   if (pack && pack !== path.basename(file, '.md')) problems.push(`pack "${pack}" differs from the file name; the file is listings/<pack>.md`);
+  const bundle = (fields.get('bundle') ?? '').split(',').map((id) => id.trim()).filter(Boolean);
+  if (fields.has('bundle')) {
+    if (bundle.length < 2) problems.push(`a bundle sells at least 2 packs; "bundle" names ${bundle.length}`);
+    if (bundle.length > DIGITAL_FILE_MAX) problems.push(`a bundle of ${bundle.length} packs ships ${bundle.length} guides; Etsy takes at most ${DIGITAL_FILE_MAX} digital files`);
+    for (const id of bundle) if (!/^[a-z0-9-]+$/.test(id)) problems.push(`bundle pack "${id}": lowercase letters, digits and hyphens only`);
+    for (const id of new Set(bundle.filter((id, index) => bundle.indexOf(id) !== index))) problems.push(`the bundle names ${id} twice`);
+    if (bundle.includes(pack)) problems.push(`the bundle ${pack} names itself`);
+  }
 
   fail(file, problems);
-  return {pack, price, caption: fields.get('caption')!, title, tags, description, notes: sections.get(NOTES) ?? ''};
+  return {pack, price, caption: fields.get('caption')!, bundle, title, tags, description, notes: sections.get(NOTES) ?? ''};
 };
 
-export type ListingInputs = {
+export type PackInputs = {
   /** "version" in packs/<pack>.json. */
   manifestVersion: number | undefined;
   /** The pack's entry in ship:pack's state, undefined when it was never shipped. */
@@ -108,47 +121,80 @@ export type ListingInputs = {
   thumbsLabel: string;
 };
 
+/** A bundle's own inputs give only its photos and video; members gives, per pack it sells, that pack's own inputs. */
+export type ListingInputs = PackInputs & {members?: Record<string, PackInputs>};
+
+/** One digital file of the listing: a pack's guide and the zip it links to. */
+export type DigitalFile = {
+  /** The pack whose out/<pack>/ holds the guide. */
+  pack: string;
+  guide: string;
+  /** The guide's PNG preview, when the generator wrote it. */
+  preview: string | undefined;
+  zipUrl: string;
+  bytes: number;
+};
+
 export type ListingPlan = {
   listing: Listing;
   description: string;
   photos: string[];
-  guide: string;
-  /** The guide's PNG preview, when the generator wrote it. */
-  guidePreview: string | undefined;
-  zipUrl: string;
+  /** The pack's guide, or one guide per pack of a bundle, in the order of "bundle". */
+  files: DigitalFile[];
   /** The paste-ready listing.txt. */
   text: string;
 };
 
 export const planListing = (listing: Listing, inputs: ListingInputs): ListingPlan => {
   const problems: string[] = [];
-  const {pack} = listing;
-  const {shipped} = inputs;
-  if (!shipped) problems.push(`${pack} was never shipped, so there is no zip link or size: npm run ship:pack -- ${pack}`);
-  else if (shipped.version !== undefined && shipped.version !== inputs.manifestVersion) {
-    problems.push(`packs/${pack}.json is at version ${inputs.manifestVersion ?? '(none)'} but v${shipped.version} is the one shipped: npm run ship:pack -- ${pack}, then the guide for the new link`);
+  const {pack, bundle} = listing;
+  const files: DigitalFile[] = [];
+  for (const id of bundle.length > 0 ? bundle : [pack]) {
+    const source = bundle.length > 0 ? inputs.members?.[id] : inputs;
+    if (!source) {
+      problems.push(`${id}: the bundle names it, but nothing was read for it`);
+      continue;
+    }
+    const {shipped} = source;
+    if (!shipped) {
+      problems.push(`${id} was never shipped, so there is no zip link or size: npm run ship:pack -- ${id}`);
+      continue;
+    }
+    if (shipped.version !== undefined && shipped.version !== source.manifestVersion) {
+      problems.push(`packs/${id}.json is at version ${source.manifestVersion ?? '(none)'} but v${shipped.version} is the one shipped: npm run ship:pack -- ${id}, then the guide for the new link`);
+    }
+    const names = new Set(source.thumbFiles);
+    const guide = guideFileName(id, shipped);
+    if (!names.has(guide)) problems.push(`no ${guide} in ${source.thumbsLabel}: the guide of the shipped zip (/guia)`);
+    const preview = guide.replace(/\.pdf$/, '.png');
+    files.push({pack: id, guide, preview: names.has(preview) ? preview : undefined, zipUrl: shipped.url, bytes: shipped.bytes});
   }
-  const files = new Set(inputs.thumbFiles);
+  // Every guide lands in the same listing folder: two zips shipped before versioning would both ship guide.pdf.
+  for (const guide of new Set(files.map((file) => file.guide).filter((guide, index, all) => all.indexOf(guide) !== index))) {
+    problems.push(`two packs of the bundle ship ${guide} and would overwrite each other: ship them again with a version`);
+  }
+  const own = new Set(inputs.thumbFiles);
   const photos = inputs.thumbFiles.filter((name) => /^\d{2}-.+\.jpg$/.test(name)).sort();
   if (photos.length === 0) problems.push(`no listing photos (NN-<template>.jpg) in ${inputs.thumbsLabel}: render them with /thumb`);
   if (photos.length > PHOTO_MAX) problems.push(`${photos.length} photos in ${inputs.thumbsLabel}; Etsy takes at most ${PHOTO_MAX}`);
-  if (!files.has('video.mp4')) problems.push(`no video.mp4 in ${inputs.thumbsLabel}: npm run render -- listings/${pack}.json --video-only in the thumbnail generator`);
-  const guide = shipped ? guideFileName(pack, shipped) : '';
-  if (shipped && !files.has(guide)) problems.push(`no ${guide} in ${inputs.thumbsLabel}: the guide of the shipped zip (/guia)`);
+  if (!own.has('video.mp4')) problems.push(`no video.mp4 in ${inputs.thumbsLabel}: npm run render -- listings/${pack}.json --video-only in the thumbnail generator`);
   fail(`listings/${pack}.md`, problems);
 
-  const description = listing.description.replaceAll('{{ZIP_SIZE}}', zipSize(shipped!.bytes));
-  const preview = guide.replace(/\.pdf$/, '.png');
+  // A bundle's {{ZIP_SIZE}} is what the buyer downloads in all: the sum of its packs' zips.
+  const description = listing.description.replaceAll('{{ZIP_SIZE}}', zipSize(files.reduce((sum, file) => sum + file.bytes, 0)));
   const text = [
     `TITLE\n${listing.title}`, `PRICE\n${listing.price}`, `TAGS\n${listing.tags.join(', ')}`, `DESCRIPTION\n${description}`,
-    `PHOTOS (in order)\n${photos.join('\n')}`, 'VIDEO\nvideo.mp4', `DIGITAL FILE\n${guide} (download link inside: ${shipped!.url})`,
+    `PHOTOS (in order)\n${photos.join('\n')}`, 'VIDEO\nvideo.mp4',
+    `${files.length > 1 ? 'DIGITAL FILES' : 'DIGITAL FILE'}\n${files.map((file) => `${file.guide} (download link inside: ${file.zipUrl})`).join('\n')}`,
   ].join('\n\n') + '\n';
-  return {listing, description, photos, guide, guidePreview: files.has(preview) ? preview : undefined, zipUrl: shipped!.url, text};
+  return {listing, description, photos, files, text};
 };
 
-/** The files one listing copies into its folder, from the generator's out/<pack>/. */
-export const listingCopies = (plan: ListingPlan) =>
-  [...plan.photos, 'video.mp4', plan.guide, ...(plan.guidePreview ? [plan.guidePreview] : [])];
+/** The files one listing copies into its folder: photos and video from the generator's out/<listing>/, each guide from out/<its pack>/. */
+export const listingCopies = (plan: ListingPlan) => [
+  ...[...plan.photos, 'video.mp4'].map((file) => ({from: plan.listing.pack, file})),
+  ...plan.files.flatMap(({pack, guide, preview}) => [guide, ...(preview ? [preview] : [])].map((file) => ({from: pack, file}))),
+];
 
 const escape = (text: string) => text.replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]!);
 
@@ -157,7 +203,8 @@ const copyBlock = (label: string, text: string) =>
 
 /**
  * One page for the owner to fill in Etsy: per listing, the photos and the video with a citable caption
- * (<caption>-NN, <caption>-V, <caption>-G), each text block with a copy button, and the guide.
+ * (<caption>-NN, <caption>-V, <caption>-G; a bundle's guides <caption>-G1, -G2…), each text block with a
+ * copy button, and the guides.
  */
 export const renderListingPage = (title: string, plans: ListingPlan[]) => {
   const sections = plans.map((plan) => {
@@ -165,8 +212,12 @@ export const renderListingPage = (title: string, plans: ListingPlan[]) => {
     const media = plan.photos.map((name, index) =>
       `<figure><img src="${pack}/${name}"><figcaption>${caption}-${String(index + 1).padStart(2, '0')} · ${name}</figcaption></figure>`).join('')
       + `<figure><video src="${pack}/video.mp4" controls loop muted playsinline></video><figcaption>${caption}-V · video.mp4</figcaption></figure>`;
-    const guide = `<p>Digital file: <a href="${pack}/${plan.guide}">${plan.guide}</a> · download link inside: <code>${escape(plan.zipUrl)}</code></p>`
-      + (plan.guidePreview ? `<figure class="g"><img src="${pack}/${plan.guidePreview}"><figcaption>${caption}-G · ${plan.guidePreview}</figcaption></figure>` : '');
+    const links = plan.files.map(({guide, zipUrl}) =>
+      `<p>Digital file: <a href="${pack}/${guide}">${guide}</a> · download link inside: <code>${escape(zipUrl)}</code></p>`).join('');
+    const previews = plan.files.map(({preview}, index) => (preview
+      ? `<figure class="g"><img src="${pack}/${preview}"><figcaption>${caption}-G${plan.files.length > 1 ? index + 1 : ''} · ${preview}</figcaption></figure>`
+      : '')).join('');
+    const guide = links + (previews ? `<div class="imgs">${previews}</div>` : '');
     const notes = plan.listing.notes ? `<div class="n"><b>${NOTES}</b><pre>${escape(plan.listing.notes)}</pre></div>` : '';
     return `<section id="${pack}"><h2>${pack}</h2>${notes}<div class="imgs">${media}</div>`
       + copyBlock('Title', plan.listing.title) + copyBlock('Price', plan.listing.price) + copyBlock('Tags', plan.listing.tags.join(', '))

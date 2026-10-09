@@ -1,6 +1,7 @@
 // Animated stream mockups (`npm run qa:kit -- <pack> --video`): the same scenes as the still
-// mockups (MOCK_LAYOUTS), built from the pack's own .webm files, one background loop long. A loop
-// longer than a listing video can be also gets a listing cut that cross-fades back into frame 0.
+// mockups (MOCK_LAYOUTS), built from the pack's own .webm files, one background loop long; a piece
+// the pack ships only as .png stays still, as the buyer gets it. A loop longer than a listing video
+// can be also gets a listing cut that cross-fades back into frame 0.
 import type {PlannedFile} from './pack-plan';
 import {MOCK_LAYOUTS} from './stills-job';
 
@@ -16,8 +17,11 @@ export type MockVideo = {
   frames: number;
   /** Relative to the project root, like PlannedFile.output. */
   base: string;
-  /** Where each file's top-left corner goes: the box position minus the file's bleed. */
-  layers: {file: string; x: number; y: number}[];
+  /**
+   * Where each file's top-left corner goes: the box position minus the file's bleed. `still`: a
+   * .png held on every frame.
+   */
+  layers: {file: string; x: number; y: number; still?: true}[];
 };
 
 export const MOCK_NAMES = MOCK_LAYOUTS.map((layout) => layout.out);
@@ -34,34 +38,43 @@ export const parseMockNames = (value: string) => {
 };
 
 /**
- * One video per requested mockup, from the pack plan's .webm files. A scene needs the background
- * and every layer it names: one the pack does not plan, or a frame rate or loop that differs from
- * the background's, refuses the mockup with the reason (a cut there would jump).
+ * One video per requested mockup, from the pack plan's files. A scene needs the background as
+ * .webm and every layer it names, as .webm or, when the pack ships that piece only as a still, as
+ * .png: a layer the pack does not plan, or a .webm whose frame rate or loop differs from the
+ * background's, refuses the mockup with the reason (a cut there would jump). A still has no loop.
  */
 export const planMockVideos = (plan: readonly PlannedFile[], names: readonly string[]): MockVideo[] => {
-  const webm = plan.filter((file) => file.format === 'webm' && file.role !== 'mask');
-  const background = webm.find((file) => file.kind === 'background');
+  // An OBS mask shares its window's size and is a .png too: never a piece of the scene.
+  const pieces = plan.filter((file) => file.role !== 'mask');
+  const background = pieces.find((file) => file.kind === 'background' && file.format === 'webm');
   if (!background) throw new Error('The pack plans no .webm background: the mockup videos need one.');
   return names.map((name) => {
     const layout = MOCK_LAYOUTS.find((entry) => entry.out === name);
     if (!layout) throw new Error(`Unknown mockup "${name}". Use one of: ${MOCK_NAMES.join(', ')}.`);
     const layers = layout.layers.map(({size, variant, x, y}) => {
-      const file = webm.find((entry) => entry.size === size && entry.variant === variant);
+      const planned = (format: string) => pieces.find((entry) => entry.format === format && entry.size === size && entry.variant === variant);
+      const file = planned('webm') ?? planned('png');
       const label = variant === undefined ? size : `${size} (${variant})`;
-      if (!file) throw new Error(`${name} needs ${label} as .webm, which the pack does not plan.`);
-      if (file.fps !== background.fps || file.frames !== background.frames) {
+      if (!file) throw new Error(`${name} needs ${label} as .webm or .png, which the pack does not plan.`);
+      const still = file.format === 'png';
+      if (!still && (file.fps !== background.fps || file.frames !== background.frames)) {
         throw new Error(`${name}: ${label} runs ${file.frames} frames at ${file.fps} fps, the background ${background.frames} at ${background.fps}; the loop would jump.`);
       }
       const bleed = typeof file.exportProps.bleed === 'number' ? file.exportProps.bleed : 0;
-      return {file: file.output, x: x - bleed, y: y - bleed};
+      return {file: file.output, x: x - bleed, y: y - bleed, ...(still ? {still: true as const} : {})};
     });
     return {name, fps: background.fps, frames: background.frames, base: background.output, layers};
   });
 };
 
-/** FFmpeg arguments that composite one mockup into an H.264 MP4 (the VP9 decoder keeps alpha). */
+/**
+ * FFmpeg arguments that composite one mockup into an H.264 MP4 (the VP9 decoder keeps alpha). A
+ * still loops at the video's frame rate with no end of its own: -frames:v ends the video.
+ */
 export const mockVideoArgs = (video: MockVideo, resolve: (relative: string) => string, output: string) => {
-  const inputs = ['-i', resolve(video.base), ...video.layers.flatMap((layer) => ['-c:v', 'libvpx-vp9', '-i', resolve(layer.file)])];
+  const inputs = ['-i', resolve(video.base), ...video.layers.flatMap((layer) => [
+    ...(layer.still ? ['-loop', '1', '-framerate', String(video.fps)] : ['-c:v', 'libvpx-vp9']), '-i', resolve(layer.file),
+  ])];
   const chain = ['[0:v]format=rgb24[s0]', ...video.layers.map((layer, i) => `[s${i}][${i + 1}:v]overlay=${layer.x}:${layer.y}:format=auto[s${i + 1}]`)];
   const filter = `${chain.join(';')};[s${video.layers.length}]format=yuv420p[v]`;
   return ['-y', '-v', 'error', ...inputs, '-filter_complex', filter, '-map', '[v]', '-frames:v', String(video.frames),
