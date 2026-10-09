@@ -151,7 +151,7 @@ test('backgroundColor refuses a color with alpha, in English', () => {
 });
 
 test('the delivery profile lowers only the crf of H.264 and VP9; master stays the default', () => {
-  // Values pending the owner's yes after the BGC-7 board (2026-10-08): H.264 crf 16, VP9 crf 20.
+  // VP9 crf 20 fixed by the owner after the BGC-7 board (2026-10-08); H.264 crf 16 still a first guess.
   assert.deepEqual([...exportProfileSchema.options], ['master', 'delivery']);
   assert.deepEqual(getExportPreset({outputFormat: 'mp4', transparent: false}, 'delivery'), {
     codec: 'h264', imageFormat: 'png', pixelFormat: 'yuv420p', crf: 16, x264Preset: 'veryslow',

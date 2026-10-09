@@ -58,9 +58,11 @@ export const getCompositionMetadata = (
 /**
  * How hard a video is compressed. `master` is the default and what every pack shipped so far was
  * rendered with: VP9 crf 0 and H.264 crf 1 veryslow, near lossless and heavy (the Halloween zips
- * weigh 0.5 to 1.4 GB). `delivery` trades invisible detail for size. Its crf values are a first
- * guess, measured on 2026-10-08 (BGC-7) before the owner fixes them. MOV (ProRes, the editing
- * master), GIF and PNG ignore the profile.
+ * weigh 0.5 to 1.4 GB). `delivery` trades invisible detail for size. VP9 crf 20 was fixed by the
+ * owner on 2026-10-08 (BGC-7): on three Halloween midnight files it came out 10 to 22 times
+ * smaller, SSIM 0.997 to 0.999, with a difference visible only in a dark mist with its shadows
+ * lifted. H.264 crf 16 is still a first guess, not measured yet. MOV (ProRes, the editing master),
+ * GIF and PNG ignore the profile.
  */
 export const exportProfileSchema = z.enum(['master', 'delivery']);
 export type ExportProfile = z.infer<typeof exportProfileSchema>;
