@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import {existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {MACHINE_CHECK_ENV, machineCheckScript, machineVerdict, parseVerdict} from '../scripts/machine-check';
-import {busyOutsideSlot, busyProcesses} from '../scripts/render-turn';
+import {HEAVY_PATTERNS, WRAPPERS, busyOutsideSlot, busyProcesses} from '../scripts/render-turn';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -81,6 +82,16 @@ const vault = path.join(os.homedir(), 'obsidian', 'AI', 'scripts');
 
 test('the real machine check answers on this machine', {skip: !existsSync(machineCheckScript()) && 'no maquina_livre.py here'}, () => {
   assert.notEqual(machineVerdict(), null);
+});
+
+test('the fallback looks for the same renders and wrappers as the machine check', {skip: !existsSync(path.join(vault, 'maquina_livre.py')) && 'no vault here'}, () => {
+  // The fallback saw neither a still, the compositor nor Blender long after the check did (HAR-32).
+  const read = 'import json, sys; sys.path.insert(0, sys.argv[1]); import maquina_livre as m; print(json.dumps({"heavy": [p.pattern for p in m.PESADO], "wrappers": sorted(m.EMBRULHO)}))';
+  const check = JSON.parse(execFileSync('python3', ['-c', read, vault], {encoding: 'utf8'})) as {heavy: string[]; wrappers: string[]};
+  const fix = 'edit HEAVY_PATTERNS and WRAPPERS in scripts/render-turn.ts to match PESADO and EMBRULHO in ~/obsidian/AI/scripts/maquina_livre.py';
+  assert.ok(check.heavy.length > 0 && check.wrappers.length > 0, `read nothing from the check: ${JSON.stringify(check)}`);
+  assert.deepEqual(HEAVY_PATTERNS, check.heavy, fix);
+  assert.deepEqual([...WRAPPERS].sort(), check.wrappers, fix);
 });
 
 test('scripts/render-slot.ts is the vault source, byte for byte', {skip: !existsSync(path.join(vault, 'render-slot.ts')) && 'no vault here'}, () => {

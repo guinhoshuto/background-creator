@@ -25,11 +25,28 @@ import {machineVerdict} from './machine-check';
 import {renderSlotHolder, type SlotHandle} from './render-slot';
 
 /**
- * Heavy renders that do not take the render slot: headless Chrome (SE Widget Studio, thumbnails, an
- * older checkout) and the Remotion CLI. render:pack and validate:exports are left out: they take the
- * slot, and one waiting for it must not keep this run waiting in turn.
+ * Heavy renders, the same list as PESADO in the shared machine check (maquina_livre.py; a test fails
+ * while they differ), so the fallback sees what the check sees. Each one is searched in the full
+ * command line: a headless Chrome, Remotion's own Chrome (chrome-headless-shell, whose path has no
+ * capital C) and a Chrome driven over a pipe (Playwright, SE Widget Studio); the Remotion CLI only while
+ * it renders (render, still, benchmark), not the studio, a bundle or a command that only names the word,
+ * and its compositor; SE Widget Studio's CLI when it renders; Blender in the background (-b), since a
+ * render from Blender's window is out of reach of a process list; ffmpeg writing many frames or encoding
+ * video, not one frame. render:pack and validate:exports render only while they hold the slot, so a
+ * run waiting for the slot never sees them here (busyOutsideSlot leaves the owner's tree out).
  */
-export const BUSY_PATTERN = 'Chrome.*--headless|remotion render|dist/cli/index\\.js';
+export const HEAVY_PATTERNS = [
+  String.raw`\bChrom(e|ium)\b.*--headless`,
+  String.raw`headless[_-]shell`,
+  String.raw`--remote-debugging-pipe`,
+  String.raw`(?:node_modules/\.bin/remotion|@remotion/cli/remotion-cli\.js|(?:^|[\s/])(?:npx|npm\s+exec)\s+remotion)\s+(?:render|still|benchmark)(?:\s|$)`,
+  String.raw`@remotion/compositor-[^/\s]+/remotion(?:\s|$)`,
+  String.raw`dist/cli/index\.js\s+(render|record|capture)\b`,
+  String.raw`^(?:\S*/)?[Bb]lender\s(?:.*\s)?(?:-b|--background)(?:\s|$)`,
+  String.raw`^(?:\S*/)?ffmpeg\s(?!.*\s-(?:frames:v|vframes)\s+1(?:\s|$))` +
+    String.raw`.*(?:\s-f\s+image2(?:\s|$)|%0?\d*d\.\w+|\s(?:libx26[45]|libvpx(?:-vp9)?|libaom-av1|libsvtav1|\w+_videotoolbox|prores\w*)(?:\s|$))`,
+];
+const HEAVY = HEAVY_PATTERNS.map((pattern) => new RegExp(pattern));
 
 export type ProcessInfo = {pid: number; ppid: number; command: string};
 
@@ -43,9 +60,10 @@ export const parseProcessList = (text: string): ProcessInfo[] => text.split('\n'
 // `pgrep -fl 'Chrome.*headless|remotion|...'`, the shell that chains it before `npm run stills`, a
 // watch loop) renders nothing: the work a shell starts shows up as a process of its own. So does
 // caffeinate, which on macOS runs the command in its own pid and keeps a child with the same command
-// line: a sibling of this run, not an ancestor.
-const WRAPPER = /^-?(sh|bash|zsh|dash|ksh|fish|pgrep|pkill|grep|egrep|rg|caffeinate)$/;
-const executable = (command: string) => basename(command.trimStart().split(/\s+/, 1)[0] ?? '');
+// line: a sibling of this run, not an ancestor. The same names as EMBRULHO in the machine check; Claude
+// Code's grep shows up as ugrep. A login shell's leading dash is dropped.
+export const WRAPPERS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'pgrep', 'pkill', 'grep', 'egrep', 'ugrep', 'rg', 'caffeinate']);
+const executable = (command: string) => basename(command.trimStart().split(/\s+/, 1)[0] ?? '').replace(/^-+/, '');
 
 /** `root` and everything it started. Safe against ppid cycles. */
 const treeOf = (processes: readonly ProcessInfo[], root: number) => {
@@ -72,18 +90,17 @@ const familyOf = (processes: readonly ProcessInfo[], selfPid: number) => {
 
 /**
  * The other heavy renders, as `${pid} ${command}` lines (the shape of `pgrep -fl`): processes whose
- * full command matches BUSY_PATTERN, except this run's own family and the wrappers above. The shell
+ * full command matches one of HEAVY_PATTERNS, except this run's own family and the wrappers above. The shell
  * that runs an agent's command is an ancestor, and its command line often contains the pattern (the
  * machine check chained before `npm run stills`): counting it made stills wait for itself. With
  * `slotOwnerPid`, the tree of the render slot's owner is left out too: its renders are waited for in
  * the slot's queue (busyOutsideSlot).
  */
 export const otherRenders = (processes: readonly ProcessInfo[], selfPid: number, slotOwnerPid?: number): string[] => {
-  const busy = new RegExp(BUSY_PATTERN);
   const own = familyOf(processes, selfPid);
   const slotTree = slotOwnerPid === undefined ? new Set<number>() : treeOf(processes, slotOwnerPid);
   return processes
-    .filter(({pid, command}) => !own.has(pid) && !slotTree.has(pid) && busy.test(command) && !WRAPPER.test(executable(command)))
+    .filter(({pid, command}) => !own.has(pid) && !slotTree.has(pid) && HEAVY.some((pattern) => pattern.test(command)) && !WRAPPERS.has(executable(command)))
     .map(({pid, command}) => `${pid} ${command}`);
 };
 
