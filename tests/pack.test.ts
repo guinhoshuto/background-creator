@@ -267,6 +267,8 @@ test('pack: --dry-run lista cada arquivo com o tamanho do arquivo e o total', ()
   assert.match(dryRunText(plan.slice(0, 1)), /Total: 1 file\.$/);
 });
 
+const FAKE_BYTES: Record<string, number> = {webm: 4_321_000, png: 12_345, mp4: 2_000_000, gif: 300_000, mov: 9_000_000};
+
 /** In-memory disk for the run loop: files are paths, JSON files hold parsed data. */
 const fakeRun = (initial: Record<string, unknown> = {}, freeBytes = 10 * 1024 ** 3) => {
   const disk = new Map<string, unknown>(Object.entries(initial));
@@ -278,7 +280,8 @@ const fakeRun = (initial: Record<string, unknown> = {}, freeBytes = 10 * 1024 **
     exportFile: async (file: PlannedFile, overwrite) => {
       if (disk.has(file.output) && !overwrite) throw new Error('já existe');
       exported.push(file.output);
-      disk.set(file.output, 'bytes');
+      // Stands for the file's bytes: fileBytes reads it back as the size on disk.
+      disk.set(file.output, FAKE_BYTES[file.format]);
       // exportAsset publishes a sidecar next to sized kinds only.
       if (file.kind !== 'background') {
         const layout = fakeDeps.getAsset(file.composition).layout!(file.props);
@@ -290,6 +293,11 @@ const fakeRun = (initial: Record<string, unknown> = {}, freeBytes = 10 * 1024 **
       }
     },
     readJson: async (file) => (disk.has(file) ? disk.get(file) : null),
+    fileBytes: async (file) => {
+      const size = disk.get(file);
+      if (typeof size !== 'number') throw new Error(`no file ${file}`);
+      return size;
+    },
     remove: async (file) => {disk.delete(file);},
     writeManifest: async (file, data) => {disk.set(file, structuredClone(data));},
     sweepScratch: async () => {
@@ -311,7 +319,7 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
   assert.deepEqual([result.rendered, result.skipped], [4, 0]);
   assert.equal([...run.disk.keys()].some((file) => file.endsWith('.png.json') || file.endsWith('.webm.json')), false, 'sem sidecars soltos');
   const data = run.disk.get('out/packs/test/manifest.json') as {name: string; files: Record<string, unknown>[]};
-  assert.deepEqual(Object.keys(data).sort(), ['files', 'name'], 'the manifest records the name and the files, no title');
+  assert.deepEqual(Object.keys(data).sort(), ['files', 'name', 'profile'], 'the manifest records the name, the profile and the files, no title');
   assert.equal(data.name, 'test');
   assert.deepEqual(data.files.map((entry) => entry.file), [
     'backgrounds/test-background.webm',
@@ -326,6 +334,7 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
     content: {x: 64, y: 64, width: 608, height: 328}, hole: {x: 48, y: 48, width: 640, height: 360},
     bleed: 48, fps: 60, frames: 1, frame: 0, alpha: true,
     propsHash: packPropsHash(plan.find((file) => file.composition === 'BorderLoop')!),
+    bytes: 12_345,
   });
   const background = data.files.find((entry) => entry.file === 'backgrounds/test-background.webm')!;
   assert.deepEqual(background.canvas, {width: 1920, height: 1080});
@@ -873,7 +882,7 @@ test('pack: both CLIs refuse an unknown pack with the options, and --dry-run poi
   }
   const dry = cli('pack.ts', 'neon', '--dry-run');
   assert.equal(dry.status, 0, dry.stderr);
-  assert.match(dry.stdout, /^Pack: neon$/m);
+  assert.match(dry.stdout, /^Pack: neon \(profile master\)$/m);
   assert.doesNotMatch(dry.stdout + dry.stderr, /Next:/);
 });
 
@@ -887,4 +896,73 @@ test('pack: the plan refuses a buyer file name used twice or over 100 characters
   // A long pack name takes a path over the 100 characters a buyer path may have.
   assert.throws(() => planPack(manifest([{composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm']}], `pack-${'x'.repeat(80)}`), fakeDeps),
     /Item 1 \(ChatLoop\): chat\/pack-x+-chat-standard\.webm: 109 characters, over the 100 a buyer path may have/);
+});
+
+test('pack: a delivery profile marks only the WebM and MP4 files; master packs plan exactly as before', () => {
+  const items: PackManifest['items'] = [
+    {composition: 'FakeLoop', formats: ['webm', 'mp4', 'png']},
+    {composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'gif', 'mov', 'png']},
+  ];
+  const master = planPack(manifest(items), fakeDeps);
+  assert.deepEqual(planPack({...manifest(items), profile: 'master'}, fakeDeps), master, 'an explicit master is the default');
+  assert.equal(master.some((file) => 'profile' in file), false);
+  const delivery = planPack({...manifest(items), profile: 'delivery'}, fakeDeps);
+  assert.deepEqual(delivery.map((file) => [file.format, file.profile]), [
+    ['webm', 'delivery'], ['mp4', 'delivery'], ['png', undefined],
+    ['webm', 'delivery'], ['gif', undefined], ['mov', undefined], ['png', undefined],
+  ]);
+  assert.deepEqual(delivery.map((file) => file.output), master.map((file) => file.output), 'the profile never renames a file');
+});
+
+test('pack: the manifest refuses an unknown profile with the options', () => {
+  assert.throws(() => parsePackManifest({name: 'test', version: 1, profile: 'web', items: [{composition: 'FakeLoop', formats: ['webm']}]}),
+    /profile.*"master"\|"delivery"/s);
+  assert.equal(parsePackManifest({name: 'test', profile: 'delivery', items: [{composition: 'FakeLoop', formats: ['webm']}]}).profile, 'delivery');
+});
+
+test('pack: a master file keeps the props hash it had before profiles, so shipped packs never render again', () => {
+  // The literal is what HEAD a9711e9, before profiles, gave for this input.
+  const file = {composition: 'FakeLoop', format: 'webm' as const, exportProps: {speed: 1, seed: 7, colors: ['#112233', '#445566']}};
+  assert.equal(packPropsHash(file), '3c05b457e7816f16528d6e2b9072b84b6db1333a1e9d3ae9e9fc559e3163401c');
+  assert.notEqual(packPropsHash({...file, profile: 'delivery'}), packPropsHash(file));
+});
+
+test('pack: switching a finished pack to delivery renders its WebM again and skips its PNG', async () => {
+  const items: PackManifest['items'] = [{composition: 'ChatLoop', sizes: ['chat-standard'], formats: ['webm', 'png']}];
+  const master = planPack(manifest(items), fakeDeps);
+  const first = fakeRun();
+  await runPack({manifest: manifest(items), plan: master, fullPlan: master, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
+  const deliveryManifest: PackManifest = {...manifest(items), profile: 'delivery'};
+  const delivery = planPack(deliveryManifest, fakeDeps);
+  const run = fakeRun(Object.fromEntries(first.disk));
+  await runPack({manifest: deliveryManifest, plan: delivery, fullPlan: delivery, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  assert.deepEqual(run.exported, ['out/packs/test/chat/test-chat-standard.webm']);
+  assert.equal((run.disk.get(MANIFEST) as {profile: string}).profile, 'delivery');
+  assert.equal((first.disk.get(MANIFEST) as {profile: string}).profile, 'master');
+});
+
+test('pack: every manifest entry carries the bytes on disk, also for a skipped file whose entry was older', async () => {
+  const plan = samplePlan();
+  const first = fakeRun();
+  await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: first.effects, diskLabel: 'out'});
+  assert.deepEqual(savedFiles(first).map((entry) => [entry.file, entry.bytes]), [
+    ['backgrounds/test-background.webm', 4_321_000],
+    ['borders/test-webcam-16x9.png', 12_345],
+    ['chat/test-chat-standard.png', 12_345],
+    ['chat/test-chat-standard.webm', 4_321_000],
+  ]);
+  // A manifest from before bytes existed, except for a file that changed size since: the skipped files are measured again.
+  const old = {name: 'test', files: savedFiles(first).map((entry) => (entry.file === 'chat/test-chat-standard.png'
+    ? entry : Object.fromEntries(Object.entries(entry).filter(([key]) => key !== 'bytes'))))};
+  assert.equal(old.files.find((entry) => entry.file === 'chat/test-chat-standard.png')!.bytes, 12_345);
+  const run = fakeRun({...Object.fromEntries(first.disk), [MANIFEST]: old, 'out/packs/test/chat/test-chat-standard.png': 777});
+  const result = await runPack({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, effects: run.effects, diskLabel: 'out'});
+  assert.equal(result.skipped, 4);
+  assert.equal(savedFiles(run).find((entry) => entry.file === 'chat/test-chat-standard.png')!.bytes, 777);
+  assert.equal(savedFiles(run).find((entry) => entry.file === 'backgrounds/test-background.webm')!.bytes, 4_321_000);
+});
+
+test('render:pack hands each file its own profile', () => {
+  const source = readFileSync(path.join(root, 'scripts/pack.ts'), 'utf8');
+  assert.match(source, /\.\.\.\(entry\.profile === undefined \? \{\} : \{profile: entry\.profile\}\)/);
 });

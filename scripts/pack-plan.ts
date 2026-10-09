@@ -7,7 +7,7 @@ import {getAsset, getLayoutOf, getMaskOf, getMotionOf} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
 import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
-import {getCompositionMetadata, hasAlpha, outputFormatSchema, type OutputFormat} from '../src/settings';
+import {exportProfileSchema, getCompositionMetadata, hasAlpha, outputFormatSchema, type ExportProfile, type OutputFormat} from '../src/settings';
 import {NAMED_SIZES, getSize, sizeTag, sizesForKind} from '../src/sizes';
 import {assertCanGoOn, assertCanStart} from './disk';
 import {diskNeed} from './pack-estimate';
@@ -49,8 +49,13 @@ export const packManifestSchema = z.object({
   name: z.string().regex(slug, 'The pack name becomes a folder and starts every file name: use lowercase letters, digits and single hyphens.'),
   version: z.number().int().min(1).optional()
     .describe('Version of the delivery, in the zip name (<pack>-overlay-pack-v<N>.zip); raise it whenever the zip content changes'),
+  profile: exportProfileSchema.optional()
+    .describe('How hard WebM and MP4 are compressed: master (default, near lossless) or delivery (smaller files)'),
   items: z.array(packItemSchema).min(1).describe('What the pack exports, in order'),
 }).strict();
+
+/** The formats a profile changes; MOV, GIF and PNG come out the same under both. */
+export const PROFILED_FORMATS: readonly OutputFormat[] = ['webm', 'mp4'];
 
 export type PackItem = z.infer<typeof packItemSchema>;
 export type PackManifest = z.infer<typeof packManifestSchema>;
@@ -106,6 +111,8 @@ export type PlannedFile = {
   role?: 'mask';
   /** For a window border: the output of its mask, relative to the project root like `output`. */
   mask?: string;
+  /** Only on a WebM or MP4 of a pack whose profile is not master; absent means master. */
+  profile?: Exclude<ExportProfile, 'master'>;
 };
 
 /** A radius as a file-name tag: whole pixels as they are, fractions with "p" for the point (12p5). */
@@ -328,6 +335,7 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
           format, props, exportProps: parsed, ...(motion ? {motion} : {}),
           output, canvas: {...canvas}, fps, frames: durationInFrames,
           ...(frame === undefined ? {} : {frame}),
+          ...(manifest.profile === 'delivery' && PROFILED_FORMATS.includes(format) ? {profile: manifest.profile} : {}),
         };
         planned.push(entry);
         const maskProps = sizeId === undefined ? null : asset.mask?.(parsed) ?? null;
@@ -424,9 +432,11 @@ const canonical = (value: unknown): unknown => {
  * format and PNG frame. The manifest records it per file, so a finished file whose item changed
  * afterwards is told apart from one that still matches the plan (the name alone says neither).
  */
-export const packPropsHash = (file: Pick<PlannedFile, 'composition' | 'exportProps' | 'format' | 'frame'>) =>
+export const packPropsHash = (file: Pick<PlannedFile, 'composition' | 'exportProps' | 'format' | 'frame' | 'profile'>) =>
   createHash('sha256').update(JSON.stringify(canonical({
     composition: file.composition, exportProps: file.exportProps, format: file.format, frame: file.frame ?? null,
+    // Only a profile other than master enters the hash: files rendered before profiles existed keep theirs.
+    ...(file.profile === undefined ? {} : {profile: file.profile}),
   }))).digest('hex');
 
 /** Pack manifest entry for one file (keys in English/CSS style, for tools). */
@@ -458,6 +468,8 @@ export type PackFileEntry = {
   role?: 'mask';
   /** For a window border: its OBS mask, relative to the pack like `file`. */
   mask?: string;
+  /** The file's size on disk, read after it was rendered or found. */
+  bytes?: number;
 };
 
 /** The subset of exportAsset's sidecar the pack manifest keeps. */
@@ -530,6 +542,8 @@ export type PackRunEffects = {
   /** Renders one file; resolves once the file (and its sidecar, for sized kinds) is published. */
   exportFile: (file: PlannedFile, overwrite: boolean) => Promise<void>;
   readJson: (file: string) => Promise<unknown | null>;
+  /** Size of a finished file, in bytes. */
+  fileBytes: (file: string) => Promise<number>;
   remove: (file: string) => Promise<void>;
   writeManifest: (file: string, data: unknown) => Promise<void>;
   /** Removes the scratch directories interrupted exports left behind; returns what it removed. */
@@ -567,6 +581,7 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
   const entries = new Map([...previousFiles].filter(([file]) => planned.has(file)));
   const save = () => effects.writeManifest(manifestPath, {
     name: manifest.name,
+    profile: manifest.profile ?? 'master',
     files: [...entries.values()].sort((a, b) => a.file.localeCompare(b.file)),
   });
   // Partial renders of an interrupted run are never valid output: gone before anything else, freeing their space.
@@ -604,9 +619,11 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
     const propsHash = renderNow ? expected : known?.propsHash;
     // A leftover sidecar (fresh render or an interrupted run) wins over older data, then leaves the pack folder.
     const data = await effects.readJson(sidecar);
-    entries.set(relative, data !== null
+    const entry = data !== null
       ? packFileEntry(file, packRoot, asset, data as Sidecar, propsHash)
-      : (renderNow ? null : known) ?? packFileEntry(file, packRoot, asset, null, propsHash));
+      : (renderNow ? null : known) ?? packFileEntry(file, packRoot, asset, null, propsHash);
+    // Read from the disk every time: an entry from an older run may predate the field or the file.
+    entries.set(relative, {...entry, bytes: await effects.fileBytes(file.output)});
     await save();
     if (data !== null) await effects.remove(sidecar);
   }

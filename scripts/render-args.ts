@@ -2,11 +2,11 @@ import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {assetCatalog, getAsset, getLayoutOf} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
-import {getCompositionMetadata, outputFormatSchema} from '../src/settings';
+import {exportProfileSchema, getCompositionMetadata, outputFormatSchema} from '../src/settings';
 import {canvasOf, getSize, sizeProps, sizesForKind} from '../src/sizes';
-import {FREE_SPACE_HINT, assertCanStart} from './disk';
+import {FREE_SPACE_HINT, assertCanStart, frameScratchBytes, gibibytes} from './disk';
 import type {ExportOptions} from './export';
-import {diskNeed} from './pack-estimate';
+import {diskNeed, estimateFile, sizeText} from './pack-estimate';
 
 export const HELP_TEXT = `usage: npm run render:<webm|mov|png|mp4|gif> -- <composition> [options]
 
@@ -17,10 +17,14 @@ Options:
   --height <px>          box height, even (chat, text boxes and borders)
   --bleed <px>           transparent margin for the glow, even (chat, text boxes and borders)
   --frame <n>            PNG frame (default 0)
+  --profile <name>       master (default: near lossless, heavy) or delivery (smaller WebM and MP4;
+                         MOV, GIF and PNG are the same in both)
   --duration <seconds>   loop duration
   --seed <integer>       distribution seed
   --out <path>           output file
   --overwrite            replaces an existing file
+  --dry-run              prints the file, its estimated size and the disk it needs, and says whether
+                         the disk floor would refuse it; renders nothing and does not wait for the slot
   --list                 lists the compositions and the sizes by kind
 
 The command's format wins over the JSON.`;
@@ -30,8 +34,8 @@ export const renderCliOptions = {
   props: {type: 'string'}, out: {type: 'string'},
   duration: {type: 'string'}, seed: {type: 'string'},
   size: {type: 'string'}, width: {type: 'string'}, height: {type: 'string'}, bleed: {type: 'string'},
-  frame: {type: 'string'},
-  overwrite: {type: 'boolean', default: false},
+  frame: {type: 'string'}, profile: {type: 'string', default: 'master'},
+  overwrite: {type: 'boolean', default: false}, 'dry-run': {type: 'boolean', default: false},
   list: {type: 'boolean'}, help: {type: 'boolean', short: 'h'},
 } as const;
 
@@ -71,6 +75,15 @@ export const expandSize = (kind: AssetKind, sizeId: string): Record<string, unkn
   return sizeProps(size);
 };
 
+/** The --profile value, refused with the options when unknown. */
+export const parseProfile = (value: string | undefined) => {
+  const result = exportProfileSchema.safeParse(value ?? 'master');
+  if (!result.success) {
+    throw new Error(`Unknown --profile ${value}. Use ${exportProfileSchema.options.join(' or ')} (default master).`);
+  }
+  return result.data;
+};
+
 const numeric = (value: string | undefined, key: string) => (value === undefined ? {} : {[key]: Number(value)});
 
 /** Turns the parsed command line (and the JSON file's content) into export options, without I/O. */
@@ -101,6 +114,7 @@ export const buildExportOptions = (
       ...numeric(values.seed, 'seed'),
     },
     ...(values.frame === undefined ? {} : {frame: Number(values.frame)}),
+    profile: parseProfile(values.profile),
     output: values.out, overwrite: values.overwrite,
     ...(values.props === undefined ? {} : {propsName: path.basename(values.props, path.extname(values.props))}),
   };
@@ -118,6 +132,27 @@ export const plannedRender = (options: ExportOptions) => {
   if (!canvas) throw new Error(`${asset.id} does not report its file size.`);
   const {durationInFrames} = getCompositionMetadata({durationSeconds: props.durationSeconds as number, outputFormat: options.format});
   return {format: options.format, canvas, frames: durationInFrames};
+};
+
+/**
+ * What --dry-run prints: the file, its size estimate and what the render takes from the disk.
+ * The size comes from the master render measured for packs (pack-estimate.ts), so under delivery
+ * it reads as an upper bound; a format never measured says so and counts only its frames.
+ */
+export const renderDryRunText = (
+  {options, planned, directory}: {options: ExportOptions; planned: ReturnType<typeof plannedRender>; directory: string},
+) => {
+  const file = estimateFile(planned);
+  const profile = options.profile ?? 'master';
+  const sizeLine = file === null
+    ? `  file size: not estimated (no measured ${planned.format} render yet)`
+    : `  file size: ${sizeText(file.bytes)}${profile === 'master' || !['webm', 'mp4'].includes(planned.format) ? '' : ' at most (measured on master renders)'}`;
+  return [
+    `${options.compositionId}: ${planned.format}, ${planned.canvas.width}×${planned.canvas.height}, ${planned.frames} ${planned.frames === 1 ? 'frame' : 'frames'}, profile ${profile}`,
+    `  output: ${options.output ?? `${directory}/ (named when it renders)`}`,
+    sizeLine,
+    `  disk while rendering: up to ${gibibytes(diskNeed(planned))} (frames before the encode: ${gibibytes(frameScratchBytes(planned))})`,
+  ].join('\n');
 };
 
 /** Every side effect of `npm run render:*`, injected so the flow is tested without rendering. */
@@ -146,9 +181,21 @@ export const runRender = async (args: string[], {defaultOutDirectory, effects}: 
   const directory = options.output === undefined ? defaultOutDirectory : path.dirname(path.resolve(options.output));
   // The frames kept before the encode count, not only the file: 1080p for 12 s keeps over 1 GiB.
   const need = diskNeed(plannedRender(options));
+  const where = path.relative(process.cwd(), directory) || '.';
+  if (values['dry-run']) {
+    effects.log(renderDryRunText({options, planned: plannedRender(options), directory: where}));
+    const free = effects.freeBytes(directory);
+    try {
+      assertCanStart({free, estimate: need, where, then: FREE_SPACE_HINT});
+    } catch (error) {
+      throw new Error(`Dry run: this render would be refused. ${error instanceof Error ? error.message : String(error)}`);
+    }
+    effects.log(`  free in ${where}: ${gibibytes(free)}; the disk floor lets it start.`);
+    return;
+  }
   // Measured inside the slot: a render that waited hours for another one sees the disk it left.
   await effects.withRenderSlot(async () => {
-    assertCanStart({free: effects.freeBytes(directory), estimate: need, where: path.relative(process.cwd(), directory) || '.', then: FREE_SPACE_HINT});
+    assertCanStart({free: effects.freeBytes(directory), estimate: need, where, then: FREE_SPACE_HINT});
     await effects.exportAsset(options);
   });
 };

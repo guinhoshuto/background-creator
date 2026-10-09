@@ -1,4 +1,4 @@
-import {access, mkdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
+import {access, mkdir, readFile, rename, rm, stat, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {freeBytes as diskFreeBytes, existingAncestor} from './disk';
@@ -58,7 +58,7 @@ const main = async () => {
   if (values['dry-run']) {
     const existing = new Set<string>();
     for (const entry of plan) if (await exists(fromRoot(entry.output))) existing.add(entry.output);
-    console.log(`Pack: ${manifest.name}`);
+    console.log(`Pack: ${manifest.name} (profile ${manifest.profile ?? 'master'})`);
     console.log(dryRunText(plan, existing));
     console.log(estimateText(plan, existing));
     // A dry run changes nothing: it only says what the real run will clean up.
@@ -84,6 +84,7 @@ const main = async () => {
           compositionId: entry.composition, format: entry.format, props: entry.exportProps,
           output: fromRoot(entry.output), overwrite, serveUrl, scratchDirectory,
           ...(entry.frame === undefined ? {} : {frame: entry.frame}),
+          ...(entry.profile === undefined ? {} : {profile: entry.profile}),
           onProgress: (message) => console.log(`  ${message}`),
         });
       },
@@ -92,6 +93,7 @@ const main = async () => {
         if (!await exists(target)) return null;
         return JSON.parse(await readFile(target, 'utf8')) as unknown;
       },
+      fileBytes: async (relative) => (await stat(fromRoot(relative))).size,
       remove: (relative) => rm(fromRoot(relative), {force: true}),
       writeManifest: async (relative, data) => {
         const target = fromRoot(relative);
