@@ -227,7 +227,7 @@ test('CLI: a composição é obrigatória e o formato do comando prevalece sobre
   assert.deepEqual(options, {
     compositionId: 'GradientLoop', format: 'mov',
     props: {outputFormat: 'webm', transparent: true, durationSeconds: 2.5, seed: 9},
-    output: undefined, overwrite: true,
+    profile: 'master', output: undefined, overwrite: true,
   });
   assert.equal(resolveExport(options).props.outputFormat, 'mov');
   assert.equal(buildExportOptions(cli('GradientLoop', '--format', 'png', '--frame', '30')).frame, 30);
@@ -281,4 +281,22 @@ test('every render call of the exporter waits FRAME_TIMEOUT_MS for a frame, not 
   const calls = [...source.matchAll(/await (selectComposition|renderStill|renderFrames|renderMedia)\(\{([\s\S]*?)\}\)/g)];
   assert.equal(calls.length, 4, calls.map((call) => call[1]).join());
   for (const call of calls) assert.match(call[2]!, /\btimeoutInMilliseconds\b/, `${call[1]} has no timeoutInMilliseconds`);
+});
+
+test('CLI: --profile reaches the exporter, master by default, and an unknown one is refused with the options', () => {
+  const options = (args: string[]) => buildExportOptions(parseRenderArgs(['ParticleLoop', ...args]));
+  assert.equal(options([]).profile, 'master');
+  assert.equal(options(['--profile', 'delivery']).profile, 'delivery');
+  assert.throws(() => options(['--profile', 'web']), /Unknown --profile web\. Use master or delivery \(default master\)\./);
+  assert.equal(resolveExport({compositionId: 'ParticleLoop', format: 'webm', profile: 'delivery'}).preset.crf, 20);
+  assert.equal(resolveExport({compositionId: 'ParticleLoop', format: 'webm'}).preset.crf, 0);
+  assert.match(HELP_TEXT, /--profile <name> +master \(default/);
+  assert.match(HELP_TEXT, /--dry-run/);
+});
+
+test('every encoder preset the exporter picks follows the requested profile', () => {
+  const source = readFileSync(path.join(import.meta.dirname, '..', 'scripts', 'export.ts'), 'utf8');
+  const calls = [...source.matchAll(/getExportPreset\(([^)]*)\)/g)];
+  assert.equal(calls.length, 2, calls.map((call) => call[0]).join());
+  for (const call of calls) assert.equal(call[1], 'props, options.profile', call[0]);
 });

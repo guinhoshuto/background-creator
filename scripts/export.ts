@@ -8,7 +8,7 @@ import {getAsset, getLayoutOf, getMotionOf, getOpenGlRenderer, type CatalogEntry
 import {kindPolicies} from '../src/kinds';
 import type {AssetLayout} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
-import {getCompositionMetadata, getExportPreset, hasAlpha, type OutputFormat} from '../src/settings';
+import {getCompositionMetadata, getExportPreset, hasAlpha, type ExportProfile, type OutputFormat} from '../src/settings';
 import {assetFileName, sizeTag} from '../src/sizes';
 import {pruneWebpackCache} from './clean-plan';
 import {ffmpegPath, runProcess} from './process';
@@ -94,6 +94,8 @@ export type ExportOptions = {
   serveUrl?: string;
   /** PNG only: which frame of the loop becomes the still (default 0). */
   frame?: number;
+  /** How hard WebM and MP4 are compressed (default master); other formats ignore it. */
+  profile?: ExportProfile;
   /**
    * Where the scratch directory is made (default: next to the output). Packs keep it out of the
    * pack folder; it must be on the output's filesystem, since the result is linked or renamed.
@@ -173,7 +175,7 @@ export const resolveExport = (options: ExportOptions) => {
   }
   const chromiumOptions = {gl: getOpenGlRenderer(asset)};
   const sidecar = getLayoutOf(asset) ? sidecarPath(output) : null;
-  return {asset, props, inputProps, output, sidecar, frame, preset: getExportPreset(props), chromiumOptions};
+  return {asset, props, inputProps, output, sidecar, frame, preset: getExportPreset(props, options.profile), chromiumOptions};
 };
 
 /**
@@ -227,7 +229,7 @@ export const exportAsset = async (options: ExportOptions) => {
   // Saved Studio defaults take part only now: check them like the requested props.
   assertExportable(props);
   const frame = resolveFrame(options.format, options.frame, composition.durationInFrames);
-  const preset = getExportPreset(props);
+  const preset = getExportPreset(props, options.profile);
   // A saved Studio size can differ from the schema default the early name was based on.
   const output = options.output ? resolved.output : path.resolve(defaultOutput(asset, props, options.format, options.propsName));
   const layout = getLayoutOf(asset)?.(props) ?? null;

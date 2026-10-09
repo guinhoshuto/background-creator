@@ -110,3 +110,55 @@ test('validate:exports: --out picks the folder, and the default is scratch', () 
   assert.equal(parseValidateArgs(['--kind', 'chat', '--only', 'label-sm'], root).values.only, 'label-sm');
   assert.throws(() => parseValidateArgs(['--out', ' '], root), /Use --out <dir>/);
 });
+
+const dryRun = (args: string[], free: number) => {
+  const events: string[] = [];
+  const logs: string[] = [];
+  const done = runRender(['ParticleLoop', '--dry-run', '--out', '/nowhere/renders/clip.webm', ...args], {
+    defaultOutDirectory: '/nowhere/out',
+    effects: {
+      readProps: async () => ({}), freeBytes: () => {events.push('disk'); return free;},
+      exportAsset: async () => {events.push('export');},
+      withRenderSlot: async (task) => {events.push('slot'); await task();},
+      log: (message) => logs.push(message),
+    },
+  });
+  return {done, events, logs};
+};
+
+test('render --dry-run: prints the file, its size and its disk need, and neither waits for the slot nor renders', async () => {
+  const run = dryRun(['--duration', '12', '--profile', 'delivery'], 40 * GiB);
+  await run.done;
+  assert.deepEqual(run.events, ['disk']);
+  const text = run.logs.join('\n');
+  assert.match(text, /^ParticleLoop: webm, 1920×1080, 720 frames, profile delivery$/m);
+  assert.match(text, /^ {2}output: \/nowhere\/renders\/clip\.webm$/m);
+  assert.match(text, /^ {2}file size: ~\d+ MiB at most \(measured on master renders\)$/m);
+  // 1920 × 1080 × 720 frames at 1 B per pixel is 1.39 GiB before the encode.
+  assert.match(text, /^ {2}disk while rendering: up to 1\.[4-9] GiB \(frames before the encode: 1\.4 GiB\)$/m);
+  assert.match(text, /^ {2}free in .*: 40\.0 GiB; the disk floor lets it start\.$/m);
+  const master = dryRun(['--duration', '12'], 40 * GiB);
+  await master.done;
+  assert.match(master.logs.join('\n'), /^ {2}file size: ~\d+ MiB$/m);
+});
+
+test('render --dry-run: a render the disk floor would refuse fails with the floor\'s message and the way out', async () => {
+  const run = dryRun(['--duration', '12'], 3.2 * GiB);
+  await assert.rejects(run.done, /^Error: Dry run: this render would be refused\. Not enough free disk in .*: 3\.2 GiB free, this job needs up to 1\.[4-9] GiB and 2\.0 GiB must stay free\. Free space \(npm run clean -- --apply\)/);
+  assert.deepEqual(run.events, ['disk']);
+  assert.equal(run.logs.length, 1, 'the plan is printed before the refusal');
+});
+
+test('render --dry-run: an MP4 says its size was never measured and counts only its frames', async () => {
+  const run = dryRun([], 40 * GiB);
+  const mp4 = runRender(['ParticleLoop', '--format', 'mp4', '--dry-run', '--out', '/nowhere/renders/clip.mp4'], {
+    defaultOutDirectory: '/nowhere/out',
+    effects: {
+      readProps: async () => ({}), freeBytes: () => 40 * GiB, exportAsset: async () => undefined,
+      withRenderSlot: async (task) => task(), log: (message) => run.logs.push(message),
+    },
+  });
+  await run.done;
+  await mp4;
+  assert.match(run.logs.join('\n'), /^ {2}file size: not estimated \(no measured mp4 render yet\)$/m);
+});

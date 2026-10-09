@@ -10,6 +10,8 @@
 | MP4 | H.264, 60 fps, CRF 1, `yuv420p`, preset `veryslow` | Composited over `backgroundColor` | Any player and social network |
 | GIF | 50 fps, global palette of up to 256 colors, `sierra2_4a` dithering, infinite loop | Composited over `backgroundColor` | Twitch panels and places that only take images |
 
+These are the `master` profile, the default and what every pack has shipped with: near lossless and heavy (the Halloween zips weigh 0.5 to 1.4 GB). `--profile delivery` (or `"profile": "delivery"` in a pack manifest) lowers only the CRF of WebM (VP9 CRF 20) and MP4 (H.264 CRF 16); MOV, PNG and GIF come out the same under both profiles. The delivery values are a first guess, measured before the owner fixes them (BGC-7).
+
 The alpha rule is the same in the preview and the export: `transparent: true` only removes the background in WebM, MOV and PNG. MP4 has no alpha channel, and GIF only has 1-bit transparency, on or off, which would jag glows and soft edges; that is why both are always composited over `backgroundColor`. With `transparent: true` in one of those formats, the terminal warns `Transparency composited over <color>.` What the background docs say about transparent WebM applies equally to MOV and PNG.
 
 ProRes 4444 MOV is for editing, not for streaming: it keeps full color and a 10-bit alpha, and the file is huge. One second of `label` (528×144) is about 5.9 MB, and an 8 s full-screen MOV is around 1 GB. For comparison, one second of WebM on a webcam border is about 1.4 MB. The MOV render turns hardware acceleration off, because the system encoder does not write ProRes with alpha.
@@ -42,6 +44,12 @@ npm run render:webm -- WebGLLoop --props presets/webgl-alpha.json
 npm run render:mp4 -- GradientLoop --props presets/gradient-aurora.json
 npm run render:webm -- ParticleLoop --props presets/particles-alpha.json
 npm run render:gif -- GeometricLoop --props presets/geometric-orbit.json
+```
+
+`--dry-run` prints the file, its estimated size and the disk the render takes (the frames kept before the encode plus the file), and says whether the disk floor (`scripts/disk.ts`) would refuse it, exiting with code 1 if so; it renders nothing and does not wait for the render slot. The size comes from the master WebM measured for packs, so under `delivery` it reads as an upper bound; MP4 and MOV have no measured size yet.
+
+```sh
+npm run render:webm -- HalloweenLoop --props presets/halloween-midnight.json --profile delivery --dry-run
 ```
 
 You can choose the destination, duration and seed:

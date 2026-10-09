@@ -55,16 +55,34 @@ export const getCompositionMetadata = (
   return {width: size.width, height: size.height, fps, durationInFrames};
 };
 
+/**
+ * How hard a video is compressed. `master` is the default and what every pack shipped so far was
+ * rendered with: VP9 crf 0 and H.264 crf 1 veryslow, near lossless and heavy (the Halloween zips
+ * weigh 0.5 to 1.4 GB). `delivery` trades invisible detail for size. Its crf values are a first
+ * guess, measured on 2026-10-08 (BGC-7) before the owner fixes them. MOV (ProRes, the editing
+ * master), GIF and PNG ignore the profile.
+ */
+export const exportProfileSchema = z.enum(['master', 'delivery']);
+export type ExportProfile = z.infer<typeof exportProfileSchema>;
+
+/** crf per profile, for the two codecs a profile changes. */
+export const PROFILE_CRF: Record<ExportProfile, {h264: number; vp9: number}> = {
+  master: {h264: 1, vp9: 0},
+  delivery: {h264: 16, vp9: 20},
+};
+
 /** One source of truth for Studio codec defaults and the official exporter. */
 export const getExportPreset = (
   props: Pick<BaseBackgroundProps, 'outputFormat' | 'transparent'>,
+  profile: ExportProfile = 'master',
 ) => {
   const imageFormat = 'png' as const;
+  const crf = PROFILE_CRF[profile];
   switch (props.outputFormat) {
     case 'mp4':
-      return {codec: 'h264', imageFormat, pixelFormat: 'yuv420p', crf: 1, x264Preset: 'veryslow'} as const;
+      return {codec: 'h264', imageFormat, pixelFormat: 'yuv420p', crf: crf.h264, x264Preset: 'veryslow'} as const;
     case 'webm':
-      return {codec: 'vp9', imageFormat, pixelFormat: hasAlpha(props) ? 'yuva420p' : 'yuv420p', crf: 0} as const;
+      return {codec: 'vp9', imageFormat, pixelFormat: hasAlpha(props) ? 'yuva420p' : 'yuv420p', crf: crf.vp9} as const;
     case 'gif':
       return {codec: 'gif', imageFormat, numberOfGifLoops: null} as const;
     case 'mov':
@@ -75,4 +93,3 @@ export const getExportPreset = (
       return {codec: null, imageFormat} as const;
   }
 };
-

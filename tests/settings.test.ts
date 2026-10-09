@@ -5,6 +5,7 @@ import {
   baseBackgroundSchema,
   evenPx,
   getCompositionMetadata,
+  exportProfileSchema,
   getExportPreset,
   hasAlpha,
   hasTransparentBackground,
@@ -147,4 +148,23 @@ test('backgroundColor refuses a color with alpha, in English', () => {
   assert(!result.success);
   assert.deepEqual(result.error.issues[0]?.path, ['backgroundColor']);
   assert.equal(result.error.issues[0]?.message, 'Use an opaque color in the #RRGGBB format.');
+});
+
+test('the delivery profile lowers only the crf of H.264 and VP9; master stays the default', () => {
+  // Values pending the owner's yes after the BGC-7 board (2026-10-08): H.264 crf 16, VP9 crf 20.
+  assert.deepEqual([...exportProfileSchema.options], ['master', 'delivery']);
+  assert.deepEqual(getExportPreset({outputFormat: 'mp4', transparent: false}, 'delivery'), {
+    codec: 'h264', imageFormat: 'png', pixelFormat: 'yuv420p', crf: 16, x264Preset: 'veryslow',
+  });
+  for (const transparent of [false, true]) {
+    assert.deepEqual(getExportPreset({outputFormat: 'webm', transparent}, 'delivery'), {
+      codec: 'vp9', imageFormat: 'png', pixelFormat: transparent ? 'yuva420p' : 'yuv420p', crf: 20,
+    });
+    for (const outputFormat of ['mp4', 'webm'] as const) {
+      assert.deepEqual(getExportPreset({outputFormat, transparent}, 'master'), getExportPreset({outputFormat, transparent}));
+    }
+    for (const outputFormat of ['gif', 'mov', 'png'] as const) {
+      assert.deepEqual(getExportPreset({outputFormat, transparent}, 'delivery'), getExportPreset({outputFormat, transparent}), outputFormat);
+    }
+  }
 });

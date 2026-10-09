@@ -50,7 +50,7 @@ export const diskNeed = (file: Costed) => frameScratchBytes(file) + (estimateFil
 const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;
 
 /** Binary units, like the zip:pack summary and the disk floor. */
-const sizeText = (bytes: number) => {
+export const sizeText = (bytes: number) => {
   const mebibytes = bytes / 1024 ** 2;
   if (mebibytes >= 1024) return `~${(mebibytes / 1024).toFixed(2)} GiB`;
   return mebibytes >= 10 ? `~${Math.round(mebibytes)} MiB` : `~${mebibytes.toFixed(1)} MiB`;
