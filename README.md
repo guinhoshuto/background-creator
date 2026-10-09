@@ -48,6 +48,7 @@ Backgrounds, one doc each:
 | Doc | Composition |
 | --- | --- |
 | [Wuthering Waves: Azure Lotus](docs/themes/wuthering-waves.md) | `WutheringWavesLoop` |
+| [Watercolor: pigment flow](docs/themes/watercolor.md) | `WatercolorLoop` |
 | [Halloween: autumn night](docs/themes/halloween-autumn-night.md) | `HalloweenLoop` |
 | [Halloween: haunted mansion](docs/themes/halloween-haunted-mansion.md) | `HauntedMansionLoop` |
 | [Halloween: mansion interior](docs/themes/halloween-mansion-interior.md) | `HauntedInteriorLoop` |

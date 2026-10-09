@@ -12,6 +12,7 @@ import {CheckerboardLoop, checkerboardLoopSchema} from './backgrounds/Checkerboa
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
+import {WatercolorLoop, watercolorLoopSchema} from './backgrounds/WatercolorLoop';
 import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
 import type {AssetKind} from './kinds';
 import {blockCatalogEntry} from './overlays/block';
@@ -130,6 +131,15 @@ export const backgroundCatalog = {
     component: GeometricLoop,
     schema: geometricLoopSchema,
     defaultProps: geometricLoopSchema.parse({}),
+  },
+  WatercolorLoop: {
+    id: 'WatercolorLoop',
+    kind: 'background',
+    component: WatercolorLoop,
+    schema: watercolorLoopSchema,
+    defaultProps: watercolorLoopSchema.parse({}),
+    // A shader painting: WebGL2 needs ANGLE in Chrome Headless, like WebGLLoop.
+    gl: 'angle',
   },
 } as const satisfies Record<string, CatalogEntry>;
 

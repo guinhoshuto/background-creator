@@ -14,6 +14,7 @@ import {getKawaiiScene, kawaiiLoopSchema} from '../src/backgrounds/KawaiiLoop';
 import {getParticleScene, particleLoopSchema} from '../src/backgrounds/ParticleLoop';
 import {getSunburstScene, sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
 import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/VaporwaveLoop';
+import {WATERCOLOR_SCENES, getWatercolorScene, watercolorLoopSchema} from '../src/backgrounds/WatercolorLoop';
 import {WEBGL_EXPERIMENTS, getWebGLScene, webglLoopSchema} from '../src/backgrounds/WebGLLoop';
 import {getWutheringWavesScene, wutheringWavesLoopSchema} from '../src/backgrounds/WutheringWavesLoop';
 import {backgroundCatalog, getBackground} from '../src/catalog';
@@ -172,6 +173,21 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
       sample: (input: unknown, frame: number, length: number): Scene =>
         getWebGLScene(webglLoopSchema.parse({
           experiment, speed: 3, scale: 2, intensity: 2, centerFade: 1, transparent: true, ...(input as object),
+        }), frame, length),
+    },
+  ]),
+  // Each watercolour painting, at its defaults and with every control at its maximum on the alpha path.
+  ...WATERCOLOR_SCENES.flatMap((scene) => [
+    {
+      id: `WatercolorLoop (${scene})`,
+      sample: (input: unknown, frame: number, length: number): Scene =>
+        getWatercolorScene(watercolorLoopSchema.parse({scene, ...(input as object)}), frame, length),
+    },
+    {
+      id: `WatercolorLoop (${scene}, máximos)`,
+      sample: (input: unknown, frame: number, length: number): Scene =>
+        getWatercolorScene(watercolorLoopSchema.parse({
+          scene, speed: 3, granulation: 1, paperTexture: 1, centerCalm: 1, transparent: true, ...(input as object),
         }), frame, length),
     },
   ]),
@@ -433,6 +449,9 @@ test('particle controls keep their element count and visible opacity for the ent
 test('catalog defaults and shipped presets pass the same schemas used by Studio and export', () => {
   const presets = [
     ['WutheringWavesLoop', 'wuthering-waves-azure-lotus.json'],
+    ['WatercolorLoop', 'watercolor-flow.json'],
+    ['WatercolorLoop', 'watercolor-valley.json'],
+    ['WatercolorLoop', 'watercolor-koi.json'],
     ['GradientLoop', 'gradient-aurora.json'],
     ['ParticleLoop', 'particles-alpha.json'],
     ['GeometricLoop', 'geometric-orbit.json'],

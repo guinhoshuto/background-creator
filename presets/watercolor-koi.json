@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 16,
+  "seed": 11,
+  "transparent": false,
+  "backgroundColor": "#F6F0E2",
+  "colors": ["#86BFC4", "#3F7E95", "#E8783A", "#C8372D", "#2B2A33", "#6E9A55"],
+  "outputFormat": "mp4",
+  "scene": "koi",
+  "speed": 1,
+  "granulation": 0.7,
+  "paperTexture": 1,
+  "centerCalm": 0.3
+}

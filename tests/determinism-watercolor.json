@@ -1,0 +1,5 @@
+{
+  "outDir": "../out/.scratch/determinism-watercolor",
+  "stills": [{"name": "watercolor-flow", "id": "WatercolorLoop", "preset": "watercolor-flow", "props": {"transparent": false}}],
+  "sequences": [{"name": "watercolor-flow", "still": "watercolor-flow", "from": 0, "to": 29, "tolerance": 0}]
+}

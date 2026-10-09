@@ -164,13 +164,17 @@ test('a sequence passes only while every frame stays within its tolerance', () =
  * (BGC-24). Cobweb is byte for byte since its <svg> remounts every frame. Wuthering Waves renders
  * under ANGLE, where its swaying lotus flower drifts up to 24/255 from a fresh still (15 with the
  * flower held still): Chrome's GPU raster, not the drawing. A job shares one browser, so a job held
- * to 0 must not include an ANGLE composition: under ANGLE even the keyed Cobweb drifts.
+ * to 0 must not include an ANGLE composition: under ANGLE even the keyed Cobweb drifts. The one
+ * exception is a painting drawn whole by one shader, with no SVG to raster: the watercolour flow,
+ * 30 frames from one tab, came out byte for byte the same as fresh stills (2026-10-09).
  */
 test('the determinism jobs keep their measured tolerances, and the exact one stays off ANGLE', () => {
   const jobOf = (name: string) => parseJob(JSON.parse(readFileSync(new URL(`./determinism-${name}.json`, import.meta.url), 'utf8')));
   const toleranceOf = (name: string) => jobOf(name).sequences!.map((sequence) => sequence.tolerance);
   assert.deepEqual(toleranceOf('cobweb'), [0]);
   assert.deepEqual(toleranceOf('wuthering-waves'), [24]);
+  assert.deepEqual(toleranceOf('watercolor'), [0]);
   assert.deepEqual(jobOf('cobweb').stills.map((still) => getOpenGlRenderer(getAsset(still.id))), [null]);
   assert.deepEqual(jobOf('wuthering-waves').stills.map((still) => getOpenGlRenderer(getAsset(still.id))), ['angle']);
+  assert.deepEqual(jobOf('watercolor').stills.map((still) => getOpenGlRenderer(getAsset(still.id))), ['angle']);
 });

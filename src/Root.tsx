@@ -20,6 +20,7 @@ const dotGrid = backgroundCatalog.DotGridLoop;
 const checkerboard = backgroundCatalog.CheckerboardLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
+const watercolor = backgroundCatalog.WatercolorLoop;
 const chat = overlayCatalog.ChatLoop;
 const block = overlayCatalog.BlockLoop;
 const border = overlayCatalog.BorderLoop;
@@ -63,6 +64,18 @@ export const RemotionRoot = () => (
         }}
         {...getCompositionMetadata(wutheringWaves.defaultProps)}
         calculateMetadata={({props}: {props: typeof wutheringWaves.defaultProps}) => metadataFor(wutheringWaves.id, wutheringWaves.schema.parse(props))}
+      />
+      <Composition
+        id="WatercolorLoop"
+        component={watercolor.component}
+        schema={watercolor.schema}
+        defaultProps={{
+          durationSeconds: 16, seed: 11, transparent: false, backgroundColor: '#F6F0E2',
+          colors: ['#6C4BA6', '#D65A8E', '#A2479F', '#B49CE0'], outputFormat: 'webm',
+          scene: 'flow', speed: 1, granulation: 0.7, paperTexture: 1, centerCalm: 0.3,
+        }}
+        {...getCompositionMetadata(watercolor.defaultProps)}
+        calculateMetadata={({props}: {props: typeof watercolor.defaultProps}) => metadataFor(watercolor.id, watercolor.schema.parse(props))}
       />
       <Composition
         id="KawaiiLoop"
