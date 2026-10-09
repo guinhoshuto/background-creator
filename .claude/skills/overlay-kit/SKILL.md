@@ -30,7 +30,7 @@ One string is the theme, the pack, the preset suffix and the `KIT_THEMES` entry:
 | What | Where |
 | --- | --- |
 | Ornament set | `src/overlays/shared/ornaments/sets/<set>.tsx`, helpers `<set>-*.ts(x)`; header comment with ratios, caps and slots |
-| Registration | the id in `ORNAMENT_CHOICES` (`src/overlays/shared/ornaments/types.ts`, which derives `ORNAMENT_SET_IDS`) and the set in `ORNAMENT_REGISTRY` (`registry.ts`) |
+| Registration | the id in `ORNAMENT_CHOICES` (`src/overlays/shared/ornaments/types.ts`), the motifs in the `ornaments` description (`fields.ts:ornamentFields`), the set in `ORNAMENT_REGISTRY` (`registry.ts`) and its name in the harness `REFUSAL` regex (`tests/helpers/ornament-harness.ts`); no set id starts with another one plus `-` |
 | Presets | `presets/chat-<theme>.json`, `presets/block-<theme>.json`, `presets/border-<theme>.json` |
 | Pack | `packs/<theme>.json`, with `"version": 1` |
 | Theme list | `KIT_THEMES` in `tests/helpers/themes.ts` (and `STATIC_ONLY` if a composition ships as PNG only) |
@@ -38,7 +38,7 @@ One string is the theme, the pack, the preset suffix and the `KIT_THEMES` entry:
 | Docs | the kit's rows in `docs/overlays.md`, the background's page in `docs/themes/` (buyer margin, OBS notes) |
 | Listing | `listings/<theme>.md` (`docs/packs.md`, Listing page) |
 
-`references/engine.md` has the exact contract of each one. A background that is not Halloween is the first to leave the `halloween-<set>` naming the theme helpers and docs assume: fix the comment and the docs in the same commit, never rename the shipped ids.
+`references/engine.md` has the exact contract of each one. The tests derive a kit theme as `halloween-<set>` (`registerOrnamentHarness`, `tests/ornaments-scale.test.ts:inputOf`, the `halloween-backgrounds` test in `tests/pack.test.ts`): a kit that is not Halloween generalizes those three first, as its own commit, and never renames the shipped ids (engine.md, §2).
 
 ## Rules every kit keeps
 
@@ -47,6 +47,8 @@ One string is the theme, the pack, the preset suffix and the `KIT_THEMES` entry:
 - Every kind × size has a travelling stroke or a moving fill within ±35 % of the preset's speed (`tests/speed-consistency.test.ts`); `DOCUMENTED_MINIMUMS` stays empty.
 - Decorative measures are fixed px; ornaments live in the bleed, never over the text area or the window; a motif that does not fit is left out, a hero that fits nowhere refuses the combination with the way out.
 - `place()` is pure and returns fresh arrays; `build()` is cheap per frame (the harness runs every frame and half frame).
+- The set must also place its hero on sizes the kit does not sell: the harness runs the Twitch panel and both screen frames.
+- `lightning` flashes in step only with `HauntedInteriorLoop`, whatever the kit's background.
 - Only the numbers in `references/engine.md` (stroke speed floors, caps, bleed per size) are trusted; a new number is measured, then written there.
 
 ## Checks
