@@ -34,10 +34,46 @@ test('mock video: the chatting scene of a pack, each file at its box minus its o
 test('mock video: a scene the pack cannot fill, or a loop that differs, is refused', () => {
   const full = plan('halloween-midnight');
   assert.throws(() => planMockVideos(full.filter((file) => file.size !== 'chat-standard'), ['mock-chatting']),
-    /mock-chatting needs chat-standard \(plain\) as \.webm/);
+    /mock-chatting needs chat-standard \(plain\) as \.webm or \.png, which the pack does not plan/);
   assert.throws(() => planMockVideos(full.filter((file) => file.kind !== 'background'), ['mock-chatting']), /no \.webm background/);
   const shorter = full.map((file) => (file.size === 'lower-third' ? {...file, frames: 480} : file));
   assert.throws(() => planMockVideos(shorter, ['mock-chatting']), /lower-third \(plain\) runs 480 frames.*background 720.*jump/);
+});
+
+test('mock video: a piece the pack ships only as .png stays still; one shipped as both animates', () => {
+  const full = plan('halloween-haunted-interior');
+  const expected = {
+    name: 'mock-chatting', fps: 60, frames: 960,
+    base: 'out/packs/halloween-haunted-interior/backgrounds/halloween-haunted-interior-background.webm',
+    layers: [
+      {file: 'out/packs/halloween-haunted-interior/borders/halloween-haunted-interior-webcam-16x9-lg.png', x: 8, y: 28, still: true},
+      {file: 'out/packs/halloween-haunted-interior/chat/halloween-haunted-interior-chat-standard-plain.png', x: 1408, y: 68, still: true},
+      {file: 'out/packs/halloween-haunted-interior/text-boxes/halloween-haunted-interior-lower-third-plain.webm', x: 48, y: 788},
+    ],
+  };
+  assert.deepEqual(planMockVideos(full, ['mock-chatting'])[0], expected);
+  // The same with every .png planned first (a manifest may list "png" before "webm").
+  const pngFirst = [...full.filter((file) => file.format === 'png'), ...full.filter((file) => file.format !== 'png')];
+  assert.deepEqual(planMockVideos(pngFirst, ['mock-chatting'])[0], expected);
+  // The webcam's OBS mask, planned first, is a .png of the same size and still not the frame.
+  const masksFirst = [...full.filter((file) => file.role === 'mask'), ...full.filter((file) => file.role !== 'mask')];
+  assert.deepEqual(planMockVideos(masksFirst, ['mock-chatting'])[0]!.layers[0],
+    {file: 'out/packs/halloween-haunted-interior/borders/halloween-haunted-interior-webcam-16x9-lg.png', x: 8, y: 28, still: true});
+  // A still has no loop to match.
+  const shortStill = full.map((file) => (file.size === 'chat-standard' ? {...file, frames: 480} : file));
+  assert.equal(planMockVideos(shortStill, ['mock-chatting'])[0]!.layers[1]!.still, true);
+});
+
+test('mock video: a still .png loops at the video\'s frame rate, a .webm is decoded with alpha', () => {
+  const [video] = planMockVideos(plan('halloween-haunted-interior'), ['mock-chatting']);
+  const args = mockVideoArgs(video!, (relative) => `/r/${relative}`, '/o/m.mp4');
+  assert.deepEqual(args.slice(args.indexOf('-i'), args.indexOf('-filter_complex')), [
+    '-i', '/r/out/packs/halloween-haunted-interior/backgrounds/halloween-haunted-interior-background.webm',
+    '-loop', '1', '-framerate', '60', '-i', '/r/out/packs/halloween-haunted-interior/borders/halloween-haunted-interior-webcam-16x9-lg.png',
+    '-loop', '1', '-framerate', '60', '-i', '/r/out/packs/halloween-haunted-interior/chat/halloween-haunted-interior-chat-standard-plain.png',
+    '-c:v', 'libvpx-vp9', '-i', '/r/out/packs/halloween-haunted-interior/text-boxes/halloween-haunted-interior-lower-third-plain.webm',
+  ]);
+  assert.equal(args[args.indexOf('-frames:v') + 1], '960');
 });
 
 test('mock video: FFmpeg composites one loop, VP9 decoded with alpha', () => {

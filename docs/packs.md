@@ -109,7 +109,8 @@ npm run qa:kit -- halloween-midnight --video all --dry-run   # the scenes and th
 ```
 
 - **What it is.** The stream mockups of `qa:kit` (`MOCK_LAYOUTS` in `scripts/stills-job.ts`: mock-chatting, mock-gameplay, mock-screen), animated: the pack's own `.webm` files composited by FFmpeg at the same box positions, each minus its own bleed, one background loop long, as an H.264 MP4 at 1920×1080. Frame 0 is the still mockup, so the listing cover (made from `mock-chatting-0.png` by the thumbnail generator) and its video start on the same image.
-- **Missing pieces** are rendered first, one `render:pack -- <pack> --only <file>` each, into `out/packs/<pack>/`; a scene the pack does not plan, or a piece whose loop differs from the background's, is refused with the reason.
+- **Still pieces.** A piece the pack ships only as `.png` (the Haunted Interior's chat and frames, from v1) is held on every frame, as the buyer gets it; a piece shipped as both uses its `.webm`. The `.png` is drawn at the item's `frame` (0 by default): at another frame, frame 0 of the video no longer matches the still mockup.
+- **Missing pieces** are rendered first, one `render:pack -- <pack> --only <file>` each, into `out/packs/<pack>/`; a piece the pack plans neither as `.webm` nor as `.png`, or a `.webm` whose loop differs from the background's, is refused with the reason.
 - **Loops over 14.5 s** (the thumbnail generator's longest listing video; Etsy takes 15 s) also get `<mock>-listing.mp4`: the first 14.5 s, with the last second faded into the loop's own last second, which runs into frame 0, so the replay does not jump (`scripts/mock-video.ts`).
 - **Into the listing:** in the generator's `listings/<pack>.json`, `"video": {"image": 0, "seconds": <loop or 14.5>, "override": {"media": {"src": "<the mp4>", "poster": 0}}}`, then `npm run render -- listings/<pack>.json --video-only` there.
 - It takes the render slot for the compositing, and `--frames` does not apply.
