@@ -196,6 +196,17 @@ export const listingCopies = (plan: ListingPlan) => [
   ...plan.files.flatMap(({pack, guide, preview}) => [guide, ...(preview ? [preview] : [])].map((file) => ({from: pack, file}))),
 ];
 
+/**
+ * What the vault needs from a written page: the `listing_files` line for the product note of each listing on it
+ * (THB-22: the note keeps the absolute folder of the ready listing, and /abrir opens it by the note's name). A
+ * worktree's out/ goes away with the worktree, so from one the line comes with the warning not to write it.
+ */
+export const listingFilesLines = (folder: string, packs: string[], inWorktree: boolean) => [
+  `listing_files: ${folder}`,
+  `  goes in the product note of ${packs.join(', ')} (the agent writes it there with the owner's yes)`,
+  ...(inWorktree ? [`  this checkout is a worktree, and ${folder} goes away with it: run listing:page from the main checkout before writing it`] : []),
+];
+
 const escape = (text: string) => text.replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]!);
 
 const copyBlock = (label: string, text: string) =>

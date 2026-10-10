@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {ListingError, guideFileName, listingCopies, parseListing, planListing, renderListingPage, zipSize, type PackInputs} from '../scripts/listing-plan';
+import {ListingError, guideFileName, listingCopies, listingFilesLines, parseListing, planListing, renderListingPage, zipSize, type PackInputs} from '../scripts/listing-plan';
 
 // Pure checks on listings/<pack>.md and the plan built from it; no file is copied.
 
@@ -180,6 +180,17 @@ test('a bundle pack not shipped, past its shipped version, without its guide or 
   assert.match(problems, /old-kit: the bundle names it, but nothing was read for it/);
   const twoOld = bundleProblems(bundleText('old-kit, older-kit'), {'old-kit': MEMBERS['old-kit']!, 'older-kit': {...MEMBERS['old-kit']!, thumbsLabel: 'thumbs/older-kit'}});
   assert.match(twoOld, /two packs of the bundle ship guide\.pdf and would overwrite each other/);
+});
+
+test('the page ends with the listing_files line for the note of each pack on it, and warns from a worktree', () => {
+  assert.deepEqual(listingFilesLines('/repo/out/listings/halloween', ['halloween-midnight', 'halloween-cobweb'], false), [
+    'listing_files: /repo/out/listings/halloween',
+    "  goes in the product note of halloween-midnight, halloween-cobweb (the agent writes it there with the owner's yes)",
+  ]);
+  const fromWorktree = listingFilesLines('/wt/out/listings/halloween', ['halloween-midnight'], true);
+  assert.equal(fromWorktree.length, 3);
+  assert.equal(fromWorktree[0], 'listing_files: /wt/out/listings/halloween');
+  assert.match(fromWorktree[2]!, /worktree, and \/wt\/out\/listings\/halloween goes away with it: run listing:page from the main checkout/);
 });
 
 test('every versioned listing parses and names packs that exist', () => {
