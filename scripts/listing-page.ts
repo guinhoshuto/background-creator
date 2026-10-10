@@ -1,10 +1,10 @@
-import {existsSync} from 'node:fs';
+import {existsSync, statSync} from 'node:fs';
 import {copyFile, mkdir, readFile, readdir, writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {projectRoot} from './export';
-import {ListingError, listingCopies, parseListing, planListing, renderListingPage, type PackInputs, type ShippedZip} from './listing-plan';
+import {ListingError, listingCopies, listingFilesLines, parseListing, planListing, renderListingPage, type PackInputs, type ShippedZip} from './listing-plan';
 import {existingManifestFile, parsePackManifest} from './pack-plan';
 
 const HELP_TEXT = `usage: npm run listing:page -- <pack...> [--name <folder>] [--check]
@@ -12,6 +12,7 @@ const HELP_TEXT = `usage: npm run listing:page -- <pack...> [--name <folder>] [-
 Builds out/listings/<folder>/ for filling in Etsy by hand: index.html with, per pack, the listing photos
 and video (captions <caption>-NN and <caption>-V), title, price, tags and description with copy buttons,
 and the guide; plus <pack>/listing.txt and the media it names. npm run clean never deletes out/listings.
+It ends with the listing_files line for each pack's product note in the vault.
 
   text     listings/<pack>.md (versioned): front matter pack, price, caption; sections ## Title, ## Tags,
            ## Description ({{ZIP_SIZE}} becomes the zip's size) and an optional ## Before publishing
@@ -89,6 +90,8 @@ const main = async () => {
   const title = plans.length === 1 ? `${name} · Etsy listing` : `${name} · Etsy listings`;
   await writeFile(path.join(out, 'index.html'), renderListingPage(title, plans));
   console.log(path.join(out, 'index.html'));
+  // A worktree's .git is a file; the main checkout's is a folder.
+  for (const line of listingFilesLines(out, plans.map((plan) => plan.listing.pack), statSync(path.join(projectRoot, '.git')).isFile())) console.log(line);
 };
 
 main().catch((error: unknown) => {
