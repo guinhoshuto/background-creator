@@ -117,6 +117,7 @@ The contract is in `docs/kits-halloween.md` §2.4 and `types.ts:OrnamentBase`; c
 - Def ids through `ornamentPartId(context, key, part)` = `${idBase}-${key}-${part}`; numbers in paths through `geometry.ts:svgNumber`.
 - Soft light is `RadialLight` and counts in `extent`; front light over a text area ≤ `legibility.ts:MAX_CONTENT_OPACITY` (0.2).
 - No `filter=`, no `mix-blend-mode` in the ornament and flash groups.
+- A dark motif over a dark panel needs an outline all round its silhouette; the rim on the light's side alone is not enough. The horizon palm all but vanished in its first `qa:kit` (2026-10-10) and now strokes its silhouette twice the outline wide under the ink, so only the outer contour shows (`sets/horizon.tsx:HorizonPalm`).
 
 ## 9. Sizes that bind a kit
 
