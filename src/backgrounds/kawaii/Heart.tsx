@@ -167,3 +167,6 @@ export const Heart = ({
     </g>
   );
 };
+
+/** The body as drawn around the origin, its drawing unit and the hollow band: the 'cloud' ornament set measures them. */
+export const HEART_SHAPE = {body: BODY, unit: UNIT, band: BAND} as const;

@@ -108,7 +108,7 @@ A new set adds an enum value, not a field: the `Root.tsx` literals and `ROOT_DEF
 
 The contract is in `docs/kits-halloween.md` §2.4 and `types.ts:OrnamentBase`; checked by the harness. Easy to miss:
 
-- `set.seedOffset`: taken 0, 20, 40, 60, 80 (`types.ts:OrnamentSet`); the stream is seed + `ORNAMENT_SEED` (503) + offset (`place.ts:ornamentRandom`). Other streams: fill +101, stroke +211, glow/halo +307, corners/accent +401, lightning +509.
+- `set.seedOffset`: taken 0, 20, 40, 60, 80, 100 (`types.ts:OrnamentSet`); the stream is seed + `ORNAMENT_SEED` (503) + offset (`place.ts:ornamentRandom`). Other streams: fill +101, stroke +211, glow/halo +307, corners/accent +401, lightning +509.
 - Draw every element's random values whether used or not, so one motif never shifts another (`sets/midnight.tsx`, `build`).
 - Rhythms in Hz from the background, turned into whole cycles with `harmonics(hz, durationSeconds)`; time from `motion.ts:cycleOf`. `build` must accept fractional frames; a field may not jump between neighbouring half frames by more than 0.02 + 0.25·|Δ| (`ornament-harness.ts`).
 - Frame 0 is the hero pose: the pack PNGs are frame 0.

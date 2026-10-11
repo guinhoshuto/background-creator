@@ -97,7 +97,7 @@ const variants = (adapter: OrnamentKindAdapter, radii: readonly number[] = SCOPE
 const sampleFrames = (n: number) => [0, 1, 37, n * 0.137, n * 0.391, n * 0.618, n * 0.853, n - 1, 0.5, -1];
 
 /** The documented refusal; its way out depends on the kind (and on a border's fit): see ornamentWayOut. */
-export const REFUSAL = new RegExp(`^The "(midnight|haunted-mansion|haunted-interior|cobweb|horizon)" ornaments do not fit this size: (${[
+export const REFUSAL = new RegExp(`^The "(midnight|haunted-mansion|haunted-interior|cobweb|horizon|cloud)" ornaments do not fit this size: (${[
   'increase bleed, padding or radius or use ornaments none.',
   'increase bleed or padding or use ornaments none.',
   'increase bleed, paddingX, paddingY or radius or use ornaments none.',

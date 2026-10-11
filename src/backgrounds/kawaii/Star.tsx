@@ -249,3 +249,6 @@ export const Star = ({
     </g>
   );
 };
+
+/** The twinkle's needles (variant 1) and its drop: at any `size`, it reaches `size` px from its centre. */
+export const TWINKLE_SHAPE = {unit: UNIT, up: KIRA_UP, down: KIRA_DOWN, drop: KIRA_DROP} as const;

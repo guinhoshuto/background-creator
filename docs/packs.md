@@ -11,6 +11,7 @@ A pack is everything a [theme](overlays.md#themes) ships, sold as a zip (see [De
 | `halloween-haunted-interior` | `HauntedInteriorLoop` (`halloween-haunted-interior`) | `gameplay` and `webcam-16x9-lg` enlarged |
 | `halloween-cobweb` | `CobwebLoop` (`halloween-cobweb`) | `gameplay` and `webcam-16x9-lg` enlarged |
 | `vaporwave-horizon` | `VaporwaveLoop` (`vaporwave-horizon`) | `gameplay` and `webcam-16x9-lg` enlarged; `profile` `delivery` |
+| `pastel-cloud` | `KawaiiLoop` (`pastel-cloud`) | `gameplay` and `webcam-16x9-lg` enlarged; `profile` `delivery` |
 
 Each kit ships in two versions. **With ornaments:** the background, the chat in every size, the blocks in every size but the Twitch panel, and the borders of every camera and of `gameplay`; the screen frames are left out, because there the ornaments could only grow by thickening the band over the screen. **Without ornaments:** every size of chat, blocks (the Twitch panel excepted) and borders, the two screens included, with the preset and `"ornaments": "none"`, in the files `<pack>-<size>-plain.<ext>`. The camera masks serve both versions and follow the preset's `radius`. The kits ship no Twitch panel (the owner's call on 2026-10-06). The Halloween kits are documented in [Halloween kits](kits-halloween.md), and `vaporwave-horizon` in its background's page ([Vaporwave](themes/vaporwave.md#overlay-kit)).
 

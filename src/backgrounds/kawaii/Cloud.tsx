@@ -302,3 +302,6 @@ export const Cloud = ({
 };
 
 /* ======================= PREVIEW (não faz parte da peça) ======================= */
+
+/** The three silhouettes (variant 0, 1, 2) as drawn around the origin: the 'cloud' ornament set measures them. */
+export const CLOUD_BODIES: readonly string[] = [SHAPE_0.body, SHAPE_1.body, SHAPE_2.body];

@@ -17,7 +17,7 @@ import type {RoundRect} from '../geometry';
  * dropped, and a set whose hero fits nowhere places nothing, which the schema refuses.
  */
 
-export const ORNAMENT_CHOICES = ['none', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb', 'horizon'] as const;
+export const ORNAMENT_CHOICES = ['none', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb', 'horizon', 'cloud'] as const;
 export type OrnamentChoice = (typeof ORNAMENT_CHOICES)[number];
 export type OrnamentSetId = Exclude<OrnamentChoice, 'none'>;
 export const ORNAMENT_SET_IDS = ORNAMENT_CHOICES.filter((choice): choice is OrnamentSetId => choice !== 'none');
@@ -145,7 +145,7 @@ export type OrnamentRenderContext = {
  */
 export interface OrnamentSet<E extends OrnamentElement = OrnamentElement> {
   name: OrnamentSetId;
-  /** Added to ORNAMENT_SEED (503) for the set's random stream: 0, 20, 40, 60, 80. */
+  /** Added to ORNAMENT_SEED (503) for the set's random stream: 0, 20, 40, 60, 80, 100. */
   seedOffset: number;
   /** The hero's smallest extent, in px (≤ 12, so every named size keeps it). */
   minExtent: number;

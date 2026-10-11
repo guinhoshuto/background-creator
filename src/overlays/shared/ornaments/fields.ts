@@ -17,7 +17,7 @@ export const ORNAMENT_SCALE_RANGE = {min: 1, max: 4, default: 1} as const;
  */
 export const ornamentFields = () => ({
   ornaments: z.enum(ORNAMENT_CHOICES)
-    .describe('Themed ornaments around the panel or the border: none; midnight (bats, pumpkins, stars and embers); haunted-mansion (one bat by the top right corner); haunted-interior (brass candelabras with candles, sconces and velvet valances); cobweb (dewy webs, thread garlands and a spider); horizon (a palm, a sliced sun, wireframe solids and twinkles). Each motif fits the free space of its slot (bleed, padding pockets, band) and never covers the text or the window')
+    .describe('Themed ornaments around the panel or the border: none; midnight (bats, pumpkins, stars and embers); haunted-mansion (one bat by the top right corner); haunted-interior (brass candelabras with candles, sconces and velvet valances); cobweb (dewy webs, thread garlands and a spider); horizon (a palm, a sliced sun, wireframe solids and twinkles); cloud (pastel clouds on the top edge, gummy hearts, twinkles and a bubble glint on circles). Each motif fits the free space of its slot (bleed, padding pockets, band) and never covers the text or the window')
     .default('none'),
   ornamentColors: z.array(zColor()).min(1).max(3)
     .describe('Ornament colors: fog or silk (cool), moonlight (light) and warm light (candles, pumpkins, lanterns); the third is optional and falls back to the first')
