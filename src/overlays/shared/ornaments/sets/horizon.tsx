@@ -9,7 +9,7 @@ import {mixColor, ornamentPalette, ornamentPartId, paint, RadialLight, unitTowar
 import {harmonics, meetsKeepOut, ornamentRandom} from '../place';
 import type {OrnamentBase, OrnamentSet} from '../types';
 import {
-  horizonLit, PALM_INK, PALM_REF, PALM_RIM, PALM_UNIT, placeHorizon, referencePalm, SOLID_BOB, solidBody, solidEdge, SPARKLE_INK,
+  horizonLit, PALM_INK, PALM_OUTLINE, PALM_REF, PALM_RIM, PALM_UNIT, placeHorizon, referencePalm, SOLID_BOB, solidBody, solidEdge, SPARKLE_INK,
   SPARKLE_MIN_EXTENT, sunShape,
 } from './horizon-place';
 
@@ -33,8 +33,10 @@ const HZ = {cycle: 1 / 16, cuts: 2 / 16} as const;
 /** The palm's ink: the background's night darkened (darken(#120C2E, 0.4) and 0.7, for the fronds behind). */
 const PALM_INK_COLOR = '#07051A';
 const PALM_BACK_INK_COLOR = '#0D0920';
-/** The lit rim's alpha: the background's 0.35 + 0.35 × neonGlow at its default 0.7. */
-const PALM_RIM_ALPHA = 0.6;
+/** The lit rim's alpha, brighter than the outline on the sun's side. */
+const PALM_RIM_ALPHA = 0.9;
+/** The outline's alpha all round. */
+const PALM_OUTLINE_ALPHA = 0.7;
 
 /** The sun's base, below the pink: the background's lilac haze. */
 const SUN_DUSK = '#B967FF';
@@ -163,9 +165,11 @@ const disc = ({x, y, r}: {x: number; y: number; r: number}) => `M${n(x - r)} ${n
 
 /**
  * The background's palm at the reference height, scaled to the element's: the lit rim (the whole
- * silhouette shifted PALM_RIM px towards the sun, in screen px), the fronds behind, the trunk, the
- * fronds in front and the knot with its coconuts. One path per frond, as in the background, so a
- * frond folding over itself never opens a hole in a neighbour.
+ * silhouette shifted PALM_RIM px towards the sun), the neon outline (the silhouette stroked twice
+ * PALM_OUTLINE wide under the ink, which covers the inner half and every edge inside another
+ * frond, so only the outer contour shows), the fronds behind, the trunk, the fronds in front and
+ * the knot with its coconuts. One path per frond, as in the background, so a frond folding over
+ * itself never opens a hole in a neighbour.
  */
 const HorizonPalm = ({element}: {element: PalmElement}) => {
   const shape = referencePalm(element.side === 1 ? 1 : 0, element.sway, element.swayTilt);
@@ -180,6 +184,8 @@ const HorizonPalm = ({element}: {element: PalmElement}) => {
       <g transform={`translate(${n(element.rimX * PALM_RIM)} ${n(element.rimY * PALM_RIM)})`} opacity={PALM_RIM_ALPHA}>
         <path transform={place} d={silhouette} fill={element.rimColor} />
       </g>
+      <path transform={place} d={silhouette} fill="none" stroke={element.rimColor} strokeOpacity={PALM_OUTLINE_ALPHA}
+        strokeWidth={n((2 * PALM_OUTLINE) / scale)} />
       <g transform={place}>
         {shape.back.map((points, index) => <path key={`b${index}`} d={outline(points)} fill={element.backInkColor} />)}
         <path d={outline(shape.trunk)} fill={element.inkColor} />

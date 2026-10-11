@@ -40,8 +40,13 @@ import type {OrnamentCornerId, OrnamentFrame, OrnamentLayerName, OrnamentPlaceme
 export const PALM_REF = {height: 200, frond: 100, lean: -0.22} as const;
 /** The lit rim: the silhouette shifted this many px towards the sun, under the ink. */
 export const PALM_RIM = 1.1;
-/** The rim's shift, half the edge stroke and a pixel of antialiasing: what the palm paints past its outline. */
-export const PALM_INK = PALM_RIM + 0.4 + 0.5;
+/**
+ * The neon outline all round the silhouette, in px past its edge: the owner's call on 2026-10-10,
+ * after the first qa:kit, where the dark palm all but vanished over the dark panel.
+ */
+export const PALM_OUTLINE = 1.2;
+/** The rim's shift, the outline and a pixel of antialiasing: what the palm paints past its outline. */
+export const PALM_INK = PALM_RIM + PALM_OUTLINE + 0.5;
 /** Below this height a palm reads as a smudge: the twinkle stands in as the hero. */
 export const PALM_MIN_HEIGHT = 30;
 
