@@ -471,6 +471,7 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['DotGridLoop', 'dots-classic.json'],
     ['DotGridLoop', 'dots-alternating.json'],
     ['DotGridLoop', 'dots-alpha.json'],
+    ['DotGridLoop', 'sand-terminal.json'],
     ['CheckerboardLoop', 'checkerboard-classic.json'],
     ['CheckerboardLoop', 'checkerboard-diamonds.json'],
     ['CheckerboardLoop', 'checkerboard-tilted.json'],
