@@ -16,7 +16,7 @@ export const ORNAMENT_EDGE = 1;
 /** Gap between a front motif's circle and a text area, in px. */
 export const ORNAMENT_CLEARANCE = 1;
 /**
- * The ornaments' seed stream: seed + 503 + the set's offset (0, 20, 40, 60). Taken elsewhere:
+ * The ornaments' seed stream: seed + 503 + the set's offset (0, 20, 40, 60, 80). Taken elsewhere:
  * fill +101, stroke +211, glow/halo +307, corners/accent +401, lightning +509.
  */
 export const ORNAMENT_SEED = 503;

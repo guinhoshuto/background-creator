@@ -2,7 +2,7 @@
 
 ## Packs
 
-A pack is everything a [theme](overlays.md#themes) ships, sold as a zip (see [Delivery](#delivery)): the backgrounds that match it, the chat in every chat size, the blocks in every block size (the round ones included; the Twitch panel as GIF and PNG) and the borders in every border size (the round cameras included), each file as WebM (the loop) and PNG (the still version), plus the masks of the window borders. `npm run render:pack -- <theme> --dry-run` lists every planned file of a pack, so the file count is never written down here. Each pack is described by a manifest in `packs/<theme>.json`, one per theme (`ls packs/`). The Halloween kits add their own props:
+A pack is everything a [theme](overlays.md#themes) ships, sold as a zip (see [Delivery](#delivery)): the backgrounds that match it, the chat in every chat size, the blocks in every block size (the round ones included; the Twitch panel as GIF and PNG) and the borders in every border size (the round cameras included), each file as WebM (the loop) and PNG (the still version), plus the masks of the window borders. `npm run render:pack -- <theme> --dry-run` lists every planned file of a pack, so the file count is never written down here. Each pack is described by a manifest in `packs/<theme>.json`, one per theme (`ls packs/`). The kits add their own props:
 
 | Pack | Background | Item props |
 | --- | --- | --- |
@@ -10,8 +10,9 @@ A pack is everything a [theme](overlays.md#themes) ships, sold as a zip (see [De
 | `halloween-haunted-mansion` | `HauntedMansionLoop` (`halloween-haunted-mansion`) | `gameplay` and `webcam-16x9-lg` enlarged |
 | `halloween-haunted-interior` | `HauntedInteriorLoop` (`halloween-haunted-interior`) | `gameplay` and `webcam-16x9-lg` enlarged |
 | `halloween-cobweb` | `CobwebLoop` (`halloween-cobweb`) | `gameplay` and `webcam-16x9-lg` enlarged |
+| `vaporwave-horizon` | `VaporwaveLoop` (`vaporwave-horizon`) | `gameplay` and `webcam-16x9-lg` enlarged; `profile` `delivery` |
 
-Each kit ships in two versions. **With ornaments:** the background, the chat in every size, the blocks in every size but the Twitch panel, and the borders of every camera and of `gameplay`; the screen frames are left out, because there the ornaments could only grow by thickening the band over the screen. **Without ornaments:** every size of chat, blocks (the Twitch panel excepted) and borders, the two screens included, with the preset and `"ornaments": "none"`, in the files `<pack>-<size>-plain.<ext>`. The camera masks serve both versions and follow the preset's `radius`. The kits ship no Twitch panel (the owner's call on 2026-10-06). The kits themselves are documented in [Halloween kits](kits-halloween.md).
+Each kit ships in two versions. **With ornaments:** the background, the chat in every size, the blocks in every size but the Twitch panel, and the borders of every camera and of `gameplay`; the screen frames are left out, because there the ornaments could only grow by thickening the band over the screen. **Without ornaments:** every size of chat, blocks (the Twitch panel excepted) and borders, the two screens included, with the preset and `"ornaments": "none"`, in the files `<pack>-<size>-plain.<ext>`. The camera masks serve both versions and follow the preset's `radius`. The kits ship no Twitch panel (the owner's call on 2026-10-06). The Halloween kits are documented in [Halloween kits](kits-halloween.md), and `vaporwave-horizon` in its background's page ([Vaporwave](themes/vaporwave.md#overlay-kit)).
 
 On large frames, ornaments in fixed px would look tiny. That is why `gameplay` ships with `{"bleed": 96, "ornamentScale": 2}` and `webcam-16x9-lg` with `{"bleed": 72, "ornamentScale": 1.5}`: the ornaments keep the same proportion as on `webcam-16x9`, and the file gains the margin they need (1632×1002 and 1104×684; the window stays 1440×810 and 960×540). Leave that margin free around the frame in the scene.
 

@@ -34,3 +34,11 @@ npm run render:webm -- VaporwaveLoop --props presets/vaporwave-alpha.json
 ```
 
 Switch `render:mp4` to `render:webm` or `render:gif` for the other formats.
+
+## Overlay kit
+
+The `vaporwave-horizon` pack (`packs/vaporwave-horizon.json`, version 1, `profile` `delivery`) is this background's kit: the `vaporwave-horizon` loop plus chat, blocks and borders in the presets `chat-`, `block-` and `border-vaporwave-horizon`, which take its 16 s and seed 88, so everything loops in step when the sources start together. It has the Halloween kits' shape ([Packs](../packs.md)): every piece with and without ornaments, the screen frames only without, no Twitch panel, and `gameplay` and `webcam-16x9-lg` with their ornaments enlarged on a wider bleed.
+
+The panels are a purple gradient (`#3A2359` to `#6B3A92`) with cyan comets and a pink halo; the `horizon` ornaments repeat the background's layout around each piece: its palm rising behind the top left corner, its sliced sun behind the top right one, its pyramid and icosahedron on the bottom corners and its twinkles along the top edge ([Ornaments](../overlays.md#ornaments)). `ornamentColors` are `#2DE2E6` (the solids' and twinkles' cyan), `#FFFB96` (the sun's pale top, as in the background) and `#FF2E97` (the sun, the palm's rim and the pyramid).
+
+In OBS, keep the bleed around each piece free: the palm and the sun stand out past the top corners, and the solids past the bottom ones, so a piece set flush against the screen edge or against another piece cuts them.
