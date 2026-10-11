@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {ORNAMENT_REGISTRY, ORNAMENT_SET_IDS, ornamentOutset, scaleOrnamentFrame} from '../src/overlays/shared';
+import {ORNAMENT_REGISTRY, ORNAMENT_SET_IDS, ornamentOutset, scaleOrnamentFrame, type OrnamentSetId} from '../src/overlays/shared';
 import {getSize, sizeProps} from '../src/sizes';
 import {ORNAMENT_KINDS, type OrnamentKindName} from './helpers/ornament-kinds';
+import {kitThemeOf} from './helpers/themes';
 
 /**
  * ornamentScale: every motif grows by s together. The set is placed on the kind's frame shrunk by
@@ -19,10 +20,10 @@ const CASES: [string, number, number][] = [
   ['gameplay', 96, 2],
 ];
 
-const inputOf = (set: string, id: string, extra: Record<string, unknown>) => {
+const inputOf = (set: OrnamentSetId, id: string, extra: Record<string, unknown>) => {
   const size = getSize(id);
   const kind = size.kind as OrnamentKindName;
-  return {kind, input: {...ORNAMENT_KINDS[kind].preset(`halloween-${set}`), ...sizeProps(size), ...extra}};
+  return {kind, input: {...ORNAMENT_KINDS[kind].preset(kitThemeOf(set)), ...sizeProps(size), ...extra}};
 };
 
 test('ornamentScale: o conjunto é posto na moldura reduzida por 1/s, e o que sai da caixa (× s) cabe no bleed', () => {

@@ -13,7 +13,7 @@ import {assetCatalog, getAsset, getMotionOf} from '../src/catalog';
 import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
-import {BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -552,7 +552,7 @@ const readPack = (name: string): unknown => JSON.parse(readFileSync(path.join(ro
 
 const presetJson = (name: string): Record<string, unknown> => JSON.parse(readFileSync(path.join(root, 'presets', `${name}.json`), 'utf8'));
 
-test('packs: cada kit de Halloween traz o seu fundo e os presets seguem a duração e a seed dele', () => {
+test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed dele', () => {
   for (const theme of KIT_THEMES) {
     const pack = parsePackManifest(readPack(theme));
     // The kit's background is its one item without sizes.
@@ -569,7 +569,7 @@ test('packs: cada kit de Halloween traz o seu fundo e os presets seguem a duraç
   }
 });
 
-test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do tema', () => {
+test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', () => {
   // Every theme's pack, exactly.
   assert.deepEqual(readdirSync(path.join(root, 'packs')).filter((file) => file.endsWith('.json')).sort(), expectedPackFiles());
   const ids = (kind: AssetKind) => sizesForKind(kind).map((size) => size.id);
@@ -578,13 +578,13 @@ test('packs: os oito manifestos seguem o schema e cobrem todos os tamanhos do te
     const pack = packManifestSchema.parse(readPack(name));
     assert.equal(pack.name, name);
     const kit = (KIT_THEMES as readonly string[]).includes(name);
-    // The kit's items with ornaments (no variant) and, in the Halloween kits, their twins without.
+    // The kit's items with ornaments (no variant) and, in the kits, their twins without.
     const byPreset = (preset: string, variant?: string) => pack.items.filter((item) => item.preset === preset && item.variant === variant);
     assert.deepEqual(byPreset(`chat-${name}`).flatMap((item) => item.sizes), ids('chat'));
     // The kits' screen frames come only without ornaments: large enough ornaments would eat the picture.
     assert.deepEqual(byPreset(`border-${name}`).flatMap((item) => item.sizes).sort(), ids('border').filter((id) => !kit || !screens.has(id)).sort());
     const blocks = byPreset(`block-${name}`);
-    // The Halloween kits ship no Twitch panel (owner, 2026-10-06); the classic themes do.
+    // The kits ship no Twitch panel (owner, 2026-10-06); the classic themes do.
     const blockIds = ids('block').filter((id) => !kit || id !== 'twitch-panel');
     assert.deepEqual(blocks.flatMap((item) => item.sizes).sort(), blockIds.sort());
     if (!kit) {
@@ -636,7 +636,7 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     const backgrounds = pack.items.filter((item) => item.sizes === undefined).length;
     // Each sized item × its sizes × its formats, plus each background × its formats, plus the OBS
     // masks of the nine window sizes: seven, since the three round webcams share one disc (the two
-    // screen frames have none). The Halloween kits hold every size twice (with ornaments, screens
+    // screen frames have none). The kits hold every size twice (with ornaments, screens
     // excepted, and plain), sharing the masks, and no Twitch panel.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
     const sizes = kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1;
@@ -648,7 +648,7 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
       assert.ok(file.canvas.width % 2 === 0 && file.canvas.height % 2 === 0, file.output);
     }
     const twitch = plan.filter((file) => file.size === 'twitch-panel');
-    // The Halloween kits ship no Twitch panel (owner, 2026-10-06).
+    // The kits ship no Twitch panel (owner, 2026-10-06).
     assert.deepEqual(twitch.map((file) => [path.posix.basename(file.output), file.canvas]), kit ? [] : [
       [`${name}-twitch-panel.gif`, {width: 320, height: 160}],
       [`${name}-twitch-panel.png`, {width: 320, height: 160}],
@@ -670,7 +670,7 @@ test('packs: halloween-backgrounds traz o fundo de cada kit de Halloween, como n
   const pack = parsePackManifest(readPack('halloween-backgrounds'));
   // The kit's background is its one item without sizes; this pack sells it with the same composition and preset.
   const kitBackground = (theme: string) => parsePackManifest(readPack(theme)).items.find((item) => item.sizes === undefined)!;
-  assert.deepEqual(pack.items.map((item) => [item.composition, item.preset, item.variant, item.props]), KIT_THEMES.map((theme) => {
+  assert.deepEqual(pack.items.map((item) => [item.composition, item.preset, item.variant, item.props]), BACKGROUND_PACK_KITS['halloween-backgrounds'].map((theme) => {
     const background = kitBackground(theme);
     return [background.composition, background.preset, theme.replace(/^halloween-/, ''), background.props];
   }));

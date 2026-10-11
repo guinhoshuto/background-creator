@@ -26,7 +26,7 @@ import {
 } from '../src/sizes';
 import {cornersOf} from './helpers/glow-brute';
 import {assertSeamVelocity, type Sampler} from './helpers/scene-scans';
-import {OVERLAY_THEMES, droppedWebms, isStaticOnly} from './helpers/themes';
+import {KIT_THEMES, OVERLAY_THEMES, droppedWebms, isStaticOnly} from './helpers/themes';
 
 /**
  * Round blocks and round webcam borders: the shape prop, the round named sizes, the text area in
@@ -528,8 +528,8 @@ test('Packs: os tamanhos redondos entram em webm e png (bordas estáticas só em
     for (const id of ROUND_BLOCKS) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/${name}-${id}.${format}`), `${name}: ${id}.${format}`);
     }
-    // The Halloween kits also ship every size without ornaments (variant plain).
-    const kit = name.startsWith('halloween-');
+    // The kits also ship every size without ornaments (variant plain).
+    const kit = (KIT_THEMES as readonly string[]).includes(name);
     for (const id of ROUND_BLOCKS.filter(() => kit)) {
       for (const format of ['webm', 'png']) assert.ok(files.includes(`text-boxes/${name}-${id}-plain.${format}`), `${name}: ${id} sem enfeites`);
     }

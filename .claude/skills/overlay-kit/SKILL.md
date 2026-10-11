@@ -33,12 +33,12 @@ One string is the theme, the pack, the preset suffix and the `KIT_THEMES` entry:
 | Registration | the id in `ORNAMENT_CHOICES` (`src/overlays/shared/ornaments/types.ts`), the motifs in the `ornaments` description (`fields.ts:ornamentFields`), the set in `ORNAMENT_REGISTRY` (`registry.ts`) and its name in the harness `REFUSAL` regex (`tests/helpers/ornament-harness.ts`); no set id starts with another one plus `-` |
 | Presets | `presets/chat-<theme>.json`, `presets/block-<theme>.json`, `presets/border-<theme>.json` |
 | Pack | `packs/<theme>.json`, with `"version": 1` |
-| Theme list | `KIT_THEMES` in `tests/helpers/themes.ts` (and `STATIC_ONLY` if a composition ships as PNG only) |
+| Theme list | `KIT_THEMES` and `KIT_SETS` (theme → set) in `tests/helpers/themes.ts` (and `STATIC_ONLY` if a composition ships as PNG only) |
 | Tests | `tests/ornaments-<set>.test.ts` and `tests/ornaments-harness-<set>.test.ts` (`registerOrnamentHarness`) |
 | Docs | the kit's rows in `docs/overlays.md`, the background's page in `docs/themes/` (buyer margin, OBS notes) |
 | Listing | `listings/<theme>.md` (`docs/packs.md`, Listing page) |
 
-`references/engine.md` has the exact contract of each one. The tests derive a kit theme as `halloween-<set>` (`registerOrnamentHarness`, `tests/ornaments-scale.test.ts:inputOf`, the `halloween-backgrounds` test in `tests/pack.test.ts`): a kit that is not Halloween generalizes those three first, as its own commit, and never renames the shipped ids (engine.md, §2).
+`references/engine.md` has the exact contract of each one. The tests find a set's kit through `KIT_SETS` (`kitThemeOf`), so a kit theme may have any name; shipped ids are never renamed (engine.md, §2).
 
 ## Rules every kit keeps
 

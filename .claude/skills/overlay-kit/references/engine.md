@@ -31,13 +31,13 @@ A set never imports `registry.ts`, `render.tsx` or an `index.ts` (import cycle; 
 
 ## 2. One string for theme, pack and presets
 
-- Theme = pack name = preset suffix. `tests/pack.test.ts` reads `packs/<theme>.json` and checks `pack.name === <file>`, then looks up items by preset `chat-<theme>`, `block-<theme>`, `border-<theme>` (test "os oito manifestos…").
+- Theme = pack name = preset suffix. `tests/pack.test.ts` reads `packs/<theme>.json` and checks `pack.name === <file>`, then looks up items by preset `chat-<theme>`, `block-<theme>`, `border-<theme>` (test "os manifestos seguem o schema…").
 - `tests/overlay-registry.test.ts` ("cada preset de tema…") requires the `presets/(chat|block|border)-*.json` files to equal `tests/helpers/themes.ts:expectedPresetFiles()` exactly: a preset without a theme, or a theme without its three presets, fails.
-- A kit theme is `halloween-<set>` today, and the code derives it, not just the docs:
-  - `tests/helpers/ornament-harness.ts:registerOrnamentHarness` runs the kit presets of ``theme = `halloween-${set}` ``;
-  - `tests/ornaments-scale.test.ts:inputOf` reads the ``halloween-${set}`` presets for every id in `ORNAMENT_SET_IDS`;
-  - `tests/pack.test.ts` ("halloween-backgrounds traz o fundo de cada kit…") expects `packs/halloween-backgrounds.json` to hold every `KIT_THEMES` background, with variant = theme minus `halloween-`.
-  A kit that is not Halloween needs those three generalized first (a test change, not a naming trick).
+- A kit theme may have any name: `tests/helpers/themes.ts:KIT_SETS` maps each kit theme to the ornament set its presets wear, and `kitThemeOf(set)` finds the kit of a set (it throws unless exactly one kit wears it). Until 2026-10-10 the tests derived the theme as `halloween-<set>`; the vaporwave-horizon kit generalized them:
+  - `tests/helpers/ornament-harness.ts:registerOrnamentHarness` runs the presets of `kitThemeOf(set)`;
+  - `tests/ornaments-scale.test.ts:inputOf` reads the `kitThemeOf(set)` presets for every id in `ORNAMENT_SET_IDS`, so every set needs its kit;
+  - `tests/pack.test.ts` ("halloween-backgrounds traz o fundo de cada kit…") expects `packs/halloween-backgrounds.json` to hold the backgrounds of `BACKGROUND_PACK_KITS['halloween-backgrounds']`, with variant = theme minus `halloween-`; a new kit's background joins no background pack unless one is planned.
+  A new kit adds its theme to `KIT_THEMES` and its set to `KIT_SETS` (the type makes the second mandatory).
 - No set id may start with another set's id plus `-` (`tests/test-kit.test.ts`): `test:kit` globs `tests/ornaments-harness-<set>*.test.ts`.
 
 ## 3. Files of a kit (names as of 2026-10-08)
@@ -58,7 +58,7 @@ Kit side (theme `<theme>`):
 - `presets/chat-<theme>.json`, `presets/block-<theme>.json`, `presets/border-<theme>.json`.
 - The background preset the pack's background item names (the kits use `presets/<theme>.json`, e.g. `halloween-cobweb.json`; the tests require it to exist and parse, not its name).
 - `packs/<theme>.json`.
-- `tests/helpers/themes.ts:KIT_THEMES` (and `STATIC_ONLY` if a composition ships PNG only).
+- `tests/helpers/themes.ts:KIT_THEMES` and `KIT_SETS` (and `STATIC_ONLY` if a composition ships PNG only).
 - `tests/__snapshots__/markup.json`, regenerated (`docs/development.md`; README pitfall "A change to `packs/*.json`…").
 
 A new set adds an enum value, not a field: the `Root.tsx` literals and `ROOT_DEFAULT_PROPS` copies change only when a field is added.
@@ -102,7 +102,7 @@ A new set adds an enum value, not a field: the `Root.tsx` literals and `ROOT_DEF
 - `ornamentSize` is the hero's nominal size in fixed px; each set defines what it measures (diameter, wingspan, height, radius) and the ratios and caps of the other motifs in its header comment.
 - Room clamps it per slot; it never follows the box.
 - `ornamentScale` grows sizes, caps, strokes and spacing together and measures room at that scale: s = 2 needs about twice the bleed for the same motifs. At 1 the layout has no `scale` key and no transform (`tests/ornaments-scale.test.ts`).
-- The kit packs fix the two scaled items exactly: `webcam-16x9-lg` `{bleed: 72, ornamentScale: 1.5}`, `gameplay` `{bleed: 96, ornamentScale: 2}` (`tests/pack.test.ts`, "os oito manifestos…").
+- The kit packs fix the two scaled items exactly: `webcam-16x9-lg` `{bleed: 72, ornamentScale: 1.5}`, `gameplay` `{bleed: 96, ornamentScale: 2}` (`tests/pack.test.ts`, "os manifestos seguem o schema…").
 
 ## 8. Build and render: what a new set gets wrong first
 
@@ -130,7 +130,7 @@ The harness requires a kit preset to place its hero at every named size of every
 ## 10. Preset rules the tests enforce
 
 - All kinds: strict parse alone and merged with every size's props; no `width`, `height`, `bleed`, `fit` or `guides` (`overlay-registry.test.ts`, "cada preset de tema…"). The preset never fixes a size.
-- Duration and seed come from the background: each overlay preset's `durationSeconds` and `seed` equal the pack background's parsed values (`pack.test.ts`, "cada kit de Halloween traz o seu fundo…").
+- Duration and seed come from the background: each overlay preset's `durationSeconds` and `seed` equal the pack background's parsed values (`pack.test.ts`, "cada kit traz o seu fundo…").
 - Chat: `strokeWidth` 2–3; a header (`layout.header` non-null, so `headerHeight` > 0); `glow` > 0, since the render test expects `<filter id="chat-stroke-glow"` for every preset (`tests/chat.test.ts`).
 - Block: frame 0 ≠ frame 200 (`block.test.ts`, "presets dos oito temas…") and frame N−1 ≠ frame 0 at every size ("o ciclo fecha em todos os tamanhos…"); legibility ≤ 0.2 over the text at every size.
 - Border: sets `thickness` (read as a number in `border.test.ts`, "a moldura nunca passa do próprio contorno…"); kit presets use `corners: "none"` (harness).

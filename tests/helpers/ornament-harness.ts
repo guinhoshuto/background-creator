@@ -14,6 +14,7 @@ import {
 import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './scene-scans';
+import {kitThemeOf} from './themes';
 
 /**
  * The ornament harness: a set on every kind and named size (plus border radii, small round screen
@@ -410,7 +411,7 @@ export const registerOrnamentSizeCases = (
  * Registers the harness's tests for one set on `kinds` (all three by default): the neutral base on
  * every size and variant at `ornamentSizes` (the default, the neutral one and the schema's extremes;
  * [] leaves the size cases to registerOrnamentSizeCases), the generic scans, the markup and the
- * flash, the border's mask, and the kit's presets (`halloween-<set>`).
+ * flash, the border's mask, and the presets of the kit that wears the set (KIT_SETS).
  */
 export const registerOrnamentHarness = (
   set: OrnamentSetId,
@@ -489,8 +490,8 @@ export const registerOrnamentHarness = (
     }
   });
 
-  // Kit presets: the theme `halloween-<set>`.
-  const theme = `halloween-${set}`;
+  // Kit presets: the theme that wears the set.
+  const theme = kitThemeOf(set);
   for (const kindName of kinds) {
     const adapter = ORNAMENT_KINDS[kindName];
     test(`ornaments kit [${theme}] [${set}] ${kindName}: o preset põe o motivo principal em todo tamanho, com os mesmos limites`, () => {
