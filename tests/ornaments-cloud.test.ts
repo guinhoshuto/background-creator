@@ -11,7 +11,8 @@ import {framesOf, kitProps, kitSizeIds, ORNAMENT_KINDS, type OrnamentKindName} f
 
 /**
  * The cloud set (KawaiiLoop's cloud, heart and twinkle) beyond the shared harness: the background's
- * chord on every file the kit ships (a cloud sitting on the top edge, a heart beside it), the drawn
+ * chord on every file the kit ships (a cloud sitting on the top edge, its belly tucked behind it, a
+ * heart beside it), the drawn
  * cloud and hearts inside the circles they declare, the twinkle standing in for a cloud too small
  * to read, the background's rhythms, the pack's frame-0 pose and the kit's colours.
  * Run with `npx tsx --test tests/ornaments-cloud.test.ts`.
@@ -90,24 +91,31 @@ test('cloud: a nuvem e os corações desenhados cabem no círculo que declaram, 
   }
 });
 
-test('cloud: a nuvem passa por cima da borda (o topo dela sobe acima do contorno)', () => {
+test('cloud: a nuvem senta inteira na borda, só com a barriga atrás dela', () => {
   const clouds = CLOUD_BODIES.map(outlinePoints);
-  for (const id of ['chat-standard', 'label', 'card', 'circle-sm', 'webcam-16x9']) {
+  for (const id of ['chat-standard', 'label', 'card', 'circle-sm', 'webcam-16x9', 'gameplay']) {
     const {adapter, props, frame} = kitCase(id);
     const puff = adapter.layers(props, 0, framesOf(props)).back.find((element) => element.type === 'cloud-puff')!;
     const {points} = drawn(puff, clouds[puff.variant as number]!, {idBase: 'test', frame, style: props});
     const top = Math.min(...points.map((point) => point.y));
-    assert.ok(top < frame.outline.y - 0.2 * (puff.width as number), `${id}: topo ${top}, borda ${frame.outline.y}`);
+    const bottom = Math.max(...points.map((point) => point.y));
+    const height = bottom - top;
+    // The belly rests on the edge: tucked behind it, but by no more than a third of the cloud.
+    assert.ok(bottom > frame.outline.y, `${id}: barriga ${bottom} acima da borda ${frame.outline.y}`);
+    assert.ok(bottom - frame.outline.y <= 0.3 * height, `${id}: ${bottom - frame.outline.y} px atrás da borda, de ${height}`);
   }
 });
 
-test('cloud: abaixo de 28 px de nuvem, uma cintila é a principal; com 28, a nuvem', () => {
-  assert.equal(CLOUD_MIN_WIDTH, 28);
-  const small = kitCase('chat-standard', {ornamentSize: 27}).placements;
+test('cloud: abaixo de 24 px de nuvem, uma cintila é a principal; com 24, a nuvem', () => {
+  assert.equal(CLOUD_MIN_WIDTH, 24);
+  const small = kitCase('chat-standard', {ornamentSize: 23}).placements;
   assert.equal(small[0]!.motif, 'twinkle');
   assert.ok(small[0]!.extent >= TWINKLE_MIN_EXTENT, `${small[0]!.extent}`);
   assert.ok(!small.some((placement) => placement.motif.startsWith('cloud') || placement.motif.startsWith('heart')));
-  assert.equal(kitCase('chat-standard', {ornamentSize: 28}).placements[0]!.motif, 'cloud');
+  assert.equal(kitCase('chat-standard', {ornamentSize: 24}).placements[0]!.motif, 'cloud');
+  // The room counts too: on 18 px of bleed only a cloud under 24 px would sit on a label, so the twinkle stands in.
+  assert.equal(kitCase('label-sm', {bleed: 18}).placements[0]!.motif, 'twinkle');
+  assert.equal(kitCase('label-sm', {bleed: 24}).placements[0]!.motif, 'cloud');
 });
 
 test('cloud: ritmos do fundo (respiração duas vezes por loop, flutuação e inclinação de até 2,4° uma vez) e a emenda sem salto', () => {

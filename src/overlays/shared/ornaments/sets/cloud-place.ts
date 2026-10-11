@@ -13,20 +13,21 @@ import type {OrnamentCornerId, OrnamentFrame, OrnamentLayerName, OrnamentPlaceme
  *
  * `ornamentSize` is the hero CLOUD's drawn width in px. The others keep fixed ratios to it up to
  * fixed px caps: the second cloud 0.618 of it, the heart's half-height 0.207 of it (the
- * background's chord: half the group radius, 5 to 16 px), the hollow heart 0.7 of the heart. Each
+ * background's chord: half the group radius, 5 to 16 px), the hollow heart as large as the heart. Each
  * is then limited to the room at its spot (never the box's size); a secondary below its minimum is
  * left out.
  *
  *   - Cloud (hero): the background's own cloud (variant 0; variant 2, the rounder one, on circles),
- *     behind the top edge near the left (behind the top of the ring on circles), centred on the
- *     edge so its top half rises over it; it sinks at most MAX_SINK of its extent, only where it fits
- *     nowhere on or above the edge, and, where the edge has no room (a border's band), takes the
- *     roomiest spot nearby, the corner outside the window. In front where the back has no room (a screen frame). Below CLOUD_MIN_WIDTH a
- *     cloud is a smudge: there a twinkle is the hero instead (in the first corner of TL, TR, BR, BL
- *     that holds it).
+ *     SITTING on the top edge near the left (on the top of the ring on circles): its belly rests on
+ *     the edge, with the lower SIT_TUCK of its height tucked behind the panel or the band, and the
+ *     rest of it over the edge. A cloud's holding circle is as wide as the cloud (a flat shape), so
+ *     sitting whole above the edge takes about 0.72 of its width in bleed: the cloud is the largest
+ *     that sits there, up to ornamentSize. In front where the back has no room (a screen frame).
+ *     Below CLOUD_MIN_WIDTH a cloud is a smudge: there a twinkle is the hero instead (in the first
+ *     corner of TL, TR, BR, BL that holds it).
  *   - Heart: in front, beside the hero cloud, up and to its right, where the background's chord
  *     puts it (along 2.08 and across −0.5 group radii).
- *   - Second cloud: the flat one (variant 1), behind the top edge near the right, on rectangles.
+ *   - Second cloud: the flat one (variant 1), sitting on the top edge near the right, on rectangles.
  *   - Hollow heart: in front, sitting on the BR corner, across from the hero.
  *   - Glint: on circles, a soap-bubble highlight along the ring at TL: the circles are bubbles.
  *   - Twinkles: in front, the background's four-needle twinkle every TWINKLE_PITCH px along the top
@@ -96,20 +97,29 @@ export const INK = 0.5;
 const farthest = (points: readonly Point[]) => Math.max(...points.map((point) => Math.hypot(point.x, point.y))) * (1 + SAMPLE_MARGIN);
 
 /**
- * Each cloud silhouette (variant 0, 1, 2): its drawn width in the drawing's units and the farthest
- * point from its origin (the Cloud's centre of rotation and squash) per px of that width.
+ * Each cloud silhouette (variant 0, 1, 2): its drawn width in the drawing's units and, per px of
+ * that width, the farthest point from its origin (the Cloud's centre of rotation and squash) and
+ * its top and bottom (y, down positive) from the origin.
  */
 export const CLOUD_UNITS = CLOUD_BODIES.map((body) => {
   const points = outlinePoints(body);
   const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
   const width = Math.max(...xs) - Math.min(...xs);
-  return {width, reach: farthest(points) / width};
+  return {width, reach: farthest(points) / width, top: Math.min(...ys) / width, bottom: Math.max(...ys) / width};
 });
+/** The share of a sitting cloud's height tucked behind the edge: its belly, so it rests on the edge rather than floats. */
+export const SIT_TUCK = 0.2;
+/** How far above the edge a sitting cloud's origin is, per px of its width. */
+export const sitHeight = (variant: number) => {
+  const {top, bottom} = CLOUD_UNITS[variant]!;
+  return bottom - SIT_TUCK * (bottom - top);
+};
 /** The cloud breathes as the background's (squash 1 ± 0.045) and floats by these shares of its width. */
 export const CLOUD_BREATH = 0.045;
 export const CLOUD_BOB = {x: 0.03, y: 0.02} as const;
 /** Below this width a cloud reads as a smudge. */
-export const CLOUD_MIN_WIDTH = 28;
+export const CLOUD_MIN_WIDTH = 24;
 /** The second cloud's width per px of the hero's: the background's golden ladder. */
 export const SECOND_CLOUD_RATIO = 0.618;
 
@@ -125,7 +135,7 @@ const HEART_FARTHEST = farthest(outlinePoints(HEART_SHAPE.body));
 export const HEART_RATIO = 0.207;
 export const HEART_MAX = 16;
 export const HEART_MIN = 5;
-export const HOLLOW_HEART_RATIO = 0.7;
+export const HOLLOW_HEART_RATIO = 1;
 /** The heart floats by this share of its half-height on each axis. */
 export const HEART_BOB = 0.12;
 /** A heart's body radius for a half-height (the Heart scales the hollow one down so its band keeps `size`). */
@@ -146,7 +156,7 @@ export const heartSize = (extent: number, hollow: boolean) => {
 /** The twinkle (Star variant 1) reaches its `size` from its centre: the needles after the drop. */
 const TWINKLE_REACH = Math.max(TWINKLE_SHAPE.up - TWINKLE_SHAPE.drop, TWINKLE_SHAPE.down + TWINKLE_SHAPE.drop) / TWINKLE_SHAPE.unit;
 /** Twinkles along an edge (half-heights) and their soft glow, in sizes. */
-export const TWINKLE_SIZES = {big: 7, small: 5} as const;
+export const TWINKLE_SIZES = {big: 10, small: 7} as const;
 export const TWINKLE_GLOW = 1.8;
 /** The hero twinkle (where no cloud fits): its size per px of cloud width, between these px. */
 export const HERO_TWINKLE = {ratio: 0.12, min: 3, max: 8} as const;
@@ -166,8 +176,6 @@ export const glintExtent = (length: number) => length / 2 + GLINT.width / 2 + IN
 
 /** A later motif keeps its centre at least this share of the two extents away from an earlier one's. */
 const OVERLAP = 0.8;
-/** How far a cloud may sink below the edge it sits on, as a share of its extent. */
-const MAX_SINK = 0.1;
 /** The search grid for the clouds and the heart, in px. */
 const STEP = {x: 2, y: 1} as const;
 
@@ -213,36 +221,41 @@ const seat = (
   return best;
 };
 
-/**
- * Where a cloud of `nominal` extent may sit along the top of the outline: from the paint limit's
- * top down to the edge, or down to MAX_SINK below it. Sinking buys a little width and hides more of
- * the cloud than it buys, so a cloud sinks only where it fits nowhere on or above the edge.
- */
-const topRows = (frame: OrnamentFrame, nominal: number, sink: number) => ({
-  y0: Math.max(frame.paintLimit.y, frame.outline.y - nominal),
-  y1: frame.outline.y + sink * nominal,
-});
+/** The widths a sitting cloud tries, from the asked one down, in px. */
+const WIDTH_STEP = 0.5;
 
-/** A cloud's spot along the top of an area: on or above the edge first, then sunk. */
-const seatCloud = (
-  frame: OrnamentFrame, layer: OrnamentLayerName, area: Omit<Area, 'y0' | 'y1'>, nominal: number, min: number, taken: readonly OrnamentPlacement[],
-) => seat(frame, layer, {...area, ...topRows(frame, nominal, 0)}, nominal, min, taken)
-  ?? seat(frame, layer, {...area, ...topRows(frame, nominal, MAX_SINK)}, nominal, min, taken);
+/**
+ * The largest cloud up to `width` (and at least `minWidth`) that sits on the top edge somewhere in
+ * [x0, x1] on `layer`, nearest the preferred x among the spots that hold it, clear of the motifs
+ * already placed; null when not even `minWidth` sits there.
+ */
+const sitCloud = (
+  frame: OrnamentFrame, layer: OrnamentLayerName, variant: number, width: number, minWidth: number, area: {x0: number; x1: number; prefer: number},
+  taken: readonly OrnamentPlacement[],
+): (Point & {extent: number; width: number}) | null => {
+  const xs: number[] = [];
+  for (let x = area.x0; x <= area.x1 + 1e-9; x += STEP.x) xs.push(x);
+  xs.sort((a, b) => Math.abs(a - area.prefer) - Math.abs(b - area.prefer) || a - b);
+  for (let size = width; size >= minWidth - 1e-9; size -= WIDTH_STEP) {
+    const extent = ceilHalf(cloudExtent(size, variant));
+    const y = frame.outline.y - sitHeight(variant) * size;
+    for (const x of xs) if (fitsAt(frame, x, y, extent, layer) && clear({x, y, extent}, taken)) return {x, y, extent, width: size};
+  }
+  return null;
+};
 
 /** The hero cloud: behind the top edge (or the top of the ring), else in front; null under CLOUD_MIN_WIDTH or where it fits nowhere. */
 const placeHeroCloud = (frame: OrnamentFrame, width: number): OrnamentPlacement | null => {
+  if (width < CLOUD_MIN_WIDTH - 1e-9) return null;
   const variant = frame.circle ? 2 : 0;
-  const nominal = cloudExtent(width, variant);
-  // On the extents' 0.5 px grid, so a cloud asked at exactly CLOUD_MIN_WIDTH still fits.
-  const min = floorHalf(cloudExtent(CLOUD_MIN_WIDTH, variant));
-  if (nominal < min - 1e-9) return null;
   const {x, width: w} = frame.outline;
+  const rr = clampRadius(frame.outline.radius, w, frame.outline.height);
   const area = frame.circle
-    ? {x0: x + 0.2 * w, x1: x + 0.8 * w, prefer: {x: x + w / 2, y: frame.outline.y}}
-    : {x0: Math.max(frame.paintLimit.x, x - nominal), x1: x + w / 2, prefer: {x: x + 0.22 * w, y: frame.outline.y}};
+    ? {x0: x + 0.3 * w, x1: x + 0.7 * w, prefer: x + w / 2}
+    : {x0: x + rr, x1: x + w / 2, prefer: Math.max(x + 0.22 * w, x + rr + 0.5 * width)};
   for (const layer of LAYERS) {
-    const spot = seatCloud(frame, layer, area, nominal, min, []);
-    if (spot) return {motif: frame.circle ? 'cloud-round' : 'cloud', slot: 'top', layer, ...spot, size: Math.min(width, cloudWidth(spot.extent, variant))};
+    const spot = sitCloud(frame, layer, variant, width, CLOUD_MIN_WIDTH, area, []);
+    if (spot) return {motif: frame.circle ? 'cloud-round' : 'cloud', slot: 'top', layer, x: spot.x, y: spot.y, extent: spot.extent, size: spot.width};
   }
   return null;
 };
@@ -278,13 +291,12 @@ const placeHeart = (frame: OrnamentFrame, hero: OrnamentPlacement, taken: readon
 const placeSecondCloud = (frame: OrnamentFrame, hero: OrnamentPlacement, taken: readonly OrnamentPlacement[]): OrnamentPlacement | null => {
   const width = SECOND_CLOUD_RATIO * hero.size;
   if (width < CLOUD_MIN_WIDTH - 1e-9) return null;
-  const nominal = cloudExtent(width, 1);
-  const min = floorHalf(cloudExtent(CLOUD_MIN_WIDTH, 1));
   const {x, width: w} = frame.outline;
-  const area = {x0: x + w / 2, x1: Math.min(frame.paintLimit.x + frame.paintLimit.width, x + w + nominal), prefer: {x: x + 0.8 * w, y: frame.outline.y}};
+  const rr = clampRadius(frame.outline.radius, w, frame.outline.height);
+  const area = {x0: x + w / 2, x1: x + w - rr, prefer: Math.min(x + 0.8 * w, x + w - rr - 0.5 * width)};
   for (const layer of LAYERS) {
-    const spot = seatCloud(frame, layer, area, nominal, min, taken);
-    if (spot) return {motif: 'cloud-flat', slot: 'top', layer, ...spot, size: Math.min(width, cloudWidth(spot.extent, 1))};
+    const spot = sitCloud(frame, layer, 1, width, CLOUD_MIN_WIDTH, area, taken);
+    if (spot) return {motif: 'cloud-flat', slot: 'top', layer, x: spot.x, y: spot.y, extent: spot.extent, size: spot.width};
   }
   return null;
 };
