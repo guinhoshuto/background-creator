@@ -40,5 +40,4 @@ Feel free to send me a message if you have any questions!
 
 ## Before publishing
 
-- The price: US$ 12.99 is the Halloween kits' price, waiting for the owner's choice for this kit.
 - The motifs named in the title and the first line against the listing images.
