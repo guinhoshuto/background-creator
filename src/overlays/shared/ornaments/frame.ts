@@ -9,6 +9,9 @@ const canvasRect = (canvas: {width: number; height: number}): Rect => ({x: 0, y:
 const areas = (keepOut: readonly (Rect | null | undefined)[]): Rect[] =>
   keepOut.filter((rect): rect is Rect => !!rect && rect.width > 0 && rect.height > 0).map((rect) => ({...rect}));
 
+/** A band worth drawing on: null when missing or empty. */
+const band = (rect: Rect | null | undefined): Rect | null => (rect && rect.width > 0 && rect.height > 0 ? {...rect} : null);
+
 /**
  * The frame of a chat panel or a block: motifs hang on the panel's outline and may use the whole
  * canvas (the bleed, and on a Twitch panel with no bleed the padding pockets inside the box); the
@@ -16,7 +19,7 @@ const areas = (keepOut: readonly (Rect | null | undefined)[]): Rect[] =>
  */
 export const panelOrnamentFrame = (input: {
   kind: 'chat' | 'block'; layout: PanelLayout; keepOut: readonly (Rect | null | undefined)[];
-  accent?: 'left' | 'top' | null; glow: number;
+  accent?: 'left' | 'top' | null; glow: number; bands?: {header?: Rect | null; footer?: Rect | null};
 }): OrnamentFrame => {
   const {layout} = input;
   const canvas = canvasRect(layout.canvas);
@@ -34,6 +37,7 @@ export const panelOrnamentFrame = (input: {
     cover: {path: roundRectPath(layout.shape), fillRule: 'nonzero'},
     accent: input.accent ?? null,
     glow: input.glow,
+    bands: {header: band(input.bands?.header), footer: band(input.bands?.footer)},
   };
 };
 
@@ -64,6 +68,7 @@ export const frameOrnamentFrame = (input: {layout: FrameLayout; track: RoundRect
     cover: {path: roundRectPath(layout.outer), fillRule: 'nonzero'},
     accent: null,
     glow: input.glow,
+    bands: {header: null, footer: null},
   };
 };
 
@@ -90,5 +95,6 @@ export const scaleOrnamentFrame = (frame: OrnamentFrame, k: number): OrnamentFra
     paintLimit: scaleRect(frame.paintLimit, k),
     cover: {path: roundRectPath(outline), fillRule: frame.cover.fillRule},
     glow: frame.glow * k,
+    bands: {header: frame.bands.header && scaleRect(frame.bands.header, k), footer: frame.bands.footer && scaleRect(frame.bands.footer, k)},
   };
 };

@@ -88,3 +88,20 @@ test('rodapé: alto demais para as mensagens é recusado com a saída', () => {
   assert.ok(issue, 'recusa em footerHeight');
   assert.match(issue.message, /reduce footerHeight/);
 });
+
+test('strokeSides top-bottom: o cabeçalho, o rodapé e as linhas vão de lado a lado, sem a fresta do traço que não é desenhado', () => {
+  const input = {strokeWidth: 3, glow: 2, headerHeight: 40, headerLineWidth: 1, footerHeight: 45, footerLineWidth: 1};
+  const open = getChatLayout(chat({...input, strokeSides: 'top-bottom'}));
+  for (const rect of [open.headerBand, open.divider, open.footer, open.footerDivider]) {
+    assert.ok(rect);
+    assert.equal(rect.x, open.shape.x);
+    assert.equal(rect.width, open.shape.width);
+  }
+  assert.deepEqual({x: open.bandArea.x, width: open.bandArea.width}, {x: open.shape.x, width: open.shape.width});
+  assert.equal(open.bandArea.y, open.inner.y);
+  // Closed sides keep the bands inside the stroke, as before.
+  const closed = getChatLayout(chat(input));
+  assert.equal(closed.headerBand!.x, closed.inner.x);
+  assert.equal(closed.footer!.width, closed.inner.width);
+  assert.deepEqual(closed.bandArea, closed.inner);
+});

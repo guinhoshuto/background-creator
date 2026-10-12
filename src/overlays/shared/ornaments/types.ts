@@ -60,6 +60,11 @@ export type OrnamentFrame = {
   accent: 'left' | 'top' | null;
   /** The kind's glow reach; 0 (a Twitch panel) means crisp motifs, no soft lights. */
   glow: number;
+  /**
+   * A chat's header band and footer band, inside the stroke (sets may draw on them: neither holds
+   * text, the title's area is in keepOut); null where the kind or the props have none.
+   */
+  bands: {header: Rect | null; footer: Rect | null};
 };
 
 export type OrnamentCornerId = 'TR' | 'BR' | 'BL' | 'TL';

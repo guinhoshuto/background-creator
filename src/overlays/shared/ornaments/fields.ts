@@ -17,13 +17,13 @@ export const ORNAMENT_SCALE_RANGE = {min: 1, max: 4, default: 1} as const;
  */
 export const ornamentFields = () => ({
   ornaments: z.enum(ORNAMENT_CHOICES)
-    .describe('Themed ornaments around the panel or the border: none; midnight (bats, pumpkins, stars and embers); haunted-mansion (one bat by the top right corner); haunted-interior (brass candelabras with candles, sconces and velvet valances); cobweb (dewy webs, thread garlands and a spider); horizon (a palm, a sliced sun, wireframe solids and twinkles); terminal (a stair of small squares, corner brackets, a reticle and a hairline rule with ruler marks). Each motif fits the free space of its slot (bleed, padding pockets, band) and never covers the text or the window')
+    .describe('Themed ornaments around the panel or the border: none; midnight (bats, pumpkins, stars and embers); haunted-mansion (one bat by the top right corner); haunted-interior (brass candelabras with candles, sconces and velvet valances); cobweb (dewy webs, thread garlands and a spider); horizon (a palm, a sliced sun, wireframe solids and twinkles); terminal (a row of small squares above the top line, lock-on brackets and an accent diamond on frames, a square on the chat header and a signal meter on its footer, a double bar beside the text of a block). Each motif fits the free space of its slot (bleed, padding pockets, band) and never covers the text or the window')
     .default('none'),
   ornamentColors: z.array(zColor()).min(1).max(3)
     .describe('Ornament colors: fog or silk (cool), moonlight (light) and warm light (candles, pumpkins, lanterns); the third is optional and falls back to the first')
     .default([...ORNAMENT_DEFAULT_COLORS]),
   ornamentSize: z.number().finite().min(ORNAMENT_SIZE_RANGE.min).max(ORNAMENT_SIZE_RANGE.max)
-    .describe('Size of the main ornament, in fixed px (it does not follow the box): moon diameter, bat wingspan, candelabra height to the flame tip, web radius, palm height or the span of the terminal squares; the others follow up to a cap or have a fixed size. Capped at the free space of its slot (bleed, padding, band)')
+    .describe('Size of the main ornament, in fixed px (it does not follow the box): moon diameter, bat wingspan, candelabra height to the flame tip, web radius, palm height or the pitch of the terminal squares (each half as wide); the others follow up to a cap or have a fixed size. Capped at the free space of its slot (bleed, padding, band)')
     .default(ORNAMENT_SIZE_RANGE.default),
   ornamentScale: z.number().finite().min(ORNAMENT_SCALE_RANGE.min).max(ORNAMENT_SCALE_RANGE.max)
     .describe('Scale of all ornaments together (sizes, caps, strokes and spacing), from 1 to 4, for large borders; free space is measured at the same scale too, so larger ornaments need proportionally more bleed (or padding, or band)')

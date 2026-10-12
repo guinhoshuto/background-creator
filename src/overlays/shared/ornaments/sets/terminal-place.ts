@@ -1,259 +1,290 @@
-import {clampRadius} from '../../geometry';
-import {ceilHalf, cornerSlots, enclosingCircle, fitMotif, fitsAt, floorHalf, slotsOffAccent, type OrnamentCorner} from '../place';
-import type {OrnamentCornerId, OrnamentFrame, OrnamentLayerName, OrnamentPlacement} from '../types';
+import {offsetRoundRect} from '../../geometry';
+import {ceilHalf, fitsAt} from '../place';
+import type {OrnamentCornerId, OrnamentFrame, OrnamentPlacement} from '../types';
 
 /**
- * Where the 'terminal' set (DotGridLoop, "sand terminal") puts its motifs. Pure function of the
- * frame and ornamentSize: no seed, no frame index. A survey instrument's marks on sand-coloured
- * paper, with a lot of empty space:
+ * Where the 'terminal' set (TerminalGridLoop, "sand terminal") puts its motifs: the old HTML pack's
+ * shapes (v3, survey §7.1 in `.cache/sand-terminal-kit/old-pack-survey.md`), at the pack's px with
+ * ornamentSize 14. Pure: the frame and ornamentSize, no seed, no frame index.
  *
- *   - Blocks (hero): an L of squares sitting on the TL corner, over the outline: the largest centred
- *     on the corner point, two smaller ones along each edge, getting smaller away from it.
- *     `ornamentSize` is the L's arm in px, from the corner point to the far side of the last square.
- *   - Brackets: an L hugging the TR and BL corners from outside (the `corners: brackets` look,
- *     which kit presets may not use: the harness asks `corners: "none"`).
- *   - Reticle: a ring with a cross and four arcs, just off the BR corner on its diagonal.
- *   - Rule: a hairline with ruler marks along the top edge, outside, between the blocks and the
- *     TR bracket, cut into short pieces so each fits the bleed (the pieces abut on whole px).
+ *   - Squares (hero): a row of squares half the pitch wide, one every `ornamentSize` px (7 px
+ *     squares every 14 px in the pack), ROW.gap px above the top line, anchored at its left end with
+ *     a square first; on a circle, centred over the top. Where the bleed has no room (a Twitch
+ *     panel) the row sits in the top padding pocket over the text column, and on a screen frame in
+ *     the top band. Every square is its own placement.
+ *   - Brackets (borders with a rectangular window): an L on each corner, arms of 30 px and a 3 px
+ *     stroke, its outer corner 1 px outside the frame line, cut into abutting pieces so each fits
+ *     its room beside the window.
+ *   - Diamond (borders): the accent lock diamond, a 12 px square at 45°, centred on the frame line's
+ *     top midpoint; the row leaves a gap over it.
+ *   - Head square (chat header band): 9 px, knocked out of the dark band, its left side 20 px from
+ *     the panel's (moved left until it clears the title).
+ *   - Meter (chat footer band): five bars 5 px wide, 3 px apart, 5 to 18 px tall, bottom-aligned,
+ *     ending 20 px from the panel's right side.
+ *   - Double bar (rectangular blocks): a 1 px line and a 4 px bar 4 px apart, 20 px left of the text,
+ *     from its top down as tall as the text area (at most 88 px), cut into abutting pieces.
  *
- * Each motif keeps its anchor and takes the largest size up to its nominal that fits there (the
- * room of its slot), in 0.5 px steps of extent; a secondary below its minimum is left out. The hero
- * that does not fit at its anchor slides along the corner's diagonal (fitMotif) before giving up.
- * On a circle there are no corners to bracket: the blocks and the reticle sit on the 45° points
- * (the blocks' arms then run along the tangent).
- *
- * MOCK STAGE (2026-10-11): the anchors are simple on purpose; the owner judges the motifs at the
- * kit's size before the placement is made rigorous for every size.
+ * The lines measured here are the kit's 2 px strokes: the frame line (a border's stroke on its
+ * band) and a panel's top line both sit on `frame.track`, and LINE.half px out of it is their outer
+ * edge. Squares, brackets and diamond follow ornamentSize (the pitch) in the pack's ratios; the
+ * band and pocket furniture (head square, meter, double bar) keeps its own px. Every motif is drawn
+ * over a RIM px light rim (ornamentColors[1]) that keeps the ink readable over dark footage (the
+ * head square, knocked out of a dark band, has none); the rim counts in each extent. A placement
+ * carries the rect it draws (x0, y0, x1, y1) and, for a piece of a run, how far its rim reaches
+ * past each end along the run (rimBefore, rimAfter): only a run's ends get one, so abutting pieces
+ * never draw a rim over each other.
  */
 
-/** The rim every motif keeps for dark footage, in px. */
+/** The light rim under every motif, in px. */
 export const RIM = 1;
-/** What a motif paints past its geometry: the rim and a pixel of antialiasing. */
-export const TERMINAL_INK = RIM + 0.5;
+/** The kit's lines are 2 px: their outer edge is this far out of the track. */
+export const LINE = {half: 1} as const;
+
+/** Squares, per ornamentSize (the pitch): side, gap from the line's outer edge to the row; pitches tried, even so the squares sit on whole px. */
+export const ROW = {side: 0.5, gap: 10 / 14, minPitch: 6, opacity: 0.75} as const;
+/** On a circle the row spans at most the radius. */
+const ROW_CIRCLE_SPAN = 1;
+/** Brackets, per ornamentSize: arm and stroke (30 and 3 px at 14); the outer corner `out` px past the line's outer edge. */
+export const BRACKET = {arm: 30 / 14, width: 3 / 14, minWidth: 2, out: 1} as const;
+/** Diamond, per ornamentSize: the side of the square turned 45° (12 px at 14), and the row's gap around it. */
+export const DIAMOND = {side: 12 / 14, clear: 3} as const;
+/** Head square: side, left side from the panel's left edge. */
+export const HEAD = {side: 9, left: 20} as const;
+/** Meter: bar width, gap, heights left to right, right end from the panel's right edge. */
+export const METER = {bar: 5, gap: 3, heights: [5, 8, 11, 14, 18], right: 20} as const;
+/** Double bar: line, gap, bar, gap to the text, tallest run. */
+export const DBAR = {line: 1, gap: 4, bar: 4, text: 20, max: 88} as const;
+
+export type TerminalMotif = 'square' | 'bracket-h' | 'bracket-v' | 'diamond' | 'head' | 'meter' | 'dbar';
 
 /**
- * The hero's forms. MOCK LINEUP (2026-10-11, round 2): the owner asked for another hero, so four
- * forms are rendered side by side, picked by ornamentSize 30 to 33 at an arm of 30 px
- * (heroForm); every form but the chosen one goes away after the pick.
- *   - l: the round-1 L, a square on the corner point and two smaller along each edge;
- *   - chip: a full stair of squares over the corner (rows of 3, 2, 1), two small ones at the tips;
- *   - bar: five squares in a row above the top edge, from the corner inwards, filling in turn;
- *   - stack: a filled square on the corner point over a hollow one shifted out, and a small one beyond.
+ * A terminal placement: the rect it draws (the diamond's is the square before the turn), its rim
+ * across (0 for the head square, knocked out of a dark band: a rim would only grow it) and, for a
+ * piece of a run (bracket-h, bracket-v, dbar), the rim past each end along the run.
  */
-export const HERO_FORMS = ['l', 'chip', 'bar', 'stack'] as const;
-export type HeroForm = (typeof HERO_FORMS)[number];
-export const heroForm = (ornamentSize: number): {form: HeroForm; arm: number} =>
-  (Number.isInteger(ornamentSize) && ornamentSize >= 30 && ornamentSize <= 33
-    ? {form: HERO_FORMS[ornamentSize - 30]!, arm: 30}
-    : {form: 'l', arm: ornamentSize});
+export type TerminalPlacement = OrnamentPlacement & {
+  motif: TerminalMotif; x0: number; y0: number; x1: number; y1: number; rim: number; rimBefore: number; rimAfter: number;
+};
 
-/** One square of the hero, from the corner point (dx, dy), its side, its step in the scan and whether it is hollow. */
-export type HeroCell = {dx: number; dy: number; side: number; step: number; hollow: boolean};
-
-const L_SIZES = [0.46, 0.31, 0.2] as const;
-const L_GAP = 0.13;
-/** Each L square's centre along its arm, as a share of the arm (the last one ends at 1). */
-const L_STEPS = L_SIZES.map((size, index) =>
-  L_SIZES.slice(0, index).reduce((sum, before, k) => sum + before / (k === 0 ? 2 : 1) + L_GAP, 0) + (index === 0 ? 0 : size / 2));
+type Box = {x0: number; y0: number; x1: number; y1: number};
 
 /**
- * The hero's squares for a form, an arm and the corner's outward signs (sx, sy), in drawing order.
- * `arm` is the reach along an edge from the corner point (the bar: three quarters of its length).
+ * The extent of a rect drawn with its rim (and half a pixel of antialiasing), round its centre:
+ * `rim` across the run, `rimBefore` and `rimAfter` past its ends along it.
  */
-export const heroCells = (form: HeroForm, arm: number, sx: number, sy: number): HeroCell[] => {
-  const inward = (along: number, across: number) => ({dx: -sx * along, dy: -sy * across});
-  if (form === 'l') {
-    return L_SIZES.flatMap((size, step) => {
-      const along = L_STEPS[step]! * arm;
-      const cell = {side: size * arm, step, hollow: false};
-      return step === 0 ? [{...inward(0, 0), ...cell}] : [{...inward(along, 0), ...cell}, {...inward(0, along), ...cell}];
-    });
-  }
-  if (form === 'chip') {
-    const pitch = arm / 3.225;
-    const cells: HeroCell[] = [];
-    for (let ring = 0; ring <= 2; ring++) {
-      for (let i = ring; i >= 0; i--) cells.push({...inward(i * pitch, (ring - i) * pitch), side: 0.82 * pitch, step: ring, hollow: false});
+export const rectExtent = (box: Box, along: 'h' | 'v' = 'h', rim = RIM, rimBefore = rim, rimAfter = rim) => {
+  const across = (along === 'h' ? box.y1 - box.y0 : box.x1 - box.x0) / 2 + rim;
+  const length = (along === 'h' ? box.x1 - box.x0 : box.y1 - box.y0) / 2 + Math.max(rimBefore, rimAfter, 0);
+  return ceilHalf(Math.hypot(length, across) + 0.5);
+};
+
+/** The diamond's extent: its half diagonal, the rim (as a diamond RIM px larger) and antialiasing. */
+export const diamondExtent = (side: number) => ceilHalf(side / Math.SQRT2 + RIM + 0.5);
+
+const placement = (
+  motif: TerminalMotif, slot: TerminalPlacement['slot'], box: Box, extent: number, size: number, rim = RIM, rimBefore = rim, rimAfter = rim,
+): TerminalPlacement => ({
+  motif, slot, layer: 'front', x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2, extent, size, ...box, rim, rimBefore, rimAfter,
+});
+
+const fits = (frame: OrnamentFrame, spot: TerminalPlacement) => fitsAt(frame, spot.x, spot.y, spot.extent, 'front');
+
+/** The kit line's outer edge: a panel's outline (2 px stroke), a border's frame line. */
+const lineEdge = (frame: OrnamentFrame) => offsetRoundRect(frame.track, LINE.half);
+
+/** Even pitches from ornamentSize down to ROW.minPitch: whole-px squares. */
+const pitches = (ornamentSize: number) => {
+  const list: number[] = [];
+  for (let pitch = 2 * Math.floor(ornamentSize / 2); pitch >= ROW.minPitch; pitch -= 2) list.push(pitch);
+  return list;
+};
+
+const square = (cx: number, cy: number, side: number): Box => ({x0: cx - side / 2, y0: cy - side / 2, x1: cx + side / 2, y1: cy + side / 2});
+
+/** The squares of a row of `count` from `x0` (left side of the first) with its centres on `cy`. */
+const rowFrom = (x0: number, cy: number, count: number, pitch: number) =>
+  Array.from({length: count}, (_, index) => square(x0 + index * pitch + (pitch * ROW.side) / 2, cy, pitch * ROW.side));
+
+/** As many squares as fit between `left` and `right`, starting at `left`. */
+const rowBetween = (left: number, right: number, cy: number, pitch: number) =>
+  rowFrom(left, cy, Math.max(0, Math.floor((right - left + pitch * ROW.side) / pitch + 1e-9)), pitch);
+
+/**
+ * The candidate rows for a pitch, in order of preference, each a list of squares: above the line
+ * (centred on a circle), then the top padding pocket over the text (panels), then the top band
+ * (screen frames).
+ */
+const rowCandidates = (frame: OrnamentFrame, pitch: number): Box[][] => {
+  const side = pitch * ROW.side;
+  const edge = lineEdge(frame);
+  const cy = Math.round(edge.y - pitch * ROW.gap) - side / 2;
+  const candidates: Box[][] = [];
+  if (frame.fit !== 'screen') {
+    if (frame.circle) {
+      const span = Math.min(edge.width, ROW_CIRCLE_SPAN * edge.width / 2);
+      const count = Math.max(1, Math.floor((span + side) / pitch));
+      const left = Math.round(edge.x + edge.width / 2 - ((count - 1) * pitch + side) / 2);
+      candidates.push(rowFrom(left, cy, count, pitch));
+    } else {
+      candidates.push(rowBetween(edge.x, edge.x + edge.width, cy, pitch));
     }
-    cells.push({...inward(3 * pitch, 0), side: 0.45 * pitch, step: 3, hollow: false}, {...inward(0, 3 * pitch), side: 0.45 * pitch, step: 3, hollow: false});
-    return cells;
   }
-  if (form === 'bar') {
-    const pitch = (4 / 3) * arm / 4.8;
-    const side = 0.8 * pitch;
-    // Above the edge (outside), its first square flush with the side edge.
-    return [0, 1, 2, 3, 4].map((step) => ({dx: -sx * (side / 2 + step * pitch), dy: sy * (0.15 * arm + side / 2), side, step, hollow: step >= 3}));
+  const text = frame.keepOut[0];
+  if (frame.fit === 'panel' && !frame.circle && text) {
+    const inner = 2 * frame.track.y - frame.outline.y;
+    const mid = Math.round((inner + text.y) / 2 - side / 2) + side / 2;
+    candidates.push(rowBetween(Math.ceil(text.x), text.x + text.width, mid, pitch));
   }
-  const side = 0.5 * arm;
-  const shift = 0.22 * arm;
-  return [
-    {dx: sx * shift, dy: sy * shift, side, step: 1, hollow: true},
-    {dx: 0, dy: 0, side, step: 0, hollow: false},
-    {dx: sx * 0.61 * arm, dy: sy * 0.61 * arm, side: 0.12 * arm, step: 2, hollow: false},
-  ];
+  if (frame.fit === 'screen' && frame.hole) {
+    const top = frame.paintLimit.y;
+    const mid = Math.round((top + frame.hole.y) / 2 - side / 2) + side / 2;
+    candidates.push(rowBetween(Math.ceil(frame.hole.x), frame.hole.x + frame.hole.width, mid, pitch));
+  }
+  return candidates;
 };
 
-const heroCorners = (form: HeroForm, arm: number, sx: number, sy: number) =>
-  heroCells(form, arm, sx, sy).flatMap((cell) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) =>
-    ({x: cell.dx + (u! * cell.side) / 2, y: cell.dy + (v! * cell.side) / 2})));
+/** The row: the largest pitch at which a whole candidate row fits, its squares as placements. */
+const placeRow = (frame: OrnamentFrame, ornamentSize: number): TerminalPlacement[] => {
+  for (const pitch of pitches(ornamentSize)) {
+    for (const row of rowCandidates(frame, pitch)) {
+      if (row.length === 0) continue;
+      const squares = row.map((box) => placement('square', 'top', box, rectExtent(box), pitch));
+      if (squares.every((spot) => fits(frame, spot))) return squares;
+    }
+  }
+  return [];
+};
 
-/** The smallest circle holding a hero's squares (and their rim), relative to the corner point. */
-export const heroCircle = (form: HeroForm, arm: number, sx: number, sy: number) => {
-  const circle = enclosingCircle(heroCorners(form, arm, sx, sy));
-  return {dx: circle.x, dy: circle.y, extent: ceilHalf(circle.r + TERMINAL_INK)};
+/** The lock diamond centred on the frame line's top midpoint (borders around a window). */
+const placeDiamond = (frame: OrnamentFrame, ornamentSize: number): TerminalPlacement | null => {
+  if (frame.kind !== 'border' || frame.fit !== 'window') return null;
+  const side = Math.round(DIAMOND.side * ornamentSize);
+  const cx = frame.track.x + frame.track.width / 2;
+  const spot = placement('diamond', 'top', square(cx, frame.track.y, side), diamondExtent(side), side);
+  return fits(frame, spot) ? spot : null;
 };
 
 /**
- * The circle round the corner point itself: wider than the smallest one, but where a text area sits
- * inside the corner (a chat's title) it keeps further from it, so a corner may hold a larger hero.
+ * A run from `from` to `to` along one axis, its other side fixed (`across`), cut into the fewest
+ * abutting whole-px pieces that all fit; null when even 1 px pieces do not. `rimBefore` and
+ * `rimAfter` are the run's own ends.
  */
-export const heroCornerCircle = (form: HeroForm, arm: number, sx: number, sy: number) =>
-  ({dx: 0, dy: 0, extent: ceilHalf(Math.max(...heroCorners(form, arm, sx, sy).map((point) => Math.hypot(point.x, point.y))) + TERMINAL_INK)});
-
-/** The smallest hero: a 2 px last square. */
-export const BLOCKS_MIN_ARM = 10;
-
-/** Brackets: arm length per px of the blocks' arm, its caps, the stroke and the gap outside the corner. */
-export const BRACKET = {ratio: 0.7, min: 8, max: 20, width: 2, gap: 5} as const;
-/** A bracket's extent for an arm (the L's outer corner is the farthest point from the arms' midpoint). */
-export const bracketExtent = (arm: number) => ceilHalf((arm + BRACKET.width) / Math.SQRT2 + TERMINAL_INK);
-
-/** Reticle: ring radius per px of the blocks' arm and its caps; the cross reaches 1.5 radii; the gap from the corner point to the ring. */
-export const RETICLE = {ratio: 0.45, min: 5, max: 13, width: 1.5, cross: 1.45, gap: 2} as const;
-export const reticleExtent = (radius: number) => ceilHalf(RETICLE.cross * radius + RETICLE.width / 2 + TERMINAL_INK);
-
-/**
- * Rule: the hairline this far outside the outline, its marks every `pitch` px (a long one every
- * `majorEvery`), pointing at the panel; at most `length` px from the blocks (empty space after it), in
- * pieces of at most `piece` px, kept `clear` px from the corner motifs.
- */
-export const RULE = {offset: 9, width: 1, minor: 4, major: 7, pitch: 6, majorEvery: 5, length: 150, piece: 24, clear: 6} as const;
-/** One period of the marks: a long one and the short ones up to the next. */
-export const RULE_PERIOD = RULE.pitch * RULE.majorEvery;
-/** A piece's extent: half its length and half the marks' span, round the piece's centre. */
-export const ruleExtent = (length: number) => ceilHalf(Math.hypot(length / 2, RULE.major / 2) + TERMINAL_INK);
-
-const SLOT_SIGNS: Record<OrnamentCornerId, readonly [number, number]> = {TL: [-1, -1], TR: [1, -1], BR: [1, 1], BL: [-1, 1]};
-export const slotSigns = (slot: OrnamentCornerId) => SLOT_SIGNS[slot];
-
-const cornerOf = (corners: readonly OrnamentCorner[], slot: OrnamentCornerId) => corners.find((corner) => corner.slot === slot);
-
-/**
- * The largest size from `nominal` down to `min` (0.5 px steps) whose circle, at the anchor the
- * geometry gives for that size, fits on `layer`; null when none does.
- */
-const fitAnchored = (
-  frame: OrnamentFrame, layer: OrnamentLayerName, nominal: number, min: number,
-  geometry: (size: number) => readonly {x: number; y: number; extent: number}[],
-) => {
-  for (let size = floorHalf(nominal); size >= min - 1e-9; size -= 0.5) {
-    const spot = geometry(size).find((candidate) => fitsAt(frame, candidate.x, candidate.y, candidate.extent, layer));
-    if (spot) return {...spot, size};
+const placeRun = (
+  frame: OrnamentFrame, motif: 'bracket-h' | 'bracket-v' | 'dbar', slot: TerminalPlacement['slot'], along: 'h' | 'v',
+  from: number, to: number, across: readonly [number, number], ends: readonly [number, number],
+): TerminalPlacement[] | null => {
+  const length = Math.abs(to - from);
+  const sign = Math.sign(to - from) || 1;
+  for (let count = 1; count <= Math.ceil(length); count++) {
+    const pieces: TerminalPlacement[] = [];
+    for (let index = 0; index < count; index++) {
+      const a = from + sign * Math.round((length * index) / count);
+      const b = from + sign * Math.round((length * (index + 1)) / count);
+      // Rims along the run: the run's own ends only, read in the drawing's direction (before = smaller coordinate).
+      const startEnd = index === 0 ? ends[0] : 0;
+      const finishEnd = index === count - 1 ? ends[1] : 0;
+      const [lo, hi] = sign > 0 ? [a, b] : [b, a];
+      const [rimBefore, rimAfter] = sign > 0 ? [startEnd, finishEnd] : [finishEnd, startEnd];
+      const box = along === 'h' ? {x0: lo, x1: hi, y0: across[0], y1: across[1]} : {x0: across[0], x1: across[1], y0: lo, y1: hi};
+      pieces.push(placement(motif, slot, box, rectExtent(box, along, RIM, rimBefore, rimAfter), Math.abs(b - a), RIM, rimBefore, rimAfter));
+    }
+    if (pieces.every((spot) => fits(frame, spot))) return pieces;
   }
   return null;
 };
 
-/** The hero on the TL corner point (the first corner of TL, TR, BR, BL that holds it), else slid along its diagonal. */
-const placeBlocks = (frame: OrnamentFrame, ornamentSize: number): OrnamentPlacement | null => {
-  const {form, arm} = heroForm(ornamentSize);
-  const corners = slotsOffAccent(frame);
+const CORNER_SIGNS: Record<OrnamentCornerId, readonly [number, number]> = {TL: [-1, -1], TR: [1, -1], BR: [1, 1], BL: [-1, 1]};
+
+/**
+ * The lock-on brackets: on each corner an L whose outer corner is BRACKET.out px past the frame
+ * line's outer edge, its arms back along the line. The horizontal arm holds the corner; the
+ * vertical one starts under it, its rim RIM px later (the horizontal arm's rim covers that pixel).
+ * All four corners or none: a frame with a bracket missing would read as broken.
+ */
+const placeBrackets = (frame: OrnamentFrame, ornamentSize: number): TerminalPlacement[] => {
+  if (frame.kind !== 'border' || frame.fit !== 'window' || frame.circle) return [];
+  const arm = Math.round(BRACKET.arm * ornamentSize);
+  const width = Math.max(BRACKET.minWidth, Math.round(BRACKET.width * ornamentSize));
+  const edge = lineEdge(frame);
+  const pieces: TerminalPlacement[] = [];
   for (const slot of ['TL', 'TR', 'BR', 'BL'] as const) {
-    const corner = cornerOf(corners, slot);
-    if (!corner) continue;
-    const [sx, sy] = slotSigns(slot);
-    const motif = `blocks-${form}`;
-    const anchored = fitAnchored(frame, 'front', arm, BLOCKS_MIN_ARM, (size) => [heroCircle, heroCornerCircle].map((circleOf) => {
-      const circle = circleOf(form, size, sx, sy);
-      return {x: corner.x + circle.dx, y: corner.y + circle.dy, extent: circle.extent};
-    }));
-    if (anchored) return {motif, slot, layer: 'front', ...anchored};
-    // Slid along the diagonal: the largest arm whose circle fits the slot's room.
-    const reach = (size: number) => heroCircle(form, size, sx, sy).extent;
-    const fit = fitMotif(frame, corner, {motif, layer: 'front', nominal: reach(arm), min: reach(BLOCKS_MIN_ARM), hero: true});
-    if (!fit) continue;
-    let size = floorHalf(arm);
-    while (size > BLOCKS_MIN_ARM && reach(size) > fit.extent + 1e-9) size -= 0.5;
-    return {...fit, size};
-  }
-  return null;
-};
-
-/** A bracket's L: its vertex BRACKET.gap px outside the corner on both axes, the arms along the edges. */
-const placeBracket = (frame: OrnamentFrame, corner: OrnamentCorner, span: number): OrnamentPlacement | null => {
-  const [sx, sy] = slotSigns(corner.slot as OrnamentCornerId);
-  const radius = clampRadius(frame.outline.radius, frame.outline.width, frame.outline.height);
-  // The outline's corner (the box corner of a rounded outline), not the arc's middle.
-  const vx = corner.x + sx * (radius * (1 - Math.SQRT1_2) + BRACKET.gap);
-  const vy = corner.y + sy * (radius * (1 - Math.SQRT1_2) + BRACKET.gap);
-  const arm = Math.min(BRACKET.max, BRACKET.ratio * span);
-  const fit = fitAnchored(frame, 'front', arm, BRACKET.min, (size) => [{
-    x: vx - sx * size / 2, y: vy - sy * size / 2, extent: bracketExtent(size),
-  }]);
-  return fit ? {motif: 'bracket', slot: corner.slot, layer: 'front', ...fit} : null;
-};
-
-/** The reticle on the corner's outward diagonal, its ring RETICLE.gap px from the corner point. */
-const placeReticle = (frame: OrnamentFrame, corner: OrnamentCorner, span: number): OrnamentPlacement | null => {
-  const radius = Math.min(RETICLE.max, RETICLE.ratio * span);
-  if (radius < RETICLE.min - 1e-9) return null;
-  const fit = fitAnchored(frame, 'front', radius, RETICLE.min, (size) => {
-    const t = size + RETICLE.gap;
-    return [{x: corner.x + t * corner.dx, y: corner.y + t * corner.dy, extent: reticleExtent(size)}];
-  });
-  return fit ? {motif: 'reticle', slot: corner.slot, layer: 'front', ...fit} : null;
-};
-
-/**
- * The rule along the top edge, outside: from past the motifs near the top left, RULE.length px or up
- * to the motifs near the top right, in pieces of at most RULE.piece px that abut on whole px. All or nothing: a rule
- * with a piece missing would read as broken.
- */
-const placeRule = (frame: OrnamentFrame, taken: readonly OrnamentPlacement[]): OrnamentPlacement[] => {
-  const {x, y, width} = frame.outline;
-  // On a pixel row's middle, so the 1 px hairline is crisp rather than two grey rows.
-  const line = Math.round(y - RULE.offset) + RULE.width / 2;
-  const centreY = line + RULE.major / 2;
-  const left = taken.filter((placement) => placement.x < x + width / 2 && Math.abs(placement.y - y) < placement.extent + RULE.offset + RULE.clear);
-  const right = taken.filter((placement) => placement.x >= x + width / 2 && Math.abs(placement.y - y) < placement.extent + RULE.offset + RULE.clear);
-  const from = Math.ceil(Math.max(x, ...left.map((placement) => placement.x + placement.extent + RULE.clear)));
-  const to = Math.floor(Math.min(x + width, from + RULE.length, ...right.map((placement) => placement.x - placement.extent - RULE.clear)));
-  if (to - from < 2 * RULE_PERIOD) return [];
-  const count = Math.ceil((to - from) / RULE.piece);
-  const pieces: OrnamentPlacement[] = [];
-  for (let index = 0; index < count; index++) {
-    const a = Math.round(from + ((to - from) * index) / count);
-    const b = Math.round(from + ((to - from) * (index + 1)) / count);
-    const extent = ruleExtent(b - a);
-    const cx = (a + b) / 2;
-    if (!fitsAt(frame, cx, centreY, extent, 'front')) return [];
-    // `size` carries the piece's length; the run's start and end ride on the first and last piece's slot.
-    pieces.push({motif: index === 0 ? 'rule-start' : 'rule', slot: 'top', layer: 'front', x: cx, y: centreY, extent, size: b - a});
+    const [sx, sy] = CORNER_SIGNS[slot];
+    const vx = (sx < 0 ? edge.x : edge.x + edge.width) + sx * BRACKET.out;
+    const vy = (sy < 0 ? edge.y : edge.y + edge.height) + sy * BRACKET.out;
+    const acrossH = [Math.min(vy, vy - sy * width), Math.max(vy, vy - sy * width)] as const;
+    const acrossV = [Math.min(vx, vx - sx * width), Math.max(vx, vx - sx * width)] as const;
+    const h = placeRun(frame, 'bracket-h', slot, 'h', vx, vx - sx * arm, acrossH, [RIM, RIM]);
+    const v = placeRun(frame, 'bracket-v', slot, 'v', vy - sy * width, vy - sy * arm, acrossV, [-RIM, RIM]);
+    if (!h || !v) return [];
+    pieces.push(...h, ...v);
   }
   return pieces;
 };
 
-/** Every motif of the set on this frame, hero first; [] when the blocks fit nowhere. */
-export const placeTerminal = (frame: OrnamentFrame, span: number): OrnamentPlacement[] => {
-  const hero = placeBlocks(frame, span);
-  if (!hero) return [];
-  // The secondaries follow the hero's arm (the lineup's ornamentSize 31 to 33 still means 30).
-  const {arm} = heroForm(span);
-  const placed: OrnamentPlacement[] = [hero];
-  const corners = slotsOffAccent(frame);
-  const across = {TL: 'BR', TR: 'BL', BR: 'TL', BL: 'TR'} as const;
-  const reticleCorner = cornerOf(corners, across[hero.slot as OrnamentCornerId]);
-  if (!frame.circle) {
-    for (const slot of ['TR', 'BL'] as const) {
-      const corner = cornerOf(cornerSlots(frame), slot);
-      if (!corner || slot === hero.slot) continue;
-      const bracket = placeBracket(frame, corner, arm);
-      if (bracket) placed.push(bracket);
-    }
+/** The head square on a chat's header band, its left side HEAD.left px in, moved left (whole px) until it clears the title. */
+const placeHead = (frame: OrnamentFrame): TerminalPlacement | null => {
+  const band = frame.bands.header;
+  if (!band || band.height < HEAD.side + 2 * RIM) return null;
+  const top = Math.round(band.y + (band.height - HEAD.side) / 2);
+  for (let left = frame.outline.x + HEAD.left; left >= band.x + RIM; left--) {
+    const box = {x0: left, y0: top, x1: left + HEAD.side, y1: top + HEAD.side};
+    const spot = placement('head', 'top', box, rectExtent(box, 'h', 0), HEAD.side, 0);
+    if (fits(frame, spot)) return spot;
   }
-  if (reticleCorner) {
-    const reticle = placeReticle(frame, reticleCorner, arm);
-    if (reticle) placed.push(reticle);
-  }
-  if (!frame.circle && frame.fit !== 'screen') placed.push(...placeRule(frame, placed));
-  return placed;
+  return null;
 };
+
+/** The meter's span: five bars and four gaps. */
+export const METER_WIDTH = METER.heights.length * METER.bar + (METER.heights.length - 1) * METER.gap;
+export const METER_HEIGHT = Math.max(...METER.heights);
+
+/** The signal meter on a chat's footer band, centred in its height, ending METER.right px from the right side. */
+const placeMeter = (frame: OrnamentFrame): TerminalPlacement | null => {
+  const band = frame.bands.footer;
+  if (!band || band.height < METER_HEIGHT + 2 * RIM) return null;
+  const x1 = frame.outline.x + frame.outline.width - METER.right;
+  const y1 = Math.round(band.y + (band.height + METER_HEIGHT) / 2);
+  const box = {x0: x1 - METER_WIDTH, y0: y1 - METER_HEIGHT, x1, y1};
+  const spot = placement('meter', 'bottom', box, rectExtent(box), METER_WIDTH);
+  return box.x0 >= band.x + RIM && fits(frame, spot) ? spot : null;
+};
+
+/** The double bar beside a rectangular block's text, inside the box; [] when the left pocket cannot hold it. */
+const placeDoubleBar = (frame: OrnamentFrame): TerminalPlacement[] => {
+  const text = frame.keepOut[0];
+  if (frame.kind !== 'block' || frame.circle || !text) return [];
+  const x1 = Math.floor(text.x) - DBAR.text;
+  const x0 = x1 - (DBAR.line + DBAR.gap + DBAR.bar);
+  if (x0 < frame.outline.x + RIM) return [];
+  const top = Math.ceil(text.y);
+  const bottom = top + Math.min(DBAR.max, Math.floor(text.y + text.height) - top);
+  if (bottom - top < 2 * HEAD.side) return [];
+  return placeRun(frame, 'dbar', 'left', 'v', top, bottom, [x0, x1], [RIM, RIM]) ?? [];
+};
+
+/** The squares' gap round the diamond: those within its half diagonal and DIAMOND.clear px of its centre on x go. */
+const clearOf = (diamond: TerminalPlacement | null) => (box: TerminalPlacement) => {
+  if (!diamond) return true;
+  const reach = (diamond.x1 - diamond.x0) / Math.SQRT2 + DIAMOND.clear;
+  return box.x1 <= diamond.x - reach || box.x0 >= diamond.x + reach;
+};
+
+/** Every motif of the set on this frame, the row's squares first; [] when the row fits nowhere. */
+export const placeTerminal = (frame: OrnamentFrame, ornamentSize: number): TerminalPlacement[] => {
+  const diamond = placeDiamond(frame, ornamentSize);
+  const row = placeRow(frame, ornamentSize).filter(clearOf(diamond));
+  if (row.length === 0) return [];
+  const head = frame.kind === 'chat' ? placeHead(frame) : null;
+  const meter = frame.kind === 'chat' ? placeMeter(frame) : null;
+  return [
+    ...row,
+    ...placeBrackets(frame, ornamentSize),
+    ...(diamond ? [diamond] : []),
+    ...(head ? [head] : []),
+    ...(meter ? [meter] : []),
+    ...placeDoubleBar(frame),
+  ];
+};
+
+/** The smallest hero: a square of the smallest pitch with its rim. */
+export const TERMINAL_MIN_EXTENT = rectExtent(square(0, 0, ROW.minPitch * ROW.side));

@@ -7,7 +7,7 @@ import {
   buildRimScene, buildStrokeScene, fillFields, fitClearContent, glowFields, glowOverArea, haloFields, layoutPanel, offsetRoundRect,
   overlayBaseFields, paddingField, radiusField, rimLightField, rectPath, refineCanvas, refineContent, refineFill, refineOutset, refineRim, refineStroke, reportSpeed, roundRectPath,
   strokeFields, strokeSidesField, trackOpacityField, useStage, getFillMotion, getStrokeMotion, type AssetMotion, type FillElement, type FillOptions, type GlowElement, type GlowSource, type HaloElement,
-  type PanelLayout, type Rect, type RimElement, type StrokeElement, type StrokeOptions,
+  type PanelLayout, type Rect, type RimElement, type RoundRect, type StrokeElement, type StrokeOptions,
   FLASH_PANEL_PEAK, FlashLayer, OrnamentLayer, buildFlashScene, buildOrnamentScene, layoutOrnaments, layoutOutset, ornamentFields, panelOrnamentFrame,
   refineLightning, refineOrnaments, type FlashElement, type OrnamentElement, type OrnamentLayout,
 } from '../shared';
@@ -104,12 +104,17 @@ export type ChatLayout = PanelLayout & {
   footer: Rect | null;
   /** The line above the footer (full width inside the stroke); null without a footer or a line. */
   footerDivider: Rect | null;
+  /**
+   * What the bands and lines are clipped to: the inside of the stroke, reaching the panel's own
+   * sides when they are open (strokeSides 'top-bottom'), so the header runs edge to edge.
+   */
+  bandArea: RoundRect;
   /** Where the ornaments go (none with ornaments 'none'); their reach beyond the box is folded into outset. */
   ornamentLayout: OrnamentLayout;
 };
 
 type LayoutProps = Pick<ChatLoopProps,
-  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'glow' | 'halo' | 'headerHeight' | 'headerLineWidth'
+  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'strokeSides' | 'glow' | 'halo' | 'headerHeight' | 'headerLineWidth'
   | 'footerHeight' | 'footerLineWidth' | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
 
 /**
@@ -128,7 +133,9 @@ export const getChatLayout = (props: LayoutProps): ChatLayout => withOrnaments(g
  * into them; only the outset grows by how far they reach into the bleed (seed- and frame-free).
  */
 const withOrnaments = (base: Omit<ChatLayout, 'ornamentLayout'>, props: LayoutProps): ChatLayout => {
-  const frame = panelOrnamentFrame({kind: 'chat', layout: base, keepOut: [base.content, base.header], glow: props.glow});
+  const frame = panelOrnamentFrame({
+    kind: 'chat', layout: base, keepOut: [base.content, base.header], glow: props.glow, bands: {header: base.headerBand, footer: base.footer},
+  });
   const ornamentLayout = layoutOrnaments(frame, props);
   return {...base, outset: Math.max(base.outset, layoutOutset(ornamentLayout)), ornamentLayout};
 };
@@ -141,16 +148,18 @@ const getPanelLayout = (props: LayoutProps): Omit<ChatLayout, 'ornamentLayout'> 
   const footerSpace = hasFooter ? props.footerHeight + footerLine : 0;
   const panel = layoutPanel({...props, insets: {top: hasHeader ? props.headerHeight + line : 0, bottom: footerSpace}});
   const {inner} = panel;
+  // Open sides draw no stroke there: the bands and lines reach the panel's own sides.
+  const bandArea = props.strokeSides === 'top-bottom' ? {...inner, x: panel.shape.x, width: panel.shape.width} : inner;
   const content = fitClearContent(inner, {
     top: props.padding + (hasHeader ? props.headerHeight + line : 0),
     right: props.padding,
     bottom: props.padding + footerSpace,
     left: props.padding,
   }, props.padding);
-  const footer = hasFooter ? {x: inner.x, y: inner.y + inner.height - props.footerHeight, width: inner.width, height: props.footerHeight} : null;
-  const footerDivider = footerLine > 0 ? {x: inner.x, y: inner.y + inner.height - footerSpace, width: inner.width, height: footerLine} : null;
-  if (!hasHeader) return {...panel, content, header: null, headerBand: null, divider: null, footer, footerDivider};
-  const band = {x: inner.x, y: inner.y, width: inner.width, height: props.headerHeight};
+  const footer = hasFooter ? {x: bandArea.x, y: inner.y + inner.height - props.footerHeight, width: bandArea.width, height: props.footerHeight} : null;
+  const footerDivider = footerLine > 0 ? {x: bandArea.x, y: inner.y + inner.height - footerSpace, width: bandArea.width, height: footerLine} : null;
+  if (!hasHeader) return {...panel, content, header: null, headerBand: null, divider: null, footer, footerDivider, bandArea};
+  const band = {x: bandArea.x, y: inner.y, width: bandArea.width, height: props.headerHeight};
   const vertical = Math.min(props.padding, props.headerHeight / 4);
   const header = fitClearContent(inner, {
     top: vertical,
@@ -163,9 +172,10 @@ const getPanelLayout = (props: LayoutProps): Omit<ChatLayout, 'ornamentLayout'> 
     content,
     header,
     headerBand: band,
-    divider: line > 0 ? {x: inner.x, y: inner.y + props.headerHeight, width: inner.width, height: line} : null,
+    divider: line > 0 ? {x: bandArea.x, y: inner.y + props.headerHeight, width: bandArea.width, height: line} : null,
     footer,
     footerDivider,
+    bandArea,
   };
 };
 
@@ -349,10 +359,10 @@ export const getChatScene = (props: ChatLoopProps, frame: number, durationInFram
   ];
 };
 
-/** Header band and divider are clipped to the inside of the stroke, so they follow its corners. */
+/** Header band and divider are clipped to the inside of the stroke (bandArea), so they follow its corners. */
 const InnerClip = ({id, layout}: {id: string; layout: ChatLayout}) => (
   <clipPath id={id} clipPathUnits="userSpaceOnUse">
-    <path d={roundRectPath(layout.inner)} />
+    <path d={roundRectPath(layout.bandArea)} />
   </clipPath>
 );
 
