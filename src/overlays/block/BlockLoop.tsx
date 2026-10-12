@@ -7,7 +7,7 @@ import {getSize} from '../../sizes';
 import {refineCanvas, type Rect} from '../shared/box';
 import type {ArcElement, FillElement, GlowElement, HaloElement, RectElement, RimElement, SheenElement, StrokeElement} from '../shared/elements';
 import {
-  fillFields, glowFields, haloFields, overlayBaseFields, radiusField, rimLightField, strokeFields, trackOpacityField,
+  fillFields, glowFields, haloFields, overlayBaseFields, radiusField, rimLightField, strokeFields, strokeSidesField, trackOpacityField,
 } from '../shared/fields';
 import {buildFillScene, getFillMotion, refineFill, type FillOptions} from '../shared/fills';
 import {layoutPanel, refineContent, refineOutset, type PanelLayout} from '../shared/layout';
@@ -75,6 +75,7 @@ const blockFields = z.object({
     cometSpacing: 640, cometTail: 320, strokeSpeed: 160, strokeCore: 0.9,
   }),
   trackOpacity: trackOpacityField(0.45),
+  strokeSides: strokeSidesField(),
   ...glowFields({glow: 20, glowPulses: 2, glowStrength: 3}),
   ...haloFields({halo: 20, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
@@ -354,7 +355,7 @@ export const BlockFrame = ({props, frame, durationInFrames}: {
       <FillLayer elements={layers.fill} clip={layout.shape} />
       {layers.accent.length > 0 ? <FillLayer elements={layers.accent} clip={accentClip(layout)} name="accent" /> : null}
       <RimLayer elements={layers.rim} />
-      <StrokeLayer elements={[...layers.stroke, ...layers.glow]} tracks={[layout.track]} core={props.strokeCore} />
+      <StrokeLayer elements={[...layers.stroke, ...layers.glow]} tracks={[layout.track]} core={props.strokeCore} sides={props.strokeSides} />
       <OrnamentLayer elements={layers.ornamentFront} layout={layout.ornamentLayout} style={props} layer="front" />
       <FlashLayer elements={layers.flash} clips={[{path: roundRectPath(layout.shape)}]} area={layout.shape} edge={layout.track}
         edgeWidth={layout.strokeWidth} peak={FLASH_PANEL_PEAK} />
