@@ -18,6 +18,7 @@ const sunburst = backgroundCatalog.SunburstLoop;
 const vaporwave = backgroundCatalog.VaporwaveLoop;
 const dotGrid = backgroundCatalog.DotGridLoop;
 const checkerboard = backgroundCatalog.CheckerboardLoop;
+const terminalGrid = backgroundCatalog.TerminalGridLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const watercolor = backgroundCatalog.WatercolorLoop;
@@ -195,6 +196,14 @@ export const RemotionRoot = () => (
         defaultProps={{"durationSeconds":8,"seed":1,"transparent":false,"backgroundColor":"#fc0fad","outputFormat":"mp4" as const,"direction":"up-right" as const,"angle":22,"squareColor":"#222C57","squareSize":80,"speed":40}}
         {...getCompositionMetadata(checkerboard.defaultProps)}
         calculateMetadata={({props}: {props: typeof checkerboard.defaultProps}) => metadataFor(checkerboard.id, checkerboard.schema.parse(props))}
+      />
+      <Composition
+        id="TerminalGridLoop"
+        component={terminalGrid.component}
+        schema={terminalGrid.schema}
+        defaultProps={{"durationSeconds":16,"seed":1,"transparent":false,"backgroundColor":"#9D9885","colors":["#C9C4B0","#B8B3A0","#9D9885"],"outputFormat":"webm" as const,"inkColor":"#45423A","gridSize":26,"gridOpacity":0.11,"scanlines":0.026,"grain":0.05,"vignette":1,"dustCount":60,"glitches":3}}
+        {...getCompositionMetadata(terminalGrid.defaultProps)}
+        calculateMetadata={({props}: {props: typeof terminalGrid.defaultProps}) => metadataFor(terminalGrid.id, terminalGrid.schema.parse(props))}
       />
       <Composition
         id="GradientLoop"

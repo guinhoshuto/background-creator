@@ -5,6 +5,7 @@ import {getCheckerboardScene, checkerboardLoopSchema} from '../src/backgrounds/C
 import {christmasLoopSchema, getChristmasScene} from '../src/backgrounds/ChristmasLoop';
 import {getCobwebScene, cobwebLoopSchema} from '../src/backgrounds/CobwebLoop';
 import {getDotGridScene, dotGridLoopSchema} from '../src/backgrounds/DotGridLoop';
+import {getTerminalGridScene, terminalGridLoopSchema} from '../src/backgrounds/TerminalGridLoop';
 import {getGeometricScene, geometricLoopSchema} from '../src/backgrounds/GeometricLoop';
 import {getGradientScene, gradientLoopSchema} from '../src/backgrounds/GradientLoop';
 import {getHalloweenScene, halloweenLoopSchema} from '../src/backgrounds/HalloweenLoop';
@@ -144,6 +145,19 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
       getDotGridScene(dotGridLoopSchema.parse({
         layout: 'alternating', direction: 'up-left', speed: 90, dotSize: 20, spacing: 36, ...(input as object),
       }), frame, length),
+  },
+  {
+    // The dust is listed by speck and each respawn is kept off the seam by the seed; the glitches
+    // sit inside the cycle, so every field keeps the scan with no exemption.
+    id: 'TerminalGridLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getTerminalGridScene(terminalGridLoopSchema.parse(input), frame, length),
+  },
+  {
+    // The most dust and glitches the controls allow.
+    id: 'TerminalGridLoop (máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getTerminalGridScene(terminalGridLoopSchema.parse({dustCount: 240, glitches: 6, ...(input as object)}), frame, length),
   },
   {
     // The squares scroll, but they are listed by place along the board's diagonals, like the
@@ -471,7 +485,7 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['DotGridLoop', 'dots-classic.json'],
     ['DotGridLoop', 'dots-alternating.json'],
     ['DotGridLoop', 'dots-alpha.json'],
-    ['DotGridLoop', 'sand-terminal.json'],
+    ['TerminalGridLoop', 'sand-terminal.json'],
     ['CheckerboardLoop', 'checkerboard-classic.json'],
     ['CheckerboardLoop', 'checkerboard-diamonds.json'],
     ['CheckerboardLoop', 'checkerboard-tilted.json'],

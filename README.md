@@ -57,6 +57,7 @@ Backgrounds, one doc each:
 | [Kawaii: pastel constellation](docs/themes/kawaii.md) | `KawaiiLoop` |
 | [Vaporwave: neon horizon](docs/themes/vaporwave.md) | `VaporwaveLoop` |
 | [Dots: moving pattern](docs/themes/dots.md) | `DotGridLoop` |
+| [Terminal grid: sand screen](docs/themes/terminal-grid.md) | `TerminalGridLoop` |
 | [Checkerboard: moving board](docs/themes/checkerboard.md) | `CheckerboardLoop` |
 | [WebGL: shader experiments](docs/themes/webgl.md) | `WebGLLoop` |
 
