@@ -67,14 +67,14 @@ Before showing the owner:
 ```bash
 npm run test:kit -- <set>                    # the whole harness of the set
 npm run render:pack -- <theme> --dry-run     # every file, estimated MiB and minutes
-npm run qa:kit -- <theme>                    # stills, contact sheets, light sheet, stream mockups
+npm run qa:kit -- <theme>                    # stills, contact sheets, light sheet, stream mockups, index.html
 ```
 
 Review the sheets on enlarged crops, not by coordinates (AGENTS.md, Visual review). Before a merge: the full `npm test` and `npx tsx --test tests/markup-snapshot.test.ts` (a new pack changes the baseline: `UPDATE_SNAPSHOTS=1` in the same commit).
 
 ## Owner's checkpoint
 
-After the first green `qa:kit`, stop: open the review folder, send the notification and show the mockups and the contact sheets with their captions. No full render, no second round of automated critique and no next phase until the owner answers; without an answer, at most one round. The ship is the owner's.
+After the first green `qa:kit`, stop: open the review page it wrote (`index.html` in the review folder, titled with the pack), send the notification and show the mockups and the contact sheets with their captions. No full render, no second round of automated critique and no next phase until the owner answers; without an answer, at most one round. The ship is the owner's.
 
 ## Delivery, once approved
 
