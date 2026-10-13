@@ -25,6 +25,7 @@ import {
   NAMED_SIZES, assetFileName, canvasOf, getSize, matchNamedSize, sizeProps, sizeTag,
 } from '../src/sizes';
 import {cornersOf} from './helpers/glow-brute';
+import {maskGroupsOf} from './helpers/masks';
 import {assertSeamVelocity, type Sampler} from './helpers/scene-scans';
 import {KIT_THEMES, OVERLAY_THEMES, droppedWebms, isStaticOnly} from './helpers/themes';
 
@@ -549,9 +550,10 @@ test('Packs: os tamanhos redondos entram em webm e png (bordas estáticas só em
     const square = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-square-mask.png`))!;
     assert.equal(square.exportProps.shape, 'rectangle');
     assert.ok(!plan.some((file) => /round-(sm|lg)-mask/.test(file.output)), `${name}: um disco só`);
-    // Kits: the background, 24 sizes with ornaments (no screens, no Twitch panel) and 26 without, in two formats, plus the seven masks, shared by both.
+    // Kits: the background, 24 sizes with ornaments (no screens, no Twitch panel) and 26 without, in two formats, plus one mask
+    // per window shape, shared by both (seven with rounded corners: maskGroupsOf).
     const stills = droppedWebms(name);
-    assert.equal(plan.length, (name === 'halloween' ? 67 : kit ? 2 + 2 * 24 + 2 * 26 + 7 : 63) - stills, name);
+    assert.equal(plan.length, (name === 'halloween' ? 67 : kit ? 2 + 2 * 24 + 2 * 26 + maskGroupsOf(name).masks.length : 63) - stills, name);
   }
 });
 
