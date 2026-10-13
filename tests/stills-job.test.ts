@@ -27,6 +27,7 @@ test('stills job: defaults, and every reference must name a still', () => {
   assert.throws(() => parseJob({stills: [{name: 'a', id: 'X', typo: 1}]}), /Invalid stills job/);
   assert.throws(() => parseJob({stills: [{name: 'a', id: 'X'}], sheets: [{out: '../x.png', names: ['a']}]}), /Invalid stills job/);
   assert.throws(() => parseJob({stills: []}), /Invalid stills job/);
+  assert.throws(() => parseJob({stills: [{name: 'a', id: 'X'}], title: ''}), /Invalid stills job/);
   assert.deepEqual(parseJob({stills: [{name: 'a', id: 'X'}], baseline: {}}).baseline, {ref: 'HEAD'});
   // Heatmaps are opt-in: 30 full-size PNGs per sequence would eat the disk floor (BGC-24).
   const sequence = {name: 's', still: 'a', from: 0, to: 29};
@@ -122,6 +123,8 @@ test('stills job: a mockup places overlays by their box, bleed subtracted', () =
 test('qa:kit: the Halloween night pack becomes one job with sheets and mockups', () => {
   const manifest = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/halloween-midnight.json'), 'utf8')));
   const job = parseJob(buildKitJob(planPack(manifest, realPackDeps), {frames: [0, 309]}));
+  // The review page the run writes (index.html) names the pack, like its folder out/review/<date>-qa-<pack>/.
+  assert.equal(job.title, 'halloween-midnight · qa:kit');
   const names = job.stills.map((still) => still.name);
   assert.ok(names.includes('bg-HalloweenLoop-0'));
   assert.ok(names.includes('chat-standard-309'));

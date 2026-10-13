@@ -8,7 +8,8 @@ import {parseArgs} from 'node:util';
  * initials of the folder's name after its date and the words every folder shares (2026-10-04-qa-
  * halloween-haunted-mansion → HM); the number counts that folder's images in page order (mockups,
  * then contact sheets, then the rest), so a rerun with the same files keeps every caption. CPU only,
- * no render slot.
+ * no render slot. Every `npm run stills` and `qa:kit` run ends by writing this page in its own folder
+ * (writeRunIndex), so the board needs no separate step.
  */
 
 const HELP_TEXT = `npm run stills -- index <out.html> <dir>... [options]
@@ -50,9 +51,12 @@ const rank = (file: string) => {
   return index === -1 ? ORDER.length : index;
 };
 
+/** A PNG the page shows: a baseline render (<still>.base.png) only feeds the compare/ sheets. */
+const onPage = (file: string) => file.endsWith('.png') && !file.endsWith('.base.png');
+
 /** The folder's PNGs in page order (mockups, sheets, the rest; by name inside each), captioned. */
 export const captionImages = (tag: string, files: readonly string[]): IndexImage[] =>
-  files.filter((file) => file.endsWith('.png') && !file.endsWith('.base.png'))
+  files.filter(onPage)
     .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
     .map((file, index) => {
       const id = `${tag}-${String(index + 1).padStart(2, '0')}`;
@@ -87,6 +91,31 @@ ${body}
 `;
 };
 
+/** Writes the page over the folders and says what it holds: "N images in M section(s) (TAG name, …)". */
+export const writeIndex = (outFile: string, dirs: readonly string[], title: string): string => {
+  const names = sectionNames(dirs);
+  const tags = sectionTags(names);
+  const sections = dirs.map((dir, index): IndexSection => ({
+    name: names[index]!, tag: tags[index]!, dir, images: captionImages(tags[index]!, readdirSync(dir)),
+  }));
+  writeFileSync(outFile, renderIndex(title, sections, outFile));
+  const count = sections.reduce((sum, s) => sum + s.images.length, 0);
+  return `${count} images in ${sections.length} section(s) (${sections.map((s) => `${s.tag} ${s.name}`).join(', ')})`;
+};
+
+/** Subfolders holding a PNG for the page (seams/, compare/, regions/, a sheet's own folder), by name, depth first; dot folders are a run's scratch. */
+const pngFolders = (dir: string): string[] => readdirSync(dir, {withFileTypes: true})
+  .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+  .map((entry) => entry.name).sort((a, b) => a.localeCompare(b))
+  .flatMap((name) => {
+    const sub = path.join(dir, name);
+    return [...(readdirSync(sub).some(onPage) ? [sub] : []), ...pngFolders(sub)];
+  });
+
+/** The page a stills run leaves in its folder: index.html over the folder's PNGs, then one section per subfolder that holds any. */
+export const writeRunIndex = (dir: string, title: string): string =>
+  writeIndex(path.join(dir, 'index.html'), [dir, ...pngFolders(dir)], title);
+
 export const stillsIndex = (args: readonly string[]): string => {
   const {values, positionals} = parseArgs({
     args: [...args], allowPositionals: true,
@@ -95,12 +124,5 @@ export const stillsIndex = (args: readonly string[]): string => {
   if (values.help) return HELP_TEXT;
   const [outFile, ...dirs] = positionals;
   if (!outFile?.endsWith('.html') || dirs.length === 0) throw new Error('Pass the page and at least one folder: npm run stills -- index <out.html> <dir>... Use --help.');
-  const names = sectionNames(dirs);
-  const tags = sectionTags(names);
-  const sections = dirs.map((dir, index): IndexSection => ({
-    name: names[index]!, tag: tags[index]!, dir, images: captionImages(tags[index]!, readdirSync(dir)),
-  }));
-  writeFileSync(outFile, renderIndex(values.title!, sections, outFile));
-  const count = sections.reduce((sum, s) => sum + s.images.length, 0);
-  return `${outFile}: ${count} images in ${sections.length} section(s) (${sections.map((s) => `${s.tag} ${s.name}`).join(', ')}).`;
+  return `${outFile}: ${writeIndex(outFile, dirs, values.title!)}.`;
 };

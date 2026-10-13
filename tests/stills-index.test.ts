@@ -3,7 +3,7 @@ import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
-import {captionImages, sectionNames, sectionTags, stillsIndex} from '../scripts/stills-index';
+import {captionImages, sectionNames, sectionTags, stillsIndex, writeRunIndex} from '../scripts/stills-index';
 
 test('index: folders are named by what tells them apart and tagged by initials', () => {
   const dirs = ['out/review/2026-10-04-qa-halloween-midnight', 'out/review/2026-10-04-qa-halloween-haunted-mansion',
@@ -38,4 +38,36 @@ test('index: the page shows each caption under its image, with links relative to
   } finally {
     rmSync(root, {recursive: true, force: true});
   }
+});
+
+test('index: a stills run leaves index.html in its folder, over its PNGs and each subfolder that holds any', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'stills-index-'));
+  try {
+    const run = path.join(root, '2026-10-12-qa-sand-terminal');
+    // What a run leaves: stills, sheets and mockups, the baseline renders, report.json, seams/ and compare/, a sheet
+    // in a folder of its own, plus a dot folder of its scratch and a folder with no PNG. Zoom/ goes last by name,
+    // though APFS lists capitals first: the tags must not hang on the file system's order.
+    for (const file of ['mock-chatting-0.png', 'sheet-chat-0.png', 'card-0.png', 'card-0.base.png', 'report.json', 'Zoom/card-0.png',
+      'seams/bg-0.png', 'compare/card-0.png', 'sheets/light/sheet-light-0.png', '.seam-bg/0.png', 'notes/todo.txt']) {
+      mkdirSync(path.dirname(path.join(run, file)), {recursive: true});
+      writeFileSync(path.join(run, file), '');
+    }
+    assert.equal(writeRunIndex(run, 'sand-terminal · qa:kit'), '7 images in 5 section(s) (QST qa-sand-terminal, C compare, S seams, L light, Z Zoom)');
+    const html = readFileSync(path.join(run, 'index.html'), 'utf8');
+    assert.match(html, /<title>sand-terminal · qa:kit<\/title>/);
+    assert.match(html, /<figure id="QST-01"><a href="mock-chatting-0\.png">.*<figcaption>QST-01 · mock-chatting-0<\/figcaption>/);
+    assert.match(html, /<figcaption>QST-03 · card-0<\/figcaption>/);
+    assert.match(html, /<figure id="L-01"><a href="sheets\/light\/sheet-light-0\.png">.*<figcaption>L-01 · sheet-light-0<\/figcaption>/);
+    assert.doesNotMatch(html, /base\.png|seam-bg|notes/);
+  } finally {
+    rmSync(root, {recursive: true, force: true});
+  }
+});
+
+test('index: every npm run stills and qa:kit run writes its page after report.json, titled by the job, else by its folder', () => {
+  // The runner needs a bundle and a browser, so its call is checked in the source, like render:pack's profile (tests/pack.test.ts).
+  const source = readFileSync(path.join(import.meta.dirname, '..', 'scripts', 'stills-run.ts'), 'utf8');
+  const report = source.indexOf("writeFileSync(path.join(outDir, 'report.json')");
+  const page = source.indexOf('writeRunIndex(outDir, job.title ?? path.basename(outDir))');
+  assert.ok(report > 0 && page > report, 'runStills ends with writeRunIndex(outDir, job.title ?? path.basename(outDir)), after the sheets, the mockups and report.json');
 });

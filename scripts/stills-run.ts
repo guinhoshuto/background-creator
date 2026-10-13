@@ -15,6 +15,7 @@ import {expandSize} from './render-args';
 import {diffDetail} from './pixel-stats';
 import {acquireRenderSlot, currentCommand} from './render-slot';
 import {busyOutsideSlot, busyProcesses, takeRenderTurn} from './render-turn';
+import {writeRunIndex} from './stills-index';
 import {
   alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
   seamVerdict, sequenceVerdict, streamMockup, wrapFrame, type Rgba, type StillSpec, type StillsJob,
@@ -274,6 +275,8 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
   }
   if (logs.size > 0) report.browserLogs = [...logs].slice(0, 20);
   writeFileSync(path.join(outDir, 'report.json'), `${JSON.stringify(report, null, 1)}\n`);
+  // The board the owner opens and quotes from (QHM-03): every PNG the run left in its folder, captioned.
+  const page = writeRunIndex(outDir, job.title ?? path.basename(outDir));
 
   console.log(`${prepared.length} stills, ${job.sheets?.length ?? 0} sheets, ${job.mockups?.length ?? 0} mockups → ${shown}/`);
   const seams = Object.entries((report.seams ?? {}) as Record<string, {ok: boolean; ratio: number | null}>);
@@ -284,5 +287,6 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
     console.log(changed.length === 0 ? `Baseline ${job.baseline.ref}: every still is identical.` : `Baseline ${job.baseline.ref}: ${changed.length} changed (compare/): ${changed.slice(0, 12).join(', ')}${changed.length > 12 ? ', …' : ''}`);
   }
   console.log(`Report: ${path.join(shown, 'report.json')}`);
+  console.log(`Review page: ${path.join(shown, 'index.html')}, ${page}.`);
   return report;
 };

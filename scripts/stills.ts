@@ -4,8 +4,10 @@ import {parseArgs} from 'node:util';
 const HELP_TEXT = `npm run stills -- <job.json> [options]
 
 Renders verification stills with one bundle and one browser, then writes contact sheets, stream
-mockups, diffs, loop-seam checks and before/after comparisons, plus report.json. The job format is
-documented in scripts/stills-job.ts (jobSchema). Output: the job's outDir, or out/review/<date>-<job>/.
+mockups, diffs, loop-seam checks and before/after comparisons, plus report.json and index.html, the
+review page that captions every image in the folder and its subfolders (titled with the job's title,
+else the folder's name). The job format is documented in scripts/stills-job.ts (jobSchema). Output:
+the job's outDir, or out/review/<date>-<job>/.
 
 Options:
   --dry-run   parse the job, list the stills and the disk estimate, render nothing
@@ -13,7 +15,7 @@ Options:
   -h, --help  show this help
 
 Measure PNGs (region stats, L* profile, crop, diff; CPU only, no slot): npm run stills -- inspect --help
-Review page with a caption per image (CPU only, no slot): npm run stills -- index --help`;
+One review page over several folders (CPU only, no slot): npm run stills -- index --help`;
 
 const main = async () => {
   const args = process.argv.slice(2);
