@@ -9,6 +9,7 @@ import type {OrnamentSetId} from '../../src/overlays/shared';
 export const CLASSIC_THEMES = ['neon', 'pastel', 'glass', 'halloween'] as const;
 export const KIT_THEMES = [
   'halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior', 'halloween-cobweb', 'vaporwave-horizon',
+  'sand-terminal',
 ] as const;
 export type ClassicTheme = (typeof CLASSIC_THEMES)[number];
 export type KitTheme = (typeof KIT_THEMES)[number];
@@ -21,6 +22,7 @@ export const KIT_SETS: Readonly<Record<KitTheme, OrnamentSetId>> = {
   'halloween-haunted-interior': 'haunted-interior',
   'halloween-cobweb': 'cobweb',
   'vaporwave-horizon': 'horizon',
+  'sand-terminal': 'terminal',
 };
 
 /** The kit theme that wears `set`; a set without its kit fails here, before any harness runs. */

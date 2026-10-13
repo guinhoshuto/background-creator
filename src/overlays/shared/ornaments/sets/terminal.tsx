@@ -110,7 +110,11 @@ const set: OrnamentSet<TerminalOrnamentElement> = {
         const level = METER_LEVEL.rest
           + METER_LEVEL.slow * (Math.sin(slow * angle + phaseSlow) - Math.sin(phaseSlow))
           + METER_LEVEL.fast * (Math.sin(fast * angle + phaseFast) - Math.sin(phaseFast));
-        const lit = (bar: number) => Math.min(1, Math.max(0, level - bar));
+        // Eased, not clamped: a clamp's corner would break the bar's speed wherever the level crosses it, the seam included.
+        const lit = (bar: number) => {
+          const t = Math.min(1, Math.max(0, level - bar));
+          return t * t * (3 - 2 * t);
+        };
         inks.push({...ink, type, color: inkColor, alpha: 1, level0: lit(0), level1: lit(1), level2: lit(2), level3: lit(3), level4: lit(4)});
       } else if (type === 'terminal-diamond') {
         inks.push({...ink, type, color: accent, alpha: DIAMOND_ALPHA.mid + DIAMOND_ALPHA.swing * Math.cos(pulses * angle)});
