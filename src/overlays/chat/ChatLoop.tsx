@@ -67,8 +67,10 @@ const chatFields = z.object({
     .describe('Height of the footer at the bottom of the panel, below the messages, in px; 0 = no footer')
     .default(0),
   footerLineWidth: z.number().finite().min(0).max(16)
-    .describe('Thickness of the line between the messages and the footer, in px, in the outline colors; 0 = no line')
+    .describe('Thickness of the line between the messages and the footer, in px, in footerLineColor; 0 = no line')
     .default(1),
+  // Its own colour, not the outline's: a gradient outline spread across it would light one end.
+  footerLineColor: zColor().default('#E879F9'),
   footerLineOpacity: z.number().finite().min(0).max(1)
     .describe('Opacity of the line above the footer, from 0 to 1')
     .default(0.9),
@@ -273,9 +275,10 @@ export type ChatHeaderElement = {
 };
 
 /**
- * The line between the header and the messages, from x1 to x2 at the height y (its centre),
- * wearing the stroke's colours spread across it. It never moves, so the header reads as fixed
- * furniture while the edge carries the motion.
+ * A line across the panel, from x1 to x2 at the height y (its centre): the one between the header
+ * and the messages wears the stroke's colours spread across it, the one above the footer its own
+ * (footerLineColor). They never move, so header and footer read as fixed furniture while the edge
+ * carries the motion.
  */
 export type ChatDividerElement = {
   type: 'chat-divider'; x1: number; x2: number; y: number; width: number;
@@ -311,8 +314,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
   const header: ChatHeaderElement[] = layout.headerBand && props.headerOpacity > 0
     ? [{type: 'chat-header', ...layout.headerBand, color: props.headerColor, opacity: props.headerOpacity}]
     : [];
-  const colors = props.strokeColors;
-  const line = (rect: Rect, opacity: number): ChatDividerElement => ({
+  const line = (rect: Rect, opacity: number, colors: readonly string[]): ChatDividerElement => ({
     type: 'chat-divider',
     x1: rect.x,
     x2: rect.x + rect.width,
@@ -323,8 +325,8 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
     opacity,
   });
   const divider: ChatDividerElement[] = [
-    ...(layout.divider ? [line(layout.divider, DIVIDER_OPACITY)] : []),
-    ...(layout.footerDivider && props.footerLineOpacity > 0 ? [line(layout.footerDivider, props.footerLineOpacity)] : []),
+    ...(layout.divider ? [line(layout.divider, DIVIDER_OPACITY, props.strokeColors)] : []),
+    ...(layout.footerDivider && props.footerLineOpacity > 0 ? [line(layout.footerDivider, props.footerLineOpacity, [props.footerLineColor])] : []),
   ];
   const ornaments = buildOrnamentScene(layout.ornamentLayout, props, frame, durationInFrames);
   return {

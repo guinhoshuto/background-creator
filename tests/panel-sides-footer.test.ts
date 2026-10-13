@@ -81,6 +81,21 @@ test('rodapé: a linha entra com a opacidade dela, e sem linha nenhuma com opaci
   assert.equal(getChatLayers(chat({headerHeight: 40, glow: 2, footerHeight: 45, footerLineOpacity: 0}), 0, 960).divider.length, 1);
 });
 
+test('rodapé: a linha tem a cor própria (footerLineColor), não as do traço; a do cabeçalho segue com as do traço', () => {
+  const colors = ['#111111', '#222222', '#333333', '#EEEEEE'];
+  const input = {
+    headerHeight: 40, headerLineWidth: 1, glow: 2, footerHeight: 45, footerLineWidth: 1,
+    strokeMotion: 'gradient', strokeColors: colors, footerLineColor: '#45423A',
+  };
+  const [head, foot] = getChatLayers(chat(input), 0, 960).divider;
+  assert.deepEqual([head!.color0, head!.color1, head!.color2, head!.color3, head!.colorCount], [...colors, 4]);
+  assert.deepEqual([foot!.color0, foot!.color1, foot!.color2, foot!.color3, foot!.colorCount], ['#45423A', '#45423A', '#45423A', '#45423A', 1]);
+  // Drawn: the footer line's gradient is one stop, in its colour (a gradient outline would light one end of it).
+  const gradient = /<linearGradient id="[^"]*-divider-1"[^>]*>(.*?)<\/linearGradient>/.exec(chatMarkup(input));
+  assert.ok(gradient, 'gradiente da linha do rodapé');
+  assert.deepEqual([...gradient[1]!.matchAll(/stop-color="([^"]+)"/g)].map(([, color]) => color), ['#45423A']);
+});
+
 test('rodapé: alto demais para as mensagens é recusado com a saída', () => {
   const result = chatLoopSchema.safeParse({...sizeProps(getSize('chat-standard')), footerHeight: 512});
   assert.equal(result.success, false);
