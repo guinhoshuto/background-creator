@@ -78,15 +78,22 @@ test('terminal: a fileira do pack, quadrados de 7 px a cada 14 px em px inteiro,
   }
 });
 
-test('terminal: o mostrador do radar nos redondos, 24 marcas de 15° em 15° (4 px, as quatro cardeais de 7), de pé na linha', () => {
+test('terminal: o mostrador do radar nos redondos, 24 marcas de 15° em 15° (4 px, as quatro cardeais de 7), de pé na linha, menos a que o losango cobre', () => {
   for (const id of ['circle-sm', 'circle', 'circle-lg', 'webcam-round-sm', 'webcam-round', 'webcam-round-lg']) {
     const {frame, placements} = kitCase(id);
     const ticks = placements.filter((placement) => placement.motif === 'tick');
-    assert.equal(ticks.length, TICKS.count, id);
+    // A round frame's diamond stands on the top tick (index 18, at 270°), which goes; the rest are all there.
+    const diamond = placements.find((placement) => placement.motif === 'diamond');
+    const indices = Array.from({length: TICKS.count}, (_, index) => index).filter((index) => !diamond || index !== 18);
+    assert.deepEqual(ticks.map((tick) => Math.round((tick.angle * 12) / Math.PI)), indices, id);
+    if (diamond) {
+      for (const tick of ticks) assert.ok(Math.hypot(tick.x - diamond.x, tick.y - diamond.y) >= diamond.extent + tick.extent, `${id}: marca sob o losango`);
+    }
     const radius = frame.track.width / 2 + LINE.half;
     const cx = frame.track.x + frame.track.width / 2;
     const cy = frame.track.y + frame.track.height / 2;
-    for (const [index, tick] of ticks.entries()) {
+    for (const [at, tick] of ticks.entries()) {
+      const index = indices[at]!;
       assert.ok(Math.abs(tick.angle - (index * Math.PI) / 12) < 1e-9, `${id}: ângulo da marca ${index}`);
       assert.ok(Math.abs(tick.x1 - tick.x0 - (index % 6 === 0 ? 7 : 4)) < 1e-9, `${id}: comprimento da marca ${index}`);
       assert.ok(Math.abs(tick.y1 - tick.y0 - 2) < 1e-9, id);
@@ -140,7 +147,8 @@ test('terminal: ritmos do pack (6 pulsos do losango, uma volta da varredura e o 
   const n = framesOf(kitCase('webcam-round').props);
   assert.equal(n, 960);
   const diamond: number[] = [];
-  const tickPeaks = new Array<number>(TICKS.count).fill(0);
+  // The round webcam's 23 ticks (its diamond covers the top one).
+  const tickPeaks = new Array<number>(TICKS.count - 1).fill(0);
   for (let at = 0; at < n; at++) {
     const inks = inksAt('webcam-round', at);
     diamond.push(inks.find((element) => element.type === 'terminal-diamond')!.alpha as number);
@@ -153,7 +161,7 @@ test('terminal: ritmos do pack (6 pulsos do losango, uma volta da varredura e o 
   assert.equal(peaks, 6, 'pulsos do losango');
   assert.ok(Math.abs(Math.max(...diamond) - 0.95) < 1e-3 && Math.abs(Math.min(...diamond) - 0.55) < 1e-3);
   // Each tick lights once per loop.
-  assert.deepEqual(tickPeaks, new Array<number>(TICKS.count).fill(1));
+  assert.deepEqual(tickPeaks, new Array<number>(TICKS.count - 1).fill(1));
   let low = 5;
   let high = 0;
   for (let at = 0; at < n; at += 4) {

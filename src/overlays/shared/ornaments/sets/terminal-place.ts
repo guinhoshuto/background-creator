@@ -28,7 +28,7 @@ import type {OrnamentCornerId, OrnamentFrame, OrnamentPlacement, OrnamentSlotId}
  *     from its top down as tall as the text area (at most 88 px), cut into abutting pieces.
  *   - Dial ticks (round blocks and webcams): the radar's compass ring, its 24 ticks every 15° (the
  *     four cardinal ones long), standing out of the line's outer edge, since inside the circle is
- *     the text or the window. All 24 or none.
+ *     the text or the window. All 24 or none, but the one a round frame's diamond covers.
  *   - Staff (wide blocks, a title or a banner): five 1 px lines every 6 px, 384 px long, hanging
  *     STAFF.gap px under the bottom line from its right end, cut into abutting pieces.
  *
@@ -324,6 +324,10 @@ const placeStaff = (frame: OrnamentFrame): TerminalPlacement[] => {
   return placeRun(frame, 'staff', 'bottom', 'h', right, right - STAFF.length, [top, top + height], [RIM, RIM]) ?? [];
 };
 
+/** The ticks clear of the diamond: on a round frame the top one stands under it, and goes. */
+const ticksClearOf = (diamond: TerminalPlacement | null) => (tick: TerminalPlacement) =>
+  !diamond || Math.hypot(tick.x - diamond.x, tick.y - diamond.y) >= diamond.extent + tick.extent;
+
 /** The squares' gap round the diamond: those within its half diagonal and DIAMOND.clear px of its centre on x go. */
 const clearOf = (diamond: TerminalPlacement | null) => (box: TerminalPlacement) => {
   if (!diamond) return true;
@@ -345,7 +349,7 @@ export const placeTerminal = (frame: OrnamentFrame, ornamentSize: number): Termi
     ...(head ? [head] : []),
     ...(meter ? [meter] : []),
     ...placeDoubleBar(frame),
-    ...placeTicks(frame),
+    ...placeTicks(frame).filter(ticksClearOf(diamond)),
     ...placeStaff(frame),
   ];
 };
