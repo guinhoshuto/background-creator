@@ -421,6 +421,11 @@ test('Máscara: cada tamanho de janela tem a sua, do tamanho da câmera, com a j
         assert.equal(maskProps, null, `${size.id}: a tela não precisa de máscara`);
         continue;
       }
+      if (size.props?.shape !== 'circle' && radius === 0) {
+        // Square corners: the mask would be an opaque rectangle that OBS stretches over the whole camera.
+        assert.equal(maskProps, null, `${size.id}: cantos retos não têm máscara`);
+        continue;
+      }
       const props = parse(maskProps!);
       const window = getBorderGeometry(frame).layout.window;
       assert.deepEqual(maskProps, {

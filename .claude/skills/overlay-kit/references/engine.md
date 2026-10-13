@@ -164,7 +164,7 @@ The harness requires a kit preset to place its hero at every named size of every
 - With ornaments: `chat-<theme>` on every chat size (in table order), `block-<theme>` on every block size but `twitch-panel`, `border-<theme>` on every border size but the two screens.
 - `plain` twins of every size (screens included, `twitch-panel` excluded), props exactly `{"ornaments": "none"}`.
 - Formats `["webm", "png"]`, or `["png"]` for compositions in `STATIC_ONLY`; `version` an integer ≥ 1.
-- Plan length = 2·backgrounds + 2·(24 + 26) − dropped WebMs + one mask per window shape: 7 with rounded corners, 5 with square ones (the three 16:9 windows share one; `tests/helpers/masks.ts:maskGroupsOf`).
+- Plan length = 2·backgrounds + 2·(24 + 26) − dropped WebMs + one mask per window shape: 7 with rounded corners, 1 with square ones (only the round webcams' disc: a square-cornered mask is opaque and cuts nothing; `tests/helpers/masks.ts:maskGroupsOf`).
 - Check without rendering: `npm run render:pack -- <theme> --dry-run`, `npm run ornaments:report -- <theme>`.
 
 ## 14. Tests while building a set

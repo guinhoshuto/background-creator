@@ -546,9 +546,9 @@ test('Packs: os tamanhos redondos entram em webm e png (bordas estáticas só em
       assert.deepEqual([mask.exportProps.shape, mask.exportProps.radius, mask.canvas.width], ['circle', 280, 560]);
       for (const file of plan.filter((entry) => entry.size === id && entry.role !== 'mask')) assert.equal(file.mask, mask.output);
     }
-    // The square webcam keeps its own (rounded-rect) mask.
-    const square = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-square-mask.png`))!;
-    assert.equal(square.exportProps.shape, 'rectangle');
+    // The square webcam keeps its own (rounded-rect) mask; with square corners it has none.
+    const square = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-square-mask.png`));
+    assert.equal(square?.exportProps.shape, maskGroupsOf(name).of('webcam-square') ? 'rectangle' : undefined, name);
     assert.ok(!plan.some((file) => /round-(sm|lg)-mask/.test(file.output)), `${name}: um disco só`);
     // Kits: the background, 24 sizes with ornaments (no screens, no Twitch panel) and 26 without, in two formats, plus one mask
     // per window shape, shared by both (seven with rounded corners: maskGroupsOf).

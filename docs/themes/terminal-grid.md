@@ -25,5 +25,4 @@ The `sand-terminal` kit (`packs/sand-terminal.json`, presets `chat-`, `block-` a
 
 - The panels are light (sand at 0.82): the buyer's chat and text widgets need dark text, the ink `#45423A` or close to it.
 - The outlines are open at the sides (`strokeSides: "top-bottom"`), as in the old pack; the circles keep their whole ring. A light glint runs along the ink lines at 56 px/s, which every size shows within ±35 % (with 50 the `label` ran 43 % fast).
-- The webcam frames have square corners, so the three 16:9 windows (`webcam-16x9`, `webcam-16x9-lg`, `gameplay`) share one OBS mask, named after the shortest id (`sand-terminal-gameplay-mask.png`), and the pack has five masks, not seven.
-- With square corners a 16:9 mask is the whole camera: OBS needs it only for the round webcams; the others are there for the buyer who crops the camera to another aspect.
+- The webcam frames have square corners, so their masks would be opaque rectangles that OBS stretches over the whole camera, cutting nothing: the pack ships one mask, `sand-terminal-webcam-round-mask.png`, for the three round webcams (103 files). Until 2026-10-13 the plan held five, and `validate:pack` refused the four opaque ones.

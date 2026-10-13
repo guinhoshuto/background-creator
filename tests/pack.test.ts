@@ -755,19 +755,20 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
       assert.deepEqual([entry.hole, entry.bleed, entry.alpha, entry.frames], [null, 0, true, 1]);
     }
     for (const file of plan.filter((entry) => entry.composition === 'BorderLoop' && entry.role !== 'mask')) {
-      const isWindow = windows.some((size) => size.id === file.size);
-      assert.equal(file.mask, isWindow ? `out/packs/${name}/masks/${name}-${maskSizeOf(file.size!)}-mask.png` : undefined, file.output);
+      // A window with square corners has no mask (it would cut nothing), and neither has a screen.
+      const maskName = windows.some((size) => size.id === file.size) ? maskSizeOf(file.size!) : undefined;
+      assert.equal(file.mask, maskName ? `out/packs/${name}/masks/${name}-${maskName}-mask.png` : undefined, file.output);
       const entry = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), null);
-      assert.equal(entry.mask, isWindow ? `masks/${name}-${maskSizeOf(file.size!)}-mask.png` : undefined, file.output);
+      assert.equal(entry.mask, maskName ? `masks/${name}-${maskName}-mask.png` : undefined, file.output);
       // Even with a sidecar that names another mask file (older exports did), the pack's own mask wins.
       const sidecar = {...entry, mask: `BorderLoop-${file.size}-mask.png`, hole: entry.hole};
       const fromSidecar = packFileEntry(file, `out/packs/${name}`, realPackDeps.getAsset('BorderLoop'), sidecar);
       assert.equal(fromSidecar.mask, entry.mask, file.output);
       assert.deepEqual(fromSidecar.motion, entry.motion, file.output);
     }
-    const sixteenNine = groups.masks.find((mask) => mask.ids.includes('webcam-16x9'))!;
+    const shown = groups.masks.find((mask) => mask.ids.includes('webcam-16x9')) ?? groups.masks.find((mask) => mask.ids.includes('webcam-round'))!;
     assert.match(dryRunText(plan), new RegExp(
-      `out/packs/${name}/masks/${name}-${sixteenNine.name}-mask\\.png  ${sixteenNine.widest.width}×${sixteenNine.widest.height}, frame 0\n`,
+      `out/packs/${name}/masks/${name}-${shown.name}-mask\\.png  ${shown.widest.width}×${shown.widest.height}, frame 0\n`,
     ));
   }
 });
@@ -819,8 +820,13 @@ test('packs: OBS estica a máscara, então só a forma em proporção decide que
   const round = planPack(manifest([border(['webcam-round-sm', 'webcam-round', 'webcam-round-lg'], 'webm', 16)]), realPackDeps);
   assert.deepEqual(masksOf(round), [['test-webcam-round-mask.png', 560, 280]]);
   // Another aspect never shares: the 4:3 and the square webcam keep their own.
-  const aspects = planPack(manifest([border(['webcam-4x3', 'webcam-square'], 'webm', 0)]), realPackDeps);
+  const aspects = planPack(manifest([border(['webcam-4x3', 'webcam-square'], 'webm', 8)]), realPackDeps);
   assert.deepEqual(masksOf(aspects).map(([name]) => name), ['test-webcam-4x3-mask.png', 'test-webcam-square-mask.png']);
+  // Square corners: the mask would be one opaque rectangle, stretched over the whole camera, so
+  // there is none; only the round webcam, whose disc still cuts, keeps one.
+  const square = planPack(manifest([border(['webcam-16x9', 'webcam-4x3', 'webcam-square', 'webcam-vertical', 'webcam-round'], 'webm', 0)]), realPackDeps);
+  assert.deepEqual(masksOf(square), [['test-webcam-round-mask.png', 400, 200]]);
+  assert.deepEqual(square.filter((file) => file.role !== 'mask' && file.mask).map((file) => file.size), ['webcam-round']);
 });
 
 test('every real pack plans only buyer-rule names', () => {
