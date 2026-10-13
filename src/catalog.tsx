@@ -9,6 +9,7 @@ import {CobwebLoop, cobwebLoopSchema} from './backgrounds/CobwebLoop';
 import {ChristmasLoop, christmasLoopSchema} from './backgrounds/ChristmasLoop';
 import {DotGridLoop, dotGridLoopSchema} from './backgrounds/DotGridLoop';
 import {CheckerboardLoop, checkerboardLoopSchema} from './backgrounds/CheckerboardLoop';
+import {TerminalGridLoop, terminalGridLoopSchema} from './backgrounds/TerminalGridLoop';
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
@@ -110,6 +111,13 @@ export const backgroundCatalog = {
     component: CheckerboardLoop,
     schema: checkerboardLoopSchema,
     defaultProps: checkerboardLoopSchema.parse({}),
+  },
+  TerminalGridLoop: {
+    id: 'TerminalGridLoop',
+    kind: 'background',
+    component: TerminalGridLoop,
+    schema: terminalGridLoopSchema,
+    defaultProps: terminalGridLoopSchema.parse({}),
   },
   GradientLoop: {
     id: 'GradientLoop',

@@ -19,6 +19,7 @@ Backgrounds (`backgrounds` folder) fill the whole screen:
 | `SunburstLoop` | A fan of rays leaving the center, with a gradient from the core outwards | `rayCount` (6–48), `rayWidth` (0.15–0.8), `swirl` (0–1), `spin` (−24–24, integer), `coreFade` (0–1), `coreShade` (0–1) |
 | `VaporwaveLoop` | Neon horizon with a sliced sun, pink and cyan perspective grid, wireframe mountains, palms and floating solids, with a clear center | `speed` (0–12, integer), `sunPosition` (0.1–0.9), `neonGlow` (0–1), `starCount` (0–200), `shootingStars` (0–3), `palmCount` (0–3), `shapeCount` (0–4), `centerShade` (0–1) |
 | `DotGridLoop` | Dots in a grid or in alternating rows, scrolling endlessly in one of eight directions | `direction` (8 directions), `layout` (`aligned` or `alternating`), `dotColor`, `dotSize` (1–96 px), `spacing` (16–240 px), `speed` (0–480 px/s) |
+| `TerminalGridLoop` | A sand terminal screen: radial sand gradient, a 1 px line grid fading towards the edges, scanlines, grain, vignette, drifting dust and a few seeded shakes with corrupted bands | `colors` (centre, middle, edge), `inkColor`, `gridSize` (8–160 px), `gridOpacity`, `scanlines`, `grain`, `vignette` (0–2), `dustCount` (0–240), `glitches` (0–6) |
 | `CheckerboardLoop` | Two-tone checkerboard, straight or tilted, scrolling endlessly in one of eight directions | `direction` (8 directions), `angle` (−45–45°), `squareColor`, `squareSize` (16–480 px), `speed` (0–960 px/s) |
 | `WebGLLoop` | WebGL shader experiments: aurora, lava, silk, sea floor (caustics), cells, contour lines, nebula, the pastel series (wave, sphere, neon fold, layers, dusk and eclipse), watercolor and mesh gradient | `experiment` (see [WebGL](themes/webgl.md)), `speed` (0–3), `scale` (0.5–2), `intensity` (0–2), `centerFade` (0–1) |
 | `GradientLoop` | Gradient blobs with organic motion | `scale` (0.25–3), `intensity` (0–2) |
@@ -72,6 +73,7 @@ A parameter file may hold only the options you want to change; the others keep t
 - `dots-classic.json`: a grid of lilac dots over night blue, scrolling diagonally down and to the right.
 - `dots-alternating.json`: alternating rows of peach dots over cream, moving left.
 - `dots-alpha.json`: transparent WebM with translucent white dots in alternating rows, rising slowly, to lay over other videos.
+- `sand-terminal.json`: the sand-terminal kit's background (16 s, seed 47): sand gradient, 26 px grid, dust and three glitches per loop.
 - `checkerboard-classic.json`: classic board in near black and cream, with 120 px cells, scrolling slowly diagonally down and to the right.
 - `checkerboard-diamonds.json`: board turned 45°, with pink diamonds over light pink, moving right.
 - `checkerboard-tilted.json`: dark green board tilted 15° counterclockwise, sliding along the rows to the left.

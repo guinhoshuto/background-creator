@@ -20,6 +20,7 @@ A kit is one background plus matching overlays: `ChatLoop`, `BlockLoop` and `Bor
 2. Visual reference first: `~/obsidian/Visual Ref/<theme>/`, built if missing, and the background's stills (`npm run stills`). Pick the motifs from the background's artwork; product art is code only.
 3. Show the plan with an estimate (hours, agents, tokens) before starting, by the rulers in `~/obsidian/AI/Harness/Workflows.md` ("Estimativa"). A workflow follows that file, and the owner's yes to run it.
 4. Work on a `wip/<theme>-kit` branch, in a worktree when the checkout holds someone else's work.
+5. Before the ornament set, show the owner a mock of the motifs alone at the kit's size (30 to 60 px, on `chat-standard`, `label` and `webcam-16x9`, real size, on the background and on dark): pastel-cloud failed its first `qa:kit` on clouds that did not read at that size (2026-10-11). When the kit remakes an older pack (an HTML pack, a design file), survey it first, measured from its CSS and code, and draw the mock from that survey: sand-terminal spent two mock rounds on motifs of its own before the owner asked for the old pack's (2026-10-11).
 
 ## Naming
 

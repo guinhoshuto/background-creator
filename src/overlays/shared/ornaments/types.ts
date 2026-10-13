@@ -17,7 +17,7 @@ import type {RoundRect} from '../geometry';
  * dropped, and a set whose hero fits nowhere places nothing, which the schema refuses.
  */
 
-export const ORNAMENT_CHOICES = ['none', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb', 'horizon'] as const;
+export const ORNAMENT_CHOICES = ['none', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb', 'horizon', 'terminal'] as const;
 export type OrnamentChoice = (typeof ORNAMENT_CHOICES)[number];
 export type OrnamentSetId = Exclude<OrnamentChoice, 'none'>;
 export const ORNAMENT_SET_IDS = ORNAMENT_CHOICES.filter((choice): choice is OrnamentSetId => choice !== 'none');
@@ -60,6 +60,11 @@ export type OrnamentFrame = {
   accent: 'left' | 'top' | null;
   /** The kind's glow reach; 0 (a Twitch panel) means crisp motifs, no soft lights. */
   glow: number;
+  /**
+   * A chat's header band and footer band, inside the stroke (sets may draw on them: neither holds
+   * text, the title's area is in keepOut); null where the kind or the props have none.
+   */
+  bands: {header: Rect | null; footer: Rect | null};
 };
 
 export type OrnamentCornerId = 'TR' | 'BR' | 'BL' | 'TL';
@@ -145,7 +150,7 @@ export type OrnamentRenderContext = {
  */
 export interface OrnamentSet<E extends OrnamentElement = OrnamentElement> {
   name: OrnamentSetId;
-  /** Added to ORNAMENT_SEED (503) for the set's random stream: 0, 20, 40, 60, 80. */
+  /** Added to ORNAMENT_SEED (503) for the set's random stream: 0, 20, 40, 60, 80, 120. */
   seedOffset: number;
   /** The hero's smallest extent, in px (≤ 12, so every named size keeps it). */
   minExtent: number;

@@ -9,7 +9,8 @@ import type {
   StrokeElement, FillElement,
 } from './elements';
 import {FOG_SHAPE} from './fills';
-import {arcBandPath, rectPath, roundRectPath, svgNumber, type RoundRect} from './geometry';
+import type {StrokeSides} from './fields';
+import {arcBandPath, isCircle, rectPath, roundRectPath, svgNumber, type RoundRect} from './geometry';
 import type {FrameLayout} from './layout';
 import {perimeterPath, pointAt} from './perimeter';
 
@@ -397,26 +398,35 @@ export const FillLayer = ({elements, clip, name = 'fill'}: {elements: readonly F
  * The stroke elements along their tracks, with the glow (a GlowElement in `elements`) as a
  * blurred copy underneath. `children` are drawn inside both, so a kind's ornaments glow too. The
  * light core only changes colour inside strokes that are already opaque, so the glow, which
- * blurs alpha, is the same with or without it.
+ * blurs alpha, is the same with or without it. With `sides: 'top-bottom'` the strokes (not the
+ * children) are clipped to two bands around the first track's top and bottom lines, so the sides
+ * stay open; the glow blurs what is left. A circle has no sides: the bands would leave only its
+ * top and bottom points, so it keeps its whole outline. Without it the markup is exactly the
+ * four-sided one.
  */
-export const StrokeLayer = ({elements, tracks, name = 'stroke', core = 0, children}: {
+export const StrokeLayer = ({elements, tracks, name = 'stroke', core = 0, sides = 'all', children}: {
   elements: readonly (StrokeElement | GlowElement)[]; tracks: readonly RoundRect[]; name?: string;
   /** Opacity of the light core along the strokes (strokeCore). */
   core?: number;
+  /** Which sides of the outline are drawn (strokeSides). */
+  sides?: StrokeSides;
   children?: ReactNode;
 }) => {
   const {idPrefix} = useStage();
   const id = `${idPrefix}-${name}`;
   const glow = elements.find((element): element is GlowElement => element.type === 'glow');
   const context: ElementContext = {tracks, idBase: id, core};
+  const strokes = elements.map((element, index) => renderOverlayElement(element, index, context));
+  const open = sides === 'top-bottom' && tracks[0] && !isCircle(tracks[0]) ? openSidesClip(tracks[0], elements) : null;
   const sharp = (
     <>
-      {elements.map((element, index) => renderOverlayElement(element, index, context))}
+      {open ? <g clipPath={url(`${id}-sides`)}>{strokes}</g> : strokes}
       {children}
     </>
   );
   return (
     <g>
+      {open ? <defs><clipPath id={`${id}-sides`} clipPathUnits="userSpaceOnUse"><path d={open} /></clipPath></defs> : null}
       {glow ? (
         <>
           <defs><GlowFilter id={`${id}-glow`} blur={glow.blur} gain={glow.gain} /></defs>
@@ -426,6 +436,18 @@ export const StrokeLayer = ({elements, tracks, name = 'stroke', core = 0, childr
       <g>{sharp}</g>
     </g>
   );
+};
+
+/**
+ * The two bands an open-sided outline keeps: the track's top and bottom lines, each as tall as the
+ * widest stroke plus a pixel of antialiasing on either side, and as wide as the canvas allows (the
+ * side lines inside the bands are under a pixel long beyond the stroke's own width).
+ */
+const openSidesClip = (track: RoundRect, elements: readonly (StrokeElement | GlowElement)[]) => {
+  const widest = Math.max(1, ...elements.map((element) => ('width' in element ? element.width : 0)));
+  const half = widest / 2 + 1;
+  const reach = {x: track.x - widest - 2, width: track.width + 2 * widest + 4};
+  return rectPath({...reach, y: track.y - half, height: 2 * half}) + rectPath({...reach, y: track.y + track.height - half, height: 2 * half});
 };
 
 /** The rim light (see buildRimScene), drawn over the fill and under the stroke. */

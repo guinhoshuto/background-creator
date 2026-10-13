@@ -8,6 +8,7 @@ import {hauntedMansionSet} from './sets/haunted-mansion';
 import {midnightSet} from './sets/midnight';
 import {cobwebSet} from './sets/cobweb';
 import {horizonSet} from './sets/horizon';
+import {terminalSet} from './sets/terminal';
 import type {
   FlashElement, OrnamentElement, OrnamentFrame, OrnamentLayout, OrnamentPlacement, OrnamentSet, OrnamentSetId, OrnamentStyle,
 } from './types';
@@ -19,6 +20,7 @@ export const ORNAMENT_REGISTRY: Record<OrnamentSetId, OrnamentSet> = {
   'haunted-interior': hauntedInteriorSet,
   cobweb: cobwebSet,
   horizon: horizonSet,
+  terminal: terminalSet,
 };
 
 /** The set a style names, or null for 'none'. */

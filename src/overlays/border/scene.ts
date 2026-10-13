@@ -285,15 +285,18 @@ export const getBorderMaskElement = (props: BorderLoopProps): MaskWindowElement 
 
 /**
  * The props of the mask that goes with a window border, or null when there is none (a screen
- * frame, or a mask already). Only the window's box and clamped radius decide the mask, so every
- * theme of one size and radius shares it; the rest are the mask mode's own requirements. The
- * shape travels with it so the mask is named after its own size: a round webcam's white disc is
- * not the square webcam's mask, though both are 400×400.
+ * frame, a mask already, or a window with square corners: its mask would be one opaque rectangle,
+ * which OBS stretches over the whole camera, cutting nothing). Only the window's box and clamped
+ * radius decide the mask, so every theme of one size and radius shares it; the rest are the mask
+ * mode's own requirements. The shape travels with it so the mask is named after its own size: a
+ * round webcam's white disc is not the square webcam's mask, though both are 400×400.
  */
 export const getBorderMask = (props: BorderLoopProps): Record<string, unknown> | null => {
   if (props.fit !== 'window' || props.mask) return null;
+  const {radius} = maskWindow(props);
+  if (radius === 0) return null;
   return {
-    width: props.width, height: props.height, shape: props.shape, radius: maskWindow(props).radius, fit: 'window',
+    width: props.width, height: props.height, shape: props.shape, radius, fit: 'window',
     mask: true, bleed: 0, outputFormat: 'png', transparent: true,
   };
 };

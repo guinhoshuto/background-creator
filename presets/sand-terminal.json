@@ -1,0 +1,16 @@
+{
+  "durationSeconds": 16,
+  "seed": 47,
+  "transparent": false,
+  "backgroundColor": "#9D9885",
+  "colors": ["#C9C4B0", "#B8B3A0", "#9D9885"],
+  "outputFormat": "webm",
+  "inkColor": "#45423A",
+  "gridSize": 26,
+  "gridOpacity": 0.11,
+  "scanlines": 0.026,
+  "grain": 0.05,
+  "vignette": 1,
+  "dustCount": 60,
+  "glitches": 3
+}

@@ -18,6 +18,7 @@ const sunburst = backgroundCatalog.SunburstLoop;
 const vaporwave = backgroundCatalog.VaporwaveLoop;
 const dotGrid = backgroundCatalog.DotGridLoop;
 const checkerboard = backgroundCatalog.CheckerboardLoop;
+const terminalGrid = backgroundCatalog.TerminalGridLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const watercolor = backgroundCatalog.WatercolorLoop;
@@ -197,6 +198,14 @@ export const RemotionRoot = () => (
         calculateMetadata={({props}: {props: typeof checkerboard.defaultProps}) => metadataFor(checkerboard.id, checkerboard.schema.parse(props))}
       />
       <Composition
+        id="TerminalGridLoop"
+        component={terminalGrid.component}
+        schema={terminalGrid.schema}
+        defaultProps={{"durationSeconds":16,"seed":1,"transparent":false,"backgroundColor":"#9D9885","colors":["#C9C4B0","#B8B3A0","#9D9885"],"outputFormat":"webm" as const,"inkColor":"#45423A","gridSize":26,"gridOpacity":0.11,"scanlines":0.026,"grain":0.05,"vignette":1,"dustCount":60,"glitches":3}}
+        {...getCompositionMetadata(terminalGrid.defaultProps)}
+        calculateMetadata={({props}: {props: typeof terminalGrid.defaultProps}) => metadataFor(terminalGrid.id, terminalGrid.schema.parse(props))}
+      />
+      <Composition
         id="GradientLoop"
         component={gradient.component}
         schema={gradient.schema}
@@ -233,7 +242,7 @@ export const RemotionRoot = () => (
         id="ChatLoop"
         component={chat.component}
         schema={chat.schema}
-        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":400,"height":600,"bleed":32,"guides":false,"radius":16,"padding":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":3,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"glow":20,"glowPulses":1,"glowStrength":3,"halo":24,"haloColor":"#A855F7","rimLight":0,"headerHeight":48,"headerColor":"#E879F9","headerOpacity":0.1,"headerLineWidth":2,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":400,"height":600,"bleed":32,"guides":false,"radius":16,"padding":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":3,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"strokeSides":"all" as const,"glow":20,"glowPulses":1,"glowStrength":3,"halo":24,"haloColor":"#A855F7","rimLight":0,"headerHeight":48,"headerColor":"#E879F9","headerOpacity":0.1,"headerLineWidth":2,"footerHeight":0,"footerLineWidth":1,"footerLineColor":"#E879F9","footerLineOpacity":0.9,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
         {...getCompositionMetadata(chat.defaultProps, chat.getLayout(chat.defaultProps).canvas)}
         calculateMetadata={({props}: {props: typeof chat.defaultProps}) => metadataFor(chat.id, chat.schema.parse(props))}
       />
@@ -243,7 +252,7 @@ export const RemotionRoot = () => (
         id="BlockLoop"
         component={block.component}
         schema={block.schema}
-        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"width":640,"height":360,"bleed":32,"guides":false,"shape":"rectangle" as const,"radius":16,"paddingX":24,"paddingY":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9"],"strokeWidth":4,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"glow":20,"glowPulses":2,"glowStrength":3,"halo":20,"haloColor":"#A855F7","rimLight":0,"accent":"none" as const,"accentColor":"#E879F9","accentSize":6,"accentSheen":0,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"width":640,"height":360,"bleed":32,"guides":false,"shape":"rectangle" as const,"radius":16,"paddingX":24,"paddingY":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9"],"strokeWidth":4,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"strokeSides":"all" as const,"glow":20,"glowPulses":2,"glowStrength":3,"halo":20,"haloColor":"#A855F7","rimLight":0,"accent":"none" as const,"accentColor":"#E879F9","accentSize":6,"accentSheen":0,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
         {...getCompositionMetadata(block.defaultProps, block.getLayout(block.defaultProps).canvas)}
         calculateMetadata={({props}: {props: typeof block.defaultProps}) => metadataFor(block.id, block.schema.parse(props))}
       />
