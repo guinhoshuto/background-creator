@@ -27,6 +27,7 @@ export const stillSchema = z.object({
 export const jobSchema = z.object({
   outDir: z.string().min(1).optional()
     .describe('Relative to the job file; default out/review/<date>-<job file name>/ in the project'),
+  title: z.string().min(1).optional().describe('Title of the review page (index.html in outDir); default: the name of outDir'),
   stills: z.array(stillSchema).min(1),
   baseline: z.object({ref: z.string().min(1).default('HEAD')}).strict().optional()
     .describe('Also render every still at this git ref and diff it against the working tree'),
@@ -339,7 +340,8 @@ const SHEETS: {out: string; kind: string; cols: number; width: number; bg: strin
 /**
  * The QA job for one pack: every file the pack plans (one still per composition, size and
  * variant; masks and repeated formats skipped) at each frame, a sheet per kind, a light sheet,
- * and the stream mockups whose sizes the pack has. Frames wrap per asset, like any still.
+ * and the stream mockups whose sizes the pack has. Frames wrap per asset, like any still. Its review
+ * page is titled with the pack.
  */
 export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: readonly number[]} = {}) => {
   const seen = new Set<string>();
@@ -389,5 +391,7 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
       mockups.push({out: `${layout.out}-${frame}.png`, base: backgroundStill, width: 1920, height: 1080, maxWidth: MAX_SHEET_WIDTH, layers});
     }
   }
-  return {outDir: '.', stills, sheets, mockups} satisfies Omit<StillsJob, 'stills'> & {stills: StillSpec[]};
+  // A pack plans at least one file, and every one sits in out/packs/<pack>/.
+  const title = `${plan[0]!.output.split('/')[2]} · qa:kit`;
+  return {outDir: '.', title, stills, sheets, mockups} satisfies Omit<StillsJob, 'stills'> & {stills: StillSpec[]};
 };

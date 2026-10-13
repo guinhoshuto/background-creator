@@ -14,7 +14,8 @@ import {runStills} from './stills-run';
 const HELP_TEXT = `npm run qa:kit -- <pack> [options]
 
 Visual QA of a pack without rendering it: one still per file the pack plans, at each frame, a
-contact sheet per kind, a light sheet and stream mockups, in out/review/<date>-qa-<pack>/.
+contact sheet per kind, a light sheet and stream mockups, in out/review/<date>-qa-<pack>/, with
+index.html, the review page titled with the pack that captions every image (QHM-03) to quote back.
 
 Options:
   --frames <a,b>  frames to render (default: 0 and 43% of the background's loop)
