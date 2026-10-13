@@ -19,4 +19,11 @@ What changed from the original. Its grain and scanlines were `mix-blend-mode: mu
 npm run render:webm -- TerminalGridLoop --props presets/sand-terminal.json
 ```
 
-The kit's panels on this background are light: the buyer's chat needs dark text.
+## The kit
+
+The `sand-terminal` kit (`packs/sand-terminal.json`, presets `chat-`, `block-` and `border-sand-terminal`, ornaments `terminal`; see [Overlays](../overlays.md#themes)) takes this background's 16 s and seed 47.
+
+- The panels are light (sand at 0.82): the buyer's chat and text widgets need dark text, the ink `#45423A` or close to it.
+- The outlines are open at the sides (`strokeSides: "top-bottom"`), as in the old pack; the circles keep their whole ring. A light glint runs along the ink lines at 56 px/s, which every size shows within ±35 % (with 50 the `label` ran 43 % fast).
+- The webcam frames have square corners, so the three 16:9 windows (`webcam-16x9`, `webcam-16x9-lg`, `gameplay`) share one OBS mask, named after the shortest id (`sand-terminal-gameplay-mask.png`), and the pack has five masks, not seven.
+- With square corners a 16:9 mask is the whole camera: OBS needs it only for the round webcams; the others are there for the buyer who crops the camera to another aspect.

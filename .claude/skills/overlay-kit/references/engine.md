@@ -149,6 +149,7 @@ The harness requires a kit preset to place its hero at every named size of every
   | 320 | 23 px/s | 18 px/s |
   | 400 | 31 px/s | 23 px/s |
   | 480 (the default) | 35 px/s | 26 px/s |
+  | 800 (four colours, radius 0, open sides: `sand-terminal`, 2026-10-12) | — | 54 px/s |
 
   No failure above those up to 200 px/s. The upper bound is the 40% step rule (`motion.ts:MAX_FRAME_SHARE`, `strokes.ts:refineStroke`).
 - `fog` speed: whole k ≥ 3 of 2.25 × `fillScale` / `durationSeconds` (`docs/overlays.md`, `fillSpeed`).
@@ -163,7 +164,7 @@ The harness requires a kit preset to place its hero at every named size of every
 - With ornaments: `chat-<theme>` on every chat size (in table order), `block-<theme>` on every block size but `twitch-panel`, `border-<theme>` on every border size but the two screens.
 - `plain` twins of every size (screens included, `twitch-panel` excluded), props exactly `{"ornaments": "none"}`.
 - Formats `["webm", "png"]`, or `["png"]` for compositions in `STATIC_ONLY`; `version` an integer ≥ 1.
-- Plan length = 2·backgrounds + 2·(24 + 26) − dropped WebMs + 7 masks.
+- Plan length = 2·backgrounds + 2·(24 + 26) − dropped WebMs + one mask per window shape: 7 with rounded corners, 5 with square ones (the three 16:9 windows share one; `tests/helpers/masks.ts:maskGroupsOf`).
 - Check without rendering: `npm run render:pack -- <theme> --dry-run`, `npm run ornaments:report -- <theme>`.
 
 ## 14. Tests while building a set
