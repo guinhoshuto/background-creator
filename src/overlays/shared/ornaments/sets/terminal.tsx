@@ -4,33 +4,44 @@ import {cycleOf} from '../../motion';
 import {ornamentPalette} from '../draw';
 import {harmonics, ornamentRandom} from '../place';
 import type {OrnamentBase, OrnamentSet} from '../types';
-import {DBAR, METER, ROW, placeTerminal, TERMINAL_MIN_EXTENT, type TerminalMotif, type TerminalPlacement} from './terminal-place';
+import {DBAR, METER, ROW, STAFF, placeTerminal, TERMINAL_MIN_EXTENT, type TerminalMotif, type TerminalPlacement} from './terminal-place';
 
 /**
  * The 'terminal' ornaments (TerminalGridLoop, "sand terminal"): the old HTML pack's shape
  * vocabulary (v3) around the panels and frames. A row of ink squares above the top line (the
  * hero, everywhere), lock-on brackets and the accent lock diamond on the frames, the knocked-out
  * square on a chat's dark header and the signal meter on its footer, the double bar beside a
- * block's text. Placement and sizes: terminal-place.ts (ornamentSize = the row's pitch).
+ * block's text, the radar's dial ticks round a circle and the staff under a title. Placement and
+ * sizes: terminal-place.ts (ornamentSize = the row's pitch).
  *
  * ornamentColors: [0] the ink, [1] the light knock-out (the head square, and the rim under every
  * other motif that keeps the ink readable over dark footage), [2] the accent (the diamond; without
  * it, the ink).
  *
- * Motion, as in the pack: the squares, brackets and bars stand still (the panels' lines carry the
- * motion); the diamond pulses (2.6 s in the pack: 6 whole pulses per 16 s), and the meter's signal
- * drifts between two and five bars on a few whole cycles, every bar fading on and off. Frame 0 is
- * the pack's pose: the diamond bright, four bars of five lit. Every rim is drawn before any ink, so
- * the rim of one piece of a run never covers its neighbour.
+ * Motion, as in the pack: the squares, brackets, bars and staff stand still (the panels' lines
+ * carry the motion); the diamond pulses (2.6 s in the pack: 6 whole pulses per 16 s), the meter's
+ * signal drifts between two and five bars on a few whole cycles, every bar fading on and off, and
+ * the radar's sweep turns once per 16 s (10.5 s in the pack), each tick lighting as it passes and
+ * fading over the pack's 2.2 rad behind it. Frame 0 is the pack's pose: the diamond bright, four
+ * bars of five lit, the sweep at the bottom right. Every rim is drawn before any ink, so the rim of
+ * one piece of a run never covers its neighbour.
  */
 
-/** The diamond's pulses (the pack's 2.6 s) and the meter's two drifts, in Hz. */
-const HZ = {diamond: 1 / 2.6, slow: 2 / 16, fast: 5 / 16} as const;
+/** The diamond's pulses (the pack's 2.6 s), the meter's two drifts and the radar's sweep, in Hz. */
+const HZ = {diamond: 1 / 2.6, slow: 2 / 16, fast: 5 / 16, sweep: 1 / 16} as const;
+/**
+ * The sweep: its direction at frame 0 (bottom right, clear of the squares over the top), the
+ * angle behind it over which a tick fades back (the pack's blips) and the angle ahead over which
+ * it lights, both eased so no tick jumps between frames.
+ */
+const SWEEP = {start: TAU / 8, fade: 2.2, rise: 0.15} as const;
+/** A tick at rest is a step over the pack's line colour (the ink at .5: too faint on a 2 px tick); the sweep takes it to the full ink. */
+const TICK_ALPHA = {rest: 0.6, lit: 1} as const;
 /** The diamond's opacity: .95 at the peak, .55 at the trough. */
 const DIAMOND_ALPHA = {mid: 0.75, swing: 0.2} as const;
 /** The meter: four bars lit at rest, and how far each drift moves the level. */
 const METER_LEVEL = {rest: 4, slow: 0.9, fast: 0.5} as const;
-/** An unlit bar is the pack's line colour: the ink at .5. */
+/** An unlit bar, and the staff's lines, are the pack's line colour: the ink at .5. */
 const BAR_OFF = 0.5;
 /**
  * The rim's opacity: enough to lift the ink off dark footage, low enough that on the sand the
@@ -44,6 +55,8 @@ type Fields = {
   x0: number; y0: number; x1: number; y1: number; rim: number; rimBefore: number; rimAfter: number;
   /** 0 along x, 1 along y (the runs: bracket pieces, double bar). */
   along: number;
+  /** The rect's turn round (x, y), in radians: a tick's direction; 0 elsewhere. */
+  angle: number;
   color: string;
   alpha: number;
 };
@@ -52,14 +65,17 @@ type BracketElement = OrnamentBase & Fields & {type: 'terminal-bracket'};
 type DiamondElement = OrnamentBase & Fields & {type: 'terminal-diamond'};
 type HeadElement = OrnamentBase & Fields & {type: 'terminal-head'};
 type DoubleBarElement = OrnamentBase & Fields & {type: 'terminal-dbar'};
+type TickElement = OrnamentBase & Fields & {type: 'terminal-tick'};
+type StaffElement = OrnamentBase & Fields & {type: 'terminal-staff'};
 type MeterElement = OrnamentBase & Fields & {
   type: 'terminal-meter'; level0: number; level1: number; level2: number; level3: number; level4: number;
 };
-type TerminalOrnamentElement = SquareElement | BracketElement | DiamondElement | HeadElement | DoubleBarElement | MeterElement;
+type TerminalOrnamentElement = SquareElement | BracketElement | DiamondElement | HeadElement | DoubleBarElement | MeterElement | TickElement
+  | StaffElement;
 
 const TYPES: Record<TerminalMotif, TerminalOrnamentElement['type']> = {
   square: 'terminal-square', 'bracket-h': 'terminal-bracket', 'bracket-v': 'terminal-bracket', diamond: 'terminal-diamond',
-  head: 'terminal-head', meter: 'terminal-meter', dbar: 'terminal-dbar',
+  head: 'terminal-head', meter: 'terminal-meter', dbar: 'terminal-dbar', tick: 'terminal-tick', staff: 'terminal-staff',
 };
 
 const runsAlongY = (motif: TerminalMotif) => motif === 'dbar' || motif === 'bracket-v';
@@ -87,6 +103,7 @@ const set: OrnamentSet<TerminalOrnamentElement> = {
     const pulses = harmonics(HZ.diamond, style.durationSeconds);
     const slow = harmonics(HZ.slow, style.durationSeconds);
     const fast = harmonics(HZ.fast, style.durationSeconds);
+    const sweep = SWEEP.start + harmonics(HZ.sweep, style.durationSeconds) * angle;
     const {cool: inkColor, light: knock, warm: accent} = ornamentPalette(style);
     const rims: TerminalOrnamentElement[] = [];
     const inks: TerminalOrnamentElement[] = [];
@@ -98,7 +115,7 @@ const set: OrnamentSet<TerminalOrnamentElement> = {
       const base = {
         layer: spot.layer, anchor, opacity: 1, x: spot.x, y: spot.y, light: 0, lightOpacity: 0,
         x0: spot.x0, y0: spot.y0, x1: spot.x1, y1: spot.y1, rim: spot.rim, rimBefore: spot.rimBefore, rimAfter: spot.rimAfter,
-        along: runsAlongY(spot.motif) ? 1 : 0,
+        along: runsAlongY(spot.motif) ? 1 : 0, angle: spot.angle,
       };
       const type = TYPES[spot.motif];
       if (spot.rim > 0) {
@@ -120,6 +137,10 @@ const set: OrnamentSet<TerminalOrnamentElement> = {
         inks.push({...ink, type, color: accent, alpha: DIAMOND_ALPHA.mid + DIAMOND_ALPHA.swing * Math.cos(pulses * angle)});
       } else if (type === 'terminal-head') {
         inks.push({...ink, type, color: knock, alpha: 1});
+      } else if (type === 'terminal-tick') {
+        inks.push({...ink, type, color: inkColor, alpha: TICK_ALPHA.rest + (TICK_ALPHA.lit - TICK_ALPHA.rest) * sweepLight(sweep - spot.angle)});
+      } else if (type === 'terminal-staff') {
+        inks.push({...ink, type, color: inkColor, alpha: BAR_OFF});
       } else {
         inks.push({...ink, type, color: inkColor, alpha: type === 'terminal-square' ? ROW.opacity : 1});
       }
@@ -132,6 +153,21 @@ const set: OrnamentSet<TerminalOrnamentElement> = {
   },
 };
 
+const smooth = (t: number) => {
+  const clamped = Math.min(1, Math.max(0, t));
+  return clamped * clamped * (3 - 2 * clamped);
+};
+
+/**
+ * How lit a tick is, from how far the sweep has gone past it (any angle): 1 as the sweep reaches
+ * it, fading over SWEEP.fade behind, rising over SWEEP.rise ahead; eased at both ends, so its speed
+ * never breaks (the seam included).
+ */
+const sweepLight = (behind: number) => {
+  const past = ((behind % TAU) + TAU) % TAU;
+  return past > TAU - SWEEP.rise ? smooth((past - (TAU - SWEEP.rise)) / SWEEP.rise) : 1 - smooth(past / SWEEP.fade);
+};
+
 /** A meter's rim carries levels too (every meter element has the same fields), unused. */
 const QUIET = {level0: 0, level1: 0, level2: 0, level3: 0, level4: 0} as const;
 
@@ -142,6 +178,15 @@ const rect = (x0: number, y0: number, x1: number, y1: number) => `M${n(x0)} ${n(
 /** A rect grown by `rim` across its run and by `before` and `after` past its ends along it (along: 0 x, 1 y). */
 const grown = (x0: number, y0: number, x1: number, y1: number, along: number, rim: number, before: number, after: number) =>
   (along === 0 ? rect(x0 - before, y0 - rim, x1 + after, y1 + rim) : rect(x0 - rim, y0 - before, x1 + rim, y1 + after));
+
+/** A rect turned by `angle` round (cx, cy). */
+const turned = (x0: number, y0: number, x1: number, y1: number, cx: number, cy: number, angle: number) => {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const [a, b, c, d] = ([[x0, y0], [x1, y0], [x1, y1], [x0, y1]] as const)
+    .map(([x, y]) => [cx + (x - cx) * cos - (y - cy) * sin, cy + (x - cx) * sin + (y - cy) * cos] as const);
+  return `M${n(a![0])} ${n(a![1])}L${n(b![0])} ${n(b![1])}L${n(c![0])} ${n(c![1])}L${n(d![0])} ${n(d![1])}Z`;
+};
 
 /** The double bar's two rects across [x0, x1]: the 1 px line, then the 4 px bar DBAR.gap px right of it. */
 const doubleBar = (x0: number, x1: number) => [[x0, x0 + DBAR.line], [x1 - DBAR.bar, x1]] as const;
@@ -167,6 +212,12 @@ const pathOf = (element: TerminalOrnamentElement): string => {
     case 'terminal-meter':
       // The rim round every bar (the ink is MeterInk's: one opacity per bar).
       return meterBars(x0, y1).map((bar) => grown(bar.x0, bar.y0, bar.x1, y1, 1, rim, rim, rim)).join('');
+    case 'terminal-tick':
+      // Along x before the turn: x0 is its foot on the line, x1 its tip.
+      return turned(x0 - before, y0 - rim, x1 + after, y1 + rim, element.x, element.y, element.angle);
+    case 'terminal-staff':
+      return Array.from({length: STAFF.lines}, (_, line) => y0 + line * STAFF.pitch)
+        .map((top) => grown(x0, top, x1, top + STAFF.line, along, rim, before, after)).join('');
     default:
       return grown(x0, y0, x1, y1, along, rim, before, after);
   }

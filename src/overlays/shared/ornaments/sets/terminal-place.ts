@@ -1,6 +1,7 @@
+import {TAU} from '../../../../loop';
 import {offsetRoundRect} from '../../geometry';
 import {ceilHalf, fitsAt} from '../place';
-import type {OrnamentCornerId, OrnamentFrame, OrnamentPlacement} from '../types';
+import type {OrnamentCornerId, OrnamentFrame, OrnamentPlacement, OrnamentSlotId} from '../types';
 
 /**
  * Where the 'terminal' set (TerminalGridLoop, "sand terminal") puts its motifs: the old HTML pack's
@@ -16,18 +17,25 @@ import type {OrnamentCornerId, OrnamentFrame, OrnamentPlacement} from '../types'
  *     stroke, its outer corner 1 px outside the frame line, cut into abutting pieces so each fits
  *     its room beside the window.
  *   - Diamond (borders): the accent lock diamond, a 12 px square at 45°, centred on the frame line's
- *     top midpoint; the row leaves a gap over it.
+ *     top midpoint. With ornamentScale the line sits closer to the window than the diamond's half
+ *     diagonal: it rises (whole px) while the line still crosses it, then shrinks, until it clears
+ *     the window. The row leaves a gap over it.
  *   - Head square (chat header band): 9 px, knocked out of the dark band, its left side 20 px from
  *     the panel's (moved left until it clears the title).
  *   - Meter (chat footer band): five bars 5 px wide, 3 px apart, 5 to 18 px tall, bottom-aligned,
  *     ending 20 px from the panel's right side.
  *   - Double bar (rectangular blocks): a 1 px line and a 4 px bar 4 px apart, 20 px left of the text,
  *     from its top down as tall as the text area (at most 88 px), cut into abutting pieces.
+ *   - Dial ticks (round blocks and webcams): the radar's compass ring, its 24 ticks every 15° (the
+ *     four cardinal ones long), standing out of the line's outer edge, since inside the circle is
+ *     the text or the window. All 24 or none.
+ *   - Staff (wide blocks, a title or a banner): five 1 px lines every 6 px, 384 px long, hanging
+ *     STAFF.gap px under the bottom line from its right end, cut into abutting pieces.
  *
  * The lines measured here are the kit's 2 px strokes: the frame line (a border's stroke on its
  * band) and a panel's top line both sit on `frame.track`, and LINE.half px out of it is their outer
  * edge. Squares, brackets and diamond follow ornamentSize (the pitch) in the pack's ratios; the
- * band and pocket furniture (head square, meter, double bar) keeps its own px. Every motif is drawn
+ * band and pocket furniture (head square, meter, double bar, ticks, staff) keeps its own px. Every motif is drawn
  * over a RIM px light rim (ornamentColors[1]) that keeps the ink readable over dark footage (the
  * head square, knocked out of a dark band, has none); the rim counts in each extent. A placement
  * carries the rect it draws (x0, y0, x1, y1) and, for a piece of a run, how far its rim reaches
@@ -46,24 +54,33 @@ export const ROW = {side: 0.5, gap: 10 / 14, minPitch: 6, opacity: 0.75} as cons
 const ROW_CIRCLE_SPAN = 1;
 /** Brackets, per ornamentSize: arm and stroke (30 and 3 px at 14); the outer corner `out` px past the line's outer edge. */
 export const BRACKET = {arm: 30 / 14, width: 3 / 14, minWidth: 2, out: 1} as const;
-/** Diamond, per ornamentSize: the side of the square turned 45° (12 px at 14), and the row's gap around it. */
-export const DIAMOND = {side: 12 / 14, clear: 3} as const;
+/** Diamond, per ornamentSize: the side of the square turned 45° (12 px at 14), the smallest side it shrinks to, and the row's gap around it. */
+export const DIAMOND = {side: 12 / 14, minSide: 6, clear: 3} as const;
 /** Head square: side, left side from the panel's left edge. */
 export const HEAD = {side: 9, left: 20} as const;
 /** Meter: bar width, gap, heights left to right, right end from the panel's right edge. */
 export const METER = {bar: 5, gap: 3, heights: [5, 8, 11, 14, 18], right: 20} as const;
 /** Double bar: line, gap, bar, gap to the text, tallest run. */
 export const DBAR = {line: 1, gap: 4, bar: 4, text: 20, max: 88} as const;
+/**
+ * Dial ticks: count, every `every`-th one long, lengths and width. The pack's 2.5 and 5.5 px by
+ * 1 px sat inside a 150 px radar; round the kit's larger circles, 4 and 7 px by 2 (like every kit
+ * line) read, and the long one at the top stays 1 px clear of the squares' rim (10 px out).
+ */
+export const TICKS = {count: 24, every: 6, long: 7, short: 4, width: 2} as const;
+/** Staff: lines, pitch, line width, length, gap under the bottom line, narrowest box that takes one. */
+export const STAFF = {lines: 5, pitch: 6, line: 1, length: 384, gap: 3, minWidth: 960} as const;
 
-export type TerminalMotif = 'square' | 'bracket-h' | 'bracket-v' | 'diamond' | 'head' | 'meter' | 'dbar';
+export type TerminalMotif = 'square' | 'bracket-h' | 'bracket-v' | 'diamond' | 'head' | 'meter' | 'dbar' | 'tick' | 'staff';
 
 /**
  * A terminal placement: the rect it draws (the diamond's is the square before the turn), its rim
- * across (0 for the head square, knocked out of a dark band: a rim would only grow it) and, for a
- * piece of a run (bracket-h, bracket-v, dbar), the rim past each end along the run.
+ * across (0 for the head square, knocked out of a dark band: a rim would only grow it), for a
+ * piece of a run (bracket-h, bracket-v, dbar, staff) the rim past each end along the run, and the
+ * turn of the rect round its centre in radians (a tick's direction out of the ring; 0 elsewhere).
  */
 export type TerminalPlacement = OrnamentPlacement & {
-  motif: TerminalMotif; x0: number; y0: number; x1: number; y1: number; rim: number; rimBefore: number; rimAfter: number;
+  motif: TerminalMotif; x0: number; y0: number; x1: number; y1: number; rim: number; rimBefore: number; rimAfter: number; angle: number;
 };
 
 type Box = {x0: number; y0: number; x1: number; y1: number};
@@ -83,8 +100,9 @@ export const diamondExtent = (side: number) => ceilHalf(side / Math.SQRT2 + RIM 
 
 const placement = (
   motif: TerminalMotif, slot: TerminalPlacement['slot'], box: Box, extent: number, size: number, rim = RIM, rimBefore = rim, rimAfter = rim,
+  angle = 0,
 ): TerminalPlacement => ({
-  motif, slot, layer: 'front', x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2, extent, size, ...box, rim, rimBefore, rimAfter,
+  motif, slot, layer: 'front', x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2, extent, size, ...box, rim, rimBefore, rimAfter, angle,
 });
 
 const fits = (frame: OrnamentFrame, spot: TerminalPlacement) => fitsAt(frame, spot.x, spot.y, spot.extent, 'front');
@@ -155,13 +173,21 @@ const placeRow = (frame: OrnamentFrame, ornamentSize: number): TerminalPlacement
   return [];
 };
 
-/** The lock diamond centred on the frame line's top midpoint (borders around a window). */
+/**
+ * The lock diamond on the frame line's top midpoint (borders around a window): centred on it, or
+ * risen while the line still crosses it at least 1 px inside its lower tip, at the largest side
+ * that clears the window up to the nominal one.
+ */
 const placeDiamond = (frame: OrnamentFrame, ornamentSize: number): TerminalPlacement | null => {
   if (frame.kind !== 'border' || frame.fit !== 'window') return null;
-  const side = Math.round(DIAMOND.side * ornamentSize);
   const cx = frame.track.x + frame.track.width / 2;
-  const spot = placement('diamond', 'top', square(cx, frame.track.y, side), diamondExtent(side), side);
-  return fits(frame, spot) ? spot : null;
+  for (let side = Math.round(DIAMOND.side * ornamentSize); side >= DIAMOND.minSide; side--) {
+    for (let lift = 0; lift <= side / Math.SQRT2 - 1; lift++) {
+      const spot = placement('diamond', 'top', square(cx, frame.track.y - lift, side), diamondExtent(side), side);
+      if (fits(frame, spot)) return spot;
+    }
+  }
+  return null;
 };
 
 /**
@@ -170,7 +196,7 @@ const placeDiamond = (frame: OrnamentFrame, ornamentSize: number): TerminalPlace
  * `rimAfter` are the run's own ends.
  */
 const placeRun = (
-  frame: OrnamentFrame, motif: 'bracket-h' | 'bracket-v' | 'dbar', slot: TerminalPlacement['slot'], along: 'h' | 'v',
+  frame: OrnamentFrame, motif: 'bracket-h' | 'bracket-v' | 'dbar' | 'staff', slot: TerminalPlacement['slot'], along: 'h' | 'v',
   from: number, to: number, across: readonly [number, number], ends: readonly [number, number],
 ): TerminalPlacement[] | null => {
   const length = Math.abs(to - from);
@@ -262,6 +288,42 @@ const placeDoubleBar = (frame: OrnamentFrame): TerminalPlacement[] => {
   return placeRun(frame, 'dbar', 'left', 'v', top, bottom, [x0, x1], [RIM, RIM]) ?? [];
 };
 
+/** The slot a direction out of a circle points at (y grows downward): the side or the 45° corner nearest. */
+const slotAt = (angle: number): OrnamentSlotId =>
+  (['right', 'BR', 'bottom', 'BL', 'left', 'TL', 'top', 'TR'] as const)[Math.round(angle / (TAU / 8)) % 8]!;
+
+/**
+ * The dial's ticks round a circle: each a TICKS.width px rect from the line's outer edge outward,
+ * turned to its direction; no rim at its foot, which stands on the line. All of them or none.
+ */
+const placeTicks = (frame: OrnamentFrame): TerminalPlacement[] => {
+  if (!frame.circle || frame.fit === 'screen') return [];
+  const edge = lineEdge(frame);
+  const cx = edge.x + edge.width / 2;
+  const cy = edge.y + edge.height / 2;
+  const ticks = Array.from({length: TICKS.count}, (_, index) => {
+    const angle = (index * TAU) / TICKS.count;
+    const length = index % TICKS.every === 0 ? TICKS.long : TICKS.short;
+    const mid = edge.width / 2 + length / 2;
+    const x = cx + Math.cos(angle) * mid;
+    const y = cy + Math.sin(angle) * mid;
+    const box = {x0: x - length / 2, y0: y - TICKS.width / 2, x1: x + length / 2, y1: y + TICKS.width / 2};
+    return placement('tick', slotAt(angle), box, rectExtent(box, 'h', RIM, 0, RIM), length, RIM, 0, RIM, angle);
+  });
+  return ticks.every((spot) => fits(frame, spot)) ? ticks : [];
+};
+
+/** The staff under a wide block's bottom line, from its right end leftward; [] when the bleed cannot hold it. */
+const placeStaff = (frame: OrnamentFrame): TerminalPlacement[] => {
+  if (frame.kind !== 'block' || frame.circle) return [];
+  const edge = lineEdge(frame);
+  if (edge.width < STAFF.minWidth) return [];
+  const top = Math.round(edge.y + edge.height + STAFF.gap);
+  const right = Math.round(edge.x + edge.width);
+  const height = (STAFF.lines - 1) * STAFF.pitch + STAFF.line;
+  return placeRun(frame, 'staff', 'bottom', 'h', right, right - STAFF.length, [top, top + height], [RIM, RIM]) ?? [];
+};
+
 /** The squares' gap round the diamond: those within its half diagonal and DIAMOND.clear px of its centre on x go. */
 const clearOf = (diamond: TerminalPlacement | null) => (box: TerminalPlacement) => {
   if (!diamond) return true;
@@ -283,6 +345,8 @@ export const placeTerminal = (frame: OrnamentFrame, ornamentSize: number): Termi
     ...(head ? [head] : []),
     ...(meter ? [meter] : []),
     ...placeDoubleBar(frame),
+    ...placeTicks(frame),
+    ...placeStaff(frame),
   ];
 };
 
