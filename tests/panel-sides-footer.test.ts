@@ -49,6 +49,15 @@ test('strokeSides top-bottom: o traço fica recortado em duas faixas, nas linhas
   }
 });
 
+test('strokeSides top-bottom: um círculo não tem lados, e o contorno fica inteiro', () => {
+  const circle = (input: object) => renderToStaticMarkup(createElement(BlockFrame, {
+    props: blockLoopSchema.parse({...sizeProps(getSize('circle')), strokeWidth: 2, ...input}), frame: 123, durationInFrames: 480,
+  }));
+  const open = circle({strokeSides: 'top-bottom'});
+  assert.equal(sideBands(open, 'block'), null);
+  assert.equal(open, circle({}));
+});
+
 test('strokeSides top-bottom: o movimento ao longo do contorno não muda, só o que se desenha dele', () => {
   const open = getChatLayers(chat({strokeSides: 'top-bottom', strokeMotion: 'comets'}), 200, 960);
   const closed = getChatLayers(chat({strokeMotion: 'comets'}), 200, 960);

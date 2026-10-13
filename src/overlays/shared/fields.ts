@@ -145,10 +145,11 @@ export type StrokeSides = (typeof STROKE_SIDES)[number];
 /**
  * The outline on all four sides, or only its top and bottom lines (the sides stay open, like a
  * terminal's rule above and below the text). The motion along the outline is the same either way:
- * only what is drawn of it changes. Its own factory: borders have no open sides.
+ * only what is drawn of it changes; a circle keeps its whole outline. Its own factory: borders have
+ * no open sides.
  */
 export const strokeSidesField = () => z.enum(STROKE_SIDES)
-  .describe('Outline sides: all, or top-bottom (only the lines above and below; the sides stay open)')
+  .describe('Outline sides: all, or top-bottom (only the lines above and below; the sides stay open; a circle keeps its whole outline)')
   .default('all');
 
 export const trackOpacityField = (defaultValue = 0.3) => z.number().finite().min(0).max(1)

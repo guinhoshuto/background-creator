@@ -10,7 +10,7 @@ import type {
 } from './elements';
 import {FOG_SHAPE} from './fills';
 import type {StrokeSides} from './fields';
-import {arcBandPath, rectPath, roundRectPath, svgNumber, type RoundRect} from './geometry';
+import {arcBandPath, isCircle, rectPath, roundRectPath, svgNumber, type RoundRect} from './geometry';
 import type {FrameLayout} from './layout';
 import {perimeterPath, pointAt} from './perimeter';
 
@@ -400,7 +400,9 @@ export const FillLayer = ({elements, clip, name = 'fill'}: {elements: readonly F
  * light core only changes colour inside strokes that are already opaque, so the glow, which
  * blurs alpha, is the same with or without it. With `sides: 'top-bottom'` the strokes (not the
  * children) are clipped to two bands around the first track's top and bottom lines, so the sides
- * stay open; the glow blurs what is left. Without it the markup is exactly the four-sided one.
+ * stay open; the glow blurs what is left. A circle has no sides: the bands would leave only its
+ * top and bottom points, so it keeps its whole outline. Without it the markup is exactly the
+ * four-sided one.
  */
 export const StrokeLayer = ({elements, tracks, name = 'stroke', core = 0, sides = 'all', children}: {
   elements: readonly (StrokeElement | GlowElement)[]; tracks: readonly RoundRect[]; name?: string;
@@ -415,7 +417,7 @@ export const StrokeLayer = ({elements, tracks, name = 'stroke', core = 0, sides 
   const glow = elements.find((element): element is GlowElement => element.type === 'glow');
   const context: ElementContext = {tracks, idBase: id, core};
   const strokes = elements.map((element, index) => renderOverlayElement(element, index, context));
-  const open = sides === 'top-bottom' && tracks[0] ? openSidesClip(tracks[0], elements) : null;
+  const open = sides === 'top-bottom' && tracks[0] && !isCircle(tracks[0]) ? openSidesClip(tracks[0], elements) : null;
   const sharp = (
     <>
       {open ? <g clipPath={url(`${id}-sides`)}>{strokes}</g> : strokes}
