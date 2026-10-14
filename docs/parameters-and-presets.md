@@ -10,7 +10,7 @@ Backgrounds (`backgrounds` folder) fill the whole screen:
 | --- | --- | --- |
 | `WutheringWavesLoop` | Blue-and-gold waterside SVG/WebGL illustration with layered lotus, a curved boat, distant eaves and pine, and procedural paper/ink texture | `atmosphere` (mist), `resonance` (light and ribbon details), `particleCount` (particles), `motion` (movement), `centerShade` (central shading) |
 | `WatercolorLoop` | Watercolour painted by a shader on cream paper: pigment pools bleeding wet-on-wet round a light middle (`flow`), misty mountains over a lake (`valley`) or a koi pond (`koi`) | `scene` (painting), `speed` (0–3), `granulation` (0–1), `paperTexture` (0–1), `centerCalm` (0–1) |
-| `GalaxyLoop` | The "galaxy print" painted by a shader: saturated clouds filling the frame, drifting slowly, with light cores glowing through them, dark dust breaking them into islands and dense white stars twinkling | `speed` (0–3), `clouds` (0–1), `stars` (0–1), `twinkle` (0–1), `centerCalm` (0–1) |
+| `GalaxyLoop` | The "galaxy print" painted by a shader: saturated clouds filling the frame, drifting slowly, with light cores glowing through them and dense white stars twinkling | `speed` (0–3), `clouds` (0–1), `stars` (0–1), `twinkle` (0–1), `centerCalm` (0–1) |
 | `HalloweenLoop` | Illustrated night with a moon, bats, fog and glowing pumpkins | `batCount` (0–18), `emberCount` (0–120), `fogIntensity` (0–1), `moonScale` (0.5–1.5) |
 | `HauntedMansionLoop` | Victorian mansion on the right, cold moonlight, amber windows and low fog | `batCount` (0–12), `moteCount` (0–100), `fogIntensity` (0–1), `windowIntensity` (0–1), `moonScale` (0.6–1.4) |
 | `HauntedInteriorLoop` | Gothic hall in central perspective, with the back wall behind the content, moonlit windows, lightning, velvet curtains, candelabra and a swaying chandelier | `dustCount` (0–100), `fogIntensity` (0–1), `candleIntensity` (0–1), `moonlightIntensity` (0–1), `hauntingIntensity` (0–1), `chandelierSway` (0–1), `lightningIntensity` (0–1) |
@@ -58,9 +58,9 @@ A parameter file may hold only the options you want to change; the others keep t
 - `watercolor-flow.json`: wet-on-wet pools of violet, rose, magenta and lilac round a cream middle, with a 16-second loop and MP4 output.
 - `watercolor-valley.json`: misty blue and lavender mountains over a still lake at sunrise.
 - `watercolor-koi.json`: a teal koi pond with four koi, lily pads and a lotus.
-- `galaxy-cosmic.json`: the galaxy print in cyan, blue, violet and pink over a night-blue sky, with two light cores on a diagonal at the sides, dark dust and dense white stars, with a 16-second loop and MP4 output.
+- `galaxy-cosmic.json`: the galaxy print in cyan, blue, violet and pink over a night-blue sky, with two light cores on a diagonal at the sides and dense white stars, with a 16-second loop and MP4 output.
 - `galaxy-candy.json`: a lighter, candy print in cyan, sky blue, orchid and hot pink, on a deep indigo sky.
-- `galaxy-ember.json`: a warm print in violet, magenta, rose, orange and amber, on a warm black sky.
+- `galaxy-ember.json`: a warm print in violet, magenta, hot pink and coral, on a dark plum sky.
 - `halloween-midnight.json`: a night in dark violet, a creamy moon, amber pumpkins and a clear center for content.
 - `halloween-haunted-mansion.json`: a Victorian mansion in night blue, pale moonlight, amber windows and a dark center-left area for the overlay.
 - `halloween-haunted-interior.json`: a gothic hall in perspective, crimson velvet curtains, greenish moonlight and amber candles on the sides, with a large dark arch exactly behind the content area.

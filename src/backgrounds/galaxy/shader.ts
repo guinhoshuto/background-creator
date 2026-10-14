@@ -1,11 +1,12 @@
 /**
  * The galaxy print's GLSL, appended to the prelude: saturated clouds that fill the frame, a few
- * light cores that glow through them, dark dust that breaks them into islands, and dense white
- * stars that twinkle. There is no single galaxy: the picture is the all-over "galaxy" print.
+ * light cores that glow through them and dense white stars that twinkle. There is no single
+ * galaxy, the picture is the all-over "galaxy" print, and no dark dust in front of the clouds:
+ * its threads read as veins in marble, so the depth comes from the dark gaps between the masses.
  *
  * The composition stands still (where the masses, the hues, the cores and the stars sit) and the
  * gas drifts inside it on closed circles through the noise, one turn per cycle, so the last frame
- * runs into the first at the same speed. The dust drifts faster than the gas, so it reads nearer.
+ * runs into the first at the same speed.
  *
  * The palette is a ramp: the clouds run through the colours in order, the crests of the gas take
  * the neighbouring hue, and the cores are the local colour lightened towards white.
@@ -24,8 +25,9 @@ uniform vec4 uCores[3];
 
 // Px per lattice unit of the clouds.
 const float CLOUD_UNIT = 600.0;
-// The dust drifts this much further than the gas in the same cycle: it reads as nearer.
-const float DUST_PARALLAX = 1.6;
+// Overall gains of the clouds' light and of the stars, at full strength of their controls.
+const float CLOUD_GAIN = 0.8;
+const float STAR_GAIN = 0.875;
 
 float sq(float x) { return x * x; }
 
@@ -119,7 +121,6 @@ vec4 experiment(vec2 px) {
   float t = clamp(0.5 + 1.9 * perlin(vec3(0.5 * c + vec2(5.3, 1.7), 7.7), NO_PERIOD) + 0.2 * big + uWarp.w, 0.0, 1.0);
 
   vec3 light = vec3(0.0);
-  vec3 trans = vec3(1.0);
   if (uLook.x > 0.0) {
     // The gas: fractal noise on slow circles, warped gently so it billows instead of marbling.
     vec2 m = c + uChurn.xy;
@@ -149,22 +150,10 @@ vec4 experiment(vec2 px) {
     light *= 1.0 + 1.2 * halo;
     // The core's heart: the local colour lightened, shining through the gas, so it keeps its texture.
     light += mix(tint, vec3(1.0), 0.5) * 2.2 * inner * (0.15 + 0.85 * smoothstep(-0.3, 0.6, gas));
-
-    // Dust in front of the masses: threads across most of the frame and a few soft clumps, all
-    // translucent, so the gas shows through them; thinner in the cores' hearts. What it lets
-    // through leans violet, never black or brown.
-    vec2 dg = 1.3 * (c + DUST_PARALLAX * uChurn.xy) + uWarp.z * warp;
-    float clumps = fbm(vec3(2.4 * dg + vec2(41.0, 17.0), 23.0 + 0.8 * uChurn.w), NO_PERIOD, 4);
-    float threads = 1.0 - abs(fbm(vec3(1.4 * dg + vec2(17.0, 3.0), 5.0 + 0.6 * uChurn.w), NO_PERIOD, 4));
-    float threadMask = smoothstep(-0.3, 0.25, perlin(vec3(0.4 * dg + vec2(9.1, 2.6), 6.3), NO_PERIOD));
-    float depth = 1.8 * min(0.6 * smoothstep(0.18, 0.42, clumps) + threadMask * smoothstep(0.9, 0.985, threads), 1.0)
-      * masses * (1.0 - 0.6 * min(inner, 1.0));
-    trans = exp(-depth * vec3(0.85, 1.25, 0.6));
-    light *= trans * uLook.x * (1.0 - 0.6 * calm);
+    light *= CLOUD_GAIN * uLook.x * (1.0 - 0.6 * calm);
   }
 
-  // Stars, still on the screen: the fine layers gather where the masses are strong, and the dust
-  // in front dims them.
+  // Stars, still on the screen: the fine layers gather where the masses are strong.
   float field = clamp(0.35 + 0.9 * masses + 0.5 * perlin(vec3(0.6 * c + vec2(2.3, 8.1), 4.2), NO_PERIOD), 0.2, 1.6);
   float twinkleDepth = uLook.z;
   // White points have to outshine the clouds they sit on, so even the faint ones peak near 0.5.
@@ -172,7 +161,7 @@ vec4 experiment(vec2 px) {
   stars += starLayer(px, 26.0, 0.7, 7411u, vec2(0.6, 1.0), 0.35 * twinkleDepth, field, 0.0, 0.0) * 5.0;
   stars += starLayer(px, 80.0, 0.45, 5521u, vec2(0.8, 1.4), 0.45 * twinkleDepth, 2.0, 0.04, 0.0) * 4.0;
   stars += starLayer(px, 280.0, 0.4, 3319u, vec2(1.0, 1.8), 0.3 * twinkleDepth, 2.0, 0.12, 16.0) * 6.0;
-  light += stars * uLook.y * (0.25 + 0.75 * trans.g) * (1.0 - 0.25 * calm);
+  light += stars * STAR_GAIN * uLook.y * (1.0 - 0.25 * calm);
 
   float peak = max(max(light.r, light.g), light.b);
   if (peak <= 0.0) return vec4(0.0);
