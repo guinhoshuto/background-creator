@@ -22,6 +22,7 @@ const terminalGrid = backgroundCatalog.TerminalGridLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const watercolor = backgroundCatalog.WatercolorLoop;
+const starfallSky = backgroundCatalog.StarfallSkyLoop;
 const chat = overlayCatalog.ChatLoop;
 const block = overlayCatalog.BlockLoop;
 const border = overlayCatalog.BorderLoop;
@@ -77,6 +78,19 @@ export const RemotionRoot = () => (
         }}
         {...getCompositionMetadata(watercolor.defaultProps)}
         calculateMetadata={({props}: {props: typeof watercolor.defaultProps}) => metadataFor(watercolor.id, watercolor.schema.parse(props))}
+      />
+      <Composition
+        id="StarfallSkyLoop"
+        component={starfallSky.component}
+        schema={starfallSky.schema}
+        defaultProps={{
+          durationSeconds: 16, seed: 5, transparent: false, backgroundColor: '#1A1B48',
+          colors: ['#7CCBFF', '#C38BFF', '#FFD36E'], outputFormat: 'webm',
+          skyColor: '#38549D', horizonColor: '#6A9CEB', cloudColor: '#F2F8FF', cloudShadeColor: '#B3C8F6', seaColor: '#3B6BCF',
+          meteorCount: 3, meteorSize: 1, stars: 0.6, cloudBanks: 1, seaCover: 0.5, horizon: 0.8, speed: 1,
+        }}
+        {...getCompositionMetadata(starfallSky.defaultProps)}
+        calculateMetadata={({props}: {props: typeof starfallSky.defaultProps}) => metadataFor(starfallSky.id, starfallSky.schema.parse(props))}
       />
       <Composition
         id="KawaiiLoop"

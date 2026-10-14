@@ -1,0 +1,20 @@
+{
+  "durationSeconds": 16,
+  "seed": 5,
+  "transparent": false,
+  "backgroundColor": "#1A1B48",
+  "colors": ["#7CCBFF", "#C38BFF", "#FFD36E"],
+  "outputFormat": "mp4",
+  "skyColor": "#38549D",
+  "horizonColor": "#6A9CEB",
+  "cloudColor": "#F2F8FF",
+  "cloudShadeColor": "#B3C8F6",
+  "seaColor": "#3B6BCF",
+  "meteorCount": 3,
+  "meteorSize": 1,
+  "stars": 0.6,
+  "cloudBanks": 1,
+  "seaCover": 0.5,
+  "horizon": 0.8,
+  "speed": 1
+}

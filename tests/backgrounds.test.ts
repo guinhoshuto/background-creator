@@ -13,6 +13,7 @@ import {getHauntedInteriorScene, hauntedInteriorLoopSchema} from '../src/backgro
 import {getHauntedMansionScene, hauntedMansionLoopSchema} from '../src/backgrounds/HauntedMansionLoop';
 import {getKawaiiScene, kawaiiLoopSchema} from '../src/backgrounds/KawaiiLoop';
 import {getParticleScene, particleLoopSchema} from '../src/backgrounds/ParticleLoop';
+import {getStarfallSkyScene, starfallSkyLoopSchema} from '../src/backgrounds/StarfallSkyLoop';
 import {getSunburstScene, sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
 import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/VaporwaveLoop';
 import {WATERCOLOR_SCENES, getWatercolorScene, watercolorLoopSchema} from '../src/backgrounds/WatercolorLoop';
@@ -205,6 +206,23 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
         }), frame, length),
     },
   ]),
+  {
+    // The billows of the banks are listed by place and only sway and breathe; each shooting star
+    // flies, fades and goes back inside its own slot of the cycle, so every field keeps the scan.
+    id: 'StarfallSkyLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getStarfallSkyScene(starfallSkyLoopSchema.parse(input), frame, length),
+  },
+  {
+    // Six shooting stars at the largest size, the horizon at its lowest, the fastest clouds and
+    // the alpha path on.
+    id: 'StarfallSkyLoop (máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getStarfallSkyScene(starfallSkyLoopSchema.parse({
+        meteorCount: 6, meteorSize: 2, stars: 1, cloudBanks: 1, seaCover: 1, horizon: 0.9, speed: 3,
+        transparent: true, ...(input as object),
+      }), frame, length),
+  },
   // The sized overlays list every moving piece by place (dots, dashes, comets, sparks) and wrap
   // their sheens and embers only out of sight, so the scans run with no exemption. Their own
   // tests cover sizes, themes and the hole; here each runs at its defaults and at its busiest.
@@ -466,6 +484,7 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['WatercolorLoop', 'watercolor-flow.json'],
     ['WatercolorLoop', 'watercolor-valley.json'],
     ['WatercolorLoop', 'watercolor-koi.json'],
+    ['StarfallSkyLoop', 'starfall-sky.json'],
     ['GradientLoop', 'gradient-aurora.json'],
     ['ParticleLoop', 'particles-alpha.json'],
     ['GeometricLoop', 'geometric-orbit.json'],

@@ -10,6 +10,7 @@ import {ChristmasLoop, christmasLoopSchema} from './backgrounds/ChristmasLoop';
 import {DotGridLoop, dotGridLoopSchema} from './backgrounds/DotGridLoop';
 import {CheckerboardLoop, checkerboardLoopSchema} from './backgrounds/CheckerboardLoop';
 import {TerminalGridLoop, terminalGridLoopSchema} from './backgrounds/TerminalGridLoop';
+import {StarfallSkyLoop, starfallSkyLoopSchema} from './backgrounds/StarfallSkyLoop';
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
@@ -147,6 +148,15 @@ export const backgroundCatalog = {
     schema: watercolorLoopSchema,
     defaultProps: watercolorLoopSchema.parse({}),
     // A shader painting: WebGL2 needs ANGLE in Chrome Headless, like WebGLLoop.
+    gl: 'angle',
+  },
+  StarfallSkyLoop: {
+    id: 'StarfallSkyLoop',
+    kind: 'background',
+    component: StarfallSkyLoop,
+    schema: starfallSkyLoopSchema,
+    defaultProps: starfallSkyLoopSchema.parse({}),
+    // A shader sky: WebGL2 needs ANGLE in Chrome Headless, like WebGLLoop.
     gl: 'angle',
   },
 } as const satisfies Record<string, CatalogEntry>;
