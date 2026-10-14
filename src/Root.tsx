@@ -84,10 +84,9 @@ export const RemotionRoot = () => (
         component={galaxy.component}
         schema={galaxy.schema}
         defaultProps={{
-          durationSeconds: 16, seed: 1, transparent: false, backgroundColor: '#050512',
-          colors: ['#FFD7A1', '#7EA6FF', '#FF4D9D', '#7B3FE4', '#22B7E8'], outputFormat: 'webm',
-          speed: 1, tilt: 58, angle: -24, galaxyX: 0.64, galaxyY: 0.46, galaxySize: 1, bar: 0,
-          clouds: 0.6, stars: 0.7, twinkle: 0.5, centerCalm: 0.25,
+          durationSeconds: 16, seed: 1, transparent: false, backgroundColor: '#07051C',
+          colors: ['#29D3FF', '#3767FF', '#7E3BFF', '#FF4FA8'], outputFormat: 'webm',
+          speed: 1, clouds: 0.8, stars: 0.8, twinkle: 0.5, centerCalm: 0.25,
         }}
         {...getCompositionMetadata(galaxy.defaultProps)}
         calculateMetadata={({props}: {props: typeof galaxy.defaultProps}) => metadataFor(galaxy.id, galaxy.schema.parse(props))}

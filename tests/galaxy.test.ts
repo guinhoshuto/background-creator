@@ -3,9 +3,10 @@ import {readdirSync, readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {isValidElement} from 'react';
 import {
-  GALAXY_DISC_RADIUS, GALAXY_SPIN_SECONDS, getGalaxyFragmentShader, getGalaxyHalfTurns, getGalaxyScene, getGalaxyUniforms,
-  galaxyLoopSchema,
+  GALAXY_DRIFT_PACE, GALAXY_TWINKLE_SECONDS, getGalaxyCores, getGalaxyFragmentShader, getGalaxyScene, getGalaxyTwinkleTurns,
+  getGalaxyUniforms, galaxyLoopSchema,
 } from '../src/backgrounds/GalaxyLoop';
+import {CONTENT_BOX} from '../src/backgrounds/vaporwave/frame';
 import {GLSL_MAIN, GLSL_PRELUDE} from '../src/backgrounds/webgl/glsl';
 import {backgroundCatalog, getOpenGlRenderer} from '../src/catalog';
 import {RemotionRoot} from '../src/Root';
@@ -31,13 +32,12 @@ const uniformsAt = (input: object, frame: number, length: number) => {
   return getGalaxyUniforms(props, getGalaxyScene(props, frame, length), 1920, 1080);
 };
 
-test('Galaxy: Studio, catalog and the cosmic preset share the sixteen-second full HD galaxy', () => {
+test('Galaxy: Studio, catalog and the cosmic preset share the sixteen-second full HD print', () => {
   const defaults = galaxyLoopSchema.parse({});
   assert.deepEqual(defaults, {
-    durationSeconds: 16, seed: 1, transparent: false, backgroundColor: '#050512',
-    colors: ['#FFD7A1', '#7EA6FF', '#FF4D9D', '#7B3FE4', '#22B7E8'], outputFormat: 'webm',
-    speed: 1, tilt: 58, angle: -24, galaxyX: 0.64, galaxyY: 0.46, galaxySize: 1, bar: 0,
-    clouds: 0.6, stars: 0.7, twinkle: 0.5, centerCalm: 0.25,
+    durationSeconds: 16, seed: 1, transparent: false, backgroundColor: '#07051C',
+    colors: ['#29D3FF', '#3767FF', '#7E3BFF', '#FF4FA8'], outputFormat: 'webm',
+    speed: 1, clouds: 0.8, stars: 0.8, twinkle: 0.5, centerCalm: 0.25,
   });
   const metadata = getCompositionMetadata(defaults);
   assert.deepEqual(metadata, {width: 1920, height: 1080, fps: 60, durationInFrames: 960});
@@ -54,10 +54,7 @@ test('Galaxy: Studio, catalog and the cosmic preset share the sixteen-second ful
 });
 
 test('Galaxy: controls accept their boundaries and reject invalid values', () => {
-  const ranges: Record<string, [number, number]> = {
-    speed: [0, 3], tilt: [0, 75], angle: [-90, 90], galaxyX: [0, 1], galaxyY: [0, 1], galaxySize: [0.5, 1.5],
-    bar: [0, 1], clouds: [0, 1], stars: [0, 1], twinkle: [0, 1], centerCalm: [0, 1],
-  };
+  const ranges: Record<string, [number, number]> = {speed: [0, 3], clouds: [0, 1], stars: [0, 1], twinkle: [0, 1], centerCalm: [0, 1]};
   for (const [key, [min, max]] of Object.entries(ranges)) {
     for (const value of [min - 0.01, max + 0.01, Number.NaN, Number.POSITIVE_INFINITY, String(min)]) {
       assert.equal(galaxyLoopSchema.safeParse({[key]: value}).success, false, `${key}: ${value}`);
@@ -68,6 +65,10 @@ test('Galaxy: controls accept their boundaries and reject invalid values', () =>
   assert.equal(galaxyLoopSchema.safeParse({
     colors: ['#000000', 'rgba(255, 255, 255, 0.35)', '#123', 'hsl(200, 50%, 50%)', 'red', '#ABCDEF'],
   }).success, true);
+  // The spiral's controls are gone: a preset that still carries one fails instead of being ignored.
+  for (const key of ['tilt', 'angle', 'galaxyX', 'galaxyY', 'galaxySize', 'bar']) {
+    assert.equal(galaxyLoopSchema.strict().safeParse({[key]: 0.5}).success, false, key);
+  }
 });
 
 test('Galaxy: every galaxy-*.json preset spells out every control', () => {
@@ -86,7 +87,7 @@ test('Galaxy: the shader declares exactly the uniforms the scene delivers', () =
   assert.ok(source.startsWith('#version 300 es\n'), 'GLSL ES 3.00 must start on the first line');
   assert.equal(source.match(/\bvec4\s+experiment\s*\(\s*vec2\s+\w+\s*\)/g)?.length, 1, 'one experiment(vec2)');
   const declared = declaredUniforms(source);
-  for (const input of [{}, {colors: ['#000000', '#FFFFFF']}, {speed: 0}, {speed: 3, tilt: 75, bar: 1, clouds: 1, stars: 1, twinkle: 1, centerCalm: 1, seed: -99}]) {
+  for (const input of [{}, {colors: ['#000000', '#FFFFFF']}, {speed: 0}, {speed: 3, clouds: 1, stars: 1, twinkle: 1, centerCalm: 1, seed: -99}]) {
     for (const frame of [0, 137, 959]) {
       const uniforms = uniformsAt(input, frame, 960);
       assert.deepEqual([...Object.keys(uniforms)].sort(), [...declared.keys()].sort(), 'declared and delivered uniforms');
@@ -127,7 +128,8 @@ test('Galaxy: time reaches the shader only through the scene, and the GLSL stays
 test('Galaxy: speed 0 holds the picture still and every speed closes the cycle', () => {
   const still = galaxyLoopSchema.parse({speed: 0});
   assert.deepEqual(getGalaxyScene(still, 0, 480), getGalaxyScene(still, 239, 480));
-  assert.deepEqual(uniformsAt({speed: 0}, 239, 480).uLoop, [1, 0, 0, 0]);
+  assert.deepEqual(uniformsAt({speed: 0}, 239, 480).uTwinkle, [1, 0, 1, 0]);
+  assert.ok((uniformsAt({speed: 0}, 239, 480).uChurn as number[]).every((value) => value === 0), 'the gas holds its place');
   for (const speed of [0.05, 0.5, 1, 2.5, 3]) {
     for (const durationSeconds of [3.7, 16, 60]) {
       const props = galaxyLoopSchema.parse({speed, durationSeconds});
@@ -138,34 +140,62 @@ test('Galaxy: speed 0 holds the picture still and every speed closes the cycle',
   }
 });
 
-test('Galaxy: the disc turns whole half turns per cycle, the nearest to half a turn every 16 seconds', () => {
-  assert.equal(GALAXY_SPIN_SECONDS, 16);
-  for (const [speed, durationSeconds, halfTurns] of [
-    [1, 16, 1], [1, 8, 1], [1, 23.9, 1], [1, 24, 2], [1, 32, 2], [0.5, 32, 1], [3, 16, 3], [2.5, 60, 9], [0.05, 3.7, 1], [0, 16, 0],
+test('Galaxy: the stars twinkle whole turns per cycle, the nearest to one every 7 seconds', () => {
+  assert.equal(GALAXY_TWINKLE_SECONDS, 7);
+  for (const [speed, durationSeconds, turns] of [
+    [1, 16, 2], [1, 7, 1], [1, 10.4, 1], [1, 10.6, 2], [1, 60, 9], [0.5, 32, 2], [3, 16, 7], [0.05, 3.7, 1], [0, 16, 0],
   ] as const) {
-    assert.equal(getGalaxyHalfTurns({speed, durationSeconds}), halfTurns, `speed ${speed}, ${durationSeconds} s`);
+    assert.equal(getGalaxyTwinkleTurns({speed, durationSeconds}), turns, `speed ${speed}, ${durationSeconds} s`);
     const props = galaxyLoopSchema.parse({speed, durationSeconds});
     const {durationInFrames: length} = getCompositionMetadata(props);
-    // The shader reads the turn from the cycle's angle, which goes once round per cycle.
     for (const frame of [0, Math.round(length / 3), length - 1]) {
-      const [cos, sin, k, unused] = uniformsAt({speed, durationSeconds}, frame, length).uLoop as number[];
-      const angle = speed > 0 ? (2 * Math.PI * frame) / length : 0;
-      assert.ok(Math.abs(cos! - Math.cos(angle)) < 1e-12 && Math.abs(sin! - Math.sin(angle)) < 1e-12, `frame ${frame} of ${length}`);
-      assert.deepEqual([k, unused], [halfTurns, 0]);
+      const angle = (turns * 2 * Math.PI * frame) / length;
+      const twinkle = uniformsAt({speed, durationSeconds}, frame, length).uTwinkle as number[];
+      const expected = [Math.cos(angle), Math.sin(angle), Math.cos(2 * angle), Math.sin(2 * angle)];
+      assert.ok(twinkle.every((value, index) => Math.abs(value - expected[index]!) < 1e-12), `frame ${frame} of ${length}: ${twinkle}`);
     }
   }
 });
 
-test('Galaxy: the disc sits, leans and turns on screen as the controls say', () => {
-  const uniforms = uniformsAt({galaxyX: 0.25, galaxyY: 0.75, galaxySize: 1.5, tilt: 60, angle: 30, bar: 0.4}, 0, 960);
-  const [x, y, radius, cosTilt] = uniforms.uDisc as number[];
-  assert.deepEqual([x, y, radius], [480, 810, 1.5 * GALAXY_DISC_RADIUS]);
-  assert.ok(Math.abs(cosTilt! - 0.5) < 1e-12);
-  // Counterclockwise on screen, where y grows downwards: the long axis rises to the right.
-  const [axisX, axisY, bar, pitch] = uniforms.uShape as number[];
-  assert.ok(Math.abs(axisX! - Math.sqrt(3) / 2) < 1e-12 && Math.abs(axisY! + 0.5) < 1e-12, `${axisX}, ${axisY}`);
-  assert.equal(bar, 0.4);
-  assert.ok(pitch! > 0.3 && pitch! < 0.5, `tan of the pitch: ${pitch}`);
-  assert.deepEqual(uniformsAt({tilt: 0}, 0, 960).uDisc, [0.64 * 1920, 0.46 * 1080, GALAXY_DISC_RADIUS, 1]);
+test('Galaxy: the gas drifts at the same pace at any duration, in proportion to the speed', () => {
+  for (const [speed, durationSeconds] of [[1, 16], [1, 60], [0.5, 16], [3, 9], [2, 3.7]] as const) {
+    const props = galaxyLoopSchema.parse({speed, durationSeconds});
+    const {durationInFrames: length, fps} = getCompositionMetadata(props);
+    for (const frame of [0, Math.round(length / 2)]) {
+      const [x0, y0] = uniformsAt(props, frame, length).uChurn as number[];
+      const [x1, y1] = uniformsAt(props, frame + 1, length).uChurn as number[];
+      // Lattice units per second along the circle: one frame's chord, stretched to its arc.
+      const half = Math.PI / length;
+      const pace = Math.hypot(x1! - x0!, y1! - y0!) * fps * (half / Math.sin(half));
+      assert.ok(Math.abs(pace - speed * GALAXY_DRIFT_PACE) < 1e-9, `speed ${speed}, ${durationSeconds} s: ${pace}`);
+    }
+  }
+});
+
+test('Galaxy: the light cores sit round the content area, inside the frame, on a diagonal', () => {
+  const outside = ([x, y]: number[]) =>
+    x! < CONTENT_BOX.left || x! > CONTENT_BOX.right || y! < CONTENT_BOX.top || y! > CONTENT_BOX.bottom;
+  const diagonals = new Set<boolean>();
+  for (let seed = -25; seed < 25; seed++) {
+    const cores = getGalaxyCores(seed, 1920, 1080);
+    assert.deepEqual(getGalaxyCores(seed, 1920, 1080), cores, `seed ${seed}: the same seed, the same cores`);
+    assert.deepEqual(uniformsAt({seed}, 0, 960).uCores, cores.flat());
+    for (const [x, y, reach, brightness] of cores) {
+      assert.ok(x! > 0 && x! < 1920 && y! > 0 && y! < 1080, `seed ${seed}: (${x}, ${y}) in the frame`);
+      assert.ok(outside([x!, y!]), `seed ${seed}: (${x}, ${y}) clear of the content area`);
+      assert.ok(reach! > 0 && brightness! > 0 && brightness! <= 1, `seed ${seed}: reach ${reach}, brightness ${brightness}`);
+    }
+    const [left, right, small] = cores as [number[], number[], number[]];
+    assert.ok(left[0]! < CONTENT_BOX.left && right[0]! > CONTENT_BOX.right, `seed ${seed}: one each side`);
+    assert.notEqual(left[1]! < 540, right[1]! < 540, `seed ${seed}: the two large cores in opposite halves`);
+    assert.ok(small[1]! < CONTENT_BOX.top || small[1]! > CONTENT_BOX.bottom, `seed ${seed}: the small core above or below`);
+    assert.ok(small[2]! < Math.min(left[2]!, right[2]!), `seed ${seed}: the small core is the smallest`);
+    diagonals.add(left[1]! < 540);
+  }
+  assert.equal(diagonals.size, 2, 'the seed picks either diagonal');
+  assert.notDeepEqual(getGalaxyCores(1, 1920, 1080), getGalaxyCores(2, 1920, 1080));
+});
+
+test('Galaxy: the looks reach the shader as the controls say', () => {
   assert.deepEqual(uniformsAt({clouds: 0.1, stars: 0.2, twinkle: 0.3, centerCalm: 0.4}, 0, 960).uLook, [0.1, 0.2, 0.3, 0.4]);
 });

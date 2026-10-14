@@ -49,7 +49,7 @@ Backgrounds, one doc each:
 | --- | --- |
 | [Wuthering Waves: Azure Lotus](docs/themes/wuthering-waves.md) | `WutheringWavesLoop` |
 | [Watercolor: pigment flow](docs/themes/watercolor.md) | `WatercolorLoop` |
-| [Galaxy: spiral in a coloured sky](docs/themes/galaxy.md) | `GalaxyLoop` |
+| [Galaxy: the galaxy print](docs/themes/galaxy.md) | `GalaxyLoop` |
 | [Halloween: autumn night](docs/themes/halloween-autumn-night.md) | `HalloweenLoop` |
 | [Halloween: haunted mansion](docs/themes/halloween-haunted-mansion.md) | `HauntedMansionLoop` |
 | [Halloween: mansion interior](docs/themes/halloween-mansion-interior.md) | `HauntedInteriorLoop` |

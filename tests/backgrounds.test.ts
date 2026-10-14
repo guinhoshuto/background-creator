@@ -206,8 +206,8 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
         }), frame, length),
     },
   ]),
-  // The galaxy turns in the shader: its scene holds the cycle's angle as a cosine and a sine, the
-  // half turns, the clouds' circles and the twinkle, so every field keeps the scans.
+  // The galaxy print drifts in the shader: its scene holds the gas's circles and the twinkle's
+  // cosines and sines, so every field keeps the scans.
   {
     id: 'GalaxyLoop',
     sample: (input: unknown, frame: number, length: number): Scene =>
@@ -217,7 +217,7 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     id: 'GalaxyLoop (máximos)',
     sample: (input: unknown, frame: number, length: number): Scene =>
       getGalaxyScene(galaxyLoopSchema.parse({
-        speed: 3, tilt: 75, bar: 1, clouds: 1, stars: 1, twinkle: 1, centerCalm: 1, transparent: true, ...(input as object),
+        speed: 3, clouds: 1, stars: 1, twinkle: 1, centerCalm: 1, transparent: true, ...(input as object),
       }), frame, length),
   },
   // The sized overlays list every moving piece by place (dots, dashes, comets, sparks) and wrap
@@ -482,7 +482,6 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['WatercolorLoop', 'watercolor-valley.json'],
     ['WatercolorLoop', 'watercolor-koi.json'],
     ['GalaxyLoop', 'galaxy-cosmic.json'],
-    ['GalaxyLoop', 'galaxy-center.json'],
     ['GalaxyLoop', 'galaxy-candy.json'],
     ['GalaxyLoop', 'galaxy-ember.json'],
     ['GradientLoop', 'gradient-aurora.json'],
