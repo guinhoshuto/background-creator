@@ -5,13 +5,13 @@
 From the back to the front:
 
 1. **Sky**: `backgroundColor`, a deep night blue, under a faint veil of the nearest cloud's colour, so the gaps between the masses are never flat black.
-2. **Masses**: where the clouds gather and which hue they take. They stand still, so the composition holds; about four fifths of the frame carries colour.
+2. **Masses**: where the clouds gather and which hue they take. They stand still, so the composition holds; nine tenths of the frame or more carries colour.
 3. **Gas**: fractal noise drifting inside the masses, warped gently so it billows rather than marbles, with finer wisps over it; its crests take the neighbouring hue of the palette.
 4. **Light cores**: three glows, two large ones on a diagonal at the sides of the frame and a small one above or below the middle. Each lights the clouds around it, shines a pastel heart through the gas and brightens the cloud edges that face it.
-5. **Dust**: crisp dark clumps and, in some places, thin threads in front of the clouds, letting a dark violet through. It drifts further than the gas in the same cycle, so it reads nearer.
+5. **Dust**: dark threads winding across the clouds and a few soft clumps, translucent, so the gas still shows through them, darkened towards violet. It drifts further than the gas in the same cycle, so it reads nearer.
 6. **Stars**, in front: four layers, from a dust of single pixels to a few large stars with a soft glow and four-point spikes, white, blue-white and a few warm ones. The fine layers gather where the clouds are strong, the dust dims the stars behind it, and they twinkle.
 
-The look follows a reference of Hubble and Webb nebulae measured in the vault (`~/obsidian/Visual Ref/Galaxy/`, "A estampa galaxy"): the masses fill the frame like the Lagoon Nebula's, the light cores sit inside them with a wide halo, the dust is darker than its surroundings and the stars come at the density of Webb's fields. The colour is pushed from the photos' muted oranges towards the saturated violet, pink and blue a galaxy print has.
+The look follows a reference of Hubble and Webb nebulae measured in the vault (`~/obsidian/Visual Ref/Galaxy/`, "A estampa galaxy"): the masses fill the frame like the Lagoon Nebula's, the light cores sit inside them with a wide halo, the dust lanes take about as much of the frame as the photos' (0.5% to 3%) and the stars come near the density of Webb's fields. The colour is pushed from the photos' muted oranges towards the saturated violet, pink and blue a galaxy print has.
 
 The palette (`colors`, 2 to 6) is a ramp: the clouds run through the colours in order, the crests take the next hue along, and the light cores are the local colour lightened towards white. Neighbouring colours blend into each other, so order them by hue. `backgroundColor` is the sky behind the light; with `transparent: true` and WebM, MOV or PNG, only the light remains, and the dust and the gaps let the background through.
 

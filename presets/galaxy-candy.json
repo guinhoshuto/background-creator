@@ -3,7 +3,7 @@
   "seed": 1,
   "transparent": false,
   "backgroundColor": "#0E0828",
-  "colors": ["#5BF0FF", "#9A8CFF", "#FF66D4", "#FFB0E3"],
+  "colors": ["#2EF2FF", "#3AC6FF", "#B26BFF", "#FF4FC8"],
   "outputFormat": "mp4",
   "speed": 1,
   "clouds": 0.8,

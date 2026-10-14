@@ -59,7 +59,7 @@ A parameter file may hold only the options you want to change; the others keep t
 - `watercolor-valley.json`: misty blue and lavender mountains over a still lake at sunrise.
 - `watercolor-koi.json`: a teal koi pond with four koi, lily pads and a lotus.
 - `galaxy-cosmic.json`: the galaxy print in cyan, blue, violet and pink over a night-blue sky, with two light cores on a diagonal at the sides, dark dust and dense white stars, with a 16-second loop and MP4 output.
-- `galaxy-candy.json`: a lighter, candy print in cyan, periwinkle and pinks, on a deep indigo sky.
+- `galaxy-candy.json`: a lighter, candy print in cyan, sky blue, orchid and hot pink, on a deep indigo sky.
 - `galaxy-ember.json`: a warm print in violet, magenta, rose, orange and amber, on a warm black sky.
 - `halloween-midnight.json`: a night in dark violet, a creamy moon, amber pumpkins and a clear center for content.
 - `halloween-haunted-mansion.json`: a Victorian mansion in night blue, pale moonlight, amber windows and a dark center-left area for the overlay.

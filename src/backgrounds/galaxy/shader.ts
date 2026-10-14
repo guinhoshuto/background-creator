@@ -150,15 +150,16 @@ vec4 experiment(vec2 px) {
     // The core's heart: the local colour lightened, shining through the gas, so it keeps its texture.
     light += mix(tint, vec3(1.0), 0.5) * 2.2 * inner * (0.15 + 0.85 * smoothstep(-0.3, 0.6, gas));
 
-    // Dust in front of the masses: crisp clumps and, in some places, thin threads; thinner in the
-    // cores' hearts. What it lets through leans violet, never brown.
+    // Dust in front of the masses: threads across most of the frame and a few soft clumps, all
+    // translucent, so the gas shows through them; thinner in the cores' hearts. What it lets
+    // through leans violet, never black or brown.
     vec2 dg = 1.3 * (c + DUST_PARALLAX * uChurn.xy) + uWarp.z * warp;
     float clumps = fbm(vec3(2.4 * dg + vec2(41.0, 17.0), 23.0 + 0.8 * uChurn.w), NO_PERIOD, 4);
     float threads = 1.0 - abs(fbm(vec3(1.4 * dg + vec2(17.0, 3.0), 5.0 + 0.6 * uChurn.w), NO_PERIOD, 4));
-    float threadMask = smoothstep(0.0, 0.4, perlin(vec3(0.4 * dg + vec2(9.1, 2.6), 6.3), NO_PERIOD));
-    float depth = 2.6 * (smoothstep(0.1, 0.32, clumps) + 0.8 * threadMask * smoothstep(0.9, 0.985, threads))
+    float threadMask = smoothstep(-0.3, 0.25, perlin(vec3(0.4 * dg + vec2(9.1, 2.6), 6.3), NO_PERIOD));
+    float depth = 1.8 * min(0.6 * smoothstep(0.18, 0.42, clumps) + threadMask * smoothstep(0.9, 0.985, threads), 1.0)
       * masses * (1.0 - 0.6 * min(inner, 1.0));
-    trans = exp(-depth * vec3(1.0, 1.2, 0.8));
+    trans = exp(-depth * vec3(0.85, 1.25, 0.6));
     light *= trans * uLook.x * (1.0 - 0.6 * calm);
   }
 
@@ -166,9 +167,9 @@ vec4 experiment(vec2 px) {
   // in front dims them.
   float field = clamp(0.35 + 0.9 * masses + 0.5 * perlin(vec3(0.6 * c + vec2(2.3, 8.1), 4.2), NO_PERIOD), 0.2, 1.6);
   float twinkleDepth = uLook.z;
-  // White points have to outshine the clouds they sit on, so even the faint ones peak near 0.25.
-  vec3 stars = starLayer(px, 9.0, 0.26, 9127u, vec2(0.45, 0.6), 0.15 * twinkleDepth, field, 0.0, 0.0) * 1.6;
-  stars += starLayer(px, 26.0, 0.42, 7411u, vec2(0.55, 0.9), 0.35 * twinkleDepth, field, 0.0, 0.0) * 3.0;
+  // White points have to outshine the clouds they sit on, so even the faint ones peak near 0.5.
+  vec3 stars = starLayer(px, 9.0, 0.36, 9127u, vec2(0.5, 0.65), 0.15 * twinkleDepth, field, 0.0, 0.0) * 4.0;
+  stars += starLayer(px, 26.0, 0.7, 7411u, vec2(0.6, 1.0), 0.35 * twinkleDepth, field, 0.0, 0.0) * 5.0;
   stars += starLayer(px, 80.0, 0.45, 5521u, vec2(0.8, 1.4), 0.45 * twinkleDepth, 2.0, 0.04, 0.0) * 4.0;
   stars += starLayer(px, 280.0, 0.4, 3319u, vec2(1.0, 1.8), 0.3 * twinkleDepth, 2.0, 0.12, 16.0) * 6.0;
   light += stars * uLook.y * (0.25 + 0.75 * trans.g) * (1.0 - 0.25 * calm);
