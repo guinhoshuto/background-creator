@@ -1,0 +1,5 @@
+{
+  "outDir": "../out/.scratch/determinism-starfall-sky",
+  "stills": [{"name": "starfall-sky", "id": "StarfallSkyLoop", "preset": "starfall-sky", "props": {"transparent": false}, "frame": 130}],
+  "sequences": [{"name": "starfall-sky", "still": "starfall-sky", "from": 130, "to": 159, "tolerance": 0}]
+}
