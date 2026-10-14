@@ -88,7 +88,7 @@ export const getStarfallSkyUniforms = (
     uLayout: [horizonY(props.horizon), HORIZON_BULGE, hasTransparentBackground(props) ? 0 : 1, bankTop],
     uLook: [props.stars, props.seaCover],
     uTwinkle: pack(scene, 'sky', ['twinkleCos', 'twinkleSin', 'twinkleCos2', 'twinkleSin2']),
-    uSea: pack(scene, 'sea', ['driftX', 'driftZ', 'evolveX', 'evolveW']),
+    uSea: pack(scene, 'sea', ['glide', 'glidePeriod', 'evolve', 'evolvePeriod']),
     uBillows: padded(pack(scene, 'billow', ['x', 'y', 'radius', 'depth']), 4 * MAX_BILLOWS),
     uBillowCount: billows.length,
     uMeteorPath: padded(pack(scene, 'meteor', ['x0', 'y0', 'dirX', 'dirY']), 4 * MAX_METEORS),

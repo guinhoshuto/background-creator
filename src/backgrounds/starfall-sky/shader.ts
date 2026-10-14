@@ -18,7 +18,8 @@ uniform vec4 uLayout;
 uniform vec2 uLook;
 // Cosine and sine of the twinkle angle, and of twice that angle.
 uniform vec4 uTwinkle;
-// The sea's drift circle (x, z) and its evolution circle (x, w), in lattice units.
+// The sea's glide along the depth axis and that axis's period, then its change of shape along a
+// third axis and that period, in lattice units: both run one way and close in whole periods.
 uniform vec4 uSea;
 // Billows of the banks: centre x, y and radius (px), and depth (larger is nearer).
 uniform vec4 uBillows[128];
@@ -125,20 +126,22 @@ vec3 starLayer(vec2 px, float cell, float share, uint salt, vec2 sigma, float de
 }
 
 /**
- * Fractal noise over the sea's plane, band-limited: an octave fades out before a pixel spans a
- * quarter of its period along the depth, where perspective packs the lattice tightest, so the
- * far sea never shimmers.
+ * Fractal noise over the sea's plane, periodic along the depth (y) and the shape axis (z) with the
+ * given periods, and band-limited: an octave fades out before a pixel spans a quarter of its
+ * period along the depth, where perspective packs the lattice tightest, so the far sea never
+ * shimmers. Each octave doubles every axis and the periods with it, so the sum keeps them; the
+ * offsets only shift the lattice, which keeps them too (a turn of the plane would not).
  */
-float seaNoise(vec3 p, float footprint) {
+float seaNoise(vec3 p, vec2 period, float footprint) {
   float sum = 0.0;
   float amplitude = 0.5;
   float norm = 0.0;
   float scale = 1.0;
   for (int octave = 0; octave < 5; octave++) {
     float keep = 1.0 - smoothstep(0.12, 0.35, footprint * scale);
-    sum += amplitude * keep * perlin(p, NO_PERIOD);
+    sum += amplitude * keep * perlin(p, vec3(NO_PERIOD, period * scale));
     norm += amplitude;
-    p = vec3(mat2(1.6, -1.2, 1.2, 1.6) * p.xy + vec2(19.19, 7.73), 2.0 * p.z + 3.1);
+    p = 2.0 * p + vec3(19.19, 7.73, 3.1);
     scale *= 2.0;
     amplitude *= 0.5;
   }
@@ -147,18 +150,20 @@ float seaNoise(vec3 p, float footprint) {
 
 /**
  * The sea of clouds below the horizon, in sRGB: cloud patches over deep blue, hazing into the
- * horizon. A slow warp frays the patches into wisps; their edges stay sharp near the viewer and
- * soften with distance, where a pixel spans more of the lattice.
+ * horizon. It glides towards the viewer, one way, and a slow warp frays the patches into wisps;
+ * their edges stay sharp near the viewer and soften with distance, where a pixel spans more of
+ * the lattice.
  */
 vec3 seaAt(vec2 px, float yh) {
   float dy = max(px.y - yh, 0.5);
   float z = SEA_HEIGHT * SEA_FOCAL / dy;
   float x = SEA_HEIGHT * (px.x - 0.5 * uResolution.x) / dy;
   float footprint = SEA_HEIGHT * SEA_FOCAL / (dy * dy);
+  vec2 period = uSea.yw;
   // Patches stretch across the view, like cloud streets seen from above.
-  vec3 p = vec3(0.42 * x + uSea.x + uSea.z, z + uSea.y, 7.0 + uSea.w);
-  float warp = seaNoise(0.5 * p + vec3(3.1, 7.7, 1.3), 0.5 * footprint);
-  float n = seaNoise(p + vec3(0.7 * warp, 0.3 * warp, 0.0), footprint);
+  vec3 p = vec3(0.42 * x, z + uSea.x, 7.0 + uSea.z);
+  float warp = seaNoise(vec3(0.5 * p.x + 3.1, p.y + 7.7, p.z + 1.3), period, footprint);
+  float n = seaNoise(p + vec3(0.7 * warp, 0.3 * warp, 0.0), period, footprint);
   float threshold = mix(0.3, -0.26, uLook.y);
   // A soft edge of a few pixels wherever the noise runs, wider where perspective packs the lattice.
   float edge = 2.0 * fwidth(n) + 0.012;
@@ -166,7 +171,7 @@ vec3 seaAt(vec2 px, float yh) {
   float thick = smoothstep(threshold, threshold + 0.24, n);
   vec3 cloud = mix(mix(uCloudColors[2], uCloudColors[1], 0.55), uCloudColors[0], thick);
   // Each patch casts a faint shadow on the deep blue just below it, nearer the viewer.
-  float under = smoothstep(threshold - 0.03, threshold + 0.05, seaNoise(p + vec3(0.7 * warp, 0.3 * warp - 0.1, 0.0), footprint));
+  float under = smoothstep(threshold - 0.03, threshold + 0.05, seaNoise(p + vec3(0.7 * warp, 0.3 * warp - 0.1, 0.0), period, footprint));
   vec3 c = mix(uCloudColors[2] * mix(1.0, 0.88, under), cloud, cover);
   float fog = 1.0 - exp(-sq(z / 14.0));
   return mix(c, hazeColor(), fog);

@@ -184,7 +184,7 @@ test('Starfall sky: every shooting star crosses once per cycle, inside its own s
   }
 });
 
-test('Starfall sky: shooting stars take the palette in order and fly different slopes', () => {
+test('Starfall sky: shooting stars take the palette in order', () => {
   const sky = props({meteorCount: 5, colors: ['#FF0000', '#00FF00', '#0000FF']});
   const scene = getStarfallSkyScene(sky, 0, 960);
   const look = getStarfallSkyUniforms(sky, scene, 1920, 1080).uMeteorLook as number[];
@@ -192,16 +192,73 @@ test('Starfall sky: shooting stars take the palette in order and fly different s
     const [r, g, b] = parseColor(sky.colors[index % 3]!);
     assert.deepEqual(look.slice(4 * index, 4 * index + 3), [srgbToLinear(r), srgbToLinear(g), srgbToLinear(b)]);
   }
+});
+
+test('Starfall sky: the stars fall like a meteor shower, from one radiant to their own stretch of the horizon', () => {
   for (const seed of [-7, 5, 2026]) {
     for (const meteorCount of [2, 3, 6]) {
-      const slopes = meteorsOf({seed, meteorCount}, 0, 960).map((meteor) => Math.atan2(meteor.dirY as number, meteor.dirX as number));
-      const sorted = [...slopes].sort((a, b) => a - b);
-      // Each star keeps to its own band of the 20° to 46° range, at least 30% of a band from the next.
-      const gap = (0.3 * 26 * Math.PI) / 180 / meteorCount;
-      for (let i = 1; i < sorted.length; i++) {
-        assert.ok(sorted[i]! - sorted[i - 1]! > gap - 1e-9, `seed ${seed}, ${meteorCount} stars: two slopes too close`);
+      for (const horizon of [0.62, 0.8, 0.9]) {
+        const meteors = meteorsOf({seed, meteorCount, horizon}, 0, 960);
+        const line = (m: (typeof meteors)[number]) => ({x: m.x0 as number, y: m.y0 as number, dx: m.dirX as number, dy: m.dirY as number});
+        // Every pair of paths, drawn back, crosses at the same point above the top left corner.
+        const [a, b] = [line(meteors[0]!), line(meteors[1]!)];
+        const t = ((b.x - a.x) * b.dy - (b.y - a.y) * b.dx) / (a.dx * b.dy - a.dy * b.dx);
+        const radiant = {x: a.x + t * a.dx, y: a.y + t * a.dy};
+        assert.ok(radiant.x < 0 && radiant.y < 0, `seed ${seed}: the radiant ${JSON.stringify(radiant)} is not above the top left corner`);
+        for (const meteor of meteors.map(line)) {
+          const across = (radiant.x - meteor.x) * meteor.dy - (radiant.y - meteor.y) * meteor.dx;
+          assert.ok(Math.abs(across) < 1e-6, `seed ${seed}: a path misses the radiant by ${across} px`);
+        }
+        // Each lands on its own stretch, at least 30% of a stretch from the next, inside the frame.
+        const level = Math.round(horizon * 1080);
+        const landings = meteors.map(line).map((m) => m.x + (m.dx * (level - m.y)) / m.dy).sort((p, q) => p - q);
+        const gap = (0.3 * (1750 - 520)) / meteorCount;
+        assert.ok(landings[0]! >= 520 - 1e-9 && landings.at(-1)! <= 1750 + 1e-9, `seed ${seed}: ${landings}`);
+        for (let i = 1; i < landings.length; i++) assert.ok(landings[i]! - landings[i - 1]! > gap - 1e-9, `seed ${seed}: two land together`);
       }
     }
+  }
+});
+
+test('Starfall sky: no star burns out in open sky; each fades only once its head is past the horizon', () => {
+  for (const seed of [-7, 5, 2026]) {
+    for (const [meteorCount, durationSeconds, horizon] of [[3, 16, 0.8], [6, 8, 0.62], [1, 60, 0.9], [6, 3.7, 0.8]] as const) {
+      const input = {seed, meteorCount, durationSeconds, horizon};
+      const length = getCompositionMetadata(props(input)).durationInFrames;
+      const level = Math.round(horizon * 1080);
+      for (let index = 0; index < meteorCount; index++) {
+        let peak = false;
+        for (let frame = 0; frame < length; frame++) {
+          const meteor = meteorsOf(input, frame, length)[index]!;
+          if (meteor.opacity === 1) peak = true;
+          if (!peak || meteor.opacity === 0 || meteor.opacity === 1) continue;
+          // Fading after its flight: the head has gone behind the sea (or a bank on the way).
+          const head = (meteor.y0 as number) + (meteor.dirY as number) * (meteor.travelled as number);
+          assert.ok(head >= level - 1e-6, `${JSON.stringify(input)} star ${index}, frame ${frame}: fades at y ${head}, above the horizon at ${level}`);
+        }
+        assert.ok(peak, `${JSON.stringify(input)} star ${index}: never at full brightness`);
+      }
+    }
+  }
+});
+
+test('Starfall sky: the sea glides one way through the cycle, and the banks stay where they are', () => {
+  for (const [speed, durationSeconds] of [[1, 16], [0.3, 8], [3, 3.7], [2, 60]] as const) {
+    const sky = props({speed, durationSeconds});
+    const {durationInFrames: length} = getCompositionMetadata(sky);
+    const seas = Array.from({length: length + 1}, (_, frame) => getStarfallSkyScene(sky, frame, length).find((e) => e.kind === 'sea')!);
+    const period = seas[0]!.glidePeriod as number;
+    assert.ok(Number.isInteger(period) && period >= 4, `period ${period}`);
+    let covered = 0;
+    for (let frame = 1; frame <= length; frame++) {
+      // The step, read modulo the period: always forward, never back.
+      const step = ((((seas[frame]!.glide as number) - (seas[frame - 1]!.glide as number)) % period) + period) % period;
+      assert.ok(step > 0 && step < period / 2, `speed ${speed}, ${durationSeconds} s, frame ${frame}: step ${step}`);
+      covered += step;
+    }
+    assert.ok(Math.abs(covered - period) < 1e-6, `one period per cycle, not ${covered}`);
+    const xs = (frame: number) => getStarfallSkyScene(sky, frame, length).filter((e) => e.kind === 'billow').map((e) => e.x);
+    assert.deepEqual(xs(Math.floor(length / 3)), xs(0));
   }
 });
 
