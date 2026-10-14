@@ -14,6 +14,7 @@ import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
 import {WatercolorLoop, watercolorLoopSchema} from './backgrounds/WatercolorLoop';
+import {GalaxyLoop, galaxyLoopSchema} from './backgrounds/GalaxyLoop';
 import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
 import type {AssetKind} from './kinds';
 import {blockCatalogEntry} from './overlays/block';
@@ -147,6 +148,15 @@ export const backgroundCatalog = {
     schema: watercolorLoopSchema,
     defaultProps: watercolorLoopSchema.parse({}),
     // A shader painting: WebGL2 needs ANGLE in Chrome Headless, like WebGLLoop.
+    gl: 'angle',
+  },
+  GalaxyLoop: {
+    id: 'GalaxyLoop',
+    kind: 'background',
+    component: GalaxyLoop,
+    schema: galaxyLoopSchema,
+    defaultProps: galaxyLoopSchema.parse({}),
+    // Drawn whole by one shader: WebGL2 needs ANGLE in Chrome Headless, like WebGLLoop.
     gl: 'angle',
   },
 } as const satisfies Record<string, CatalogEntry>;

@@ -1,0 +1,5 @@
+{
+  "outDir": "../out/.scratch/determinism-galaxy",
+  "stills": [{"name": "galaxy-cosmic", "id": "GalaxyLoop", "preset": "galaxy-cosmic", "props": {"transparent": false}}],
+  "sequences": [{"name": "galaxy-cosmic", "still": "galaxy-cosmic", "from": 0, "to": 29, "tolerance": 0}]
+}

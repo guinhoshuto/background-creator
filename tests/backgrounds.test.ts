@@ -5,6 +5,7 @@ import {getCheckerboardScene, checkerboardLoopSchema} from '../src/backgrounds/C
 import {christmasLoopSchema, getChristmasScene} from '../src/backgrounds/ChristmasLoop';
 import {getCobwebScene, cobwebLoopSchema} from '../src/backgrounds/CobwebLoop';
 import {getDotGridScene, dotGridLoopSchema} from '../src/backgrounds/DotGridLoop';
+import {getGalaxyScene, galaxyLoopSchema} from '../src/backgrounds/GalaxyLoop';
 import {getTerminalGridScene, terminalGridLoopSchema} from '../src/backgrounds/TerminalGridLoop';
 import {getGeometricScene, geometricLoopSchema} from '../src/backgrounds/GeometricLoop';
 import {getGradientScene, gradientLoopSchema} from '../src/backgrounds/GradientLoop';
@@ -205,6 +206,20 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
         }), frame, length),
     },
   ]),
+  // The galaxy turns in the shader: its scene holds the cycle's angle as a cosine and a sine, the
+  // half turns, the clouds' circles and the twinkle, so every field keeps the scans.
+  {
+    id: 'GalaxyLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getGalaxyScene(galaxyLoopSchema.parse(input), frame, length),
+  },
+  {
+    id: 'GalaxyLoop (máximos)',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getGalaxyScene(galaxyLoopSchema.parse({
+        speed: 3, tilt: 75, bar: 1, clouds: 1, stars: 1, twinkle: 1, centerCalm: 1, transparent: true, ...(input as object),
+      }), frame, length),
+  },
   // The sized overlays list every moving piece by place (dots, dashes, comets, sparks) and wrap
   // their sheens and embers only out of sight, so the scans run with no exemption. Their own
   // tests cover sizes, themes and the hole; here each runs at its defaults and at its busiest.
@@ -466,6 +481,7 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['WatercolorLoop', 'watercolor-flow.json'],
     ['WatercolorLoop', 'watercolor-valley.json'],
     ['WatercolorLoop', 'watercolor-koi.json'],
+    ['GalaxyLoop', 'galaxy-cosmic.json'],
     ['GradientLoop', 'gradient-aurora.json'],
     ['ParticleLoop', 'particles-alpha.json'],
     ['GeometricLoop', 'geometric-orbit.json'],

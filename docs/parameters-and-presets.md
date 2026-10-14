@@ -10,6 +10,7 @@ Backgrounds (`backgrounds` folder) fill the whole screen:
 | --- | --- | --- |
 | `WutheringWavesLoop` | Blue-and-gold waterside SVG/WebGL illustration with layered lotus, a curved boat, distant eaves and pine, and procedural paper/ink texture | `atmosphere` (mist), `resonance` (light and ribbon details), `particleCount` (particles), `motion` (movement), `centerShade` (central shading) |
 | `WatercolorLoop` | Watercolour painted by a shader on cream paper: pigment pools bleeding wet-on-wet round a light middle (`flow`), misty mountains over a lake (`valley`) or a koi pond (`koi`) | `scene` (painting), `speed` (0–3), `granulation` (0–1), `paperTexture` (0–1), `centerCalm` (0–1) |
+| `GalaxyLoop` | A spiral galaxy drawn by a shader: an inclined two-armed disc, off centre, turning half a turn per cycle, with a cream core, blue arms, pink knots and dust lanes, over coloured gas clouds and distant galaxies, under twinkling stars | `speed` (0–3), `tilt` (0–75°), `angle` (−90–90°), `galaxyX`/`galaxyY` (0–1), `galaxySize` (0.5–1.5), `bar` (0–1), `clouds` (0–1), `stars` (0–1), `twinkle` (0–1), `centerCalm` (0–1) |
 | `HalloweenLoop` | Illustrated night with a moon, bats, fog and glowing pumpkins | `batCount` (0–18), `emberCount` (0–120), `fogIntensity` (0–1), `moonScale` (0.5–1.5) |
 | `HauntedMansionLoop` | Victorian mansion on the right, cold moonlight, amber windows and low fog | `batCount` (0–12), `moteCount` (0–100), `fogIntensity` (0–1), `windowIntensity` (0–1), `moonScale` (0.6–1.4) |
 | `HauntedInteriorLoop` | Gothic hall in central perspective, with the back wall behind the content, moonlit windows, lightning, velvet curtains, candelabra and a swaying chandelier | `dustCount` (0–100), `fogIntensity` (0–1), `candleIntensity` (0–1), `moonlightIntensity` (0–1), `hauntingIntensity` (0–1), `chandelierSway` (0–1), `lightningIntensity` (0–1) |
@@ -57,6 +58,7 @@ A parameter file may hold only the options you want to change; the others keep t
 - `watercolor-flow.json`: wet-on-wet pools of violet, rose, magenta and lilac round a cream middle, with a 16-second loop and MP4 output.
 - `watercolor-valley.json`: misty blue and lavender mountains over a still lake at sunrise.
 - `watercolor-koi.json`: a teal koi pond with four koi, lily pads and a lotus.
+- `galaxy-cosmic.json`: a cream-cored spiral with blue arms and pink knots, leaning in the right half of the frame over violet and cyan clouds, with a 16-second loop and MP4 output.
 - `halloween-midnight.json`: a night in dark violet, a creamy moon, amber pumpkins and a clear center for content.
 - `halloween-haunted-mansion.json`: a Victorian mansion in night blue, pale moonlight, amber windows and a dark center-left area for the overlay.
 - `halloween-haunted-interior.json`: a gothic hall in perspective, crimson velvet curtains, greenish moonlight and amber candles on the sides, with a large dark arch exactly behind the content area.

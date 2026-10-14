@@ -22,6 +22,7 @@ const terminalGrid = backgroundCatalog.TerminalGridLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const watercolor = backgroundCatalog.WatercolorLoop;
+const galaxy = backgroundCatalog.GalaxyLoop;
 const chat = overlayCatalog.ChatLoop;
 const block = overlayCatalog.BlockLoop;
 const border = overlayCatalog.BorderLoop;
@@ -77,6 +78,19 @@ export const RemotionRoot = () => (
         }}
         {...getCompositionMetadata(watercolor.defaultProps)}
         calculateMetadata={({props}: {props: typeof watercolor.defaultProps}) => metadataFor(watercolor.id, watercolor.schema.parse(props))}
+      />
+      <Composition
+        id="GalaxyLoop"
+        component={galaxy.component}
+        schema={galaxy.schema}
+        defaultProps={{
+          durationSeconds: 16, seed: 5, transparent: false, backgroundColor: '#050512',
+          colors: ['#FFD7A1', '#7EA6FF', '#FF4D9D', '#7B3FE4', '#22B7E8'], outputFormat: 'webm',
+          speed: 1, tilt: 58, angle: -24, galaxyX: 0.64, galaxyY: 0.46, galaxySize: 1, bar: 0,
+          clouds: 0.6, stars: 0.7, twinkle: 0.5, centerCalm: 0.25,
+        }}
+        {...getCompositionMetadata(galaxy.defaultProps)}
+        calculateMetadata={({props}: {props: typeof galaxy.defaultProps}) => metadataFor(galaxy.id, galaxy.schema.parse(props))}
       />
       <Composition
         id="KawaiiLoop"
