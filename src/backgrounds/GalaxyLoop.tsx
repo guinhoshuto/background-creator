@@ -20,9 +20,12 @@ const TWINKLE_SECONDS = 7;
 const DRIFT_PACE = 0.016;
 const BILLOW_PACE = 0.03;
 const WARP_PACE = 0.022;
-/** Radius of the disc at galaxySize 1 (px), and the tangent of the arms' pitch angle (about 17°). */
+/**
+ * Radius of the disc at galaxySize 1 (px), and the tangent of the arms' pitch angle (about 22°):
+ * a tighter spiral reads as rings once the disc leans, and its turn as rings sliding outwards.
+ */
 export const GALAXY_DISC_RADIUS = 560;
-const ARM_PITCH = 0.3;
+const ARM_PITCH = 0.4;
 
 const fragmentShader = buildFragmentShader(GALAXY_GLSL);
 
@@ -30,7 +33,7 @@ const fragmentShader = buildFragmentShader(GALAXY_GLSL);
 // because a description replaces the Studio colour picker with a text field.
 export const galaxyLoopSchema = baseBackgroundSchema.extend({
   durationSeconds: baseBackgroundSchema.shape.durationSeconds.default(16),
-  seed: baseBackgroundSchema.shape.seed.default(5),
+  seed: baseBackgroundSchema.shape.seed.default(1),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#050512'),
   // Roles: 0 the core, 1 the arms, 2 the knots along them, 3 on the clouds (which start at 2).
   colors: baseBackgroundSchema.shape.colors.default(['#FFD7A1', '#7EA6FF', '#FF4D9D', '#7B3FE4', '#22B7E8']),

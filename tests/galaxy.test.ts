@@ -34,7 +34,7 @@ const uniformsAt = (input: object, frame: number, length: number) => {
 test('Galaxy: Studio, catalog and the cosmic preset share the sixteen-second full HD galaxy', () => {
   const defaults = galaxyLoopSchema.parse({});
   assert.deepEqual(defaults, {
-    durationSeconds: 16, seed: 5, transparent: false, backgroundColor: '#050512',
+    durationSeconds: 16, seed: 1, transparent: false, backgroundColor: '#050512',
     colors: ['#FFD7A1', '#7EA6FF', '#FF4D9D', '#7B3FE4', '#22B7E8'], outputFormat: 'webm',
     speed: 1, tilt: 58, angle: -24, galaxyX: 0.64, galaxyY: 0.46, galaxySize: 1, bar: 0,
     clouds: 0.6, stars: 0.7, twinkle: 0.5, centerCalm: 0.25,
@@ -165,7 +165,7 @@ test('Galaxy: the disc sits, leans and turns on screen as the controls say', () 
   const [axisX, axisY, bar, pitch] = uniforms.uShape as number[];
   assert.ok(Math.abs(axisX! - Math.sqrt(3) / 2) < 1e-12 && Math.abs(axisY! + 0.5) < 1e-12, `${axisX}, ${axisY}`);
   assert.equal(bar, 0.4);
-  assert.ok(pitch! > 0.2 && pitch! < 0.4, `tan of the pitch: ${pitch}`);
+  assert.ok(pitch! > 0.3 && pitch! < 0.5, `tan of the pitch: ${pitch}`);
   assert.deepEqual(uniformsAt({tilt: 0}, 0, 960).uDisc, [0.64 * 1920, 0.46 * 1080, GALAXY_DISC_RADIUS, 1]);
   assert.deepEqual(uniformsAt({clouds: 0.1, stars: 0.2, twinkle: 0.3, centerCalm: 0.4}, 0, 960).uLook, [0.1, 0.2, 0.3, 0.4]);
 });

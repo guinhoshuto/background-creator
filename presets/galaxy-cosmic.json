@@ -1,6 +1,6 @@
 {
   "durationSeconds": 16,
-  "seed": 5,
+  "seed": 1,
   "transparent": false,
   "backgroundColor": "#050512",
   "colors": ["#FFD7A1", "#7EA6FF", "#FF4D9D", "#7B3FE4", "#22B7E8"],

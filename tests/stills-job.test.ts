@@ -170,7 +170,7 @@ test('a sequence passes only while every frame stays within its tolerance', () =
  * to 0 must not include an ANGLE composition: under ANGLE even the keyed Cobweb drifts. The one
  * exception is a painting drawn whole by one shader, with no SVG to raster: the watercolour flow,
  * 30 frames from one tab, came out byte for byte the same as fresh stills (2026-10-09). The galaxy
- * is drawn the same way and its job asks for the same, to be measured before its first merge.
+ * is drawn the same way and came out byte for byte too (30 frames, 2026-10-14).
  */
 test('the determinism jobs keep their measured tolerances, and the exact one stays off ANGLE', () => {
   const jobOf = (name: string) => parseJob(JSON.parse(readFileSync(new URL(`./determinism-${name}.json`, import.meta.url), 'utf8')));

@@ -35,9 +35,9 @@ const float CLOUD_UNIT = 540.0;
 // and the least px either cell spans along the disc's short axis on screen, so a star stays
 // round and wider than a pixel (a narrower one would blink as it turns past the pixel grid).
 const float DISC_STAR_CELL = 0.025;
-const float KNOT_CELL = 0.06;
+const float KNOT_CELL = 0.035;
 const float DISC_STAR_CELL_PX = 7.4;
-const float KNOT_CELL_PX = 18.0;
+const float KNOT_CELL_PX = 11.0;
 
 float sq(float x) { return x * x; }
 
@@ -56,10 +56,13 @@ vec3 roleColor(int i) {
 /** A colour at full brightness: its largest channel is 1, so it only carries the hue. */
 vec3 hueOf(vec3 c) { return c / max(max(max(c.r, c.g), c.b), 1e-4); }
 
-/** Where the arms live along the radius: from just past the core (or the bar's ends) to the rim. */
+/**
+ * Where the arms live along the radius: from just past the core (or the bar's ends), fading out
+ * before the rim, where a leaning arm would close into a ring.
+ */
 float armReach(float r) {
   float start = mix(0.13, 0.4, uShape.z);
-  return smoothstep(0.6 * start, 1.25 * start, r) * (1.0 - smoothstep(0.85, 1.4, r));
+  return smoothstep(0.6 * start, 1.25 * start, r) * (1.0 - smoothstep(max(0.6, start + 0.3), 1.15, r));
 }
 
 /** The arms' phase at a point of the turning frame: 0 on a crest, growing inwards. */
@@ -124,15 +127,17 @@ vec3 knots(vec2 px, vec2 c, float flip, float spin, float wiggle, float cell, fl
       float dist = length(px - discToScreen(s, spin));
       if (dist >= reachPx) continue;
       float psi = armPhase(s, wiggle);
-      bool isKnot = unit(pcg(h ^ 0x51ED270Bu)) < 0.7;
-      float mask = isKnot ? pow(max(0.5 + 0.5 * cos(psi + 0.55), 0.0), 6.0) : pow(max(0.5 + 0.5 * cos(psi), 0.0), 3.5);
-      mask *= armReach(length(s));
+      bool isKnot = unit(pcg(h ^ 0x51ED270Bu)) < 0.65;
+      // Knots string along the outer edge of the arm and clusters along its crest; both die out
+      // a short way off it, so none floats between the arms.
+      float edge = isKnot ? pow(max(0.5 + 0.5 * cos(psi + 0.6), 0.0), 8.0) : pow(max(0.5 + 0.5 * cos(psi), 0.0), 5.0);
+      float mask = smoothstep(0.2, 0.75, edge) * armReach(length(s));
       if (mask <= 0.0) continue;
       float magnitude = unit(pcg(h ^ 0x1B56C4E9u));
-      magnitude *= magnitude;
-      float size = min(mix(1.6, 5.5, magnitude), reachPx / 3.0);
+      magnitude *= magnitude * magnitude;
+      float size = min(mix(0.75, 2.8, magnitude), reachPx / 3.0);
       float spot = exp(-sq(dist / size) * 0.5) * (1.0 - smoothstep(0.6 * reachPx, reachPx, dist));
-      light += (isKnot ? pink : cluster) * spot * mask * mix(0.45, 1.8, magnitude);
+      light += (isKnot ? pink : cluster) * spot * mask * mix(0.7, 2.6, magnitude);
     }
   }
   return light;
@@ -247,9 +252,9 @@ vec3 cloudLight(vec2 px, float r) {
   float density = envelope * smoothstep(-0.3, 0.45, gas + 0.25 * envelope - 0.1);
   float bright = envelope * smoothstep(0.2, 0.6, gas + 0.1 * envelope);
   float dust = smoothstep(-0.05, 0.3, dustNoise) * smoothstep(0.15, 0.7, envelope);
-  float t = clamp(0.5 + 0.9 * hueNoise + 0.5 * warp.x + uWarp.w, 0.0, 1.0);
-  vec3 light = cloudTint(t) * (1.1 * density * density + 0.12 * density)
-    + cloudTint(clamp(t + 0.35, 0.0, 1.0)) * 1.6 * bright * bright;
+  float t = clamp(0.5 + 1.3 * hueNoise + 0.6 * warp.x + uWarp.w, 0.0, 1.0);
+  vec3 light = cloudTint(t) * (1.5 * density * density + 0.16 * density)
+    + cloudTint(clamp(t + 0.35, 0.0, 1.0)) * 2.0 * bright * bright;
   return light * (1.0 - 0.85 * dust);
 }
 
@@ -282,9 +287,9 @@ vec4 experiment(vec2 px) {
     float wiggle = 0.5 * perlin(vec3(1.8 * lr + 3.0, 3.7, 1.3), NO_PERIOD)
       + 0.35 * perlin(vec3(3.0 * angleOf(q) / PI, 1.4 * lr, 5.9), vec3(3.0, NO_PERIOD, NO_PERIOD));
     float psi = armPhase(q, wiggle);
-    float arm = pow(max(0.5 + 0.5 * cos(psi), 0.0), 3.5);
+    float arm = pow(max(0.5 + 0.5 * cos(psi), 0.0), 2.5);
     // Dust along the inner edge of each arm (psi above the crest).
-    float lane = pow(max(0.5 + 0.5 * cos(psi - 0.75), 0.0), 10.0);
+    float lane = pow(max(0.5 + 0.5 * cos(psi - 0.85), 0.0), 14.0);
     float reach = armReach(r);
 
     // The swap with the twin: b runs from 0 to 1 and back at a different time in every
@@ -295,7 +300,7 @@ vec4 experiment(vec2 px) {
     float keep = mix(1.0, inversesqrt(sq(1.0 - b) + sq(b)), smoothstep(0.05, 0.25, r));
     // The detail lives in a frame that unwinds the spiral, so clumps stretch along the arms.
     // It is cartesian: the prelude's fbm turns the plane between octaves, so it cannot repeat
-    // along an angle. Unwinding shears the plane, packing the noise about 3.6 times tighter
+    // along an angle. Unwinding shears the plane, packing the noise about 2.7 times tighter
     // across the arms: the finest octave stays above 6 px there even foreshortened by the tilt,
     // so the detail does not shimmer as it turns.
     vec2 w = turn(-max(lr, -2.3) / tanPitch) * q;
@@ -304,21 +309,22 @@ vec4 experiment(vec2 px) {
     float patches = keep * mix(perlin(vec3(2.2 * q + 11.0, 4.4), NO_PERIOD), perlin(vec3(11.0 - 2.2 * q, 4.4), NO_PERIOD), b);
 
     // Light: a smooth disc from cream (inside) to blue (outside), the arms brighter where they
-    // clump, and a faint outer sheet. An inclined disc gathers more light per pixel.
+    // clump, and a faint outer sheet that keeps the space between the arms lit. An inclined disc
+    // gathers more light per pixel.
     float tiltGain = inversesqrt(cosTilt);
     vec3 core = roleColor(0);
     vec3 blue = roleColor(1);
     vec3 discColor = mix(core, blue, smoothstep(0.1, 0.8, r));
-    float discGlow = exp(-r / 0.24) * (1.0 - smoothstep(0.6, 1.3, r));
+    float discGlow = exp(-r / 0.26) * (1.0 - smoothstep(0.7, 1.4, r));
     float clumpy = smoothstep(-0.25, 0.45, clump);
-    float armLight = arm * reach * exp(-r / 0.62) * (0.25 + 1.5 * clumpy * clumpy) * (0.8 + 0.5 * patches);
-    float sheet = exp(-r / 0.5) * (1.0 - smoothstep(0.9, 1.6, r));
-    galaxy = tiltGain * (discColor * (0.5 * discGlow + 0.06 * sheet) + blue * 1.1 * armLight);
+    float armLight = arm * reach * exp(-r / 0.7) * (0.45 + 1.4 * clumpy * clumpy) * (0.85 + 0.4 * patches);
+    float sheet = exp(-r / 0.45) * (1.0 - smoothstep(0.9, 1.6, r));
+    galaxy = tiltGain * (discColor * (0.7 * discGlow + 0.25 * sheet) + blue * 2.2 * armLight);
 
-    // Dust: the lanes, heavier where the arm clumps, and feathered threads across the disc,
+    // Dust: the lanes, heavier where the arm clumps, and light feathered threads across the disc,
     // cleared near the nucleus. It reddens what it dims.
-    float depth = 2.4 * lane * reach * max(0.55 + 0.8 * clump, 0.0)
-      + 0.8 * smoothstep(0.08, 0.5, threads) * reach * (0.4 + arm);
+    float depth = 2.2 * lane * reach * max(0.5 + 0.8 * clump, 0.0)
+      + 0.45 * smoothstep(0.1, 0.5, threads) * reach * (0.5 + 0.5 * arm);
 
     // The bar (optional): straight, along the arms' crest at its ends, with dust lanes on the
     // leading edges; it turns with the disc.

@@ -58,7 +58,10 @@ A parameter file may hold only the options you want to change; the others keep t
 - `watercolor-flow.json`: wet-on-wet pools of violet, rose, magenta and lilac round a cream middle, with a 16-second loop and MP4 output.
 - `watercolor-valley.json`: misty blue and lavender mountains over a still lake at sunrise.
 - `watercolor-koi.json`: a teal koi pond with four koi, lily pads and a lotus.
-- `galaxy-cosmic.json`: a cream-cored spiral with blue arms and pink knots, leaning in the right half of the frame over violet and cyan clouds, with a 16-second loop and MP4 output.
+- `galaxy-cosmic.json`: a cream-cored spiral with blue arms and pink knots, leaning in the right half of the frame, framed by pink, violet and cyan clouds at the edges, with a 16-second loop and MP4 output.
+- `galaxy-center.json`: the same spiral in the middle of the frame and at full strength, for screens with no content area (starting soon, be right back).
+- `galaxy-candy.json`: the "galaxy print": a pale pink core, cyan arms and hot pink knots over violet and blue clouds, on a deep indigo sky.
+- `galaxy-ember.json`: a warm spiral: a cream core, orange arms and red knots over magenta and amber clouds, on a warm black sky.
 - `halloween-midnight.json`: a night in dark violet, a creamy moon, amber pumpkins and a clear center for content.
 - `halloween-haunted-mansion.json`: a Victorian mansion in night blue, pale moonlight, amber windows and a dark center-left area for the overlay.
 - `halloween-haunted-interior.json`: a gothic hall in perspective, crimson velvet curtains, greenish moonlight and amber candles on the sides, with a large dark arch exactly behind the content area.

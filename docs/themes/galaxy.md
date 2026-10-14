@@ -32,6 +32,8 @@ The disc turns half a turn every 16 s at speed 1 (its edge moves about 110 px pe
 - `twinkle` (0–1, default `0.5`): how much the field stars twinkle.
 - `centerCalm` (0–1, default `0.25`): dims the clouds, the galaxy and the stars behind the 16:9 content area, in that order of strength.
 
+The `seed` places the clouds and the galaxy's detail; the default, `1`, frames the picture with pink at the top left and cyan in both lower corners, and leaves the middle dark for the content. The presets `galaxy-cosmic` (the default), `galaxy-center` (the galaxy in the middle, with no calm centre), `galaxy-candy` (pink and cyan) and `galaxy-ember` (warm) are described in [Parameters and presets](../parameters-and-presets.md#presets).
+
 Official render commands select the ANGLE backend automatically; for a render launched from Studio, choose **angle** under **OpenGL renderer**.
 
 ```sh
