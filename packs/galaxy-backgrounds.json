@@ -1,0 +1,25 @@
+{
+  "name": "galaxy-backgrounds",
+  "version": 1,
+  "profile": "delivery",
+  "items": [
+    {
+      "composition": "GalaxyLoop",
+      "preset": "galaxy-cosmic",
+      "formats": ["mp4", "webm", "png"],
+      "variant": "cosmic"
+    },
+    {
+      "composition": "GalaxyLoop",
+      "preset": "galaxy-candy",
+      "formats": ["mp4", "webm", "png"],
+      "variant": "candy"
+    },
+    {
+      "composition": "GalaxyLoop",
+      "preset": "galaxy-ember",
+      "formats": ["mp4", "webm", "png"],
+      "variant": "ember"
+    }
+  ]
+}

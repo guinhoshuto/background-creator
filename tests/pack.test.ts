@@ -672,7 +672,7 @@ test('packs: halloween-backgrounds traz o fundo de cada kit de Halloween, como n
   const pack = parsePackManifest(readPack('halloween-backgrounds'));
   // The kit's background is its one item without sizes; this pack sells it with the same composition and preset.
   const kitBackground = (theme: string) => parsePackManifest(readPack(theme)).items.find((item) => item.sizes === undefined)!;
-  assert.deepEqual(pack.items.map((item) => [item.composition, item.preset, item.variant, item.props]), BACKGROUND_PACK_KITS['halloween-backgrounds'].map((theme) => {
+  assert.deepEqual(pack.items.map((item) => [item.composition, item.preset, item.variant, item.props]), BACKGROUND_PACK_KITS['halloween-backgrounds']!.map((theme) => {
     const background = kitBackground(theme);
     return [background.composition, background.preset, theme.replace(/^halloween-/, ''), background.props];
   }));
@@ -680,6 +680,19 @@ test('packs: halloween-backgrounds traz o fundo de cada kit de Halloween, como n
   const plan = planPack(pack, realPackDeps);
   assert.deepEqual(plan.map((file) => file.output), pack.items.flatMap((item) => ['mp4', 'webm', 'png'].map((format) =>
     `out/packs/halloween-backgrounds/backgrounds/halloween-backgrounds-background-${item.variant}.${format}`)));
+  for (const file of plan) assert.deepEqual(file.canvas, {width: 1920, height: 1080}, file.output);
+});
+
+test('packs: galaxy-backgrounds traz a estampa galaxy nas três paletas, em mp4, webm e png, no perfil delivery', () => {
+  const pack = parsePackManifest(readPack('galaxy-backgrounds'));
+  // One background in three palettes: each preset as it is, its variant the preset minus `galaxy-`.
+  assert.deepEqual(pack.items.map((item) => [item.composition, item.preset, item.variant, item.props]),
+    ['cosmic', 'candy', 'ember'].map((palette) => ['GalaxyLoop', `galaxy-${palette}`, palette, undefined]));
+  // New packs compress for delivery (owner, 2026-10-08).
+  assert.equal(pack.profile, 'delivery');
+  const plan = planPack(pack, realPackDeps);
+  assert.deepEqual(plan.map((file) => file.output), pack.items.flatMap((item) => ['mp4', 'webm', 'png'].map((format) =>
+    `out/packs/galaxy-backgrounds/backgrounds/galaxy-backgrounds-background-${item.variant}.${format}`)));
   for (const file of plan) assert.deepEqual(file.canvas, {width: 1920, height: 1080}, file.output);
 });
 

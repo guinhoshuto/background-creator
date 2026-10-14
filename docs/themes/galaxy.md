@@ -35,3 +35,11 @@ npm run render:mp4 -- GalaxyLoop --props presets/galaxy-cosmic.json
 npm run render:webm -- GalaxyLoop --props presets/galaxy-cosmic.json
 npm run render:png -- GalaxyLoop --props presets/galaxy-cosmic.json --frame 0
 ```
+
+## Pack
+
+`galaxy-backgrounds` (`packs/galaxy-backgrounds.json`) sells the print alone, in its three palettes (`cosmic`, `candy`, `ember`), each as MP4, WebM and a PNG still, compressed with the `delivery` profile. It builds and ships like every pack ([Packs](../packs.md)):
+
+```sh
+npm run render:pack -- galaxy-backgrounds --dry-run
+```

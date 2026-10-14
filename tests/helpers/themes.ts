@@ -57,12 +57,18 @@ export const isStaticOnly = (pack: string, composition: string): boolean =>
 export const droppedWebms = (pack: string): number =>
   (STATIC_ONLY[pack as KitTheme] ?? []).reduce((sum, composition) => sum + ({ChatLoop: 5 + 5, BorderLoop: 9 + 11}[composition] ?? 0), 0);
 
-/** Packs of backgrounds only, sold apart from the kits: `halloween-backgrounds` holds the four Halloween kits' backgrounds. */
-export const BACKGROUND_PACKS = ['halloween-backgrounds'] as const;
+/**
+ * Packs of backgrounds only, sold apart from the kits: `halloween-backgrounds` holds the four Halloween kits'
+ * backgrounds, `galaxy-backgrounds` the galaxy print in its three palettes.
+ */
+export const BACKGROUND_PACKS = ['halloween-backgrounds', 'galaxy-backgrounds'] as const;
 export type BackgroundPack = (typeof BACKGROUND_PACKS)[number];
 
-/** The kits whose backgrounds each background pack sells, in its order; each one's variant is the theme minus `halloween-`. */
-export const BACKGROUND_PACK_KITS: Readonly<Record<BackgroundPack, readonly KitTheme[]>> = {
+/**
+ * The kits whose backgrounds a background pack sells, in its order; each one's variant is the theme minus
+ * `halloween-`. A pack of a background with no kit (galaxy-backgrounds) is absent.
+ */
+export const BACKGROUND_PACK_KITS: Readonly<Partial<Record<BackgroundPack, readonly KitTheme[]>>> = {
   'halloween-backgrounds': ['halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior', 'halloween-cobweb'],
 };
 
