@@ -344,6 +344,8 @@ vec4 experiment(vec2 px) {
     if (m >= uMeteorCount) break;
     meteor(m, px, light, ambient);
   }
+  // A star's light also spills onto the far sea, so its flare at the horizon is not cut by a line.
+  vec3 spill = light;
   float starsShown = uLook.x * (1.0 - smoothstep(0.25 * yh, 0.92 * yh, px.y));
   if (starsShown > 0.0) {
     vec3 stars = 0.55 * starLayer(px, 16.0, 0.22, 9127u, vec2(0.5, 0.7), 0.3, 0.0);
@@ -372,10 +374,11 @@ vec4 experiment(vec2 px) {
     layer = peak > 0.0 ? vec4(light * (alpha / peak), alpha) : vec4(0.0);
   }
 
-  // The sea of clouds below the horizon, lit a little by a shooting star close to it.
+  // The sea of clouds below the horizon, lit by a shooting star close to it, most of all where it
+  // meets the sky.
   float below = smoothstep(yh - 0.75, yh + 0.75, px.y);
   if (below > 0.0) {
-    vec3 sea = srgbToLinear(seaAt(px, yh)) + 0.18 * ambient;
+    vec3 sea = srgbToLinear(seaAt(px, yh)) + 0.18 * ambient + 0.8 * exp(-max(px.y - yh, 0.0) / 36.0) * spill;
     layer = mix(layer, vec4(rolloff(sea), 1.0), below);
   }
 
