@@ -9,16 +9,31 @@ import {buildFragmentShader} from './webgl/glsl';
 import {pack, parseColor, srgbToLinear, wholeTurns, type WebGLElement} from './webgl/scene';
 import {ShaderCanvas, type Uniforms} from './webgl/ShaderCanvas';
 
-/** Seconds of one slow twinkle at speed 1; some stars twinkle twice as often. */
+/** Seconds of the slowest twinkle at speed 1; the other stars twinkle two or three times as often. */
 export const GALAXY_TWINKLE_SECONDS = 7;
+/** Seconds of one breath of the big billows at speed 1, rounded to whole breaths per cycle. */
+export const GALAXY_CHURN_SECONDS = 16;
 /**
- * Paces of the gas at speed 1, in cloud lattice units (600 px) per second: the drift moves it
- * about 12 px/s. Each is one closed turn per cycle round a circle as long as the pace covers in
- * the cycle, so the pace holds at any duration.
+ * The approved print's drift, billow and warp circles (cloud lattice units per second at speed 1):
+ * the big billows sit where those circles started, so they keep the composition of its first frame.
  */
-export const GALAXY_DRIFT_PACE = 0.02;
-const BILLOW_PACE = 0.03;
-const WARP_PACE = 0.022;
+const HOME_PACES = [0.02, 0.03, 0.022] as const;
+/**
+ * Seconds at speed 1 that one part of the gas lives: it fades in, drifts on the current and
+ * fades out while the other part takes over. Rounded to whole lives per cycle. Short enough that
+ * the current cannot shear the gas into streaks before it fades.
+ */
+export const GALAXY_GAS_LIFE_SECONDS = 10;
+/**
+ * The current the gas drifts on, at speed 1, in cloud lattice units (600 px) per second: a
+ * prevailing drift of about 5 px/s, in a direction from the seed, and broad swirls that add about
+ * 7 px/s, up to about 20 where they are strongest. The current stands still on the screen, so
+ * every place keeps its own way of flowing.
+ */
+export const GALAXY_DRIFT_PACE = 0.008;
+const SWIRL_PACE = 0.04;
+/** How fast the gas changes shape while it drifts, in noise depth per second at speed 1. */
+const EVOLVE_PACE = 0.012;
 /** How far the gas is warped: gently, so it billows instead of marbling. */
 const WARP = 0.75;
 
@@ -51,9 +66,20 @@ export const galaxyLoopSchema = baseBackgroundSchema.extend({
 
 export type GalaxyLoopProps = z.infer<typeof galaxyLoopSchema>;
 
-/** Twinkles per cycle: the nearest to one every 7 seconds at the pace asked, at least one while it moves. */
+/**
+ * Turns of the twinkle angle per cycle: the nearest to one every 7 seconds at the pace asked, at
+ * least one while it moves. Each star twinkles one, two or three times per turn.
+ */
 export const getGalaxyTwinkleTurns = (props: Pick<GalaxyLoopProps, 'speed' | 'durationSeconds'>) =>
   wholeTurns((props.speed * props.durationSeconds) / GALAXY_TWINKLE_SECONDS);
+
+/** Lives of each part of the gas per cycle: the nearest to one every 10 seconds, at least one while it moves. */
+export const getGalaxyGasLives = (props: Pick<GalaxyLoopProps, 'speed' | 'durationSeconds'>) =>
+  wholeTurns((props.speed * props.durationSeconds) / GALAXY_GAS_LIFE_SECONDS);
+
+/** Breaths of the big billows per cycle: the nearest to one every 16 seconds, at least one while it moves. */
+export const getGalaxyChurnTurns = (props: Pick<GalaxyLoopProps, 'speed' | 'durationSeconds'>) =>
+  wholeTurns((props.speed * props.durationSeconds) / GALAXY_CHURN_SECONDS);
 
 /**
  * The three light cores, from the seed: two large ones on a diagonal, in the side bands left and
@@ -73,35 +99,54 @@ export const getGalaxyCores = (seed: number, width: number, height: number) => {
   return [left, right, small];
 };
 
-/** Every animated value of the print, from the props and the frame only. */
+/**
+ * Every animated value of the print, from the props and the frame only.
+ *
+ * The big billows of the gas sit where the approved print had them at its first frame and breathe
+ * in place, whole breaths per cycle. The finer gas is drawn twice over, in two parts that take
+ * turns (a flow map, in the shader): each part is the gas as it was when that part's life began,
+ * drifted on the current for its age, and it fades in and out half a life apart from the other
+ * part, beginning its next life somewhere else in the noise only while it is invisible. So the gas
+ * flows on and never swings back. The scene gives the shader the gas clock, in lives: whole lives
+ * per cycle close the loop, and the clock runs a quarter of a life past a turn of the parts at the
+ * seam.
+ */
 export const getGalaxyScene = (props: GalaxyLoopProps, frame: number, durationInFrames: number): WebGLElement[] => {
-  const phase = loopPhase(frame, durationInFrames);
+  const turn = loopPhase(frame, durationInFrames) / TAU;
   // Seconds of motion at speed 1 in one cycle; with none, every value holds still.
   const travel = props.speed * props.durationSeconds;
-  const moving = travel > 0 ? 1 : 0;
+  const lives = getGalaxyGasLives(props);
+  // The approved print's circles at their start, drawn from the seed in the same order, then its
+  // hue shift: each seed keeps the billows and the hues of that print.
   const random = createSeededRandom(props.seed + 1307);
-  const circle = (pace: number, offset: number) => {
+  const [[homeX, homeY], [billowX, billowZ], [warpY, warpZ]] = HOME_PACES.map((pace) => {
     const reach = (travel * pace) / TAU;
-    const angle = moving * phase + offset;
+    const angle = random() * TAU;
     return [reach * Math.cos(angle), reach * Math.sin(angle)] as const;
-  };
-  const [driftX, driftY] = circle(GALAXY_DRIFT_PACE, random() * TAU);
-  const [billowX, billowZ] = circle(BILLOW_PACE, random() * TAU);
-  const [warpY, warpZ] = circle(WARP_PACE, random() * TAU);
-  const twinkle = getGalaxyTwinkleTurns(props) * phase;
+  }) as [readonly [number, number], readonly [number, number], readonly [number, number]];
+  const hueShift = randomBetween(random, -0.12, 0.12);
+  const heading = random() * TAU;
+  const churn = getGalaxyChurnTurns(props) * turn * TAU;
+  const twinkle = getGalaxyTwinkleTurns(props) * turn * TAU;
   return [
     {
-      kind: 'clouds', driftX, driftY, billowX, billowZ, warpY, warpZ, warp: WARP,
-      hueShift: randomBetween(random, -0.12, 0.12), opacity: 1,
-    },
-    {
-      kind: 'sky',
-      twinkleCos: Math.cos(twinkle),
-      twinkleSin: Math.sin(twinkle),
-      twinkleCos2: Math.cos(2 * twinkle),
-      twinkleSin2: Math.sin(2 * twinkle),
+      kind: 'clouds',
+      homeX, homeY, billowX, billowZ, warpY, warpZ,
+      churnCos: Math.cos(churn),
+      churnSin: Math.sin(churn),
+      driftX: GALAXY_DRIFT_PACE * Math.cos(heading),
+      driftY: GALAXY_DRIFT_PACE * Math.sin(heading),
+      swirl: SWIRL_PACE,
+      evolve: EVOLVE_PACE,
+      warp: WARP,
+      hueShift,
+      // The clock wraps after the last life of the cycle, at least one so the shader can wrap it.
+      clock: (lives * turn + 0.25) % Math.max(lives, 1),
+      lives: Math.max(lives, 1),
+      lifeSeconds: lives > 0 ? travel / lives : 0,
       opacity: 1,
     },
+    {kind: 'sky', twinkleCos: Math.cos(twinkle), twinkleSin: Math.sin(twinkle), opacity: 1},
   ];
 };
 
@@ -121,9 +166,12 @@ export const getGalaxyUniforms = (props: GalaxyLoopProps, scene: WebGLElement[],
     uPlateOuter: [WEBGL_PLATE.outer.left, WEBGL_PLATE.outer.top, WEBGL_PLATE.outer.right, WEBGL_PLATE.outer.bottom],
     uSeed: getShaderSeed(props.seed),
     uBackground: parseColor(props.backgroundColor).slice(0, 3).map(srgbToLinear),
-    uChurn: pack(scene, 'clouds', ['driftX', 'driftY', 'billowX', 'billowZ']),
-    uWarp: pack(scene, 'clouds', ['warpY', 'warpZ', 'warp', 'hueShift']),
-    uTwinkle: pack(scene, 'sky', ['twinkleCos', 'twinkleSin', 'twinkleCos2', 'twinkleSin2']),
+    uGasHome: pack(scene, 'clouds', ['homeX', 'homeY', 'billowX', 'billowZ']),
+    uGasLook: pack(scene, 'clouds', ['warpY', 'warpZ', 'warp', 'hueShift']),
+    uChurn: pack(scene, 'clouds', ['churnCos', 'churnSin']),
+    uCurrent: pack(scene, 'clouds', ['driftX', 'driftY', 'swirl', 'evolve']),
+    uGasClock: pack(scene, 'clouds', ['clock', 'lives', 'lifeSeconds']),
+    uTwinkle: pack(scene, 'sky', ['twinkleCos', 'twinkleSin']),
     uLook: [props.clouds, props.stars, props.twinkle, props.centerCalm],
     uCores: getGalaxyCores(props.seed, width, height).flat(),
   };

@@ -3,8 +3,8 @@ import {readdirSync, readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {isValidElement} from 'react';
 import {
-  GALAXY_DRIFT_PACE, GALAXY_TWINKLE_SECONDS, getGalaxyCores, getGalaxyFragmentShader, getGalaxyScene, getGalaxyTwinkleTurns,
-  getGalaxyUniforms, galaxyLoopSchema,
+  GALAXY_TWINKLE_SECONDS, getGalaxyChurnTurns, getGalaxyCores, getGalaxyFragmentShader, getGalaxyGasLives, getGalaxyScene,
+  getGalaxyTwinkleTurns, getGalaxyUniforms, galaxyLoopSchema,
 } from '../src/backgrounds/GalaxyLoop';
 import {CONTENT_BOX} from '../src/backgrounds/vaporwave/frame';
 import {GLSL_MAIN, GLSL_PRELUDE} from '../src/backgrounds/webgl/glsl';
@@ -128,8 +128,9 @@ test('Galaxy: time reaches the shader only through the scene, and the GLSL stays
 test('Galaxy: speed 0 holds the picture still and every speed closes the cycle', () => {
   const still = galaxyLoopSchema.parse({speed: 0});
   assert.deepEqual(getGalaxyScene(still, 0, 480), getGalaxyScene(still, 239, 480));
-  assert.deepEqual(uniformsAt({speed: 0}, 239, 480).uTwinkle, [1, 0, 1, 0]);
-  assert.ok((uniformsAt({speed: 0}, 239, 480).uChurn as number[]).every((value) => value === 0), 'the gas holds its place');
+  assert.deepEqual(uniformsAt({speed: 0}, 239, 480).uTwinkle, [1, 0]);
+  // A life with no motion in it: every part of the gas holds its place.
+  assert.equal((uniformsAt({speed: 0}, 239, 480).uGasClock as number[])[2], 0, 'the gas holds its place');
   for (const speed of [0.05, 0.5, 1, 2.5, 3]) {
     for (const durationSeconds of [3.7, 16, 60]) {
       const props = galaxyLoopSchema.parse({speed, durationSeconds});
@@ -151,25 +152,103 @@ test('Galaxy: the stars twinkle whole turns per cycle, the nearest to one every 
     for (const frame of [0, Math.round(length / 3), length - 1]) {
       const angle = (turns * 2 * Math.PI * frame) / length;
       const twinkle = uniformsAt({speed, durationSeconds}, frame, length).uTwinkle as number[];
-      const expected = [Math.cos(angle), Math.sin(angle), Math.cos(2 * angle), Math.sin(2 * angle)];
-      assert.ok(twinkle.every((value, index) => Math.abs(value - expected[index]!) < 1e-12), `frame ${frame} of ${length}: ${twinkle}`);
+      assert.equal(twinkle.length, 2);
+      assert.ok(Math.abs(twinkle[0]! - Math.cos(angle)) < 1e-12 && Math.abs(twinkle[1]! - Math.sin(angle)) < 1e-12, `frame ${frame} of ${length}: ${twinkle}`);
     }
   }
 });
 
-test('Galaxy: the gas drifts at the same pace at any duration, in proportion to the speed', () => {
-  for (const [speed, durationSeconds] of [[1, 16], [1, 60], [0.5, 16], [3, 9], [2, 3.7]] as const) {
+/** The depth each star layer's twinkle takes from the twinkle control, read from the shader's calls. */
+const twinkleDepths = (source: string) =>
+  [...source.matchAll(/starLayer\(px,[^;]*?,\s*([\d.]+)\s*\*\s*twinkleDepth\s*,/g)].map((match) => Number(match[1]));
+
+test('Galaxy: at the default twinkle every star layer swells and fades by at least a quarter of its light', () => {
+  // The first print's layers twinkled by 0.075 to 0.225 of their light at twinkle 0.5, and the
+  // shipped video showed none: the highlight roll-off swallows a small swing (2026-10-15).
+  const depths = twinkleDepths(getGalaxyFragmentShader());
+  assert.equal(depths.length, 4, 'four star layers');
+  const twinkle = galaxyLoopSchema.parse({}).twinkle;
+  for (const depth of depths) {
+    assert.ok(depth * twinkle >= 0.25, `a layer twinkles by ${depth * twinkle} at the default`);
+    // At full twinkle a star may fade out at its dimmest, never below nothing.
+    assert.ok(depth <= 1, `depth ${depth} would turn the light negative at full twinkle`);
+  }
+});
+
+test('Galaxy: the gas lives whole lives per cycle and ages one second of motion per second at speed 1', () => {
+  for (const [speed, durationSeconds, lives] of [
+    [1, 16, 2], [1, 14.9, 1], [1, 15.1, 2], [1, 60, 6], [3, 16, 5], [0.5, 32, 2], [2, 3.7, 1], [0.05, 3.7, 1], [0, 16, 0],
+  ] as const) {
+    assert.equal(getGalaxyGasLives({speed, durationSeconds}), lives, `speed ${speed}, ${durationSeconds} s`);
+    if (lives === 0) continue;
     const props = galaxyLoopSchema.parse({speed, durationSeconds});
     const {durationInFrames: length, fps} = getCompositionMetadata(props);
-    for (const frame of [0, Math.round(length / 2)]) {
-      const [x0, y0] = uniformsAt(props, frame, length).uChurn as number[];
-      const [x1, y1] = uniformsAt(props, frame + 1, length).uChurn as number[];
-      // Lattice units per second along the circle: one frame's chord, stretched to its arc.
-      const half = Math.PI / length;
-      const pace = Math.hypot(x1! - x0!, y1! - y0!) * fps * (half / Math.sin(half));
-      assert.ok(Math.abs(pace - speed * GALAXY_DRIFT_PACE) < 1e-9, `speed ${speed}, ${durationSeconds} s: ${pace}`);
+    const [clock, wrap, lifeSeconds] = uniformsAt(props, 0, length).uGasClock as number[];
+    // A quarter of a life past a turn of the parts at the seam, so neither part begins on it.
+    assert.ok(Math.abs(clock! - 0.25) < 1e-12, `speed ${speed}, ${durationSeconds} s: clock ${clock} at the seam`);
+    assert.equal(wrap, lives);
+    // Each life holds the same share of the cycle's motion.
+    assert.ok(Math.abs(lifeSeconds! * lives - speed * durationSeconds) < 1e-9, `${lifeSeconds} s per life`);
+    for (const frame of [0, Math.round(length / 3), length - 2, length - 1]) {
+      const [now] = uniformsAt(props, frame, length).uGasClock as number[];
+      const [next] = uniformsAt(props, frame + 1, length).uGasClock as number[];
+      // The clock only runs forwards (wrapping after the last life), so the gas never swings
+      // back, and every part ages as many seconds of motion per second as the speed.
+      const step = (((next! - now!) % lives) + lives) % lives;
+      assert.ok(Math.abs(step * lifeSeconds! * fps - speed) < 1e-9, `speed ${speed}, ${durationSeconds} s, frame ${frame}: ${step * lifeSeconds! * fps}`);
     }
   }
+});
+
+test('Galaxy: the gas drifts about 5 px/s at any speed and duration, in a direction from the seed', () => {
+  const headings = new Set<number>();
+  for (const [speed, durationSeconds] of [[1, 16], [3, 9], [0.5, 60]] as const) {
+    for (const seed of [1, 2, -7]) {
+      const [x, y] = uniformsAt({speed, durationSeconds, seed}, 0, 960).uCurrent as number[];
+      // Cloud lattice units (600 px) per second of motion: the speed reaches the gas through its age.
+      const pace = Math.hypot(x!, y!) * 600;
+      assert.ok(pace >= 4 && pace <= 6, `speed ${speed}, ${durationSeconds} s, seed ${seed}: ${pace} px/s`);
+      headings.add(Math.round(Math.atan2(y!, x!) * 1000));
+    }
+  }
+  assert.equal(headings.size, 3, 'each seed its own direction, the same at every speed');
+});
+
+test('Galaxy: each seed keeps the big billows and the hue shift of the approved print', () => {
+  // The first print's drift, billow and warp circles at its first frame and its hue shift, as
+  // HEAD (9c0c73d) drew them: the big billows stay there, so the composition approved on
+  // 2026-10-14 holds while the finer gas flows.
+  for (const [input, expected] of [
+    [{seed: 1}, [0.05051647721401595, 0.006473625810135707, 0.02079501387179175, -0.07350964274073603, 0.055904418787356844, -0.0036360616816657953, 0.11104815652593969]],
+    [{seed: 2}, [-0.01919235137192564, -0.047174950451064505, -0.022770793163040856, 0.07292181536772564, 0.00893370623007107, 0.05530564055772109, 0.05380629172548651]],
+    [{seed: -7, speed: 3, durationSeconds: 9}, [0.01909883682133228, 0.08379468192909707, 0.05403695952761098, -0.11704364208254023, 0.08382930876081232, -0.04370454530814118, 0.1082671350426972]],
+  ] as const) {
+    for (const frame of [0, 300]) {
+      const uniforms = uniformsAt(input, frame, 960);
+      const [homeX, homeY, billowX, billowZ] = uniforms.uGasHome as number[];
+      const [warpY, warpZ, , hueShift] = uniforms.uGasLook as number[];
+      assert.deepEqual([homeX, homeY, billowX, billowZ, warpY, warpZ, hueShift], expected, `${JSON.stringify(input)}, frame ${frame}`);
+    }
+  }
+});
+
+test('Galaxy: the big billows breathe whole breaths per cycle, the nearest to one every 16 seconds', () => {
+  for (const [speed, durationSeconds, turns] of [[1, 16, 1], [1, 7.9, 0], [1, 24.1, 2], [3, 16, 3], [1, 60, 4], [0.05, 3.7, 1], [0, 16, 0]] as const) {
+    const expected = turns === 0 && speed > 0 ? 1 : turns;
+    assert.equal(getGalaxyChurnTurns({speed, durationSeconds}), expected, `speed ${speed}, ${durationSeconds} s`);
+    const props = galaxyLoopSchema.parse({speed, durationSeconds});
+    const {durationInFrames: length} = getCompositionMetadata(props);
+    for (const frame of [0, Math.round(length / 3), length - 1]) {
+      const angle = (expected * 2 * Math.PI * frame) / length;
+      const [cos, sin] = uniformsAt(props, frame, length).uChurn as number[];
+      assert.ok(Math.abs(cos! - Math.cos(angle)) < 1e-12 && Math.abs(sin! - Math.sin(angle)) < 1e-12, `frame ${frame} of ${length}: ${cos}, ${sin}`);
+    }
+  }
+});
+
+test('Galaxy: the two parts of the gas mix by weights normalised by the root of their squares', () => {
+  // A plain cross-fade of two independent noises keeps 1/√2 of their contrast halfway through.
+  assert.match(getGalaxyFragmentShader(), /(\w+)\s*\*=\s*inversesqrt\(\s*dot\(\s*\1\s*,\s*\1\s*\)\s*\)/);
 });
 
 test('Galaxy: the light cores sit round the content area, inside the frame, on a diagonal', () => {

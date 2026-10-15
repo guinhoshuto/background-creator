@@ -6,9 +6,9 @@ From the back to the front:
 
 1. **Sky**: `backgroundColor`, a deep night blue, under a faint veil of the nearest cloud's colour, so the gaps between the masses are never flat black.
 2. **Masses**: where the clouds gather and which hue they take. They stand still, so the composition holds; nine tenths of the frame or more carries colour.
-3. **Gas**: fractal noise drifting inside the masses, warped gently so it billows rather than marbles, with finer wisps over it; its crests take the neighbouring hue of the palette.
+3. **Gas**: fractal noise inside the masses, warped gently so it billows rather than marbles. Its big billows (the first two octaves) sit where the approved print had them and breathe in place; the finer gas and the wisps over it flow through them on a still current (a prevailing drift with broad swirls), changing shape as they go. Its crests take the neighbouring hue of the palette.
 4. **Light cores**: three glows, two large ones on a diagonal at the sides of the frame and a small one above or below the middle. Each lights the clouds around it, shines a pastel heart through the gas and brightens the cloud edges that face it.
-5. **Stars**, in front: four layers, from a dust of single pixels to a few large stars with a soft glow and four-point spikes, white, blue-white and a few warm ones. The fine layers gather where the clouds are strong, and they twinkle.
+5. **Stars**, in front: four layers, from a dust of single pixels to a few large stars with a soft glow and four-point spikes, white, blue-white and a few warm ones. The fine layers gather where the clouds are strong. Each star twinkles at its own uneven pace, and the glow and spikes of the large ones swell more than their points, so they seem to bloom.
 
 The look follows a reference of Hubble and Webb nebulae measured in the vault (`~/obsidian/Visual Ref/Galaxy/`, "A estampa galaxy"): the masses fill the frame like the Lagoon Nebula's, the light cores sit inside them with a wide halo and the stars come near the density of Webb's fields. The photos' dark dust is left out: in the print its threads read as veins in marble, so the depth comes from the dark gaps between the masses. The colour is pushed from the photos' muted oranges towards the saturated violet, pink and blue a galaxy print has.
 
@@ -16,7 +16,9 @@ The palette (`colors`, 2 to 6) is a ramp: the clouds run through the colours in 
 
 ## The loop
 
-The masses, the hues, the cores and the stars stand still; the gas moves inside them on closed circles through the noise, one turn per cycle, and the twinkle runs whole turns, so the last frame runs into the first at the same speed. At speed 1 the gas drifts about 12 px per second and the stars twinkle about once every 7 seconds (rounded to whole twinkles per cycle).
+The masses, the hues, the cores and the stars stand still, and so do the big billows of the gas: they keep the first frame of the approved print, where the gas used to sway on one closed circle as a whole, and each place only breathes on its own small ellipse (about 13 px, one breath every 16 seconds or so), so the clouds swell and settle without the frame swaying together. The finer gas flows through them. A flow can only close a loop by taking turns, so the finer gas is drawn in two parts (a flow map): each is the gas as it was when its life began, carried along the current for its age, and it fades in and out half a life apart from the other, beginning its next life somewhere else in the noise only while it is invisible. A broad still noise shifts the turns from place to place, so the frame never changes its weave all at once, and the two parts mix with their weights normalised by their squares, which keeps the contrast of one part. So the gas never swings back, and with whole lives per cycle the last frame runs into the first at the same speed.
+
+At speed 1 the finer gas drifts about 5 px per second in a direction from the seed, with swirls adding about 7 (up to about 20 where they are strongest), and each part lives about 10 seconds (rounded to whole lives per cycle: two in the default 16-second loop). Each star twinkles on two slow waves, one to three and two to five times per turn of the twinkle, which turns about once every 7 seconds (rounded to whole turns per cycle).
 
 ## Controls and render
 
