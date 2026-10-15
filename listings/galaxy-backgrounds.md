@@ -20,7 +20,7 @@ An animated galaxy for your stream: saturated nebula clouds in violet, pink and 
 - Cosmic: cyan, blue, violet and pink over a night-blue sky
 - Candy: a lighter galaxy in cyan, sky blue, orchid and hot pink
 - Ember: a warm galaxy in violet, magenta, hot pink and coral
-- Each palette as .mp4 and .webm (animated, 16 s loop) and .png (still, for an offline or BRB screen)
+- Each palette as .mp4 and .webm (animated, 16 s loop) and .png (still)
 - 9 files, 1920×1080, 60 fps
 - The middle stays a little darker, so your camera, game or title reads over it
 - PDF guide with your download link (zip, about {{ZIP_SIZE}})
