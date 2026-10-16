@@ -20,6 +20,7 @@ const dotGrid = backgroundCatalog.DotGridLoop;
 const checkerboard = backgroundCatalog.CheckerboardLoop;
 const terminalGrid = backgroundCatalog.TerminalGridLoop;
 const webgl = backgroundCatalog.WebGLLoop;
+const tokyo = backgroundCatalog.TokyoFutureLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const watercolor = backgroundCatalog.WatercolorLoop;
 const galaxy = backgroundCatalog.GalaxyLoop;
@@ -55,6 +56,14 @@ const metadataFor = <Props extends MetadataProps>(id: string, props: Props) => {
 export const RemotionRoot = () => (
   <>
     <Folder name={kindPolicies.background.folder}>
+      <Composition
+        id="TokyoFutureLoop"
+        component={tokyo.component}
+        schema={tokyo.schema}
+        defaultProps={tokyo.defaultProps}
+        {...getCompositionMetadata(tokyo.defaultProps)}
+        calculateMetadata={({props}: {props: typeof tokyo.defaultProps}) => metadataFor(tokyo.id, tokyo.schema.parse(props))}
+      />
       <Composition
         id="WutheringWavesLoop"
         component={wutheringWaves.component}

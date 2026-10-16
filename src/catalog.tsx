@@ -15,6 +15,7 @@ import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
 import {WatercolorLoop, watercolorLoopSchema} from './backgrounds/WatercolorLoop';
 import {GalaxyLoop, galaxyLoopSchema} from './backgrounds/GalaxyLoop';
+import {TokyoFutureLoop, tokyoFutureLoopSchema} from './backgrounds/TokyoFutureLoop';
 import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
 import type {AssetKind} from './kinds';
 import {blockCatalogEntry} from './overlays/block';
@@ -97,6 +98,14 @@ export const backgroundCatalog = {
     defaultProps: webglLoopSchema.parse({}),
     // Chrome Headless has no WebGL2 with its default OpenGL backend; ANGLE draws on the GPU.
     // The SVG scenes keep the default backend: ANGLE changes their antialiasing.
+    gl: 'angle',
+  },
+  TokyoFutureLoop: {
+    id: 'TokyoFutureLoop',
+    kind: 'background',
+    component: TokyoFutureLoop,
+    schema: tokyoFutureLoopSchema,
+    defaultProps: tokyoFutureLoopSchema.parse({}),
     gl: 'angle',
   },
   DotGridLoop: {
