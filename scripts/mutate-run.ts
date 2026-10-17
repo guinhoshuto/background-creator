@@ -28,8 +28,10 @@ Options: --timeout <ms>         per-test timeout (--test-timeout), default ${DEF
 
 Swaps a literal (split/join, so $ patterns stay literal), checks the swap landed, runs the test file with
 --test-timeout and --test-force-exit, and restores the file, checked byte for byte, and git diff. The backup
-sits in .cache/mutate/ while the file is mutated. The named test must be green before the swap. A mutation
-is killed when the run is not green: a failure, a cancellation (a timeout), a crash or a hang.
+sits in .cache/mutate/ while the file is mutated. The named test must be green before the swap, and run at
+least one of its tests: --name (a plan's "name") is a --test-name-pattern, never a label, and one that matches
+no test is refused. A mutation is killed when the run is not green: a failure, a cancellation (a timeout),
+a crash or a hang.
 A plan is a JSON array of {file, from, to, test, name?, occurrences?}, or {"mutations": [...]}: code with
 quotes, $ or backticks needs no shell quoting there.
 Never undo a mutation with git checkout or git restore: they take uncommitted work along.
@@ -133,6 +135,13 @@ export type TestRun = RunSummary & {exitCode: number; timedOut: boolean; output:
 /** Green means: a test passed, none failed or was cancelled (a timeout), node exited 0 and no watchdog fired. */
 export const isGreen = (run: TestRun) =>
   !run.timedOut && run.exitCode === 0 && (run.pass ?? 0) > 0 && !run.fail && !run.cancelled;
+
+/**
+ * Whether the run reported only the file itself: node --test does that, as one passing test, when none of the
+ * file's tests ran. On 2026-10-16 a plan gave each mutation a "name" as a label; as a --test-name-pattern it
+ * matched no test, every baseline was "1 of 1 passed" and all 15 mutations survived untested (THB-29).
+ */
+export const ranNoTest = (run: TestRun, test: string) => run.output.split('\n').some((line) => line.startsWith(`✔ ${test} (`));
 
 const running = new Set<ChildProcess>();
 const killGroup = (child: ChildProcess) => {
@@ -288,6 +297,8 @@ export async function mutate(mutations: readonly unknown[], {
     if (baselines.has(key)) continue;
     const run = await runTest({root, test, name, timeoutMs});
     usage(isGreen(run), `${test}${name ? ` (--name ${name})` : ''} is not green before any mutation, so a kill would prove nothing: ${describe(run)}.\n${tail(run.output)}`);
+    usage(!ranNoTest(run, test), `${test}${name ? ` (--name ${name})` : ''} ran none of its tests, so a kill would prove nothing${
+      name ? ': the pattern matches no test name ("name" is a test name pattern, not a label)' : ''}.`);
     baselines.add(key);
   }
   for (const mutation of checked) {

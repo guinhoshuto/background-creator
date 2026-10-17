@@ -126,6 +126,18 @@ test('mutate: setup errors change nothing: a missing literal, a red baseline, a 
   assert.equal(await read('lib/math.mjs'), math);
 });
 
+test('mutate: a name that matches no test is refused before any swap, and one that matches still runs', async (t) => {
+  const {root, read} = await checkout(t);
+  const math = await read('lib/math.mjs');
+  // A label in "name": node --test then runs none of the file's tests and reports the file itself as passed.
+  await assert.rejects(mutate([{file: 'lib/math.mjs', from: 'a + b', to: 'a - b', test: 'tests/math.test.mjs', name: 'M1 sum flipped'}], {root, timeoutMs: 5000, log: quiet}),
+    /tests\/math\.test\.mjs \(--name M1 sum flipped\) ran none of its tests, so a kill would prove nothing: the pattern matches no test name/);
+  assert.equal(await read('lib/math.mjs'), math);
+  const {code, results} = await mutate([{file: 'lib/math.mjs', from: 'a + b', to: 'a - b', test: 'tests/math.test.mjs', name: 'adds'}], {root, timeoutMs: 5000, log: quiet});
+  assert.equal(code, 0, 'the one test named "adds" ran and caught the swap');
+  assert.equal(results[0]!.fail, 1);
+});
+
 test('mutate: a test that writes to a tracked file fails the run, even with every mutated file restored', async (t) => {
   const {root} = await checkout(t);
   await assert.rejects(mutate([{file: 'lib/math.mjs', from: 'a + b', to: 'a - b', test: 'tests/writes.test.mjs'}], {root, timeoutMs: 5000, log: quiet}),
