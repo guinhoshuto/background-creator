@@ -41,7 +41,7 @@ npm run render:mp4 -- TokyoFutureLoop --props presets/tokyo-after-rain.json
 - 18 detailed street buildings, 39 distant towers, a central tower with luminous rings, a supported
   skybridge, cables, shop shutters, vending machines, balconies, tanks and air-conditioning units.
 - 26 original Japanese shop signs, rendered as canvas textures on the anchored model panels.
-- A real planar reflection with periodic ripple distortion and irregular puddles, asphalt grain, cracks and tire wear; rain makes six complete travels per loop.
+- A real planar reflection with periodic ripple distortion and irregular puddles, asphalt grain, cracks and tire wear. Rain uses soft, metre-sized streaks with varied fall speeds, exposure lengths, wind drift and depth attenuation. Small roadway impact rings stay at their contact points; every drop completes an integer number of falls per loop.
 - World-space procedural concrete stains, panel joints, oxidized metal and chipped paint, plus scratched signs and gutter debris.
 - Depth-tested low fog layers, cool shadows, warm highlights, a soft vignette, restrained lens fringe and periodic film grain.
 - Every animated value derives from the requested frame. Camera, neon, water and steam preserve the loop seam.

@@ -7,7 +7,8 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 import {z} from 'zod';
 import type {TokyoFutureLoopProps} from '../TokyoFutureLoop';
-import {createTokyoRain, getTokyoMotion, rainHeight} from './motion';
+import {getTokyoMotion} from './motion';
+import {createTokyoRainField} from './rain';
 import {createTokyoFilmPass, createTokyoFog, wetRoadShader} from './effects';
 import {ageTokyoSign, addTokyoStreetDebris} from './details';
 import {applyTokyoWeathering} from './weathering';
@@ -128,13 +129,7 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
   scene.add(road);
   const roadMaterial = road.material as THREE.ShaderMaterial;
 
-  const drops = createTokyoRain(seed);
-  const vertices = new Float32Array(drops.length * 6);
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-  const rainMaterial = new THREE.LineBasicMaterial({color: '#B2CFDF', transparent: true, opacity: 0.19, depthWrite: false});
-  const rain = new THREE.LineSegments(geometry, rainMaterial);
-  rain.frustumCulled = false; scene.add(rain);
+  const rain = createTokyoRainField(scene, seed, height);
 
   const steamMap = vaporTexture();
   const steam = Array.from({length: 12}, (_, i) => {
@@ -164,13 +159,7 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
       film.uniforms.grain!.value = props.filmGrain;
       roadMaterial.uniforms.phase!.value = motion.phase;
       bloom.strength = props.glow;
-      rainMaterial.opacity = props.rain * 0.33;
-      for (let i = 0; i < drops.length; i++) {
-        const drop = drops[i]!;
-        const y = rainHeight(drop.offset, motion.phase);
-        vertices.set([drop.x, y, drop.z, drop.x + 0.035, y + drop.length, drop.z], i * 6);
-      }
-      geometry.attributes.position!.needsUpdate = true;
+      rain.draw(motion.phase, props.rain, props.atmosphere);
       emissives.forEach(({material, value}) => {material.emissiveIntensity = value * motion.neon;});
       steam.forEach((sprite, i) => {
         const p = motion.phase + i * Math.PI / 3;
