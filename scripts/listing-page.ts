@@ -1,10 +1,10 @@
 import {existsSync, statSync} from 'node:fs';
 import {copyFile, mkdir, readFile, readdir, writeFile} from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {projectRoot} from './export';
 import {ListingError, listingCopies, listingFilesLines, parseListing, planListing, renderListingPage, type PackInputs, type ShippedZip} from './listing-plan';
+import {GENERATOR, generatorCheckouts, newestThumbs} from './listing-thumbs';
 import {existingManifestFile, parsePackManifest} from './pack-plan';
 
 const HELP_TEXT = `usage: npm run listing:page -- <pack...> [--name <folder>] [--check]
@@ -16,7 +16,8 @@ It ends with the listing_files line for each pack's product note in the vault.
 
   text     listings/<pack>.md (versioned): front matter pack, price, caption; sections ## Title, ## Tags,
            ## Description ({{ZIP_SIZE}} becomes the zip's size) and an optional ## Before publishing
-  media    the thumbnail generator's out/<pack>/: NN-<template>.jpg, video.mp4, the guide and its .png
+  media    the thumbnail generator's out/<pack>/: NN-<template>.jpg, video.mp4, the guide and its .png, from
+           the checkout (main or worktree) whose manifest.json has the newest render; the page says which
   zip      .cache/ship-pack/state.json (ship:pack): link, bytes, version; the guide must be
            <pack>-guide-v<N>.pdf for that version (guide.pdf for a zip shipped before versioning)
   bundle   front matter "bundle: <pack>, <pack>…" (2 to 5 packs already shipped): no zip of its own; its
@@ -26,7 +27,8 @@ Every problem is listed at once and nothing is written.
 
 Options:
   --name <folder>    the folder in out/listings/ (default: the pack, when there is one)
-  --thumbs <dir>     the generator's out/ (default: ~/dev/firulas/etsy-thumb-generator/out)
+  --thumbs <dir>     read every pack from <dir>/<pack>/ instead of the newest render's checkout
+  --generator <dir>  the generator whose checkouts are searched (default: ~/dev/firulas/etsy-thumb-generator)
   --state <file>     ship:pack's state (default: .cache/ship-pack/state.json; a worktree points at the main checkout's)
   --check            runs every check and writes nothing
   -h, --help         shows this help`;
@@ -36,7 +38,8 @@ const main = async () => {
     args: process.argv.slice(2), allowPositionals: true,
     options: {
       name: {type: 'string'},
-      thumbs: {type: 'string', default: path.join(os.homedir(), 'dev/firulas/etsy-thumb-generator/out')},
+      thumbs: {type: 'string'},
+      generator: {type: 'string', default: GENERATOR},
       state: {type: 'string', default: path.join(projectRoot, '.cache/ship-pack/state.json')},
       check: {type: 'boolean', default: false},
       help: {type: 'boolean', short: 'h'},
@@ -49,9 +52,13 @@ const main = async () => {
   if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`--name "${name}": lowercase letters, digits and hyphens only.`);
 
   const state = existsSync(values.state) ? JSON.parse(await readFile(values.state, 'utf8')) as Record<string, ShippedZip> : {};
+  // A /thumb render may run in a worktree of the generator: each pack reads the checkout with its newest render.
+  const checkouts = values.thumbs === undefined ? generatorCheckouts(values.generator) : [];
+  const media = new Map<string, {folder: string; others: string[]}>();
   const thumbsOf = async (pack: string) => {
-    const thumbs = path.join(values.thumbs, pack);
-    return {thumbFiles: existsSync(thumbs) ? await readdir(thumbs) : [], thumbsLabel: thumbs};
+    const found = values.thumbs === undefined ? newestThumbs(checkouts, pack) : {folder: path.join(values.thumbs, pack), others: []};
+    media.set(pack, found);
+    return {thumbFiles: existsSync(found.folder) ? await readdir(found.folder) : [], thumbsLabel: found.folder};
   };
   const packInputs = async (pack: string): Promise<PackInputs> => {
     const manifest = parsePackManifest(JSON.parse(await readFile(existingManifestFile(pack), 'utf8')));
@@ -80,11 +87,14 @@ const main = async () => {
   for (const plan of plans) {
     console.log(`${plan.listing.pack}: ${plan.photos.length} photos, video, ${plan.files.map((file) => file.guide).join(', ')}, ${plan.listing.title.length}-character title, ${plan.listing.tags.length} tags`);
   }
+  for (const [pack, {folder, others}] of media) {
+    console.log(`${pack} media: ${folder}${others.length > 0 ? ` (the newest render; older in ${others.join(', ')})` : ''}`);
+  }
   if (values.check) {console.log(`All checks passed. Would write ${path.relative(projectRoot, out)}/index.html.`); return;}
   for (const plan of plans) {
     const folder = path.join(out, plan.listing.pack);
     await mkdir(folder, {recursive: true});
-    for (const {from, file} of listingCopies(plan)) await copyFile(path.join(values.thumbs, from, file), path.join(folder, file));
+    for (const {from, file} of listingCopies(plan)) await copyFile(path.join(media.get(from)!.folder, file), path.join(folder, file));
     await writeFile(path.join(folder, 'listing.txt'), plan.text);
   }
   const title = plans.length === 1 ? `${name} · Etsy listing` : `${name} · Etsy listings`;

@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
-import {existsSync, readdirSync, readFileSync} from 'node:fs';
+import {execFileSync, spawnSync} from 'node:child_process';
+import {existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import {test} from 'node:test';
+import {test, type TestContext} from 'node:test';
 import {ListingError, guideFileName, listingCopies, listingFilesLines, parseListing, planListing, renderListingPage, zipSize, type PackInputs} from '../scripts/listing-plan';
+import {generatorCheckouts, newestThumbs} from '../scripts/listing-thumbs';
 
-// Pure checks on listings/<pack>.md and the plan built from it; no file is copied.
+// Pure checks on listings/<pack>.md and the plan built from it; no file is copied. The generator's checkouts
+// come from a fake git repo in a temporary folder, never from the real generator.
 
 const TAGS = Array.from({length: 13}, (_, index) => `tag number ${index + 1}`);
 const listingText = (overrides: {front?: string; title?: string; tags?: string[]; description?: string; extra?: string} = {}) => [
@@ -203,4 +207,92 @@ test('every versioned listing parses and names packs that exist', () => {
       assert.ok(existsSync(path.join(root, 'packs', `${pack}.json`)), `${name}: no packs/${pack}.json`);
     }
   }
+});
+
+// The thumbnail generator in a fake git repo: its main checkout, a worktree in .claude/worktrees/ and one outside
+// the repo, like Orca's. /thumb may render in a worktree, and the main checkout keeps the render before (THB-29).
+const fakeGenerator = (t: TestContext) => {
+  const root = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'bgc-listing-thumbs-')));
+  t.after(() => rmSync(root, {recursive: true, force: true}));
+  const main = path.join(root, 'generator');
+  mkdirSync(main);
+  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...args], {cwd: main, stdio: 'ignore'});
+  git('init', '-q');
+  git('commit', '-q', '--allow-empty', '-m', 'base');
+  const worktree = path.join(main, '.claude/worktrees/thumbs-v2');
+  const orca = path.join(root, 'orca/cornetfish');
+  git('worktree', 'add', '-q', worktree);
+  git('worktree', 'add', '-q', orca);
+  /** out/<pack>/ of a checkout with these files and, given a time, the manifest.json a render writes. */
+  const render = (checkout: string, pack: string, rendered?: string, files: string[] = []) => {
+    const folder = path.join(checkout, 'out', pack);
+    mkdirSync(folder, {recursive: true});
+    if (rendered !== undefined) writeFileSync(path.join(folder, 'manifest.json'), JSON.stringify({slug: pack, rendered}));
+    for (const file of files) writeFileSync(path.join(folder, file), file);
+    return folder;
+  };
+  return {root, main, worktree, orca, render};
+};
+
+test('without --thumbs, a pack reads the generator checkout with its newest render, a worktree included', (t) => {
+  const generator = fakeGenerator(t);
+  const checkouts = generatorCheckouts(generator.main);
+  assert.deepEqual(checkouts, [generator.main, generator.worktree, generator.orca]);
+  const v1 = generator.render(generator.main, 'fake-kit', '2026-10-15T10:00:00.000Z');
+  const v2 = generator.render(generator.worktree, 'fake-kit', '2026-10-15T17:54:58.079Z');
+  const old = generator.render(generator.orca, 'fake-kit', '2026-10-14T09:00:00.000Z');
+  assert.deepEqual(newestThumbs(checkouts, 'fake-kit'), {folder: v2, others: [v1, old]});
+  const orca = generator.render(generator.orca, 'other-kit', '2026-10-16T08:00:00.000Z');
+  const main = generator.render(generator.main, 'other-kit', '2026-10-15T10:00:00.000Z');
+  assert.deepEqual(newestThumbs(checkouts, 'other-kit'), {folder: orca, others: [main]});
+});
+
+test('the main checkout wins a tie, a folder without a manifest or a render time loses, and a pack rendered nowhere names the main checkout', (t) => {
+  const generator = fakeGenerator(t);
+  const checkouts = generatorCheckouts(generator.main);
+  const time = '2026-10-15T17:54:58.079Z';
+  const tie = generator.render(generator.main, 'tie', time);
+  generator.render(generator.worktree, 'tie', time);
+  assert.equal(newestThumbs(checkouts, 'tie').folder, tie);
+  generator.render(generator.main, 'bare');
+  const bare = generator.render(generator.worktree, 'bare', time);
+  assert.equal(newestThumbs(checkouts, 'bare').folder, bare);
+  generator.render(generator.main, 'garbled', 'yesterday');
+  const garbled = generator.render(generator.orca, 'garbled', time);
+  assert.equal(newestThumbs(checkouts, 'garbled').folder, garbled);
+  // Date.parse would read the number 2027 as the year 2027: only a string is a render time.
+  generator.render(generator.main, 'untimed', 2027 as unknown as string);
+  const untimed = generator.render(generator.worktree, 'untimed', time);
+  assert.equal(newestThumbs(checkouts, 'untimed').folder, untimed);
+  const only = generator.render(generator.main, 'only-main', time);
+  assert.deepEqual(newestThumbs(checkouts, 'only-main'), {folder: only, others: []});
+  assert.deepEqual(newestThumbs(checkouts, 'nowhere'), {folder: path.join(generator.main, 'out', 'nowhere'), others: []});
+});
+
+test('a worktree deleted from the disk is skipped, and a folder git cannot list is the only checkout', (t) => {
+  const generator = fakeGenerator(t);
+  rmSync(generator.orca, {recursive: true, force: true});
+  assert.deepEqual(generatorCheckouts(generator.main), [generator.main, generator.worktree]);
+  const plain = path.join(generator.root, 'plain');
+  mkdirSync(plain);
+  assert.deepEqual(generatorCheckouts(plain), [plain]);
+});
+
+test('listing:page --check reads the media of the worktree with the newest render, not the main checkout', (t) => {
+  const root = path.join(import.meta.dirname, '..');
+  const pack = readdirSync(path.join(root, 'listings')).filter((name) => name.endsWith('.md')).sort()
+    .map((name) => parseListing(readFileSync(path.join(root, 'listings', name), 'utf8'), `listings/${name}`))
+    .find((listing) => listing.bundle.length === 0)!.pack;
+  const {version} = JSON.parse(readFileSync(path.join(root, 'packs', `${pack}.json`), 'utf8')) as {version: number};
+  const generator = fakeGenerator(t);
+  // The main checkout keeps the render of the version before, without the shipped version's guide.
+  const before = generator.render(generator.main, pack, '2026-10-15T10:00:00.000Z', ['01-cover-stage.jpg', 'video.mp4', `${pack}-guide-v${version - 1}.pdf`]);
+  const after = generator.render(generator.worktree, pack, '2026-10-15T17:54:58.079Z', ['01-cover-stage.jpg', 'video.mp4', `${pack}-guide-v${version}.pdf`]);
+  const state = path.join(generator.root, 'state.json');
+  writeFileSync(state, JSON.stringify({[pack]: {version, url: `https://cacare.co/packs/${pack}/abcd1234/${pack}-overlay-pack-v${version}.zip`, bytes: 1_073_784_702}}));
+  const run = spawnSync(process.execPath, ['--import', 'tsx', path.join(root, 'scripts/listing-page.ts'), pack, '--check', '--generator', generator.main, '--state', state],
+    {cwd: root, encoding: 'utf8'});
+  assert.equal(run.status, 0, run.stderr);
+  assert.ok(run.stdout.split('\n').includes(`${pack} media: ${after} (the newest render; older in ${before})`), run.stdout);
+  assert.match(run.stdout, /All checks passed/);
 });
