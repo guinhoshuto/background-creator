@@ -6,7 +6,10 @@
   "colors": ["#55DDE8", "#FF7665", "#FFCA87"],
   "outputFormat": "mp4",
   "rain": 0.55,
-  "atmosphere": 0.65,
-  "glow": 0.55,
-  "cameraMotion": 0.65
+  "atmosphere": 0.95,
+  "glow": 0.62,
+  "cameraMotion": 0.65,
+  "weathering": 0.9,
+  "cinematic": 0.7,
+  "filmGrain": 0.4
 }

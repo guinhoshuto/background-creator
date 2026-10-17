@@ -12,9 +12,12 @@ export const tokyoFutureLoopSchema = baseBackgroundSchema.extend({
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#08131D'),
   colors: baseBackgroundSchema.shape.colors.default(['#55DDE8', '#FF7665', '#FFCA87']),
   rain: z.number().min(0).max(1).describe('Rain visibility').default(0.55),
-  atmosphere: z.number().min(0.2).max(1.5).describe('Depth of the city haze').default(0.65),
+  atmosphere: z.number().min(0.2).max(1.5).describe('Depth haze and layered low street fog').default(0.95),
   glow: z.number().min(0).max(1.5).describe('Soft bloom around neon and shop lights').default(0.55),
   cameraMotion: z.number().min(0).max(1).describe('Gentle closed camera drift; zero holds the camera still').default(0.65),
+  weathering: z.number().min(0).max(1).describe('Concrete grime, aged metal and broken asphalt reflections').default(0.9),
+  cinematic: z.number().min(0).max(1).describe('Cool shadows, warm highlights, lens fringe and vignette').default(0.7),
+  filmGrain: z.number().min(0).max(1).describe('Subtle deterministic film grain').default(0.4),
 });
 
 export type TokyoFutureLoopProps = z.infer<typeof tokyoFutureLoopSchema>;

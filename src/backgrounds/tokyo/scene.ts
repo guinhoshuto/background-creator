@@ -8,6 +8,9 @@ import {Reflector} from 'three/addons/objects/Reflector.js';
 import {z} from 'zod';
 import type {TokyoFutureLoopProps} from '../TokyoFutureLoop';
 import {createTokyoRain, getTokyoMotion, rainHeight} from './motion';
+import {createTokyoFilmPass, createTokyoFog, wetRoadShader} from './effects';
+import {ageTokyoSign, addTokyoStreetDebris} from './details';
+import {applyTokyoWeathering} from './weathering';
 
 const signSchema = z.object({
   position: z.tuple([z.number(), z.number(), z.number()]),
@@ -42,50 +45,11 @@ const signTexture = (sign: Sign, index: number) => {
     ctx.font = '500 27px sans-serif';
     ctx.fillText(['NIGHT MARKET', 'TOKYO ELECTRIC', 'OPEN ALL NIGHT', 'LOWER CITY', 'AFTER HOURS'][index % 5]!, w / 2, h * 0.81);
   }
+  ageTokyoSign(ctx, w, h, index);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
   return texture;
-};
-
-/** A real planar city reflection, broken up by small periodic water ripples. */
-const wetRoadShader = {
-  uniforms: {
-    color: {value: new THREE.Color('#111A23')}, tDiffuse: {value: null},
-    textureMatrix: {value: new THREE.Matrix4()}, phase: {value: 0},
-  },
-  vertexShader: /* glsl */ `
-    uniform mat4 textureMatrix;
-    varying vec4 reflectionUv;
-    varying vec3 worldPosition;
-    void main() {
-      reflectionUv = textureMatrix * vec4(position, 1.0);
-      worldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: /* glsl */ `
-    uniform sampler2D tDiffuse;
-    uniform float phase;
-    varying vec4 reflectionUv;
-    varying vec3 worldPosition;
-    void main() {
-      vec2 p = worldPosition.xz;
-      vec2 uv = reflectionUv.xy / reflectionUv.w;
-      float ripple = sin(p.y * 17.0 + sin(p.x * 2.0) + phase * 4.0);
-      float fine = sin(p.y * 44.0 - phase * 6.0) * sin(p.x * 31.0 + phase * 2.0);
-      uv += vec2(ripple * 0.0008, fine * 0.00035);
-      vec3 reflection = texture2D(tDiffuse, uv).rgb * 0.45;
-      reflection += texture2D(tDiffuse, uv + vec2(0.001, 0.0016)).rgb * 0.275;
-      reflection += texture2D(tDiffuse, uv - vec2(0.001, 0.0016)).rgb * 0.275;
-      float wetness = 0.44 + 0.16 * sin(p.x * 0.9 + sin(p.y * 0.6));
-      float grain = sin(p.x * 391.0) * sin(p.y * 367.0) * 0.004;
-      vec3 asphalt = vec3(0.013, 0.021, 0.029) + grain;
-      gl_FragColor = vec4(mix(asphalt, reflection, wetness), 1.0);
-      #include <tonemapping_fragment>
-      #include <colorspace_fragment>
-    }
-  `,
 };
 
 const vaporTexture = () => {
@@ -98,7 +62,7 @@ const vaporTexture = () => {
 };
 
 export type TokyoScene = {
-  draw: (frame: number, duration: number, props: Pick<TokyoFutureLoopProps, 'rain' | 'atmosphere' | 'glow' | 'cameraMotion' | 'backgroundColor'>) => void;
+  draw: (frame: number, duration: number, props: Pick<TokyoFutureLoopProps, 'rain' | 'atmosphere' | 'glow' | 'cameraMotion' | 'backgroundColor' | 'weathering' | 'cinematic' | 'filmGrain'>) => void;
   dispose: () => void;
 };
 
@@ -119,9 +83,12 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
   renderer.debug.onShaderError = (gl, program) => {throw new Error(gl.getProgramInfoLog(program) || 'Tokyo shader compilation failed.');};
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#08131D');
-  scene.fog = new THREE.FogExp2('#142B37', 0.007);
+  scene.fog = new THREE.FogExp2('#233B49', 0.011);
   const camera = new THREE.PerspectiveCamera(52, width / height, 0.15, 420);
   scene.add(gltf.scene);
+  const weathering = applyTokyoWeathering(gltf.scene);
+  addTokyoStreetDebris(scene, seed);
+  const fog = createTokyoFog(scene);
   scene.add(new THREE.HemisphereLight('#8DAAC8', '#25303B', 1.8));
   const moonlight = new THREE.DirectionalLight('#85AACA', 2.4);
   moonlight.position.set(-30, 65, 25); scene.add(moonlight);
@@ -178,16 +145,23 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
   const target = new THREE.WebGLRenderTarget(width, height, {type: THREE.HalfFloatType, samples: 4});
   const composer = new EffectComposer(renderer, target);
   const renderPass = new RenderPass(scene, camera);
-  const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.55, 0.45, 1.05);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.62, 0.7, 1.0);
   const output = new OutputPass();
-  composer.addPass(renderPass); composer.addPass(bloom); composer.addPass(output);
+  const film = createTokyoFilmPass(width, height);
+  composer.addPass(renderPass); composer.addPass(bloom); composer.addPass(output); composer.addPass(film);
   return {
     draw(frame, duration, props) {
       const motion = getTokyoMotion(frame, duration, props.cameraMotion);
       camera.position.set(motion.cameraX, motion.cameraY, motion.cameraZ);
       camera.lookAt(0, 10, -40);
       scene.background = new THREE.Color(props.backgroundColor);
-      (scene.fog as THREE.FogExp2).density = props.atmosphere * 0.011;
+      (scene.fog as THREE.FogExp2).density = props.atmosphere * 0.012;
+      fog.draw(motion.phase, props.atmosphere);
+      weathering.setAmount(props.weathering);
+      roadMaterial.uniforms.weathering!.value = props.weathering;
+      film.uniforms.phase!.value = motion.phase;
+      film.uniforms.amount!.value = props.cinematic;
+      film.uniforms.grain!.value = props.filmGrain;
       roadMaterial.uniforms.phase!.value = motion.phase;
       bloom.strength = props.glow;
       rainMaterial.opacity = props.rain * 0.33;
@@ -203,7 +177,7 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
         const side = i < 6 ? -1 : 1;
         sprite.position.set(side * (6.7 + Math.sin(p) * 0.25), 0.65 + (i % 6) * 0.23 + Math.sin(p) * 0.18, (side < 0 ? -8 : -31) + Math.cos(p) * 0.6);
         sprite.scale.set(2.1 + Math.sin(p) * 0.15, 1.9 + (i % 3) * 0.3, 1);
-        sprite.material.opacity = (0.12 + 0.045 * Math.cos(p)) * props.atmosphere;
+        sprite.material.opacity = (0.19 + 0.05 * Math.cos(p)) * props.atmosphere;
       });
       // Fixed delta: there is no clock, accumulation, temporal blur or frame history.
       composer.render(0);
@@ -221,7 +195,7 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
         }
       });
       textures.forEach((texture) => texture.dispose()); materials.forEach((material) => material.dispose());
-      road.dispose(); bloom.dispose(); output.dispose(); composer.dispose(); renderer.dispose();
+      weathering.dispose(); road.dispose(); bloom.dispose(); output.dispose(); film.dispose(); composer.dispose(); renderer.dispose();
       renderer.forceContextLoss();
     },
   };

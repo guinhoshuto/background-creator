@@ -21,13 +21,13 @@ The `.blend` remains editable; the GLB contains 14 batches and approximately 134
 An offline animated review, using the same Three.js scene and the same preset:
 
 ```sh
-npm run preview:tokyo -- --out out/review/tokyo-future
+npm run preview:tokyo -- --out out/review/tokyo-future --label TK-02
 ```
 
 The review embeds the model, lettering anchors and renderer. Open its `index.html` in a WebGL2 browser.
 Playback has pause, frame seeking and fullscreen. A reduced-motion preference starts paused.
 For its static image, use the official `npm run stills` runner with composition `TokyoFutureLoop`
-and preset `tokyo-after-rain`, naming the still `TK-01` in the same output folder.
+and preset `tokyo-after-rain`, naming the still after the review label (`TK-01` by default) in the same output folder.
 
 After visual approval, export the complete loop with the official exporter:
 
@@ -41,11 +41,13 @@ npm run render:mp4 -- TokyoFutureLoop --props presets/tokyo-after-rain.json
 - 18 detailed street buildings, 39 distant towers, a central tower with luminous rings, a supported
   skybridge, cables, shop shutters, vending machines, balconies, tanks and air-conditioning units.
 - 26 original Japanese shop signs, rendered as canvas textures on the anchored model panels.
-- A real planar reflection with periodic ripple distortion; rain makes six complete travels per loop.
+- A real planar reflection with periodic ripple distortion and irregular puddles, asphalt grain, cracks and tire wear; rain makes six complete travels per loop.
+- World-space procedural concrete stains, panel joints, oxidized metal and chipped paint, plus scratched signs and gutter debris.
+- Depth-tested low fog layers, cool shadows, warm highlights, a soft vignette, restrained lens fringe and periodic film grain.
 - Every animated value derives from the requested frame. Camera, neon, water and steam preserve the loop seam.
-- `rain`, `atmosphere`, `glow` and `cameraMotion` control the scene. `seed` changes the rain distribution.
+- `rain`, `atmosphere`, `glow`, `cameraMotion`, `weathering`, `cinematic` and `filmGrain` control the scene. `seed` changes the rain distribution.
   Architecture uses its fixed generation seed. The inherited `colors` field is reserved; it does not recolor the asset.
-- The composition uses ANGLE, linear HDR postprocessing and a restrained bloom before output tone mapping.
+- The composition uses ANGLE, linear HDR postprocessing and a restrained bloom before output tone mapping. The film treatment runs after tone mapping; its grain is seeded spatially and varies on a closed cycle, with no frame history.
 
 ## Provenance
 
