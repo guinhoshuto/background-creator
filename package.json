@@ -17,6 +17,7 @@
     "validate:pack": "tsx scripts/validate-pack.ts",
     "ship:pack": "tsx scripts/ship-pack.ts",
     "listing:page": "tsx scripts/listing-page.ts",
+    "reference": "tsx scripts/reference-search.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",
