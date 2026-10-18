@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {spawn, spawnSync} from 'node:child_process';
 import {existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync} from 'node:fs';
+import fs from 'node:fs';
+import {syncBuiltinESMExports} from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -52,14 +54,18 @@ test('a second run waits until the first one releases the slot', async (t) => {
   const first = startHolder(dir, ['1500']);
   await first.waitFor('held');
   const messages: string[] = [];
-  const started = Date.now();
   const slot = await acquireRenderSlot({dir, command: 'second', pollMs: 50, waitLimitMs: 20_000, log: (message) => messages.push(message)});
-  const waited = Date.now() - started;
+  const takenAt = Date.now();
   try {
-    // The holder keeps the slot for 1.5 s after printing "held".
-    assert.ok(waited >= 1000, `took the slot after ${waited} ms, while the first run still held it`);
+    // The order, not a duration (BGC-36): the holder prints "releasing at <ms>" before it lets go, and a
+    // loaded machine may run the second waiter late, never early.
+    await first.waitFor('released');
+    const releasingAt = Number(/releasing at (\d+)/.exec(first.output())?.[1]);
+    assert.ok(releasingAt > 0, `the holder never said when it released: ${first.output()}`);
+    assert.ok(takenAt >= releasingAt, `took the slot at ${takenAt}, before the first run began to release it at ${releasingAt}`);
     assert.equal(ownerPid(dir), process.pid);
-    assert.equal(messages.length, 1);
+    // One message: the release never shows a slot "still writing its owner file" (BGC-36).
+    assert.deepEqual(messages.length, 1, messages.join('\n'));
     assert.match(messages[0]!, new RegExp(`^Waiting for the render slot, held by pid ${first.child.pid} \\(background-creator: render-slot test holder\\) since `));
   } finally {
     slot.release();
@@ -326,4 +332,54 @@ test('an old mutex whose holder is gone, or is this process that holds no mutex,
     assert.equal(existsSync(mutex), false);
     assert.deepEqual(stranded(mutex), []);
   }
+});
+
+/**
+ * Swaps one node:fs function for the copy's named imports too (syncBuiltinESMExports) and puts it back in
+ * t.after and through the returned function: the race of a waiter with a release, made to happen (BGC-36).
+ */
+const swapFs = <K extends 'mkdirSync' | 'rmSync'>(t: {after: (fn: () => void) => void}, name: K, make: (real: typeof fs[K]) => typeof fs[K]) => {
+  const real = fs[name];
+  fs[name] = make(real);
+  syncBuiltinESMExports();
+  const restore = () => { fs[name] = real; syncBuiltinESMExports(); };
+  t.after(restore);
+  return restore;
+};
+
+test('BGC-36: a slot freed between the mkdir and the read of its owner is taken at once, without a wait message', async (t) => {
+  const dir = tempSlot(t);
+  // A live holder (the test runner's parent) that releases right after the waiter's mkdir found the slot taken.
+  writeOwner(dir, process.ppid);
+  let freed = false;
+  swapFs(t, 'mkdirSync', (real) => ((target: fs.PathLike, options?: fs.MakeDirectoryOptions) => {
+    try {
+      return real(target, options);
+    } catch (error) {
+      if (!freed && target === dir && (error as NodeJS.ErrnoException).code === 'EEXIST') { freed = true; rmSync(dir, {recursive: true, force: true}); }
+      throw error;
+    }
+  }) as typeof fs.mkdirSync);
+  const messages: string[] = [];
+  const slot = await acquireRenderSlot({dir, command: 'freed meanwhile', pollMs: 50, waitLimitMs: 5000, log: (message) => messages.push(message)});
+  assert.equal(freed, true, 'the waiter never found the slot taken: the race did not happen');
+  assert.deepEqual(messages, []);
+  assert.equal(ownerPid(dir), process.pid);
+  slot.release();
+});
+
+test('BGC-36: a release takes the slot path away before deleting anything, and leaves nothing beside it', async (t) => {
+  const dir = tempSlot(t);
+  const slot = await acquireRenderSlot({dir, command: 'release', wait: false, log: () => {}});
+  const removals: {target: string; slotThere: boolean}[] = [];
+  const restore = swapFs(t, 'rmSync', (real) => ((target: fs.PathLike, options?: fs.RmOptions) => {
+    removals.push({target: String(target), slotThere: existsSync(dir)});
+    return real(target, options);
+  }) as typeof fs.rmSync);
+  slot.release();
+  restore();
+  assert.ok(removals.length > 0, 'the release deleted nothing');
+  assert.deepEqual(removals.filter((removal) => removal.slotThere), [], `a removal ran with the slot path still there, where a waiter reads it ownerless: ${JSON.stringify(removals)}`);
+  assert.equal(existsSync(dir), false);
+  assert.deepEqual(readdirSync(path.dirname(dir)), []);
 });

@@ -332,26 +332,39 @@ test('kill -TERM from outside: the run logs the signal with the sender and ends 
     chmodSync(path.join(bin, 'npm'), 0o755);
     const logDir = path.join(scratch, 'logs');
     const pack = 'halloween-cobweb';
-    const child = spawn(path.join(root, 'node_modules', '.bin', 'tsx'), ['scripts/ship-pack.ts', pack], {
+    // The run as `npm run ship:pack` starts it. Through the tsx CLI, a wrapper got the signal and SIGKILLed the
+    // node child that had not answered within 30 ms: on a loaded machine, 143 with no line (BGC-37).
+    const scripts = (JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as {scripts: Record<string, string>}).scripts;
+    const [program, ...script] = scripts['ship:pack']!.split(' ');
+    const command = program === 'node' ? process.execPath : path.join(root, 'node_modules', '.bin', program!);
+    const child = spawn(command, [...script, pack], {
       cwd: root, env: {...process.env, PATH: `${bin}:${process.env.PATH}`, HOME: scratch, SHIP_PACK_LOG_DIR: logDir}, stdio: 'ignore',
     });
-    const progress = path.join(logDir, 'progress.log');
-    for (let i = 0; i < 300 && !(existsSync(progress) && readFileSync(progress, 'utf8').includes('start ship:pack')); i += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    const exited = new Promise<number | null>((resolve) => child.on('exit', (exit) => resolve(exit)));
+    let sender: ReturnType<typeof spawn> | undefined;
+    try {
+      const progress = path.join(logDir, 'progress.log');
+      for (let i = 0; i < 300 && !(existsSync(progress) && readFileSync(progress, 'utf8').includes('start ship:pack')); i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      // The sender: a shell that stays on its line until the run has ended, like another session's Bash running
+      // pkill then more; it waits on its stdin, not on a clock, so it is still there whenever the run reads ps.
+      sender = spawn('/bin/sh', ['-c', `kill -TERM ${child.pid}; read line`]);
+      const code = await exited;
+      assert.equal(code, 143);
+      // The step it was running got the signal too: no orphan keeps rendering (here, the fake npm's sleep).
+      const orphans = spawnSync('pgrep', ['-f', `^sleep 30$`], {encoding: 'utf8'}).stdout.trim().split('\n').filter(Boolean)
+        .filter((pid) => spawnSync('ps', ['-o', 'ppid=', '-p', pid], {encoding: 'utf8'}).stdout.trim() === '1');
+      assert.deepEqual(orphans, []);
+      const log = readFileSync(progress, 'utf8');
+      // The process that got the signal logs it itself, the test as its parent: no wrapper in between.
+      assert.match(log, new RegExp(`received SIGTERM at \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d: pid ${child.pid}, ppid ${process.pid} .*possible senders: .*\\b${sender.pid} \`/bin/sh -c kill -TERM ${child.pid}; read line\``));
+      assert.match(log, /ps snapshot .*signal-.*\.ps\.txt/);
+    } finally {
+      sender?.kill('SIGKILL');
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      await exited;
     }
-    // The sender: a shell that stays on its line a moment, like another session's Bash running pkill then more.
-    const sender = spawn('/bin/sh', ['-c', `kill -TERM ${child.pid}; sleep 2`]);
-    const code = await new Promise<number | null>((resolve) => child.on('exit', (exit) => resolve(exit)));
-    sender.kill();
-    assert.equal(code, 143);
-    // The step it was running got the signal too: no orphan keeps rendering (here, the fake npm's sleep).
-    const orphans = spawnSync('pgrep', ['-f', `^sleep 30$`], {encoding: 'utf8'}).stdout.trim().split('\n').filter(Boolean)
-      .filter((pid) => spawnSync('ps', ['-o', 'ppid=', '-p', pid], {encoding: 'utf8'}).stdout.trim() === '1');
-    assert.deepEqual(orphans, []);
-    const log = readFileSync(progress, 'utf8');
-    // tsx relays the signal to the node process it runs: that one logs it, the tsx wrapper as its parent.
-    assert.match(log, new RegExp(`received SIGTERM at \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d: pid \\d+, ppid ${child.pid} .*possible senders: .*\\b${sender.pid} \`/bin/sh -c kill -TERM ${child.pid}; sleep 2\``));
-    assert.match(log, /ps snapshot .*signal-.*\.ps\.txt/);
   } finally {
     rmSync(scratch, {recursive: true, force: true});
   }
