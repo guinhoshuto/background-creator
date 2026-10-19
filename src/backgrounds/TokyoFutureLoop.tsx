@@ -36,8 +36,9 @@ export const TokyoFutureLoop = (props: TokyoFutureLoopProps) => {
     let disposed = false;
     createTokyoScene({
       canvas: canvas.current, width, height,
-      modelUrl: staticFile('tokyo/tokyo-city.glb'),
-      signsUrl: staticFile('tokyo/tokyo-signs.json'),
+      modelUrl: staticFile('tokyo/organic/tokyo-city.glb'),
+      signsUrl: staticFile('tokyo/organic/tokyo-signs.json'),
+      detailsUrl: staticFile('tokyo/organic/tokyo-props.json'),
       seed: props.seed,
     }).then((value) => {
       if (disposed) {value.dispose(); return;}

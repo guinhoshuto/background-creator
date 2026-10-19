@@ -29,7 +29,7 @@
     "qa:kit": "tsx scripts/qa-kit.ts",
     "clean": "tsx scripts/clean.ts",
     "ornaments:report": "tsx scripts/ornaments-report.ts",
-    "build:tokyo": "node ~/obsidian/AI/scripts/render-slot.ts run -- /Volumes/Sandisk/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/create-tokyo-city.py -- --output-dir public/tokyo",
+    "build:tokyo": "node ~/obsidian/AI/scripts/render-slot.ts run -- /Volumes/Sandisk/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/create-tokyo-city.py -- --output-dir public/tokyo/organic",
     "preview:tokyo": "tsx scripts/tokyo-preview.ts"
   },
   "dependencies": {

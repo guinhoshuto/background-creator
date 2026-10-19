@@ -10,14 +10,15 @@ const captions: Record<string, string> = {
   東京: 'TOKYO', 電子: 'ELECTRONICS', 夜市: 'NIGHT MARKET', 未来: 'MIRAI',
   地下鉄: 'METRO', ホテル: 'HOTEL', 光: 'HIKARI', 珈琲: 'COFFEE',
   喫茶: 'COFFEE', 食堂: 'DINING', 電波: 'RADIO REPAIR', 音楽: 'RECORDS',
+  ラーメン: 'RAMEN', 修理: 'REPAIR', 茶房: 'TEA ROOM', レコード: 'RECORDS', 雑貨: 'GENERAL STORE', カラオケ: 'KARAOKE',
 };
 
 /** Independent shop identities on the existing mounted panels, with their true aspect ratios. */
 export const createTokyoSignFace = (sign: SignFace, index: number) => {
   const random = createSeededRandom(index * 53 + 1709);
-  const finish: Finish = /珈琲|喫茶|食堂|東京/.test(sign.text) ? 'paint'
+  const finish: Finish = /珈琲|喫茶|食堂|東京|茶房|雑貨/.test(sign.text) ? 'paint'
     : sign.text === '地下鉄' ? 'wayfinding'
-    : /電子|電波|光/.test(sign.text) ? 'neon'
+    : /電子|電波|光|修理|カラオケ/.test(sign.text) ? 'neon'
     : sign.text === '未来' ? 'tiles' : 'lightbox';
   const canvas = document.createElement('canvas');
   canvas.width = sign.vertical ? 256 : 1024;
@@ -74,7 +75,7 @@ export const createTokyoSignFace = (sign: SignFace, index: number) => {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const letters = Array.from(sign.text);
   const family = finish === 'paint' || sign.text === 'ホテル' ? serif : sans;
-  const size = sign.vertical ? w * (finish === 'neon' ? 0.59 : 0.65) : h * 0.49;
+  const size = sign.vertical ? Math.min(w * (finish === 'neon' ? 0.59 : 0.65), h * 0.5 / letters.length) : h * 0.49;
   ctx.font = `${finish === 'neon' ? 400 : finish === 'paint' ? 700 : 600} ${size}px ${family}`;
   const drawLettering = (text: string, x: number, y: number, maximum: number) => {
     ctx.save(); ctx.translate(x, y);

@@ -27,6 +27,7 @@ RNG = random.Random(SEED)
 TAU = math.tau
 BATCHES = {}
 SIGNS = []
+PROP_SURFACES = []
 
 
 def add(a, b):
@@ -161,6 +162,14 @@ PALETTE = {
     "emit_cyan": ("#46d9eb", 0.36, 0.12, 1.35),
     "emit_coral": ("#ff6956", 0.38, 0.08, 1.1),
     "emit_amber": ("#ffc274", 0.42, 0.05, 0.9),
+    "enamel_cream": ("#b7b195", 0.60, 0.22, 0),
+    "enamel_red": ("#804137", 0.63, 0.25, 0),
+    "enamel_green": ("#2c5148", 0.59, 0.28, 0),
+    "enamel_ochre": ("#967947", 0.66, 0.24, 0),
+    "wood": ("#68513a", 0.94, 0, 0),
+    "cloth": ("#496058", 0.98, 0, 0),
+    "cloth_red": ("#794b40", 0.98, 0, 0),
+    "foliage": ("#284639", 0.86, 0, 0),
 }
 NEON = ("emit_cyan", "emit_coral", "emit_amber")
 WORDS = ("東京", "電子", "夜市", "食堂", "未来", "喫茶", "地下鉄", "ホテル", "光", "電波", "珈琲", "音楽")
@@ -169,11 +178,17 @@ WORDS = ("東京", "電子", "夜市", "食堂", "未来", "喫茶", "地下鉄"
 def framed_panel(x, y, z, width, height, text, material, vertical):
     """The lettering plane is 0.018 m in front of its solid backing."""
     box("concrete_dark", (x, y, z), (width, height, 0.24))
+    frame = "trim" if text in ("東京", "食堂", "喫茶", "珈琲", "地下鉄") else material
     for edge in (-1, 1):
-        box(material, (x + edge * (width / 2 - 0.045), y, z + 0.135), (0.07, height, 0.055))
-        box(material, (x, y + edge * (height / 2 - 0.045), z + 0.135), (width, 0.07, 0.055))
+        box(frame, (x + edge * (width / 2 - 0.045), y, z + 0.135), (0.07, height, 0.055))
+        box(frame, (x, y + edge * (height / 2 - 0.045), z + 0.135), (width, 0.07, 0.055))
     SIGNS.append({"position": [x, y, z + 0.148], "width": width - 0.2, "height": height - 0.2,
                   "text": text, "color": PALETTE[material][0], "vertical": vertical})
+
+
+def prop_surface(kind, position, width, height, variant, rotation_y=0):
+    PROP_SURFACES.append({"kind": kind, "position": list(position), "width": width,
+                          "height": height, "variant": variant, "rotationY": rotation_y})
 
 
 def air_conditioner(side, y, z):
@@ -219,6 +234,35 @@ def rooftop(x, height, z, width, depth, index):
     cylinder("emit_coral", (ax, height + antenna_height, az), (ax, height + antenna_height + 0.18, az), 0.08, 8)
 
 
+def cloth_awning(side, z, width, variant):
+    """Sloping fabric, a scalloped valance and struts embedded in the wall."""
+    material = "cloth_red" if variant % 2 else "cloth"
+    rows, columns = 5, 24
+    vertices, faces = [], []
+    for row in range(rows + 1):
+        t = row / rows
+        for col in range(columns + 1):
+            u = col / columns
+            fold = math.sin(u * math.pi * 12) * 0.022 * t
+            vertices.append((side * (9.98 - 1.48 * t), 3.78 - 0.44 * t - 0.09 * math.sin(t * math.pi) + fold,
+                             z + (u - 0.5) * width))
+    for row in range(rows):
+        for col in range(columns):
+            a = row * (columns + 1) + col
+            faces.append((a, a + 1, a + columns + 2, a + columns + 1))
+    geometry(material, vertices, faces)
+    for col in range(columns):
+        za, zb = z + (col / columns - 0.5) * width, z + ((col + 1) / columns - 0.5) * width
+        drop_a = 0.17 + 0.045 * math.cos(col * math.pi / 2)
+        drop_b = 0.17 + 0.045 * math.cos((col + 1) * math.pi / 2)
+        geometry(material, [(side * 8.5, 3.34, za), (side * 8.5, 3.34, zb),
+                            (side * 8.5, 3.34 - drop_b, zb), (side * 8.5, 3.34 - drop_a, za)], [(0, 1, 2, 3)])
+    for dz in (-width * 0.43, width * 0.43):
+        beam("metal", (side * 9.98, 3.76, z + dz), (side * 8.5, 3.32, z + dz), 0.045)
+        beam("metal", (side * 9.98, 2.96, z + dz), (side * 8.5, 3.32, z + dz), 0.045)
+    beam("metal", (side * 8.5, 3.33, z - width / 2), (side * 8.5, 3.33, z + width / 2), 0.045)
+
+
 def shopfront(side, front, depth, index):
     x = side * 9.97
     for i in range(3):
@@ -235,10 +279,45 @@ def shopfront(side, front, depth, index):
             box("emit_amber", (x + side * 0.02, 2.65, z), (0.04, 0.13, width - 0.35))
             for offset in (-0.25, 0.25):
                 box("concrete_dark", (x - side * 0.2, 0.75, z + offset * width), (0.10, 0.8, width * 0.43))
-        box("metal", (side * 9.25, 3.56, z), (1.6, 0.17, width + 0.18))
-        box(NEON[(index + i) % 3], (side * 8.47, 3.47, z), (0.07, 0.14, width + 0.18))
-        for dz in (-width * 0.36, width * 0.36):
-            beam("metal", (side * 10, 4.15, z + dz), (side * 8.65, 3.62, z + dz), 0.07)
+        style = (index + i + (side == 1)) % 4
+        if style in (1, 3):
+            cloth_awning(side, z, width + 0.18, index + i)
+        else:
+            box("metal", (side * 9.25, 3.56, z), (1.6, 0.17, width + 0.18))
+            box(NEON[(index + i) % 3] if style == 0 else "trim", (side * 8.47, 3.47, z), (0.07, 0.09, width + 0.18))
+            for dz in (-width * 0.36, width * 0.36):
+                beam("metal", (side * 10, 4.15, z + dz), (side * 8.65, 3.62, z + dz), 0.07)
+        if index < 5:
+            # Printed notices sit on the shop's solid lower panel, not in the air.
+            pz = z + width * 0.22
+            box("wood", (side * 9.69, 1.66, pz), (0.045, 0.94, 0.65))
+            prop_surface("poster", (side * 9.655, 1.66, pz), 0.60, 0.88, index * 7 + i + (side == 1) * 3, -side * math.pi / 2)
+            if (index + i) % 3 == 1:
+                # Short divided door curtains add irregular edges beneath the canopy.
+                for strip in range(5):
+                    cz = z - width * 0.42 + strip * width * 0.17
+                    box("cloth_red" if index % 2 else "cloth", (side * 9.65, 2.52, cz), (0.025, 0.58 + (strip % 2) * 0.08, width * 0.16))
+                cylinder("wood", (side * 9.65, 2.88, z - width * 0.5), (side * 9.65, 2.88, z + width * 0.5), 0.025, 6)
+
+
+def layered_shop_signs(side, index, front):
+    """Secondary tenants add different scales and heights, each with its own wall brackets."""
+    if index >= 6:
+        return
+    words = ("ラーメン", "修理", "茶房", "レコード", "雑貨", "カラオケ")
+    choice = (index * 2 + (side == 1)) % len(words)
+    x, y, z = side * 9.43, 10.0 + (index % 3) * 0.72, front - 2.75
+    w, h = (0.76, 3.0) if choice % 2 else (0.94, 2.55)
+    framed_panel(x, y, z, w, h, words[choice], NEON[(index + 2) % 3], True)
+    for dy in (-h * 0.34, h * 0.34):
+        beam("metal", (side * 10.12, y + dy, z - 0.16), (x, y + dy, z - 0.12), 0.065)
+    # Short warm shop plaques sit under larger tenant blades, rather than repeating one fin.
+    if index < 4:
+        x, y, z = side * 9.30, 4.5 + (index % 2) * 0.32, front - 4.5
+        text = ("食堂", "珈琲", "雑貨", "茶房")[(index + (side == 1)) % 4]
+        framed_panel(x, y, z, 1.64, 0.74, text, "emit_amber", False)
+        for dx in (-0.55, 0.55):
+            beam("metal", (x + dx, y, z - 0.12), (side * 10.12, y + 0.24, z - 0.38), 0.055)
 
 
 def building(side, index, front, depth, width, height):
@@ -286,34 +365,127 @@ def building(side, index, front, depth, width, height):
     cylinder("metal", (side * 9.71, 0.4, pipez), (side * 9.25, 0.22, pipez), 0.105, 8)
     shopfront(side, front, depth, index)
     # Projecting fins have two visible brackets embedded in the facade edge.
-    sign_h = 4.0 + (index % 3) * 0.65
-    sign_x, sign_y, sign_z = side * 9.12, 6.6 + (index % 2) * 1.0, front + 0.5
+    variant = (index + (side == 1) * 3) % 6
+    sign_h = (3.9, 4.65, 4.9, 3.45, 2.8, 4.2)[variant]
+    sign_w = (1.44, 1.12, 1.05, 1.30, 1.02, 1.38)[variant]
+    sign_x, sign_y, sign_z = side * (9.08 + (index % 3) * 0.055), 6.5 + (index % 3) * 0.47, front + 0.5
     color = NEON[(index + (side == 1)) % 3]
-    framed_panel(sign_x, sign_y, sign_z, 1.28, sign_h, WORDS[(index * 2 + (side == 1)) % len(WORDS)], color, True)
+    framed_panel(sign_x, sign_y, sign_z, sign_w, sign_h, WORDS[(index * 2 + (side == 1)) % len(WORDS)], color, True)
     for dy in (-sign_h * 0.33, sign_h * 0.33):
         beam("metal", (side * 10.35, sign_y + dy, front - 0.02), (sign_x, sign_y + dy, sign_z - 0.12), 0.11)
     if index < 4:
         framed_panel(x - side * width * 0.12, 3.35, front + 0.22, width * 0.64, 1.05,
                      WORDS[(index + 5 + (side == 1)) % len(WORDS)], NEON[(index + 1) % 3], False)
+    layered_shop_signs(side, index, front)
     rooftop(x, height, z, width, depth, index)
 
 
 def vending_machine(side, z, index):
-    x = side * 8.93
-    box("concrete_light", (x, 1.29, z), (1.08, 2.28, 0.78))
-    box("metal", (x, 0.19, z), (1.15, 0.12, 0.85))
-    box("glass", (x, 1.48, z + 0.401), (0.83, 1.3, 0.04))
-    box(NEON[index % 3], (x, 2.25, z + 0.41), (0.87, 0.16, 0.04))
+    variant = index + (side == 1)
+    kind = ("drinks", "coffee", "locker")[variant % 3]
+    x = side * (8.88 + (index % 2) * 0.10)
+    z += (0.45 if side == 1 else 0) + (index % 2) * 0.7
+    width, height, depth = {"drinks": (1.32, 2.38, 0.88), "coffee": (1.20, 2.18, 1.0), "locker": (1.68, 1.98, 0.68)}[kind]
+    finish = {"drinks": "enamel_cream", "coffee": "enamel_green", "locker": "enamel_ochre"}[kind]
+    bottom = 0.32
+    face = z + depth / 2
+    # Each enclosure has a grounded plinth, feet, door seam and an overhanging rain cap.
+    box("metal", (x, 0.20, z), (width + 0.06, 0.08, depth + 0.08))
+    for dx in (-width * 0.37, width * 0.37):
+        for dz in (-depth * 0.35, depth * 0.35):
+            box("metal", (x + dx, 0.28, z + dz), (0.12, 0.16, 0.12))
+    box(finish, (x, bottom + height / 2, z), (width, height, depth))
+    box("metal", (x, bottom + height, z + 0.035), (width + 0.10, 0.075, depth + 0.15))
+    for dx in (-width * 0.47, width * 0.47):
+        box("trim", (x + dx, bottom + height / 2, face + 0.015), (0.018, height - 0.08, 0.016))
+    if kind == "locker":
+        prop_surface(kind, (x, 1.31, face + 0.026), 1.52, 1.73, variant)
+        for row in range(3):
+            for col in range(2):
+                px, py = x - 0.38 + col * 0.76, 0.85 + row * 0.42
+                box("metal", (px + 0.23, py, face + 0.05), (0.055, 0.13, 0.045))
+                box("trim", (px + 0.23, py + 0.02, face + 0.082), (0.026, 0.07, 0.022))
+        box("street_detail", (x, 2.19, face + 0.045), (0.38, 0.13, 0.04))
+        box("emit_cyan", (x - 0.10, 2.19, face + 0.07), (0.10, 0.035, 0.012))
+    else:
+        dw, dh = (1.02, 1.58) if kind == "drinks" else (0.94, 1.37)
+        dx, dy = x - 0.075, 1.77 if kind == "drinks" else 1.73
+        box("metal", (dx, dy, face + 0.025), (dw + 0.055, dh + 0.055, 0.035))
+        prop_surface(kind, (dx, dy, face + 0.048), dw, dh, variant)
+        # The pickup cavity is recessed between solid lips; the coffee unit has a cup bay.
+        box("street_detail", (x - 0.10, 0.73, face + 0.012), (width * 0.62, 0.29, 0.025))
+        for dy2 in (-0.16, 0.16):
+            box("trim", (x - 0.10, 0.73 + dy2, face + 0.052), (width * 0.66, 0.035, 0.09))
+        if kind == "coffee":
+            cylinder("enamel_cream", (x - 0.10, 0.60, face + 0.09), (x - 0.10, 0.77, face + 0.09), 0.07, 12, end_radius=0.085)
+            for slat in range(7):
+                box("wood", (x - width / 2 - 0.012, 1.47, z - 0.38 + slat * 0.12), (0.04, 1.95, 0.055))
+        for j in range(4):
+            py = 1.04 + j * 0.25
+            cylinder("metal", (x + width * 0.41, py, face + 0.025), (x + width * 0.41, py, face + 0.071), 0.039, 10)
+            cylinder("enamel_red" if j == 3 else "enamel_cream", (x + width * 0.41, py, face + 0.071), (x + width * 0.41, py, face + 0.079), 0.026, 10)
+        box("metal", (x + width * 0.41, 2.13, face + 0.04), (0.14, 0.25, 0.04))
+        box("street_detail", (x + width * 0.41, 2.17, face + 0.064), (0.075, 0.014, 0.01))
+        for j in range(5):
+            box("street_detail", (x - 0.16, 0.40 + j * 0.024, face + 0.012), (0.54, 0.009, 0.014))
+        if kind == "drinks":
+            box("enamel_red", (x, 0.60 + height * 0.5, z - depth * 0.5 - 0.008), (width * 0.82, height * 0.65, 0.025))
+    # Power comes from the wall: a slack cable lies behind the machine, clear of the walkway.
+    cable([(x + side * width * 0.4, 0.42, z - depth * 0.3), (side * 9.52, 0.23, z - depth * 0.55),
+           (side * 9.70, 0.22, z - depth * 0.65), (side * 9.70, 0.85, z - depth * 0.65)], 0.024)
+
+
+def crate(x, y, z, variant):
+    material = "wood" if variant % 2 else "enamel_red"
+    width, height, depth = 0.58, 0.36, 0.46
+    box(material, (x, y + 0.035, z), (width, 0.07, depth))
+    for dx in (-width / 2 + 0.035, width / 2 - 0.035):
+        for dz in (-depth / 2 + 0.035, depth / 2 - 0.035):
+            box(material, (x + dx, y + height / 2, z + dz), (0.07, height, 0.07))
     for row in range(3):
-        for col in range(4):
-            px = x - 0.3 + col * 0.2
-            py = 1.0 + row * 0.36
-            cylinder(NEON[(col + row) % 3], (px, py, z + 0.435), (px, py + 0.19, z + 0.435), 0.05, 8)
-            box("metal", (px, py - 0.04, z + 0.44), (0.15, 0.025, 0.07))
-    box("street_detail", (x, 0.48, z + 0.42), (0.65, 0.24, 0.05))
-    for j in range(3):
-        cylinder("emit_amber", (x + 0.42, 1.1 + j * 0.22, z + 0.42),
-                 (x + 0.42, 1.1 + j * 0.22, z + 0.46), 0.035, 8)
+        for dz in (-depth / 2, depth / 2):
+            box(material, (x, y + 0.10 + row * 0.10, z + dz), (width, 0.065, 0.045))
+        for dx in (-width / 2, width / 2):
+            box(material, (x + dx, y + 0.10 + row * 0.10, z), (0.045, 0.065, depth))
+
+
+def planter(x, z, variant):
+    rng = random.Random(SEED + variant * 97)
+    cylinder("enamel_red" if variant % 2 else "concrete_light", (x, 0.16, z), (x, 0.55, z), 0.19, 12, end_radius=0.27)
+    cylinder("street_detail", (x, 0.545, z), (x, 0.56, z), 0.245, 12)
+    for i in range(13):
+        angle = TAU * i / 13 + rng.uniform(-0.18, 0.18)
+        reach, rise = rng.uniform(0.25, 0.56), rng.uniform(0.30, 0.84)
+        stem = (x, 0.56, z)
+        tip = (x + math.cos(angle) * reach, 0.56 + rise * 0.7, z + math.sin(angle) * reach)
+        peak = (x + math.cos(angle) * reach * 0.48, 0.56 + rise, z + math.sin(angle) * reach * 0.48)
+        wing = (-math.sin(angle) * 0.075, 0, math.cos(angle) * 0.075)
+        geometry("foliage", [stem, add(peak, wing), tip, sub(peak, wing)], [(0, 1, 2), (0, 2, 3)])
+        beam("foliage", stem, peak, 0.014)
+
+
+def lived_in_shop(side, front, index):
+    """Objects form small shop-specific groups, with room left on the tactile route."""
+    x, z = side * 9.15, front - 6.4
+    if index % 3 != 2:
+        crate(x, 0.16, z, index)
+        crate(x + side * 0.07, 0.52, z - 0.055, index + 1)
+    if index % 2 == 0:
+        planter(side * 9.1, z - 1.05, index + (side == 1) * 11)
+    else:
+        # A freestanding menu is carried by a real A-frame with four feet.
+        mx, mz = side * 8.72, z - 0.8
+        box("wood", (mx, 1.06, mz), (0.69, 0.95, 0.07))
+        prop_surface("menu", (mx, 1.06, mz + 0.044), 0.62, 0.87, index + (side == 1) * 4)
+        for dx in (-0.30, 0.30):
+            for dz in (-0.23, 0.23):
+                beam("wood", (mx + dx, 0.16, mz + dz), (mx + dx, 1.52, mz), 0.045)
+    # Meter boxes, conduit clamps and a service notice are attached to the facade.
+    mz = front - 0.8
+    box("metal", (side * 9.88, 1.71, mz), (0.30, 0.57, 0.39))
+    cylinder("metal", (side * 9.72, 0.18, mz), (side * 9.72, 1.43, mz), 0.025, 6)
+    for y in (0.42, 0.98, 1.37):
+        box("trim", (side * 9.85, y, mz), (0.30, 0.045, 0.085))
 
 
 def lantern(x, y, z):
@@ -344,8 +516,11 @@ def streets():
                 box("metal", (side * 6.73, 0.031, z + 0.83 + bar * 0.115), (0.33, 0.018, 0.024))
         for index, z in enumerate((1.1, -19, -51, -82)):
             vending_machine(side, z, index)
-        for z in (-4.0, -6.0, -8.0):
-            lantern(side * 8.7, 2.62, z)
+        front = 4.0
+        for index, depth in enumerate((13, 12, 15, 13, 14)):
+            lived_in_shop(side, front, index)
+            front -= depth + 1.15
+        # Paper lanterns are authored in Three.js with ribbed envelopes and printed paper.
         # Light arms are carried by full-height poles and triangular braces.
         for z in (-5, -28, -56, -82, -107):
             x = side * 7.65
@@ -504,7 +679,8 @@ def save_scene(output_dir):
                               export_yup=True, export_cameras=False, export_lights=False,
                               export_materials="EXPORT", export_apply=False)
     (output_dir / "tokyo-signs.json").write_text(json.dumps(SIGNS, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"meshes": len(BATCHES), "triangles": triangles, "signs": len(SIGNS),
+    (output_dir / "tokyo-props.json").write_text(json.dumps(PROP_SURFACES, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"meshes": len(BATCHES), "triangles": triangles, "signs": len(SIGNS), "prop_surfaces": len(PROP_SURFACES),
                       "output_dir": str(output_dir)}, indent=2))
 
 
@@ -512,6 +688,7 @@ def build_city(output_dir):
     RNG.seed(SEED)
     BATCHES.clear()
     SIGNS.clear()
+    PROP_SURFACES.clear()
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     depths = (13, 12, 15, 13, 14, 12, 15, 13, 14)

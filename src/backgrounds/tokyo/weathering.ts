@@ -18,6 +18,13 @@ const PROFILES: Readonly<Record<string, readonly [kind: number, strength: number
   street_detail: [1, 0.7],
   paint: [2, 1],
   tactile: [2, 0.6],
+  enamel_cream: [1, 0.7],
+  enamel_red: [1, 0.7],
+  enamel_green: [1, 0.7],
+  enamel_ochre: [1, 0.7],
+  wood: [0, 0.65],
+  cloth: [2, 0.35],
+  cloth_red: [2, 0.35],
 };
 
 const VARYINGS = /* glsl */ `

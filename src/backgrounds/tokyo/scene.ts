@@ -12,6 +12,8 @@ import {createTokyoRainField} from './rain';
 import {createTokyoFilmPass, createTokyoFog, wetRoadShader} from './effects';
 import {addTokyoStreetDebris} from './details';
 import {createTokyoSignFace} from './signs';
+import {addTokyoPropSurfaces} from './prop-art';
+import {addTokyoPaperLanterns} from './lanterns';
 import {applyTokyoWeathering} from './weathering';
 
 const signSchema = z.object({
@@ -19,6 +21,12 @@ const signSchema = z.object({
   width: z.number().positive(), height: z.number().positive(),
   text: z.string(), color: z.string(), vertical: z.boolean(),
   rotationY: z.number().optional(),
+});
+const propSurfaceSchema = z.object({
+  kind: z.enum(['drinks', 'coffee', 'locker', 'poster', 'menu', 'awning']),
+  position: z.tuple([z.number(), z.number(), z.number()]),
+  width: z.number().positive(), height: z.number().positive(),
+  variant: z.number().int(), rotationY: z.number().optional(),
 });
 const vaporTexture = () => {
   const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
@@ -34,14 +42,16 @@ export type TokyoScene = {
   dispose: () => void;
 };
 
-export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUrl, seed}: {
+export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUrl, detailsUrl, seed}: {
   canvas: HTMLCanvasElement; width: number; height: number;
-  modelUrl: string; signsUrl: string; seed: number;
+  modelUrl: string; signsUrl: string; detailsUrl: string; seed: number;
 }): Promise<TokyoScene> => {
   // Asset loading happens before GPU allocation, so a missing build cannot leak a renderer.
-  const [gltf, signResponse] = await Promise.all([new GLTFLoader().loadAsync(modelUrl), fetch(signsUrl)]);
+  const [gltf, signResponse, detailResponse] = await Promise.all([new GLTFLoader().loadAsync(modelUrl), fetch(signsUrl), fetch(detailsUrl)]);
   if (!signResponse.ok) throw new Error(`Sign anchors returned HTTP ${signResponse.status}.`);
   const signs = z.array(signSchema).parse(await signResponse.json());
+  if (!detailResponse.ok) throw new Error(`Street details returned HTTP ${detailResponse.status}.`);
+  const details = z.array(propSurfaceSchema).parse(await detailResponse.json());
   await document.fonts.ready;
   const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: false, preserveDrawingBuffer: true});
   renderer.setPixelRatio(1); renderer.setSize(width, height, false);
@@ -56,6 +66,8 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
   scene.add(gltf.scene);
   const weathering = applyTokyoWeathering(gltf.scene);
   addTokyoStreetDebris(scene, seed);
+  addTokyoPropSurfaces(scene, details);
+  addTokyoPaperLanterns(scene);
   const fog = createTokyoFog(scene);
   scene.add(new THREE.HemisphereLight('#8DAAC8', '#25303B', 1.8));
   const moonlight = new THREE.DirectionalLight('#85AACA', 2.4);

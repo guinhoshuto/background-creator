@@ -10,9 +10,10 @@ const labelIndex = process.argv.indexOf('--label');
 const label = labelIndex >= 0 ? process.argv[labelIndex + 1]! : 'TK-01';
 if (!/^TK-[0-9]{2}$/.test(label)) throw new Error('Use --label TK-01, TK-02, etc.');
 const out = path.resolve(root, outIndex >= 0 ? process.argv[outIndex + 1]! : 'out/review/tokyo-future');
-const [model, signs, preset] = await Promise.all([
-  readFile(path.join(root, 'public/tokyo/tokyo-city.glb')),
-  readFile(path.join(root, 'public/tokyo/tokyo-signs.json'), 'utf8'),
+const [model, signs, details, preset] = await Promise.all([
+  readFile(path.join(root, 'public/tokyo/organic/tokyo-city.glb')),
+  readFile(path.join(root, 'public/tokyo/organic/tokyo-signs.json'), 'utf8'),
+  readFile(path.join(root, 'public/tokyo/organic/tokyo-props.json'), 'utf8'),
   readFile(path.join(root, 'presets/tokyo-after-rain.json'), 'utf8'),
 ]);
 const script = await build({
@@ -24,6 +25,7 @@ const script = await build({
       const bytes = Uint8Array.from(atob('${model.toString('base64')}'), c => c.charCodeAt(0));
       const modelUrl = URL.createObjectURL(new Blob([bytes], {type:'model/gltf-binary'}));
       const signsUrl = URL.createObjectURL(new Blob([${JSON.stringify(signs)}], {type:'application/json'}));
+      const detailsUrl = URL.createObjectURL(new Blob([${JSON.stringify(details)}], {type:'application/json'}));
       const canvas = document.querySelector('canvas');
       const play = document.querySelector('#play');
       const progress = document.querySelector('#progress');
@@ -34,8 +36,8 @@ const script = await build({
       let remainder = 0;
       let lastDrawn = -1;
       const duration = 720;
-      createTokyoScene({canvas,width:1920,height:1080,modelUrl,signsUrl,seed:props.seed}).then(scene => {
-        URL.revokeObjectURL(modelUrl); URL.revokeObjectURL(signsUrl);
+      createTokyoScene({canvas,width:1920,height:1080,modelUrl,signsUrl,detailsUrl,seed:props.seed}).then(scene => {
+        URL.revokeObjectURL(modelUrl); URL.revokeObjectURL(signsUrl); URL.revokeObjectURL(detailsUrl);
         document.querySelector('#loading').hidden = true;
         play.disabled = false;
         play.textContent = playing ? 'Pause' : 'Play';
@@ -79,7 +81,7 @@ const html = `<!doctype html>
 <main><header><div><div class="eyebrow">Environment study / 2089</div><h1>Tokyo, after rain.</h1></div><p>TK-01 · 1920 × 1080 · 12 s · 60 fps</p></header>
 <section class="scene" aria-label="TK-01 animated empty futuristic Tokyo street"><canvas width="1920" height="1080" aria-label="Animated Tokyo city, no people"></canvas><div id="loading" role="status">Loading the city…</div></section>
 <div class="controls"><button id="play" disabled>Loading</button><input id="progress" type="range" min="0" max="719" value="0" aria-label="Frame"><span id="time">00.0 / 12.0 s</span><button id="fullscreen">Full screen</button></div>
-<div class="notes"><p><strong>TK-01 · Neon avenue</strong><br>An empty street beneath rain-stained concrete, worn metal and scratched signs. Irregular pools break up the wet asphalt, while low fog settles between the facades and beneath the skybridge.</p><p><strong>Motion study</strong><br>Fine rain, layered fog, drifting steam and gently breathing neon. Cool shadows, warm highlights and restrained film grain give the street a cinematic finish. The scene repeats every 12 seconds. Use the timeline to inspect any frame.</p></div>
+<div class="notes"><p><strong>TK-01 · Street life, after closing</strong><br>Layered shop signs, ribbed paper lanterns, fabric awnings and distinct drinks, coffee and locker cabinets. Printed notices, crates and plants give the empty street a history of everyday use.</p><p><strong>Motion study</strong><br>Fine rain, layered fog, drifting steam and gently breathing neon. Cool shadows, warm highlights and restrained film grain give the street a cinematic finish. The scene repeats every 12 seconds. Use the timeline to inspect any frame.</p></div>
 <figure><img src="TK-01.png" alt="TK-01 still of the Tokyo city" loading="lazy"><figcaption>TK-01 · Scene study · frame 000 / 720</figcaption></figure>
 <footer>Original procedural geometry authored in Blender; animation and reflections in Three.js. No people or imported art assets.<br>Visual research: <a href="https://unsplash.com/photos/tokyo-crosswalk-i0Hh5-BPzy0">Shai Pal / Shinjuku</a> and <a href="https://unsplash.com/it/foto/persone-che-camminano-per-strada-durante-la-notte-995jo39qpI0">Pema G. Lama / Tokyo at night</a>. References informed density and lighting only.<br>Offline animated review</footer></main>
 <script>${script.outputFiles[0]!.text.replaceAll('</script', '<\\/script')}</script></html>`;

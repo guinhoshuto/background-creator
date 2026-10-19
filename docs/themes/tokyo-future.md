@@ -14,17 +14,18 @@ npm run studio
 ```
 
 The build enters the machine render queue through the vault's canonical `render-slot.ts` CLI.
-It creates `public/tokyo/tokyo-city.blend`, `tokyo-city.glb` and `tokyo-signs.json`.
+It creates `public/tokyo/organic/tokyo-city.blend`, `tokyo-city.glb`, `tokyo-signs.json`
+and `tokyo-props.json`. The earlier `public/tokyo/` assets remain available to prior reviews.
 Those files are ignored and can be regenerated from `scripts/create-tokyo-city.py`.
-The `.blend` remains editable; the GLB contains 14 batches and approximately 134,000 triangles.
+The `.blend` remains editable; geometry is batched by material to keep draw calls small.
 
 An offline animated review, using the same Three.js scene and the same preset:
 
 ```sh
-npm run preview:tokyo -- --out out/review/tokyo-future --label TK-02
+npm run preview:tokyo -- --out out/review/tokyo-future --label TK-05
 ```
 
-The review embeds the model, lettering anchors and renderer. Open its `index.html` in a WebGL2 browser.
+The review embeds the model, lettering and prop anchors, and renderer. Open its `index.html` in a WebGL2 browser.
 Playback has pause, frame seeking and fullscreen. A reduced-motion preference starts paused.
 For its static image, use the official `npm run stills` runner with composition `TokyoFutureLoop`
 and preset `tokyo-after-rain`, naming the still after the review label (`TK-01` by default) in the same output folder.
@@ -40,10 +41,18 @@ npm run render:mp4 -- TokyoFutureLoop --props presets/tokyo-after-rain.json
 - 1920 × 1080, 12 seconds, 60 fps. This composition is opaque; alpha is rejected explicitly.
 - 18 detailed street buildings, 39 distant towers, a central tower with luminous rings, a supported
   skybridge, cables, shop shutters, vending machines, balconies, tanks and air-conditioning units.
-- 26 original Japanese shop signs, rendered as canvas textures on the anchored model panels.
+- 46 original Japanese shop signs, rendered as canvas textures on the anchored model panels.
+  Tall blades, short painted plaques and upper storefront signs vary in height, width and finish.
+- Distinct drinks, coffee and locker cabinets, with selection panels, pickup bays, feet and power cables.
+  Sloped fabric awnings, divided door curtains, printed notices, grounded crates, planters and menu stands
+  give the shops different silhouettes and signs of use. Original print textures are rasterized on the CPU
+  before GPU upload; scene and review use the same validated prop anchors.
+- Seven rounded paper lanterns have ribbed envelopes, printed fibres, dark collars, hanging cords
+  and wall-mounted brackets. Cream, vermilion and amber finishes share three original textures.
 - A real planar reflection with periodic ripple distortion and irregular puddles, asphalt grain, cracks and tire wear. Rain uses soft, metre-sized streaks with varied fall speeds, exposure lengths, wind drift and depth attenuation. Small roadway impact rings stay at their contact points; every drop completes an integer number of falls per loop.
 - World-space procedural concrete stains, panel joints, oxidized metal and chipped paint, plus scratched signs and gutter debris.
-- Depth-tested low fog layers, cool shadows, warm highlights, a soft vignette, restrained lens fringe and periodic film grain.
+- Depth-tested low fog layers, cool shadows, warm highlights, saturated wet-road colour,
+  soft highlight scatter, a vignette, restrained lens fringe and periodic film grain.
 - Every animated value derives from the requested frame. Camera, neon, water and steam preserve the loop seam.
 - `rain`, `atmosphere`, `glow`, `cameraMotion`, `weathering`, `cinematic` and `filmGrain` control the scene. `seed` changes the rain distribution.
   Architecture uses its fixed generation seed. The inherited `colors` field is reserved; it does not recolor the asset.
@@ -56,6 +65,9 @@ street density, the hierarchy of signs and the wet-road lighting; no reference p
 are included: [Shai Pal, Shinjuku](https://unsplash.com/photos/tokyo-crosswalk-i0Hh5-BPzy0),
 [Pema G. Lama, Tokyo at night](https://unsplash.com/it/foto/persone-che-camminano-per-strada-durante-la-notte-995jo39qpI0).
 The reference note is in the vault's `Visual Ref/Future Tokyo/`.
+Four owner-supplied references from 2026-10-19 informed the denser signs, warm shop lighting,
+paper lanterns and everyday street objects in TK-05. They remain in that reference folder;
+their pixels, characters and brands are not included in the scene.
 
 Three.js uses its official [Reflector](https://threejs.org/docs/pages/Reflector.html)
 and [WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html).

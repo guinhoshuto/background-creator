@@ -138,6 +138,11 @@ export const createTokyoFilmPass = (width: number, height: number) => new Shader
     uniform float phase, amount, grain;
     varying vec2 vUv;
     ${noise}
+    // A small optical bleed from bright sources, with no temporal accumulation.
+    vec3 highlightScatter(vec2 offset) {
+      vec3 light = texture2D(tDiffuse, vUv + offset / resolution).rgb;
+      return light * smoothstep(0.68, 0.98, max(light.r, max(light.g, light.b)));
+    }
     void main() {
       vec2 centered = vUv - 0.5;
       float edge = dot(centered, centered) * 2.0;
@@ -146,11 +151,14 @@ export const createTokyoFilmPass = (width: number, height: number) => new Shader
       color.r = texture2D(tDiffuse, vUv + fringe).r;
       color.b = texture2D(tDiffuse, vUv - fringe).b;
       float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
-      vec3 graded = mix(vec3(luma), color, 0.91);
-      graded = (graded - 0.18) * 1.1 + 0.18;
-      graded += vec3(-0.006, 0.009, 0.014) * (1.0 - smoothstep(0.05, 0.65, luma));
-      graded += vec3(0.016, 0.004, -0.009) * smoothstep(0.35, 0.9, luma);
+      vec3 graded = mix(vec3(luma), color, 1.09);
+      graded = (graded - 0.18) * 1.14 + 0.18;
+      graded += vec3(-0.009, 0.008, 0.019) * (1.0 - smoothstep(0.05, 0.65, luma));
+      graded += vec3(0.026, 0.008, -0.014) * smoothstep(0.35, 0.9, luma);
       color = mix(color, graded, amount);
+      vec3 scatter = highlightScatter(vec2(3.5, 0.0)) + highlightScatter(vec2(-3.5, 0.0))
+        + highlightScatter(vec2(0.0, 3.5)) + highlightScatter(vec2(0.0, -3.5));
+      color += scatter * vec3(1.08, 0.91, 0.85) * 0.016 * amount * (1.0 - luma);
       color *= 1.0 - smoothstep(0.15, 0.76, length(centered)) * 0.28 * amount;
       vec2 pixel = floor(vUv * resolution);
       float a = tokyoRandom(pixel) - 0.5;
