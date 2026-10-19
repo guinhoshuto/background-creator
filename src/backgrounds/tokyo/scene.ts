@@ -10,7 +10,8 @@ import type {TokyoFutureLoopProps} from '../TokyoFutureLoop';
 import {getTokyoMotion} from './motion';
 import {createTokyoRainField} from './rain';
 import {createTokyoFilmPass, createTokyoFog, wetRoadShader} from './effects';
-import {ageTokyoSign, addTokyoStreetDebris} from './details';
+import {addTokyoStreetDebris} from './details';
+import {createTokyoSignFace} from './signs';
 import {applyTokyoWeathering} from './weathering';
 
 const signSchema = z.object({
@@ -19,40 +20,6 @@ const signSchema = z.object({
   text: z.string(), color: z.string(), vertical: z.boolean(),
   rotationY: z.number().optional(),
 });
-type Sign = z.infer<typeof signSchema>;
-
-const signTexture = (sign: Sign, index: number) => {
-  const canvas = document.createElement('canvas');
-  canvas.width = sign.vertical ? 256 : 1024;
-  canvas.height = sign.vertical ? 1024 : 320;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('The city signs need a 2D canvas.');
-  const {width: w, height: h} = canvas;
-  ctx.fillStyle = '#071519'; ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = sign.color; ctx.lineWidth = 5;
-  ctx.strokeRect(12, 12, w - 24, h - 24);
-  ctx.fillStyle = sign.color;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const font = '"Hiragino Sans", "Noto Sans CJK JP", sans-serif';
-  if (sign.vertical) {
-    const letters = Array.from(sign.text);
-    const size = Math.min(154, 740 / letters.length);
-    ctx.font = `600 ${size}px ${font}`;
-    letters.forEach((letter, i) => ctx.fillText(letter, w / 2, 150 + i * 720 / letters.length));
-    ctx.font = '500 28px sans-serif'; ctx.fillText(`SECTOR ${String(index + 1).padStart(2, '0')}`, w / 2, h - 66);
-  } else {
-    ctx.font = `600 ${Math.min(155, 820 / sign.text.length)}px ${font}`;
-    ctx.fillText(sign.text, w / 2, h * 0.42);
-    ctx.font = '500 27px sans-serif';
-    ctx.fillText(['NIGHT MARKET', 'TOKYO ELECTRIC', 'OPEN ALL NIGHT', 'LOWER CITY', 'AFTER HOURS'][index % 5]!, w / 2, h * 0.81);
-  }
-  ageTokyoSign(ctx, w, h, index);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  return texture;
-};
-
 const vaporTexture = () => {
   const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d')!;
@@ -111,7 +78,8 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
   });
 
   signs.forEach((sign, i) => {
-    const material = new THREE.MeshBasicMaterial({map: signTexture(sign, i), color: new THREE.Color().setScalar(1.45)});
+    const face = createTokyoSignFace(sign, i);
+    const material = new THREE.MeshBasicMaterial({map: face.texture, color: new THREE.Color().setScalar(face.brightness)});
     const panel = new THREE.Mesh(new THREE.PlaneGeometry(sign.width, sign.height), material);
     panel.position.fromArray(sign.position); panel.rotation.y = sign.rotationY ?? 0;
     scene.add(panel);
