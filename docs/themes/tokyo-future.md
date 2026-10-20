@@ -22,7 +22,7 @@ The `.blend` remains editable; geometry is batched by material to keep draw call
 An offline animated review, using the same Three.js scene and the same preset:
 
 ```sh
-npm run preview:tokyo -- --out out/review/tokyo-future --label TK-05
+npm run preview:tokyo -- --out out/review/tokyo-future --label TK-06
 ```
 
 The review embeds the model, lettering and prop anchors, and renderer. Open its `index.html` in a WebGL2 browser.
@@ -39,8 +39,9 @@ npm run render:mp4 -- TokyoFutureLoop --props presets/tokyo-after-rain.json
 ## Scene and motion
 
 - 1920 × 1080, 12 seconds, 60 fps. This composition is opaque; alpha is rejected explicitly.
-- 18 detailed street buildings, 39 distant towers, a central tower with luminous rings, a supported
-  skybridge, cables, shop shutters, vending machines, balconies, tanks and air-conditioning units.
+- 18 detailed street buildings, 39 distant towers, a central tower with luminous rings,
+  cables, shop shutters, vending machines, balconies, tanks and air-conditioning units.
+  The avenue remains open overhead; the former central footbridge was removed in TK-06.
 - 46 original Japanese shop signs, rendered as canvas textures on the anchored model panels.
   Tall blades, short painted plaques and upper storefront signs vary in height, width and finish.
 - Distinct drinks, coffee and locker cabinets, with selection panels, pickup bays, feet and power cables.
@@ -50,7 +51,10 @@ npm run render:mp4 -- TokyoFutureLoop --props presets/tokyo-after-rain.json
 - Seven rounded paper lanterns have ribbed envelopes, printed fibres, dark collars, hanging cords
   and wall-mounted brackets. Cream, vermilion and amber finishes share three original textures.
 - A real planar reflection with periodic ripple distortion and irregular puddles, asphalt grain, cracks and tire wear. Rain uses soft, metre-sized streaks with varied fall speeds, exposure lengths, wind drift and depth attenuation. Small roadway impact rings stay at their contact points; every drop completes an integer number of falls per loop.
-- World-space procedural concrete stains, panel joints, oxidized metal and chipped paint, plus scratched signs and gutter debris.
+- World-space procedural concrete stains, worn plaster edges, mineral deposits, ledge runoff,
+  sparse cracks, oxidized metal and chipped paint, plus scratched signs and gutter debris.
+  Near windows vary in blinds, curtains, mullions and repairs. Static glass haze and water trails
+  modulate both the surface and interior light; shop signs retain their separate illumination.
 - Depth-tested low fog layers, cool shadows, warm highlights, saturated wet-road colour,
   soft highlight scatter, a vignette, restrained lens fringe and periodic film grain.
 - Every animated value derives from the requested frame. Camera, neon, water and steam preserve the loop seam.

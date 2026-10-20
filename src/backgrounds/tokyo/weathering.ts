@@ -6,8 +6,8 @@ export type TokyoWeathering = {
   dispose: () => void;
 };
 
-// The implementation patches only the opaque architectural GLB material names.
-// Windows, emissive materials and the separately rendered shop lettering stay intact.
+// Explicit architectural profiles keep shop lettering and neon untouched.
+// Window emission shares its dirt mask with the glass, including warm panes.
 const PROFILES: Readonly<Record<string, readonly [kind: number, strength: number]>> = {
   concrete: [0, 1],
   concrete_light: [0, 0.9],
@@ -25,6 +25,11 @@ const PROFILES: Readonly<Record<string, readonly [kind: number, strength: number
   wood: [0, 0.65],
   cloth: [2, 0.35],
   cloth_red: [2, 0.35],
+  glass: [3, 1],
+  glass_lit: [3, 1],
+  glass_warm: [3, 1],
+  window_blind: [2, 0.55],
+  window_board: [0, 0.8],
 };
 
 const VARYINGS = /* glsl */ `
@@ -93,6 +98,7 @@ vec3 twReliefNormal(vec3 position, vec3 surfaceNormal, float height) {
 
 const SURFACE_FRAGMENT = /* glsl */ `
 float twHeight = 0.0;
+float twGlassTransmission = 1.0;
 if (uTokyoWeatherAmount > 0.0) {
   float amount = uTokyoWeatherAmount * uTokyoWeatherProfile.y;
   vec3 p = vTokyoWeatherPosition;
@@ -122,13 +128,29 @@ if (uTokyoWeatherAmount > 0.0) {
       + twPanelJoint(p.xz, vec2(1.8, 1.3)) * weights.y
       + twPanelJoint(p.xy + vec2(rowShift, 0.0), vec2(2.9, 2.55)) * weights.z;
     joints *= smoothstep(0.20, 0.50, mottling) * 0.65;
-    float mineral = smoothstep(0.54, 0.77, wash) * (1.0 - grime);
-    vec3 aged = originalColor * (0.79 + 0.39 * wash + (grain - 0.5) * 0.13);
-    aged *= 1.0 - grime * 0.43 - joints * 0.22;
-    aged += vec3(0.035, 0.033, 0.027) * mineral * 0.25;
+    // Old render exposes aggregate in irregular patches; pale mineral edges
+    // and darker repairs read at street scale, before the fine grain resolves.
+    float plaster = twFilteredNoise(p * 1.16 + vec3(9.4, 56.2, 13.1));
+    float erosionField = plaster * 0.66 + mottling * 0.24 + grain * 0.10;
+    float erosion = smoothstep(0.56, 0.70, erosionField);
+    float flakeEdge = smoothstep(0.51, 0.57, erosionField) * (1.0 - erosion);
+    float mineral = smoothstep(0.53, 0.72, wash) * (1.0 - grime);
+    // Sparse, broken hairlines follow the wall; fwidth prevents distant shimmer.
+    float fractureField = twFilteredNoise(p * vec3(1.7, 0.65, 1.7) + mottling * 0.42);
+    float crackWidth = max(fwidth(fractureField), 0.002);
+    float cracks = (1.0 - smoothstep(0.003, 0.003 + crackWidth, abs(fractureField - 0.53)))
+      * smoothstep(0.58, 0.72, plaster) * wall;
+    // Y=4n are the actual horizontal ledges in the Blender geometry.
+    float belowLedge = 4.0 - mod(p.y, 4.0);
+    float ledgeRunoff = exp(-belowLedge * 1.8) * runoff * wall;
+    vec3 aged = originalColor * (0.68 + 0.58 * wash + (grain - 0.5) * 0.25);
+    aged *= 1.0 - grime * 0.59 - joints * 0.32 - ledgeRunoff * 0.34 - cracks * 0.44;
+    aged = mix(aged, originalColor * vec3(0.51, 0.48, 0.43), erosion * 0.62);
+    aged += vec3(0.031, 0.030, 0.024) * (mineral * 0.35 + flakeEdge * 0.40);
     diffuseColor.rgb = mix(originalColor, aged, amount);
     roughnessFactor = clamp(roughnessFactor + amount * (0.08 * grime + (grain - 0.5) * 0.16), 0.45, 1.0);
-    twHeight = ((mottling - 0.5) * 0.008 + (grain - 0.5) * 0.0025 - joints * 0.006) * amount;
+    twHeight = ((mottling - 0.5) * 0.012 + (grain - 0.5) * 0.004
+      - joints * 0.008 - erosion * 0.013 - cracks * 0.004) * amount;
   } else if (uTokyoWeatherProfile.x < 1.5) {
     // Oxidation sits in irregular islands with a smaller chipped edge. The
     // underlying metal stays visible; rust loses metalness and gains roughness.
@@ -144,7 +166,7 @@ if (uTokyoWeatherAmount > 0.0) {
     roughnessFactor = clamp(roughnessFactor + amount * (corrosion * 0.35 + grime * 0.12 + (grain - 0.5) * 0.09), 0.25, 1.0);
     metalnessFactor *= 1.0 - corrosion * amount * 0.9;
     twHeight = ((grain - 0.5) * 0.0008 + corrosion * 0.002 - chipped * 0.001) * amount;
-  } else {
+  } else if (uTokyoWeatherProfile.x < 2.5) {
     // Road paint and tactile strips retain their shape and alpha: dark chips
     // expose a substrate colour rather than opening holes in the mesh.
     float chipField = twFilteredNoise(p * 11.5 + vec3(5.4, 72.6, 91.7));
@@ -154,6 +176,21 @@ if (uTokyoWeatherAmount > 0.0) {
     diffuseColor.rgb = mix(originalColor, aged, amount);
     roughnessFactor = mix(roughnessFactor, 0.95, amount * 0.45);
     twHeight = -chips * 0.001 * amount;
+  } else {
+    // The pane itself remains opaque, as authored. Static water trails, dust and
+    // uneven interior light replace the uniform cyan/amber rectangles without
+    // adding transparent sorting artifacts or a second reflective surface.
+    float trails = twFilteredNoise(p * vec3(19.0, 0.85, 19.0) + vec3(81.4, 4.9, 17.2));
+    float residue = smoothstep(0.45, 0.72, trails) * (0.35 + 0.65 * wash);
+    float haze = twFilteredNoise(p * vec3(2.8, 1.8, 2.8) + vec3(31.2, 12.9, 43.7));
+    float roomShade = twFilteredNoise(p * vec3(1.2, 0.55, 1.2) + vec3(2.7, 8.1, 5.3));
+    vec3 aged = originalColor * (0.49 + roomShade * 0.56);
+    aged = mix(aged, originalColor * vec3(0.58, 0.65, 0.60), residue * 0.50);
+    aged += vec3(0.010, 0.012, 0.011) * smoothstep(0.56, 0.78, haze);
+    diffuseColor.rgb = mix(originalColor, aged, amount);
+    roughnessFactor = clamp(roughnessFactor + amount * (residue * 0.30 + haze * 0.13), 0.16, 0.75);
+    twGlassTransmission = mix(1.0, 0.36 + roomShade * 0.53 - residue * 0.14, amount);
+    twHeight = (trails - 0.5) * 0.0005 * amount;
   }
 }
 `;
@@ -184,7 +221,7 @@ export const applyTokyoWeathering = (root: THREE.Object3D): TokyoWeathering => {
       if (!(material instanceof THREE.MeshStandardMaterial) || seen.has(material)) continue;
       seen.add(material);
       const profile = PROFILES[material.name];
-      if (!profile || (material.emissiveIntensity > 0 && material.emissive.getHex() !== 0)) continue;
+      if (!profile || (profile[0] !== 3 && material.emissiveIntensity > 0 && material.emissive.getHex() !== 0)) continue;
 
       const previousCompile = material.onBeforeCompile;
       const previousCacheKey = material.customProgramCacheKey;
@@ -202,8 +239,10 @@ export const applyTokyoWeathering = (root: THREE.Object3D): TokyoWeathering => {
         shader.fragmentShader = replaceChunk(shader.fragmentShader, '#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n${SURFACE_FRAGMENT}`);
         shader.fragmentShader = replaceChunk(shader.fragmentShader, '#include <normal_fragment_maps>', `#include <normal_fragment_maps>
           if (uTokyoWeatherAmount > 0.0) normal = twReliefNormal(-vViewPosition, normal, twHeight);`);
+        shader.fragmentShader = replaceChunk(shader.fragmentShader, '#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          totalEmissiveRadiance *= twGlassTransmission;`);
       };
-      const cacheKey = () => `${baseKey}|tokyo-weathering-v1`;
+      const cacheKey = () => `${baseKey}|tokyo-weathering-v2`;
       material.onBeforeCompile = compile;
       material.customProgramCacheKey = cacheKey;
       material.needsUpdate = true;

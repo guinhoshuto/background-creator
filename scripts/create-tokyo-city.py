@@ -155,6 +155,9 @@ PALETTE = {
     "trim": ("#63737a", 0.42, 0.78, 0),
     "glass": ("#081a25", 0.20, 0.42, 0),
     "glass_lit": ("#45626b", 0.38, 0.1, 0.22),
+    "glass_warm": ("#ffc274", 0.42, 0.05, 0.9),
+    "window_blind": ("#7c796e", 0.95, 0, 0),
+    "window_board": ("#625548", 0.94, 0, 0),
     "shutter": ("#4b4f54", 0.70, 0.52, 0),
     "street_detail": ("#15232a", 0.64, 0.35, 0),
     "paint": ("#a4a9a2", 0.93, 0, 0),
@@ -320,6 +323,65 @@ def layered_shop_signs(side, index, front):
             beam("metal", (x + dx, y, z - 0.12), (side * 10.12, y + 0.24, z - 0.38), 0.055)
 
 
+def window_details(side, index, row, col, center, width, height, axis):
+    """Near windows carry attached fittings without changing the city's RNG stream."""
+    if index >= 4 or row >= 8:
+        return
+    rng = random.Random(f"{SEED}:window:{side}:{index}:{row}:{col}:{axis}")
+    normal = -side if axis == "x" else 1
+
+    def fitting(material, u, v, outward, w, h, depth):
+        x, y, z = center
+        if axis == "x":
+            box(material, (x + normal * outward, y + v, z + u), (depth, h, w))
+        else:
+            box(material, (x + u, y + v, z + outward), (w, h, depth))
+
+    # Casings overlap the backing by 0.025 m; no hood or mullion hangs off a pane.
+    # Keep the original side sills, and give the camera-facing windows matching sills.
+    if axis == "z":
+        fitting("trim", 0, -height / 2 - 0.07, 0.015, width + 0.24, 0.11, 0.22)
+    fitting("metal", 0, height / 2 + 0.025, 0.015, width + 0.15, 0.09, 0.18)
+    for edge in (-1, 1):
+        fitting("metal", edge * (width / 2 + 0.035), 0, 0.015, 0.07, height + 0.10, 0.18)
+    if rng.random() < 0.27:
+        fitting("trim", 0, height / 2 + 0.09, 0.06, width + 0.23, 0.065, 0.31)
+
+    appearance = rng.random()
+    top = height / 2 - 0.035
+    if appearance < 0.035 and row < 4:
+        # An occasional lower pane has a timber repair spanning both metal jambs.
+        fitting("window_board", 0, -height * 0.22, 0.037, width + 0.12, height * 0.31, 0.045)
+        for edge in (-1, 1):
+            fitting("metal", edge * (width / 2 + 0.015), -height * 0.22, 0.065, 0.035, 0.035, 0.018)
+    elif appearance < 0.53:
+        drop = height * rng.uniform(0.22, 0.78)
+        fitting("window_blind", 0, top - drop / 2, 0.018, width - 0.065, drop, 0.035)
+        fitting("metal", 0, top + 0.015, 0.015, width + 0.03, 0.10, 0.18)
+        fitting("metal", 0, top - drop, 0.043, width - 0.045, 0.045, 0.045)
+        # Two broad seams suggest rolled/slatted shades without a fine moire grid.
+        for fraction in (0.35, 0.70):
+            fitting("window_board", 0, top - drop * fraction, 0.038, width - 0.075, 0.019, 0.012)
+    elif appearance < 0.81:
+        fitting("metal", 0, top + 0.02, 0.015, width + 0.04, 0.055, 0.18)
+        for edge in (-1, 1):
+            curtain_width = width * rng.uniform(0.17, 0.34)
+            curtain_height = height * rng.uniform(0.84, 0.97)
+            u = edge * (width / 2 - 0.025 - curtain_width / 2)
+            fitting("window_blind", u, top - curtain_height / 2, 0.015,
+                    curtain_width, curtain_height, 0.035)
+            # A single raised fold stays embedded in its curtain, with an uneven hem.
+            fitting("window_blind", u + edge * curtain_width * 0.18, top - curtain_height / 2,
+                    0.035, curtain_width * 0.19, curtain_height, 0.035)
+
+    # Large divisions read as old sash windows; some panes retain an open expanse.
+    existing_mullion = axis == "x" and (col + row + index) % 5 == 0
+    if not existing_mullion and rng.random() < 0.62:
+        fitting("metal", width * rng.uniform(-0.13, 0.13), 0, 0.065, 0.045, height + 0.06, 0.18)
+    if rng.random() < 0.67:
+        fitting("metal", 0, height * rng.uniform(-0.17, 0.12), 0.065, width + 0.09, 0.045, 0.18)
+
+
 def building(side, index, front, depth, width, height):
     x, z = side * (10 + width / 2), front - depth / 2
     shell = ("concrete", "concrete_light", "concrete_dark")[(index + (side == 1)) % 3]
@@ -339,18 +401,20 @@ def building(side, index, front, depth, width, height):
         for col in range(bays):
             pz = front - 1 - col * (depth - 2) / max(1, bays - 1)
             lit = RNG.random()
-            material = "emit_amber" if lit < 0.13 else ("glass_lit" if lit < 0.52 else "glass")
+            material = "glass_warm" if lit < 0.13 else ("glass_lit" if lit < 0.52 else "glass")
             box("metal", (side * 9.95, y, pz), (0.10, 1.63, 1.13))
             panel(material, (side * 9.85, y, pz), 0.91, 1.39, axis="x", normal=-side)
             box("trim", (side * 9.82, y - 0.76, pz), (0.17, 0.10, 1.18))
             if (col + row + index) % 5 == 0:
                 box("metal", (side * 9.83, y, pz), (0.07, 1.43, 0.045))
+            window_details(side, index, row, col, (side * 9.85, y, pz), 0.91, 1.39, "x")
         # Front facades catch the camera and make the street read as real volume.
         for col in range(max(3, int(width / 1.9))):
             px = x - width / 2 + 1.0 + col * 1.8
             material = "glass_lit" if RNG.random() < 0.43 else "glass"
             box("metal", (px, y, front + 0.035), (1.23, 1.63, 0.08))
             panel(material, (px, y, front + 0.11), 1.04, 1.4)
+            window_details(side, index, row, col, (px, y, front + 0.11), 1.04, 1.4, "z")
     for row in range(1, min(floors, 6), 2):
         air_conditioner(side, 4.9 + row * 2.55, front - 1.1 - (index % 3) * 2.4)
     if index % 3 != 1:
@@ -553,30 +617,6 @@ def streets():
                for i in range(21)], 0.04)
 
 
-def skybridge():
-    z = -45
-    for side in (-1, 1):
-        for dz in (-1.55, 1.55):
-            box("concrete", (side * 8.42, 6.1, z + dz), (0.8, 12.2, 0.8))
-            box("metal", (side * 8.42, 0.3, z + dz), (1.2, 0.6, 1.2))
-            beam("metal", (side * 8.42, 10.0, z + dz), (side * 6.8, 12.0, z + dz), 0.25)
-    box("metal", (0, 12.05, z), (19.5, 0.55, 4.0))
-    box("concrete_dark", (0, 15.2, z), (19.7, 0.35, 4.2))
-    for dz in (-1.9, 1.9):
-        box("glass", (0, 13.7, z + dz), (19.2, 2.65, 0.09))
-        box("emit_cyan", (0, 12.40, z + dz + 0.06), (19.5, 0.09, 0.09))
-        box("metal", (0, 14.98, z + dz), (19.5, 0.12, 0.15))
-        for x in range(-9, 10, 2):
-            box("metal", (x, 13.66, z + dz), (0.12, 2.75, 0.15))
-        for x in (-8, -4, 0, 4, 8):
-            beam("metal", (x - 0.92, 12.4, z + dz + 0.04), (x + 0.92, 14.95, z + dz + 0.04), 0.08)
-    for x in (-7, -3.5, 0, 3.5, 7):
-        box("emit_amber", (x, 15.0, z), (1.7, 0.05, 0.26))
-    # Heavy end caps visibly intersect adjacent buildings at x = +/-10.
-    for side in (-1, 1):
-        box("metal", (side * 10.1, 13.6, z), (1.0, 3.7, 4.4))
-
-
 def hero_tower():
     x, z = -2, -110
     box("concrete_dark", (x, 27.5, z), (5.2, 55, 5.4))
@@ -700,7 +740,6 @@ def build_city(output_dir):
             building(side, index, front, depth, width, heights[side == 1][index])
             front -= depth + 1.15
     streets()
-    skybridge()
     hero_tower()
     skyline()
     save_scene(output_dir)
