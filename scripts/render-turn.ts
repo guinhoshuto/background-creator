@@ -126,15 +126,73 @@ export const busyOutsideSlot = (verdict = machineVerdict, holder = renderSlotHol
   return answer ? answer.reasons : rendersFromPs(holder()?.owner?.pid);
 };
 
+const listProcesses = () => parseProcessList(execFileSync('ps', ['-Aww', '-o', 'pid=,ppid=,command='], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024}));
+
 const rendersFromPs = (slotOwnerPid?: number): string[] => {
-  let list: string;
+  let list: ProcessInfo[];
   try {
-    list = execFileSync('ps', ['-Aww', '-o', 'pid=,ppid=,command='], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
+    list = listProcesses();
   } catch {
     // Fails open: no list, nothing busy. The render slot still serializes the renders that take it.
     return [];
   }
-  return otherRenders(parseProcessList(list), process.pid, slotOwnerPid);
+  return otherRenders(list, process.pid, slotOwnerPid);
+};
+
+// Remotion's own Chrome (chrome-headless-shell, whose helpers run the same binary) and a Chrome for
+// Testing with its helper apps.
+const BROWSER = [/headless[_-]shell/, /\bChrom(e|ium)\b/];
+
+/** The browsers below `selfPid`: a Chrome it launched and that Chrome's helpers, never `selfPid` itself. */
+export const ownBrowsers = (processes: readonly ProcessInfo[], selfPid: number): ProcessInfo[] => {
+  const tree = treeOf(processes, selfPid);
+  return processes.filter(({pid, command}) => pid !== selfPid && tree.has(pid) && BROWSER.some((pattern) => pattern.test(command)));
+};
+
+export type BrowserKillEffects = {list: () => ProcessInfo[]; kill: (pid: number, signal: NodeJS.Signals) => void};
+
+const pauseSync = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+/**
+ * Kills this run's own browsers with SIGKILL, synchronously (a cleanup on Ctrl-C cannot wait), and
+ * returns them (`killed`) and the ones still listed half a second later (`alive`; a killed child of this
+ * run shows as `<defunct>` until Node reaps it, which no pattern matches). Remotion launches its Chrome
+ * as the leader of its own process group and, when the launch times out (25 s in openBrowser), rejects
+ * without killing it: on 2026-10-14 the Chrome of a stills whose launch timed out lived on after the
+ * run gave the slot back, and the next render's launch timed out beside it (HAR-32). So the group goes
+ * first, then the pid. Fails open: without `ps`, nothing is killed.
+ */
+export const killOwnBrowsers = (selfPid = process.pid, effects: Partial<BrowserKillEffects> = {}) => {
+  const {list = listProcesses, kill = (pid, signal) => process.kill(pid, signal)} = effects;
+  try {
+    const killed = ownBrowsers(list(), selfPid);
+    for (const {pid} of killed) {
+      for (const target of [-pid, pid]) {
+        try { kill(target, 'SIGKILL'); } catch { /* not a group leader, or already gone */ }
+      }
+    }
+    let alive = killed.length === 0 ? [] : ownBrowsers(list(), selfPid);
+    for (let round = 0; alive.length > 0 && round < 10; round++) {
+      pauseSync(50);
+      alive = ownBrowsers(list(), selfPid);
+    }
+    return {killed, alive};
+  } catch {
+    return {killed: [], alive: []};
+  }
+};
+
+/**
+ * The release a run registers for its render slot: its own browsers die first (killOwnBrowsers), then
+ * the slot goes, so the next render never starts beside a Chrome this run left (HAR-32). One line
+ * names what it killed.
+ */
+export const releaseAfterOwnBrowsers = (slot: SlotHandle, {kill = () => killOwnBrowsers(), log = (message: string) => console.log(message)} = {}) => () => {
+  const {killed, alive} = kill();
+  const pids = (processes: readonly ProcessInfo[]) => processes.map(({pid}) => pid).join(', ');
+  if (killed.length > 0) log(`Killed the browser this run left (a launch that timed out leaves it alive), before releasing the render slot: PID ${pids(killed)}.`);
+  if (alive.length > 0) log(`Still alive after SIGKILL: PID ${pids(alive)}.`);
+  slot.release();
 };
 
 export type TurnEffects = {

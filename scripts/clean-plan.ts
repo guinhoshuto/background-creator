@@ -116,7 +116,13 @@ export const runClean = async (
     try {
       slot = await takeSlot();
     } catch (error) {
-      throw new Error(`Refusing to delete while a render runs. ${error instanceof Error ? error.message : String(error)}`);
+      const detail = error instanceof Error ? error.message : String(error);
+      // The Codex sandbox denies the mkdir of the slot (EPERM): nothing renders, the write is not allowed (HAR-68).
+      const code = (error as NodeJS.ErrnoException | undefined)?.code;
+      if (code === 'EPERM' || code === 'EACCES') {
+        throw new Error(`No permission for the render slot (sandbox): run again with escalation. ${detail}`);
+      }
+      throw new Error(`Refusing to delete while a render runs. ${detail}`);
     }
   }
   try {

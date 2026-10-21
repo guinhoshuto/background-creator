@@ -14,7 +14,7 @@ import {projectRoot} from './export';
 import {expandSize} from './render-args';
 import {diffDetail} from './pixel-stats';
 import {acquireRenderSlot, currentCommand} from './render-slot';
-import {busyOutsideSlot, busyProcesses, takeRenderTurn} from './render-turn';
+import {busyOutsideSlot, busyProcesses, releaseAfterOwnBrowsers, takeRenderTurn} from './render-turn';
 import {writeRunIndex} from './stills-index';
 import {
   alphaStats, contactSheet, diffImages, meanLuma, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
@@ -120,7 +120,8 @@ export const runStills = async ({jobFile, dryRun = false, wait = true}: RunOptio
       // Measured inside the slot: after waiting for another render, the disk is what that render left.
       whileHeld: () => assertCanStart({free: freeBytes(outDir), estimate, where: shown, then: FREE_SPACE_HINT}),
     });
-    cleanups.push(() => slot.release());
+    // Its Chrome dies before the slot goes, on an error and on Ctrl-C too: a launch that timed out leaves it alive.
+    cleanups.push(releaseAfterOwnBrowsers(slot));
     mkdirSync(outDir, {recursive: true});
 
     let t = Date.now();

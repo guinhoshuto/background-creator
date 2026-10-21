@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -61,6 +61,28 @@ test('clean --apply refuses while a render holds the slot, and says who holds it
   const takeSlot = () => acquireRenderSlot({dir, command: 'clean', wait: false, log: () => {}});
   const effects = {list: () => TREE, size: () => 1, remove: (target: string) => { removed.push(target); }, takeSlot};
   await assert.rejects(runClean({root: '/repo', review: false, apply: true}, effects), /Refusing to delete while a render runs\. .*held by pid \d+ \(other-repo: npm run render:pack -- halloween\)/);
+  assert.equal(removed.length, 0);
+});
+
+// The Codex sandbox, 2026-10-16 and 2026-10-19: no render ran, the mkdir was not allowed (HAR-68).
+test('clean --apply says the sandbox denied the render slot, not that a render runs, on EPERM', async () => {
+  const removed: string[] = [];
+  const denied = Object.assign(new Error("EPERM: operation not permitted, mkdir '/x/.cache/render-slot'"), {code: 'EPERM'});
+  const effects = {list: () => TREE, size: () => 1, remove: (target: string) => { removed.push(target); }, takeSlot: () => Promise.reject(denied)};
+  const error = await runClean({root: '/repo', review: false, apply: true}, effects).then(() => null, (caught: unknown) => caught);
+  assert.ok(error instanceof Error, 'clean --apply went on without the render slot');
+  assert.match(error.message, /^No permission for the render slot \(sandbox\): run again with escalation\. EPERM: operation not permitted, mkdir '\/x\/\.cache\/render-slot'$/);
+  assert.equal(removed.length, 0);
+});
+
+test('clean --apply says so too when the slot directory cannot be created (EACCES from the real slot code)', async (t) => {
+  const base = mkdtempSync(path.join(os.tmpdir(), 'clean-slot-denied-'));
+  chmodSync(base, 0o555);
+  t.after(() => { chmodSync(base, 0o755); rmSync(base, {recursive: true, force: true}); });
+  const removed: string[] = [];
+  const takeSlot = () => acquireRenderSlot({dir: path.join(base, 'render-slot'), command: 'clean', wait: false, log: () => {}});
+  const effects = {list: () => TREE, size: () => 1, remove: (target: string) => { removed.push(target); }, takeSlot};
+  await assert.rejects(runClean({root: '/repo', review: false, apply: true}, effects), /^Error: No permission for the render slot \(sandbox\): run again with escalation\. EACCES/);
   assert.equal(removed.length, 0);
 });
 

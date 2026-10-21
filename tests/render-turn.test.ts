@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import {execFileSync} from 'node:child_process';
-import {existsSync, mkdtempSync, readFileSync, rmSync} from 'node:fs';
+import {execFileSync, spawn} from 'node:child_process';
+import {existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {HELD_ENV, acquireRenderSlot, renderSlotHolder} from '../scripts/render-slot';
-import {otherRenders, parseProcessList, takeRenderTurn, type TurnEffects} from '../scripts/render-turn';
+import {killOwnBrowsers, otherRenders, ownBrowsers, parseProcessList, releaseAfterOwnBrowsers, takeRenderTurn, type TurnEffects} from '../scripts/render-turn';
 
 const MINUTE = 60_000;
 // The fake clock starts far from 0, like Date.now(): a `since` of 0 would stand out.
@@ -190,4 +190,105 @@ test('a stills that comes while a pack chain renders kit 1 goes before kit 2 (HA
   const at = (line: string) => Number(new RegExp(`^${line} (\\d+)$`, 'm').exec(text)?.[1]);
   assert.ok(at('kit1 released') <= stillsHeld, `stills took the slot before kit 1 ended:\n${text}`);
   assert.ok(stillsReleased <= at('kit2 held'), `kit 2 went before the stills that came during kit 1:\n${text}stills held ${stillsHeld}, released ${stillsReleased}`);
+});
+
+const REMOTION_CHROME = '/repo/node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell-mac-arm64/chrome-headless-shell';
+
+test('ownBrowsers: the Chrome this run launched and its helpers, never another run\'s Chrome, a child that is no browser, or the run itself', () => {
+  const list = parseProcessList([
+    // The run itself, whose job file names the browser.
+    '100 50 node --import tsx scripts/stills.ts chrome-headless-shell-job.json',
+    `101 100 ${REMOTION_CHROME} --headless=old --remote-debugging-port=0`,
+    `102 101 ${REMOTION_CHROME} --type=renderer`,
+    '103 100 /repo/node_modules/@esbuild/darwin-arm64/bin/esbuild --service=0.25.0 --ping',
+    '104 100 /x/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --headless',
+    '105 104 /x/Google Chrome for Testing Helper (GPU).app/Contents/MacOS/Google Chrome for Testing Helper (GPU) --type=gpu-process',
+    // Another run's Chrome, left to launchd, and the owner's own Chrome next to this run.
+    `200 1 ${REMOTION_CHROME} --headless=old`,
+    `201 200 ${REMOTION_CHROME} --type=renderer`,
+    '300 50 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  ].join('\n'));
+  assert.deepEqual(ownBrowsers(list, 100).map(({pid}) => pid), [101, 102, 104, 105]);
+});
+
+const listPs = () => parseProcessList(execFileSync('ps', ['-Aww', '-o', 'pid=,ppid=,command='], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024}));
+// Alive and not a zombie: a killed child of this test shows as <defunct> until Node reaps it.
+const liveProcess = (pid: number) => listPs().some((p) => p.pid === pid && !p.command.includes('<defunct>'));
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** A link named chrome-headless-shell to /bin/sleep, in a folder the test removes. */
+const fakeChrome = (t: {after: (fn: () => void) => void}) => {
+  const base = mkdtempSync(path.join(os.tmpdir(), 'render-turn-chrome-'));
+  t.after(() => rmSync(base, {recursive: true, force: true}));
+  const fake = path.join(base, 'chrome-headless-shell');
+  symlinkSync('/bin/sleep', fake);
+  return fake;
+};
+
+/**
+ * A Chrome left the way Remotion leaves it when its launch times out: launched by this test as the
+ * leader of its own process group (detached, as Remotion does), with a helper below it whose name is
+ * no browser's (like chrome_crashpad_handler), which only the group reaches. Returns both pids once
+ * the main one runs as the link.
+ */
+const launchStuckChrome = async (t: {after: (fn: () => void) => void}, fake: string) => {
+  const main = spawn('/bin/sh', ['-c', '/bin/sleep 61 & exec "$0" 60', fake], {detached: true, stdio: 'ignore'});
+  const mainPid = main.pid!;
+  // Registered as soon as it exists: a failed assertion must not leave it running.
+  t.after(() => { try { process.kill(-mainPid, 'SIGKILL'); } catch { /* already gone */ } });
+  const find = () => {
+    const list = listPs();
+    return {
+      main: list.find((p) => p.pid === mainPid && p.command.startsWith(`${fake} `)),
+      helper: list.find((p) => p.ppid === mainPid && p.command.startsWith('/bin/sleep 61')),
+    };
+  };
+  let found = find();
+  for (const started = Date.now(); !found.main || !found.helper; found = find()) {
+    assert.ok(Date.now() - started < 10_000, 'the stuck Chrome never started');
+    await pause(20);
+  }
+  assert.ok(mainPid > 1 && found.helper.pid > 1);
+  return {mainPid, helperPid: found.helper.pid};
+};
+
+test('killOwnBrowsers kills the Chrome a timed-out launch left with its whole group, a Chrome in no group of its own, and never another run\'s', async (t) => {
+  const fake = fakeChrome(t);
+  const {mainPid, helperPid} = await launchStuckChrome(t, fake);
+  // A Chrome without a process group of its own: only its pid reaches it.
+  const plainPid = spawn(fake, ['60'], {stdio: 'ignore'}).pid!;
+  t.after(() => { try { process.kill(plainPid, 'SIGKILL'); } catch { /* already gone */ } });
+  // Another run's: through a shell that exits at once, so it is no child of this test.
+  const otherPid = Number(execFileSync('/bin/sh', ['-c', '"$0" 60 > /dev/null 2>&1 & echo $!', fake], {encoding: 'utf8'}).trim());
+  t.after(() => { try { process.kill(otherPid, 'SIGKILL'); } catch { /* already gone */ } });
+  assert.ok(plainPid > 1 && liveProcess(plainPid), 'the Chrome without a group never started');
+  assert.ok(otherPid > 1 && liveProcess(otherPid), 'the other run\'s Chrome never started');
+
+  const {killed, alive} = killOwnBrowsers(process.pid);
+  assert.deepEqual(killed.map(({pid}) => pid).sort((a, b) => a - b), [mainPid, plainPid].sort((a, b) => a - b));
+  assert.deepEqual(alive, []);
+  for (const pid of [mainPid, helperPid, plainPid]) assert.equal(liveProcess(pid), false, `PID ${pid} of this run's Chrome is still alive`);
+  assert.equal(liveProcess(otherPid), true, 'another run\'s Chrome was killed');
+});
+
+test('a stills gives its render slot back only after its Chrome is dead, and says what it killed (HAR-32)', async (t) => {
+  const {mainPid, helperPid} = await launchStuckChrome(t, fakeChrome(t));
+  const base = mkdtempSync(path.join(os.tmpdir(), 'render-turn-slot-'));
+  t.after(() => rmSync(base, {recursive: true, force: true}));
+  const dir = path.join(base, 'render-slot');
+  const slot = await acquireRenderSlot({dir, command: 'stills', wait: false, log: () => {}});
+  const aliveAtRelease: number[] = [];
+  const lines: string[] = [];
+  const release = releaseAfterOwnBrowsers({...slot, release: () => { aliveAtRelease.push(...[mainPid, helperPid].filter(liveProcess)); slot.release(); }}, {log: (line) => lines.push(line)});
+  release();
+  assert.deepEqual(aliveAtRelease, [], 'the slot was released with this run\'s Chrome alive');
+  assert.equal(existsSync(dir), false, 'the slot was not released');
+  assert.deepEqual(lines, [`Killed the browser this run left (a launch that timed out leaves it alive), before releasing the render slot: PID ${mainPid}.`]);
+});
+
+test('stills gives its render slot back only through releaseAfterOwnBrowsers', () => {
+  // The runner needs a bundle and a browser, so its call is checked in the source, like tests/stills-index.test.ts.
+  const source = readFileSync(path.join(root, 'scripts', 'stills-run.ts'), 'utf8');
+  assert.match(source, /cleanups\.push\(releaseAfterOwnBrowsers\(slot\)\);/);
+  assert.doesNotMatch(source, /slot\.release\(\)/);
 });
