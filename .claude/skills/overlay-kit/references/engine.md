@@ -10,7 +10,7 @@ Already documented elsewhere, not repeated here:
 - Pack manifest format, variants, masks, `ornamentScale` items, delivery: `docs/packs.md`.
 - Whole laps, px periods, the 40% step rule: `docs/loop.md`.
 - Test commands, `ornaments:report`, markup baseline, adding an asset: `docs/development.md`.
-- Ornament rules in one paragraph, test and render etiquette: `AGENTS.md` (Overlays, Agents on this machine).
+- Ornament rules in one paragraph, test and render etiquette: `AGENTS.md` (Overlays, in Rules; the render and test etiquette, in Run and Test).
 
 ## 1. Where things live
 
