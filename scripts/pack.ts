@@ -6,6 +6,7 @@ import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeSc
 import {estimateText} from './pack-estimate';
 import {dryRunText, existingManifestFile, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
 import {withRenderSlot} from './render-slot';
+import {watchSignalLine} from './signal-line';
 
 const PACK_HELP_TEXT = `usage: npm run render:pack -- <name|file.json> [options]
 
@@ -32,6 +33,8 @@ const exists = async (file: string) => {
 };
 
 const main = async () => {
+  // The first signal listener, before the slot's and the queue's: an outside signal is logged, then they exit.
+  watchSignalLine();
   const {values, positionals} = parseArgs({
     args: process.argv.slice(2), allowPositionals: true,
     options: {
