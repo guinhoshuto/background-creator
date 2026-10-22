@@ -12,7 +12,7 @@
     "render:gif": "tsx scripts/render.ts --format gif",
     "render:mov": "tsx scripts/render.ts --format mov",
     "render:png": "tsx scripts/render.ts --format png",
-    "render:pack": "tsx scripts/pack.ts",
+    "render:pack": "node --import tsx scripts/pack.ts",
     "zip:pack": "tsx scripts/zip-pack.ts",
     "validate:pack": "tsx scripts/validate-pack.ts",
     "ship:pack": "node --import tsx scripts/ship-pack.ts",

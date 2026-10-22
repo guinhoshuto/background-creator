@@ -383,3 +383,36 @@ test('BGC-36: a release takes the slot path away before deleting anything, and l
   assert.equal(existsSync(dir), false);
   assert.deepEqual(readdirSync(path.dirname(dir)), []);
 });
+
+test('render-slot run stopped 200 ms under a SIGTERM: ends with 143, frees the slot and ends its command group', async (t) => {
+  const dir = tempSlot(t);
+  // The program package.json runs it with (build:tokyo): through the tsx CLI, a wrapper got the signal and
+  // SIGKILLed the node child that had not answered within 30 + 30 ms, leaving the slot held and the command running.
+  const scripts = (JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as {scripts: Record<string, string>}).scripts;
+  const program = scripts['build:tokyo']!.split(' ')[0]!;
+  const command = program === 'node' ? process.execPath : path.join(root, 'node_modules', '.bin', program);
+  const env: NodeJS.ProcessEnv = {...process.env, RENDER_SLOT_DIR: dir, RENDER_SLOT_CHECK: 'off'};
+  // The tests above take slots in this process: a child that inherited one would skip the queue.
+  delete env[HELD_ENV];
+  const child = spawn(command, [path.join(root, 'scripts', 'render-slot.ts'), 'run', '--', '/bin/sleep', '37'], {cwd: root, env, stdio: 'ignore'});
+  const exited = new Promise<number | null>((resolve) => child.on('exit', (code) => resolve(code)));
+  let owner: {pid: number; commandPgid?: number} | undefined;
+  t.after(() => {
+    for (const pid of [child.pid, owner?.pid]) if (pid !== undefined && pid > 1) try { process.kill(pid, 'SIGKILL'); } catch { /* gone */ }
+    if (owner?.commandPgid !== undefined && owner.commandPgid > 1) try { process.kill(-owner.commandPgid, 'SIGKILL'); } catch { /* gone */ }
+  });
+  // The owner file names the process running `run` once the command has started in its own group.
+  for (let i = 0; i < 600 && owner?.commandPgid === undefined && child.exitCode === null; i += 1) {
+    try { owner = JSON.parse(readFileSync(path.join(dir, 'owner.json'), 'utf8')) as typeof owner; } catch { /* not written yet */ }
+    if (owner?.commandPgid === undefined) await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  assert.ok(owner?.commandPgid !== undefined && owner.commandPgid > 1 && owner.pid > 1, `run never started its command: ${JSON.stringify(owner)}`);
+  process.kill(owner.pid, 'SIGSTOP');
+  process.kill(child.pid!, 'SIGTERM');
+  // Stopped longer than the tsx CLI's 30 + 30 ms before its SIGKILL: on a loaded machine, a slow handler.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  try { process.kill(owner.pid, 'SIGCONT'); } catch { /* killed meanwhile */ }
+  assert.equal(await exited, 143);
+  assert.equal(existsSync(dir), false, 'the slot stayed held');
+  assert.throws(() => process.kill(-owner!.commandPgid!, 0), {code: 'ESRCH'}, 'the command group still runs');
+});
