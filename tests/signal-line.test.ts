@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {spawn, type ChildProcess} from 'node:child_process';
 import {EventEmitter} from 'node:events';
-import {existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, rmdirSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -120,6 +120,8 @@ for (const probe of PROBES) {
     const written = probe.written(scratch, name);
     assert.deepEqual(written.filter((file) => existsSync(file)), []);
     assert.deepEqual(probe.staged?.(name) ?? [], []);
+    // qa:kit creates out/review on its way; in a fresh checkout the folders it made go when empty.
+    const missing = [review, path.dirname(review)].filter((folder) => !existsSync(folder));
     const env: NodeJS.ProcessEnv = {...process.env, RENDER_SLOT_DIR: dir, RENDER_SLOT_CHECK: 'off', [MACHINE_CHECK_ENV]: check};
     // A slot this process held would be inherited: the child would skip the queue.
     delete env[HELD_ENV];
@@ -182,6 +184,7 @@ for (const probe of PROBES) {
       killQuietly(holder.pid, 'SIGKILL');
       await Promise.all([holder, child, sender].flatMap((proc) => (proc ? [exitOf(proc)] : [])));
       for (const folder of probe.staged?.(name) ?? []) rmSync(folder, {recursive: true, force: true});
+      for (const folder of missing) try { rmdirSync(folder); } catch { /* not empty, or never made */ }
       rmSync(scratch, {recursive: true, force: true});
     }
   });
