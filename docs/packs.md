@@ -2,7 +2,7 @@
 
 ## Packs
 
-A pack is everything a [theme](overlays.md#themes) ships, sold as a zip (see [Delivery](#delivery)): the backgrounds that match it, the chat in every chat size, the blocks in every block size (the round ones included; the Twitch panel as GIF and PNG) and the borders in every border size (the round cameras included), each file as WebM (the loop) and PNG (the still version), plus the masks of the window borders. `npm run render:pack -- <theme> --dry-run` lists every planned file of a pack, so the file count is never written down here. Each pack is described by a manifest in `packs/<theme>.json`, one per theme (`ls packs/`). The kits add their own props:
+A pack is everything a [theme](overlays.md#themes) ships, sold as a zip (see [Delivery](#delivery)): the backgrounds that match it, the chat in every chat size, the blocks in every block size (the round ones included; the Twitch panel as GIF and PNG) and the borders in every border size (the round cameras included), each file as WebM (the loop) and PNG (the still version), plus the masks of the window borders. `npm run render:pack -- <theme> --dry-run` lists every planned file of a pack, so the file count is never written down here. Each pack is described by a manifest in `packs/<theme>.json`, one per theme (`ls packs/`), besides the [background packs](#background-packs). The kits add their own props:
 
 | Pack | Background | Item props |
 | --- | --- | --- |
@@ -67,6 +67,12 @@ out/packs/neon/
 ```
 
 The folders repeat the Studio's, plus `twitch-panels/` for the Twitch panel and `masks/` for the masks. Every file is named `<pack>-<piece>[-<variant>].<ext>`: the piece is `background` for the background, the size id for a catalog overlay and `<W>x<H>[-circle]` for a free size; the variant is the item's (`plain`, or the background's look in `halloween`, which has three: `halloween-background-haunted-mansion.webm`). `manifest.json` gathers, for every file, the data of the [position JSON](export.md#position-json) (`canvas`, `box`, `content`, `hole`, `header`, `bleed`, FPS, frames, format, alpha and actual speed), with English keys for tools; each file's standalone JSON is merged into it and removed from the pack folder. Every window border points to its mask in `mask`, and masks have `"role": "mask"`. Each entry also records `propsHash`, the hash of the props the file came from (and of the profile, when it is not `master`): a finished file whose item changed is rendered again. Each entry records the file's `bytes` on disk, and the manifest its `profile`. `manifest.json` stays in the pack folder and never goes to the buyer; each build prunes the entries the full plan no longer has.
+
+### Background packs
+
+Backgrounds also sell alone, apart from the kits, in packs named in one of three ways: `<name>-backgrounds` (a kit series' backgrounds, like `halloween-backgrounds`, or one print in its palettes, like [`galaxy-backgrounds`](themes/galaxy.md#pack)), `background-<name>` (one standalone background) and `series-<name>` (a series of backgrounds). Their items are backgrounds only, with no `sizes`, and the two shipped so far carry each background as MP4 (it plays anywhere), WebM and a PNG still. The tests find these packs by their names (`BACKGROUND_PACK_FILE` in `tests/helpers/themes.ts`), so a new one is listed nowhere; any other name in `packs/` that is not a theme fails them.
+
+**The background catalog stays at 1920×1080** (owner, 2026-10-24). Every background renders at that size only (the `background` kind's `fixedSize` in `src/kinds.ts`): the standalone background sold on Etsy is a 1080p MP4, 1440p or 4K shows up as an extra in few listings, and 29 files in `src/backgrounds/` write 1920 or 1080 in their code (counted on 2026-10-24), so another output size would be a planned round, not a pack change. `tests/pack.test.ts` checks every file of every background pack at 1920×1080.
 
 ### Masks
 
