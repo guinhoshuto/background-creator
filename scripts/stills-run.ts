@@ -5,6 +5,7 @@ import {bundle} from '@remotion/bundler';
 import {openBrowser, renderFrames, renderStill, selectComposition} from '@remotion/renderer';
 import {execFileSync} from 'node:child_process';
 import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {PNG} from 'pngjs';
 import {getAsset, getLayoutOf, getOpenGlRenderer} from '../src/catalog';
@@ -65,7 +66,8 @@ const estimateBytes = (prepared: readonly Prepared[], job: StillsJob) => {
 /** Cleanup that must also run on Ctrl-C: bundles, the baseline worktree and the render slot. */
 const cleanups: (() => void)[] = [];
 const runCleanups = () => { while (cleanups.length > 0) { try { cleanups.pop()!(); } catch { /* keep cleaning */ } } };
-const onSignal = () => { runCleanups(); process.exit(130); };
+// 128 + the signal, as the slot's handlers and render:pack end: a SIGTERM is 143, not Ctrl-C's 130.
+const onSignal = (signal: NodeJS.Signals) => { runCleanups(); process.exit(128 + os.constants.signals[signal]); };
 
 const makeBundle = async (root: string, tag: string) => {
   const outDir = path.join(projectRoot, '.cache', `stills-bundle-${tag}-${process.pid}`);
