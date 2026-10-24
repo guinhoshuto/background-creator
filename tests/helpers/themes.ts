@@ -58,19 +58,28 @@ export const droppedWebms = (pack: string): number =>
   (STATIC_ONLY[pack as KitTheme] ?? []).reduce((sum, composition) => sum + ({ChatLoop: 5 + 5, BorderLoop: 9 + 11}[composition] ?? 0), 0);
 
 /**
- * Packs of backgrounds only, sold apart from the kits: `halloween-backgrounds` holds the four Halloween kits'
- * backgrounds, `galaxy-backgrounds` the galaxy print in its three palettes.
+ * Packs of backgrounds only, sold apart from the kits, found by file name, so a new one needs no list:
+ * `<name>-backgrounds` (a kit series' backgrounds, like `halloween-backgrounds`, or one print in its palettes,
+ * like `galaxy-backgrounds`), `background-<name>` (one standalone background) and `series-<name>` (a series of
+ * backgrounds). Every one is 1920×1080, the catalog's size by decision (docs/packs.md).
  */
-export const BACKGROUND_PACKS = ['halloween-backgrounds', 'galaxy-backgrounds'] as const;
-export type BackgroundPack = (typeof BACKGROUND_PACKS)[number];
+export const BACKGROUND_PACK_FILE = /^(?:(?:background|series)-[a-z0-9-]+|[a-z0-9-]+-backgrounds)\.json$/;
+
+/** The background packs among `files` (the names in packs/), without `.json`. */
+export const backgroundPacksIn = (files: readonly string[]): string[] =>
+  files.filter((file) => BACKGROUND_PACK_FILE.test(file)).map((file) => file.slice(0, -'.json'.length));
 
 /**
  * The kits whose backgrounds a background pack sells, in its order; each one's variant is the theme minus
  * `halloween-`. A pack of a background with no kit (galaxy-backgrounds) is absent.
  */
-export const BACKGROUND_PACK_KITS: Readonly<Partial<Record<BackgroundPack, readonly KitTheme[]>>> = {
+export const BACKGROUND_PACK_KITS: Readonly<Record<string, readonly KitTheme[]>> = {
   'halloween-backgrounds': ['halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior', 'halloween-cobweb'],
 };
 
-/** packs/*.json the file list must hold, sorted: every theme's pack and every background pack, exactly. */
-export const expectedPackFiles = (): string[] => [...OVERLAY_THEMES, ...BACKGROUND_PACKS].map((name) => `${name}.json`).sort();
+/**
+ * packs/*.json `files` (the names in packs/) must hold, sorted: every theme's pack, exactly, and the background
+ * packs among them (BACKGROUND_PACK_FILE); any other file is unexpected.
+ */
+export const expectedPackFiles = (files: readonly string[]): string[] =>
+  [...new Set([...OVERLAY_THEMES.map((name) => `${name}.json`), ...files.filter((file) => BACKGROUND_PACK_FILE.test(file))])].sort();

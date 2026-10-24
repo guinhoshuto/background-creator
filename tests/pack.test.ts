@@ -14,7 +14,7 @@ import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {maskGroupsOf} from './helpers/masks';
-import {BACKGROUND_PACK_KITS, BACKGROUND_PACKS, KIT_THEMES, OVERLAY_THEMES, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -543,6 +543,9 @@ test('pack: a 1080p file is refused before it renders when its frames would leav
 });
 
 const PACKS = OVERLAY_THEMES;
+/** packs/*.json, sorted; the background packs among them go by their names (BACKGROUND_PACK_FILE), listed nowhere. */
+const PACK_FILES = readdirSync(path.join(root, 'packs')).filter((file) => file.endsWith('.json')).sort();
+const BACKGROUND_PACKS = backgroundPacksIn(PACK_FILES);
 /**
  * What a twitch-panel item may set on top of its preset: the glass keeps an opaque PNG, which would
  * vanish on Twitch's light theme, and a kit may widen the padding so the panel's pockets hold its
@@ -571,8 +574,8 @@ test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed 
 });
 
 test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', () => {
-  // Every theme's pack, exactly.
-  assert.deepEqual(readdirSync(path.join(root, 'packs')).filter((file) => file.endsWith('.json')).sort(), expectedPackFiles());
+  // Every theme's pack, exactly, and nothing else but background packs.
+  assert.deepEqual(PACK_FILES, expectedPackFiles(PACK_FILES));
   const ids = (kind: AssetKind) => sizesForKind(kind).map((size) => size.id);
   const screens = new Set(sizesForKind('border').filter((size) => size.props?.fit === 'screen').map((size) => size.id));
   for (const name of PACKS) {
@@ -694,6 +697,34 @@ test('packs: galaxy-backgrounds traz a estampa galaxy nas três paletas, em mp4,
   assert.deepEqual(plan.map((file) => file.output), pack.items.flatMap((item) => ['mp4', 'webm', 'png'].map((format) =>
     `out/packs/galaxy-backgrounds/backgrounds/galaxy-backgrounds-background-${item.variant}.${format}`)));
   for (const file of plan) assert.deepEqual(file.canvas, {width: 1920, height: 1080}, file.output);
+});
+
+/** What every background pack keeps, listed or not: backgrounds only, each at the catalog's 1920×1080, in backgrounds/. */
+const checkBackgroundPack = (pack: PackManifest, name: string) => {
+  assert.equal(pack.name, name);
+  for (const item of pack.items) assert.equal(getAsset(item.composition).kind, 'background', `${name}/${item.composition}`);
+  const plan = planPack(pack, realPackDeps);
+  assert.deepEqual(plan.map((file) => file.output), pack.items.flatMap((item) => item.formats.map((format) =>
+    `out/packs/${name}/backgrounds/${name}-background${item.variant === undefined ? '' : `-${item.variant}`}.${format}`)));
+  for (const file of plan) assert.deepEqual(file.canvas, {width: 1920, height: 1080}, file.output);
+};
+
+test('packs: todo pack só de fundos traz só fundos, em 1920×1080, na pasta backgrounds/', () => {
+  assert.ok(BACKGROUND_PACKS.length >= 2, BACKGROUND_PACKS.join(', '));
+  for (const name of BACKGROUND_PACKS) checkBackgroundPack(packManifestSchema.parse(readPack(name)), name);
+});
+
+test('packs: um pack só de fundos novo (background-*, series-*) passa sem entrar em lista nenhuma', () => {
+  const files = [...OVERLAY_THEMES.map((name) => `${name}.json`), 'background-flow.json', 'series-pastel-webgl.json', 'halloween-backgrounds.json'].sort();
+  assert.deepEqual(expectedPackFiles(files), files);
+  assert.deepEqual(backgroundPacksIn(files), ['background-flow', 'halloween-backgrounds', 'series-pastel-webgl']);
+  // Any other name is unexpected, and every theme's pack stays mandatory.
+  assert.deepEqual(expectedPackFiles([...files, 'flow.json', 'backgrounds-flow.json', 'serie-pastel.json']), files);
+  assert.deepEqual(expectedPackFiles(files.filter((file) => file !== 'neon.json')), files);
+  // A standalone background with mp4 keeps what every background pack keeps (BGC-9).
+  checkBackgroundPack(parsePackManifest({name: 'background-flow', version: 1, profile: 'delivery', items: [
+    {composition: 'WebGLLoop', preset: 'webgl-flow', formats: ['mp4', 'webm', 'png']},
+  ]}), 'background-flow');
 });
 
 test('packs: todo manifesto real tem versão, e zip e ship recusam um sem ela', () => {
