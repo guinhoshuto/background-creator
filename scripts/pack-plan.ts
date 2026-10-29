@@ -3,7 +3,7 @@ import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {z} from 'zod';
-import {getAsset, getLayoutOf, getMaskOf, getMotionOf} from '../src/catalog';
+import {getAsset, getLayoutOf, getMaskOf, getMotionOf, isQaOnly} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
 import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
@@ -66,6 +66,8 @@ export type PackAsset = {
   kind: AssetKind;
   /** Strict schema parse: unknown keys and invalid combos are refused before any render. */
   parse: (props: Record<string, unknown>) => Record<string, unknown>;
+  /** A QA aid (an app interface mock): never planned into a pack. */
+  qaOnly?: boolean;
   /** Sized kinds report their layout; backgrounds return null and use the kind's fixed canvas. */
   layout: ((props: Record<string, unknown>) => AssetLayout) | null;
   /** Sized kinds report the speeds they actually show; null otherwise. */
@@ -293,6 +295,9 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
       throw new Error(`${where}: "frame" only applies to PNG; add png to "formats" or remove "frame".`);
     }
     const asset = withContext(() => deps.getAsset(item.composition));
+    if (asset.qaOnly) {
+      throw new Error(`${where}: ${asset.id} is a QA mock of an app's interface and never ships in a pack; remove this item (to check a frame against it, use a stills job).`);
+    }
     const policy = getKindPolicy(asset.kind);
     const presetName = item.preset;
     const preset = presetName === undefined ? {} : withContext(() => deps.readPreset(presetName));
@@ -663,6 +668,7 @@ export const realPackDeps: PackDeps = {
     return {
       id: asset.id,
       kind: asset.kind,
+      qaOnly: isQaOnly(asset),
       parse: (props) => asset.schema.strict().parse(props) as Record<string, unknown>,
       layout: getLayoutOf(asset),
       motion: getMotionOf(asset),

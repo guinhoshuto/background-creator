@@ -4,6 +4,7 @@ import {kindPolicies} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
 import {getCompositionMetadata, getExportPreset, type BaseBackgroundProps} from './settings';
 import {assetFileStem} from './sizes';
+import {VERTICAL_CANVAS} from './overlays/vertical/zones';
 
 const gradient = backgroundCatalog.GradientLoop;
 const particles = backgroundCatalog.ParticleLoop;
@@ -27,6 +28,11 @@ const galaxy = backgroundCatalog.GalaxyLoop;
 const chat = overlayCatalog.ChatLoop;
 const block = overlayCatalog.BlockLoop;
 const border = overlayCatalog.BorderLoop;
+const liveFrame = overlayCatalog.LiveFrameLoop;
+const safeZoneGuide = overlayCatalog.SafeZoneGuide;
+const liveUiMock = overlayCatalog.LiveUiMock;
+const feedUiMock = overlayCatalog.FeedUiMock;
+const vertical = {...VERTICAL_CANVAS};
 
 type MetadataProps = Pick<BaseBackgroundProps, 'durationSeconds' | 'outputFormat' | 'transparent'>
   & {width?: number; height?: number; bleed?: number};
@@ -36,7 +42,8 @@ const metadataFor = <Props extends MetadataProps>(id: string, props: Props) => {
   const asset = getAsset(id);
   const preset = getExportPreset(props);
   // The layout is the single source of truth for the file size, so its sidecar can never disagree.
-  // Without one, sized kinds fall back to the box plus the bleed on every side.
+  // Without one, sized kinds fall back to the box plus the bleed on every side. A kind of fixed size
+  // gets the 1920×1080 default here: the vertical Folder spreads its own canvas over the result.
   const canvas = getLayoutOf(asset)?.(props).canvas ?? (props.width === undefined || props.height === undefined
     ? undefined
     : getBoxCanvas({width: props.width, height: props.height, bleed: props.bleed ?? 0}).canvas);
@@ -287,6 +294,41 @@ export const RemotionRoot = () => (
         defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":640,"height":360,"bleed":48,"guides":false,"fit":"window" as const,"shape":"rectangle" as const,"mask":false,"radius":16,"thickness":10,"fill":"solid" as const,"fillColors":["#120A38"],"fillOpacity":0.9,"fillScale":12,"fillSpeed":24,"fillAngle":45,"fillRise":false,"fillLight":0,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":4,"dashLength":18,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"glow":16,"glowPulses":0,"glowStrength":2.6,"halo":0,"haloColor":"#A78BFA","rimLight":0,"lines":2,"lineGap":4,"outerLineWidth":2,"corners":"brackets" as const,"cornerSize":28,"cornerGap":6,"gemSize":14,"cornerPulses":1,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
         {...getCompositionMetadata(border.defaultProps, border.getLayout(border.defaultProps).canvas)}
         calculateMetadata={({props}: {props: typeof border.defaultProps}) => metadataFor(border.id, border.schema.parse(props))}
+      />
+    </Folder>
+    {/* Vertical overlays: the kind's fixed 1080×1920 screen, passed explicitly (the default is 1920×1080). */}
+    <Folder name={kindPolicies.vertical.folder}>
+      <Composition
+        id="LiveFrameLoop"
+        component={liveFrame.component}
+        schema={liveFrame.schema}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"layout":"three-blocks" as const,"chatMode":"open" as const,"fill":"solid" as const,"fillColors":["#3A3548"],"fillOpacity":1,"fillScale":32,"fillSpeed":16,"fillAngle":45,"fillRise":false,"fillLight":0,"ring":true,"ringColor":"#E9E2EC","ringLineColor":"#FFFFFF","panelColor":"#2A2438","panelOpacity":1}}
+        {...getCompositionMetadata(liveFrame.defaultProps, vertical)}
+        calculateMetadata={({props}: {props: typeof liveFrame.defaultProps}) => ({...metadataFor(liveFrame.id, liveFrame.schema.parse(props)), ...vertical})}
+      />
+      <Composition
+        id="SafeZoneGuide"
+        component={safeZoneGuide.component}
+        schema={safeZoneGuide.schema}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"layout":"three-blocks" as const,"chatMode":"open" as const,"view":"live" as const}}
+        {...getCompositionMetadata(safeZoneGuide.defaultProps, vertical)}
+        calculateMetadata={({props}: {props: typeof safeZoneGuide.defaultProps}) => ({...metadataFor(safeZoneGuide.id, safeZoneGuide.schema.parse(props)), ...vertical})}
+      />
+      <Composition
+        id="LiveUiMock"
+        component={liveUiMock.component}
+        schema={liveUiMock.schema}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"comments":6}}
+        {...getCompositionMetadata(liveUiMock.defaultProps, vertical)}
+        calculateMetadata={({props}: {props: typeof liveUiMock.defaultProps}) => ({...metadataFor(liveUiMock.id, liveUiMock.schema.parse(props)), ...vertical})}
+      />
+      <Composition
+        id="FeedUiMock"
+        component={feedUiMock.component}
+        schema={feedUiMock.schema}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"captionLines":2}}
+        {...getCompositionMetadata(feedUiMock.defaultProps, vertical)}
+        calculateMetadata={({props}: {props: typeof feedUiMock.defaultProps}) => ({...metadataFor(feedUiMock.id, feedUiMock.schema.parse(props)), ...vertical})}
       />
     </Folder>
   </>

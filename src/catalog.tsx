@@ -23,6 +23,9 @@ import {borderCatalogEntry} from './overlays/border';
 import {chatCatalogEntry} from './overlays/chat';
 import type {AssetLayout} from './overlays/shared/box';
 import type {AssetMotion} from './overlays/shared/motion';
+import {
+  feedUiMockCatalogEntry, liveFrameCatalogEntry, liveUiMockCatalogEntry, safeZoneGuideCatalogEntry,
+} from './overlays/vertical';
 
 /** The 1920×1080 backgrounds: one registry shared by the Studio, renderer, validation, and documentation. */
 export const backgroundCatalog = {
@@ -187,16 +190,25 @@ export type CatalogEntry = {
   getMotion?(props: never): AssetMotion;
   /** The props of the still mask that goes with a file (a window border's OBS mask), or null. */
   getMask?(props: never): Record<string, unknown> | null;
+  /** A QA aid (an app interface mock), never a product: the pack planner refuses it. */
+  qaOnly?: true;
 };
 
 export type BackgroundId = keyof typeof backgroundCatalog;
 export type Background = (typeof backgroundCatalog)[BackgroundId];
 
-/** The sized overlay kinds: one parametric composition each for now; a kind may register more. */
+/**
+ * The overlay kinds: one parametric composition per sized kind; the vertical kind (fixed
+ * 1080×1920) has its frame, its safe-zone guide and two QA-only interface mocks.
+ */
 export const overlayCatalog = {
   ChatLoop: chatCatalogEntry,
   BlockLoop: blockCatalogEntry,
   BorderLoop: borderCatalogEntry,
+  LiveFrameLoop: liveFrameCatalogEntry,
+  SafeZoneGuide: safeZoneGuideCatalogEntry,
+  LiveUiMock: liveUiMockCatalogEntry,
+  FeedUiMock: feedUiMockCatalogEntry,
 } as const satisfies Record<string, CatalogEntry>;
 
 /** Every composition of every kind: the backgrounds, then the overlays. */
@@ -222,6 +234,9 @@ export const getMotionOf = (asset: CatalogEntry): ((props: Record<string, unknow
 /** The mask props that go with a composition's file (see CatalogEntry.getMask); null when it has none. */
 export const getMaskOf = (asset: CatalogEntry): ((props: Record<string, unknown>) => Record<string, unknown> | null) | null =>
   asset.getMask ? (asset.getMask as (props: Record<string, unknown>) => Record<string, unknown> | null) : null;
+
+/** Whether a composition is a QA aid that never ships (see CatalogEntry.qaOnly). */
+export const isQaOnly = (asset: CatalogEntry): boolean => asset.qaOnly === true;
 
 export const getAsset = (id: string): Asset => {
   if (!Object.prototype.hasOwnProperty.call(assetCatalog, id)) {

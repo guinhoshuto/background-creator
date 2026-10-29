@@ -1,4 +1,4 @@
-import type {AssetKind, OverlayKind} from './kinds';
+import {kindPolicies, type AssetKind, type OverlayKind} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
 import type {PanelShape} from './overlays/shared/shape';
 import type {OutputFormat} from './settings';
@@ -65,6 +65,9 @@ const NAMED_SIZE_TABLE = [
   // Full-screen frames: the box is the whole file, so the frame is drawn inward.
   {id: 'fullscreen', kind: 'border', label: 'Full screen', use: 'border for the whole screen', width: 1920, height: 1080, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},
   {id: 'fullscreen-vertical', kind: 'border', label: 'Vertical screen', use: 'border for the whole vertical screen', width: 1080, height: 1920, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},
+  // vertical: the kind's fixed canvas, so the size only tags the file. Provisional id: it reaches
+  // buyers, so it goes on the direction sheet for the owner's yes before any pack ships it.
+  {id: 'live-frame', kind: 'vertical', label: 'Live frame', use: 'full 1080×1920 frame for mobile live streams, with transparent windows', width: 1080, height: 1920, bleed: 0},
 ] as const satisfies readonly NamedSize[];
 
 export const NAMED_SIZES: readonly NamedSize[] = NAMED_SIZE_TABLE;
@@ -80,10 +83,13 @@ export const sizesForKind = (kind: AssetKind): NamedSize[] => NAMED_SIZES.filter
 /** The file size: the box centred inside a transparent bleed on every side. */
 export const canvasOf = (size: Pick<NamedSize, 'width' | 'height' | 'bleed'>) => getBoxCanvas(size).canvas;
 
-/** Props a named size sets before the schema parses the rest. */
-export const sizeProps = (size: NamedSize): Record<string, unknown> => ({
-  width: size.width, height: size.height, bleed: size.bleed, ...size.props,
-});
+/**
+ * Props a named size sets before the schema parses the rest. A kind of fixed size has no
+ * width/height props at all: its size only names the file, so it sets nothing but its extras.
+ */
+export const sizeProps = (size: NamedSize): Record<string, unknown> => (kindPolicies[size.kind].fixedSize
+  ? {...size.props}
+  : {width: size.width, height: size.height, bleed: size.bleed, ...size.props});
 
 type SizedProps = {width?: unknown; height?: unknown; bleed?: unknown} & Record<string, unknown>;
 
@@ -91,13 +97,22 @@ type SizedProps = {width?: unknown; height?: unknown; bleed?: unknown} & Record<
  * The named size these props describe exactly (box, bleed, fit and shape), if any. A border's
  * window mask (`mask`) is the window alone, without the bleed, so it matches its size by the box.
  */
-export const matchNamedSize = (kind: AssetKind, props: SizedProps): NamedSize | undefined =>
-  sizesForKind(kind).find((size) =>
+export const matchNamedSize = (kind: AssetKind, props: SizedProps): NamedSize | undefined => {
+  // A kind of fixed size is named by the size whose file is its canvas, whatever the props.
+  const fixed = kindPolicies[kind].fixedSize;
+  if (fixed) {
+    return sizesForKind(kind).find((size) => {
+      const canvas = canvasOf(size);
+      return canvas.width === fixed.width && canvas.height === fixed.height;
+    });
+  }
+  return sizesForKind(kind).find((size) =>
     props.width === size.width && props.height === size.height && (props.bleed === size.bleed || props.mask === true)
     // A window-sized border drawn as a full-screen frame is a different product; fit defaults to the window.
     && (props.fit ?? 'window') === (size.props?.fit ?? 'window')
     // So is a round one in a square box: webcam-round is not webcam-square, though both are 400×400.
     && (props.shape ?? 'rectangle') === (size.props?.shape ?? 'rectangle'));
+};
 
 /**
  * File-name tag: the named size id, or the box as <W>x<H> for free sizes, followed by -circle for

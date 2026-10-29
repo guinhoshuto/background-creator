@@ -35,6 +35,7 @@ const PRODUCT_TABLE = [
   ['gameplay', 'border', 1440, 810, 48, 1536, 906],
   ['fullscreen', 'border', 1920, 1080, 0, 1920, 1080],
   ['fullscreen-vertical', 'border', 1080, 1920, 0, 1080, 1920],
+  ['live-frame', 'vertical', 1080, 1920, 0, 1080, 1920],
 ] as const;
 
 test('tamanhos: a tabela bate exatamente com a linha de produtos, na mesma ordem', () => {
@@ -92,7 +93,7 @@ test('tamanhos: só as molduras de tela inteira usam fit tela, sempre sem bleed'
 });
 
 test('tamanhos: getSize lista as opções em inglês; sizesForKind separa por tipo', () => {
-  assert.throws(() => getSize('gigante'), /Unknown size: gigante\. Options: chat-compact, .*fullscreen-vertical\./);
+  assert.throws(() => getSize('gigante'), /Unknown size: gigante\. Options: chat-compact, .*fullscreen-vertical, live-frame\./);
   assert.throws(() => getSize('__proto__'), /Unknown size/);
   for (const kind of ASSET_KINDS) {
     for (const size of sizesForKind(kind)) assert.equal(size.kind, kind);
@@ -103,6 +104,19 @@ test('tamanhos: getSize lista as opções em inglês; sizesForKind separa por ti
     NAMED_SIZES.length,
   );
   assert.deepEqual(sizesForKind('chat').map((size) => size.id), ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical']);
+});
+
+test('tamanhos: o tipo vertical tem canvas fixo, e o tamanho só nomeia o arquivo', () => {
+  const size = getSize('live-frame');
+  assert.deepEqual(canvasOf(size), kindPolicies.vertical.fixedSize);
+  // No width/height props: the kind's schemas have none, and a strict parse would refuse them.
+  assert.deepEqual(sizeProps(size), {});
+  assert.equal(matchNamedSize('vertical', {}), size);
+  assert.equal(sizeTag('vertical', {layout: 'three-blocks'}), 'live-frame');
+  assert.equal(assetFileStem({id: 'LiveFrameLoop', kind: 'vertical', props: {}}), 'LiveFrameLoop-live-frame');
+  assert.equal(assetFileName({id: 'SafeZoneGuide', kind: 'vertical', props: {}, format: 'png'}), 'SafeZoneGuide-live-frame.png');
+  // A sized kind still sets its box.
+  assert.deepEqual(sizeProps(getSize('fullscreen-vertical')), {width: 1080, height: 1920, bleed: 0, fit: 'screen', shape: 'rectangle'});
 });
 
 test('tamanhos: o tamanho padrão de cada tipo existe e é do próprio tipo', () => {

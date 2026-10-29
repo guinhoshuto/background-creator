@@ -3,6 +3,7 @@ import {readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
 import {buildSidecar, resolveExport} from '../scripts/export';
+import {expandSize} from '../scripts/render-args';
 import {getLayoutOf, overlayCatalog} from '../src/catalog';
 import {kindPolicies} from '../src/kinds';
 import {RemotionRoot} from '../src/Root';
@@ -17,6 +18,9 @@ import {OVERLAY_THEMES, expectedPresetFiles} from './helpers/themes';
  */
 
 const overlays = Object.values(overlayCatalog);
+/** The kinds whose box comes from props; the vertical kind (fixed 1080×1920) has its own test below. */
+const sized = overlays.filter((entry) => kindPolicies[entry.kind].fixedSize === null);
+const verticals = overlays.filter((entry) => entry.kind === 'vertical');
 const THEMES = OVERLAY_THEMES;
 const PRESET_PREFIX = {chat: 'chat', block: 'block', border: 'border'} as const;
 
@@ -35,8 +39,9 @@ const sizePatch = sizeProps;
 test('overlays: o catálogo registra chat, bloco e borda com layout e o tipo de cada um', () => {
   assert.deepEqual(overlays.map((entry) => [entry.id, entry.kind]), [
     ['ChatLoop', 'chat'], ['BlockLoop', 'block'], ['BorderLoop', 'border'],
+    ['LiveFrameLoop', 'vertical'], ['SafeZoneGuide', 'vertical'], ['LiveUiMock', 'vertical'], ['FeedUiMock', 'vertical'],
   ]);
-  for (const entry of overlays) {
+  for (const entry of sized) {
     assert.ok(getLayoutOf(entry), `${entry.id}: sem getLayout o export não publica o JSON de posição`);
     assert.deepEqual(entry.schema.parse({}), entry.defaultProps, entry.id);
     assert.deepEqual(entry.schema.strict().parse(entry.defaultProps), entry.defaultProps, entry.id);
@@ -52,9 +57,9 @@ test('overlays: cada preset de tema passa no schema estrito, sem fixar tamanho, 
   const files = readdirSync(presetsDir).filter((file) => /^(chat|block|border)-.*\.json$/.test(file)).sort();
   // Every theme's three presets, exactly.
   assert.deepEqual(files, expectedPresetFiles());
-  for (const entry of overlays) {
+  for (const entry of sized) {
     for (const theme of THEMES) {
-      const file = `${PRESET_PREFIX[entry.kind]}-${theme}.json`;
+      const file = `${PRESET_PREFIX[entry.kind as keyof typeof PRESET_PREFIX]}-${theme}.json`;
       const preset = readPreset(file);
       // A size id fixes the product; a preset that carried one would fight it.
       for (const key of ['width', 'height', 'bleed', 'fit', 'guides']) assert.equal(key in preset, false, `${file}: sem ${key}`);
@@ -88,7 +93,7 @@ test('overlays: o Root registra cada composição na pasta do tipo com defaultPr
 
 test('overlays: o Studio abre cada tamanho nomeado com o canvas do layout e o nome do export', () => {
   const root = RemotionRoot();
-  for (const entry of overlays) {
+  for (const entry of sized) {
     const composition = findComposition<Registered>(root, entry.id)!;
     const layout = getLayoutOf(entry)!;
     for (const size of sizesForKind(entry.kind)) {
@@ -104,8 +109,33 @@ test('overlays: o Studio abre cada tamanho nomeado com o canvas do layout e o no
   }
 });
 
+test('overlays: o tipo vertical abre em 1080×1920, sem layout de caixa, nomeado live-frame, e recusa --size', () => {
+  const root = RemotionRoot();
+  assert.deepEqual(verticals.map((entry) => entry.id), ['LiveFrameLoop', 'SafeZoneGuide', 'LiveUiMock', 'FeedUiMock']);
+  for (const entry of verticals) {
+    assert.equal(getLayoutOf(entry), null, `${entry.id}: the canvas is the kind's, not a box's`);
+    assert.deepEqual(entry.schema.parse({}), entry.defaultProps, entry.id);
+    assert.deepEqual(entry.schema.strict().parse(entry.defaultProps), entry.defaultProps, entry.id);
+    assert.equal(entry.defaultProps.transparent, true, entry.id);
+    assert.equal(entry.defaultProps.outputFormat, 'webm', entry.id);
+    for (const key of ['width', 'height', 'bleed']) assert.equal(key in entry.defaultProps, false, `${entry.id}: no ${key}`);
+    const composition = findComposition<Registered>(root, entry.id)!;
+    assert.deepEqual([composition.props.width, composition.props.height], [1080, 1920], `${entry.id}: Studio size`);
+    for (const outputFormat of ['webm', 'png', 'mp4'] as const) {
+      const metadata = composition.props.calculateMetadata({props: {...entry.defaultProps, outputFormat}});
+      assert.deepEqual([metadata.width, metadata.height], [1080, 1920], `${entry.id} ${outputFormat}`);
+      assert.equal(metadata.fps, 60, `${entry.id}: the repo's 60 fps`);
+      assert.equal(metadata.defaultOutName, `${entry.id}-live-frame`, 'Remotion appends the extension itself');
+    }
+    const resolved = resolveExport({compositionId: entry.id, format: 'png'});
+    assert.equal(path.basename(resolved.output), `${entry.id}-live-frame.png`);
+    assert.equal(resolved.sidecar, null, `${entry.id}: no box layout, no position JSON`);
+    assert.throws(() => expandSize(entry.kind, 'live-frame'), /Vertical overlays have a fixed size \(1080×1920\): --size, --width, --height and --bleed only apply to chat backgrounds, text boxes and borders\./);
+  }
+});
+
 test('overlays: o export nomeia pelo tamanho, publica o JSON de posição e recusa guides', () => {
-  for (const entry of overlays) {
+  for (const entry of sized) {
     for (const size of sizesForKind(entry.kind)) {
       for (const format of ['webm', 'mov', 'png', 'gif'] as const) {
         const resolved = resolveExport({compositionId: entry.id, format, props: sizePatch(size)});

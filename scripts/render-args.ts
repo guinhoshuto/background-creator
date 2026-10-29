@@ -1,7 +1,7 @@
 import path from 'node:path';
 import {parseArgs} from 'node:util';
 import {assetCatalog, getAsset, getLayoutOf} from '../src/catalog';
-import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
+import {ASSET_KINDS, getKindPolicy, kindPolicies, sizedKinds, type AssetKind} from '../src/kinds';
 import {exportProfileSchema, getCompositionMetadata, outputFormatSchema} from '../src/settings';
 import {canvasOf, getSize, sizeProps, sizesForKind} from '../src/sizes';
 import {FREE_SPACE_HINT, assertCanStart, frameScratchBytes, gibibytes} from './disk';
@@ -50,7 +50,8 @@ export const listText = () => ASSET_KINDS.map((kind) => {
   const ids = Object.values(assetCatalog).filter((entry) => entry.kind === kind).map((entry) => `  ${entry.id}`);
   const lines = [`${policy.label} (${kind}):`, ...(ids.length > 0 ? ids : ['  (no compositions yet)'])];
   if (policy.fixedSize) {
-    lines.push(`  Fixed size: ${policy.fixedSize.width}×${policy.fixedSize.height}.`);
+    const tags = sizesForKind(kind).map((size) => size.id);
+    lines.push(`  Fixed size: ${policy.fixedSize.width}×${policy.fixedSize.height}${tags.length > 0 ? `; files tagged ${tags.join(', ')}` : ''}.`);
   } else {
     lines.push('  Sizes (--size):');
     for (const size of sizesForKind(kind)) {
@@ -61,11 +62,17 @@ export const listText = () => ASSET_KINDS.map((kind) => {
   return lines.join('\n');
 }).join('\n\n');
 
+/** The sized kinds' labels for a message: "chat backgrounds, text boxes and borders". */
+export const sizedKindsText = () => {
+  const labels = sizedKinds().map((kind) => kindPolicies[kind].label.toLowerCase());
+  return labels.length > 1 ? `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}` : labels.join('');
+};
+
 /** The props patch a named size stands for; refuses sizes of another kind and fixed-size kinds. */
 export const expandSize = (kind: AssetKind, sizeId: string): Record<string, unknown> => {
   const policy = getKindPolicy(kind);
   if (policy.fixedSize) {
-    throw new Error(`${policy.label} have a fixed size (${policy.fixedSize.width}×${policy.fixedSize.height}): --size, --width, --height and --bleed only apply to chat, text boxes and borders.`);
+    throw new Error(`${policy.label} have a fixed size (${policy.fixedSize.width}×${policy.fixedSize.height}): --size, --width, --height and --bleed only apply to ${sizedKindsText()}.`);
   }
   const size = getSize(sizeId);
   if (size.kind !== kind) {

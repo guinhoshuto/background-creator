@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {assetCatalog, backgroundCatalog, getAsset, getBackground, getLayoutOf} from '../src/catalog';
-import {ASSET_KINDS, OVERLAY_KINDS, getKindPolicy, isOverlayKind, kindPolicies} from '../src/kinds';
+import {ASSET_KINDS, OVERLAY_KINDS, getKindPolicy, isOverlayKind, kindPolicies, sizedKinds} from '../src/kinds';
 import {RemotionRoot} from '../src/Root';
 import {getCompositionMetadata} from '../src/settings';
 import {findComposition, folderOf} from './helpers/find-composition';
 
-test('tipos: os quatro tipos e a política de cada um', () => {
-  assert.deepEqual(ASSET_KINDS, ['background', 'chat', 'block', 'border']);
-  assert.deepEqual(OVERLAY_KINDS, ['chat', 'block', 'border']);
+test('tipos: os cinco tipos e a política de cada um', () => {
+  assert.deepEqual(ASSET_KINDS, ['background', 'chat', 'block', 'border', 'vertical']);
+  assert.deepEqual(OVERLAY_KINDS, ['chat', 'block', 'border', 'vertical']);
+  assert.deepEqual(sizedKinds(), ['chat', 'block', 'border']);
   assert.deepEqual(
     ASSET_KINDS.map((kind) => {
       const {folder, fixedSize, defaultSizeId, transparent, format} = kindPolicies[kind];
@@ -19,6 +20,7 @@ test('tipos: os quatro tipos e a política de cada um', () => {
       ['chat', 'chat', null, 'chat-standard', true, 'webm'],
       ['block', 'text-boxes', null, 'card', true, 'webm'],
       ['border', 'borders', null, 'webcam-16x9', true, 'webm'],
+      ['vertical', 'vertical', {width: 1080, height: 1920}, 'live-frame', true, 'webm'],
     ],
   );
   for (const kind of ASSET_KINDS) {
@@ -31,7 +33,7 @@ test('tipos: os quatro tipos e a política de cada um', () => {
     assert.equal(getKindPolicy(kind), policy);
   }
   assert.equal(new Set(ASSET_KINDS.map((kind) => kindPolicies[kind].folder)).size, ASSET_KINDS.length);
-  assert.throws(() => getKindPolicy('panel'), /Unknown kind: panel\. Options: background, chat, block, border\./);
+  assert.throws(() => getKindPolicy('panel'), /Unknown kind: panel\. Options: background, chat, block, border, vertical\./);
   assert.throws(() => getKindPolicy('__proto__'), /Unknown kind/);
 });
 
@@ -68,9 +70,10 @@ test('Studio: cada composição fica na pasta do seu tipo, com metadados de fund
     const composition = findComposition<Registered>(root, entry.id);
     assert.ok(composition, `${entry.id} precisa estar registrada no Studio`);
     const metadata = composition.props.calculateMetadata({props: entry.defaultProps});
-    // Backgrounds keep full HD and <Id>; sized kinds open at their layout's canvas, named by size.
+    // Backgrounds keep full HD and <Id>; sized kinds open at their layout's canvas, named by size;
+    // the vertical kind at its fixed 1080×1920 (the metadata's default would be 1920×1080).
     const layout = getLayoutOf(entry);
-    const canvas = layout ? layout(entry.defaultProps).canvas : {width: 1920, height: 1080};
+    const canvas = layout ? layout(entry.defaultProps).canvas : kindPolicies[entry.kind].fixedSize!;
     assert.equal(metadata.width, canvas.width, entry.id);
     assert.equal(metadata.height, canvas.height, entry.id);
     assert.equal(composition.props.width, canvas.width, `${entry.id}: tamanho inicial do Studio`);

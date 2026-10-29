@@ -14,8 +14,8 @@ import {
   candleOf, fixtureOf, fixtureOrigin, footOf, GIRANDOLE_MIN, PARTNER_SHARE, scaleOf, SIDE_SPACING, TOP_SPACING,
 } from '../src/overlays/shared/ornaments/sets/haunted-interior-place';
 import {SWAG, SWAG_CORNER, SWAG_MOTIF, SWAG_TASSEL, swagLine, swagPoints} from '../src/overlays/shared/ornaments/sets/haunted-interior-swag';
-import {getSize, sizeProps, NAMED_SIZES, type NamedSize} from '../src/sizes';
-import {kitProps, ORNAMENT_KINDS, packItemProps, unscaledItemProps, type OrnamentKindName} from './helpers/ornament-kinds';
+import {getSize, sizeProps, type NamedSize} from '../src/sizes';
+import {kitProps, ORNAMENT_KINDS, ORNAMENT_SIZES, packItemProps, unscaledItemProps, type OrnamentKindName} from './helpers/ornament-kinds';
 
 /**
  * The haunted-interior set's own guarantees (the shared harness, tests/helpers/ornament-harness.ts, checks the
@@ -60,8 +60,8 @@ const motifs = (placements: readonly OrnamentPlacement[]) => placements.map((pla
 const HEROES = ['candelabra-3', 'candelabra-2', 'candelabra-3-foot', 'candle-tall'];
 
 test('ornaments haunted-interior: o herói está em todos os 27 tamanhos, com o kit, sem ele e nos ornamentSize extremos', () => {
-  assert.equal(NAMED_SIZES.length, 27);
-  for (const size of NAMED_SIZES) {
+  assert.equal(ORNAMENT_SIZES.length, 27);
+  for (const size of ORNAMENT_SIZES) {
     for (const layout of [kitLayout(size), kitLayout(size, {ornamentSize: 12}), kitLayout(size, {ornamentSize: 256}), neutralLayout(size), neutralLayout(size, {ornamentSize: 12})]) {
       const hero = layout.placements[0];
       assert.ok(hero && HEROES.includes(hero.motif), `${size.id}: herói ${hero?.motif}`);
@@ -224,7 +224,7 @@ const assertApart = (placements: readonly OrnamentPlacement[], label: string) =>
     `${label}: ${a.motif}@${a.slot} sobre ${b.motif}@${b.slot}`)));
 
 test('ornaments haunted-interior: as peças nunca se sobrepõem (kit, padrões, extremos, raios em pílula)', () => {
-  for (const size of NAMED_SIZES) {
+  for (const size of ORNAMENT_SIZES) {
     for (const ornamentSize of [12, 32, 64, 96, 256]) {
       assertApart(kitLayout(size, {ornamentSize}).placements, `${size.id} kit ${ornamentSize}`);
       assertApart(neutralLayout(size, {ornamentSize}).placements, `${size.id} ${ornamentSize}`);
@@ -381,7 +381,7 @@ const drawnOf = (frame: OrnamentFrame, placement: OrnamentPlacement): {x: number
 };
 
 test('ornaments haunted-interior: nada do desenho sai do lugar, entra no texto ou na janela, nos ornamentSize extremos', () => {
-  for (const size of NAMED_SIZES) {
+  for (const size of ORNAMENT_SIZES) {
     for (const ornamentSize of [12, 48, 96, 256]) {
       for (const extra of [{}, {accent: 'top'}, {radius: 0}]) {
         if (size.kind !== 'block' && 'accent' in extra) continue;
@@ -401,7 +401,7 @@ test('ornaments haunted-interior: nada do desenho sai do lugar, entra no texto o
 });
 
 test('ornaments haunted-interior: a luz não gasta o quarto (≤ o alcance do corpo) e some sem brilho', () => {
-  for (const size of NAMED_SIZES) {
+  for (const size of ORNAMENT_SIZES) {
     const {props, frame, placements} = kitLayout(size);
     for (const at of [0, 174, 500]) {
       for (const element of hauntedInteriorSet.build(frame, placements, props, at, 960)) {
@@ -434,7 +434,7 @@ test('ornaments haunted-interior: no relâmpago o latão acende do lado da janel
   // The cold light (AD round 3): 0.5·flash, as large as the warm one; ≤ 0.2 where it meets the text
   // (chat and block corners), 0 without glow; no flash (so no cold light) at frames 0 and N−1.
   const lit = (element: OrnamentElement) => element.type === 'haunted-interior-flames' || element.type === 'haunted-interior-flame';
-  for (const size of NAMED_SIZES) {
+  for (const size of ORNAMENT_SIZES) {
     for (const extra of [{}, {glow: 0}]) {
       const layout = kitLayout(size, extra);
       for (const at of [0, 959, 172, 174, 176, 803]) {

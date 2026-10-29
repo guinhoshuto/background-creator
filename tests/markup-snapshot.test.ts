@@ -18,6 +18,10 @@ import {getAsset} from '../src/catalog';
 import {BlockFrame} from '../src/overlays/block';
 import {BorderFrame} from '../src/overlays/border';
 import {ChatFrame} from '../src/overlays/chat';
+import {
+  FeedUiMockFrame, LiveFrameFrame, LiveUiMockFrame, SafeZoneGuideFrame, feedUiMockSchema, layoutModes, liveFrameLoopSchema,
+  liveUiMockSchema, safeZoneGuideSchema,
+} from '../src/overlays/vertical';
 import {getCompositionMetadata} from '../src/settings';
 
 /**
@@ -164,8 +168,30 @@ for (const background of HALLOWEEN_BACKGROUNDS) {
 }
 
 const OVERLAY_FRAMES: Record<string, ComponentType<{props: never; frame: number; durationInFrames: number}>> = {
-  ChatLoop: ChatFrame, BlockLoop: BlockFrame, BorderLoop: BorderFrame,
+  ChatLoop: ChatFrame, BlockLoop: BlockFrame, BorderLoop: BorderFrame, LiveFrameLoop: LiveFrameFrame,
 };
+
+// The vertical kind before any pack ships it: every layout and chat mode of the look-neutral
+// frame (defaults and a moving fill), the guide in both views, and the two QA mocks.
+test('markup snapshot: vertical frames, safe-zone guides and UI mocks', () => {
+  const entries: [string, () => string][] = [];
+  const markup = (element: Parameters<typeof renderToStaticMarkup>[0]) => () => renderToStaticMarkup(element);
+  for (const {layout, chatMode} of layoutModes()) {
+    const plain = liveFrameLoopSchema.parse({layout: layout.id, chatMode});
+    const moving = liveFrameLoopSchema.parse({layout: layout.id, chatMode, fill: 'gradient', fillColors: ['#3A3548', '#7C6FA8', '#C9A3D9']});
+    for (const frame of [0, 123]) {
+      entries.push([`vertical LiveFrameLoop ${layout.id} ${chatMode} f${frame}`, markup(createElement(LiveFrameFrame, {props: plain, frame, durationInFrames: 480}))]);
+      entries.push([`vertical LiveFrameLoop ${layout.id} ${chatMode} gradient f${frame}`, markup(createElement(LiveFrameFrame, {props: moving, frame, durationInFrames: 480}))]);
+    }
+    for (const view of ['live', 'feed'] as const) {
+      const props = safeZoneGuideSchema.parse({layout: layout.id, chatMode, view});
+      entries.push([`vertical SafeZoneGuide ${layout.id} ${chatMode} ${view}`, markup(createElement(SafeZoneGuideFrame, {props}))]);
+    }
+  }
+  entries.push(['vertical LiveUiMock', markup(createElement(LiveUiMockFrame, {props: liveUiMockSchema.parse({})}))]);
+  entries.push(['vertical FeedUiMock', markup(createElement(FeedUiMockFrame, {props: feedUiMockSchema.parse({})}))]);
+  check(entries);
+});
 
 /** One drawing of a pack file: overlays through their pure Frame, backgrounds through their hook component. */
 const renderPlanned = (file: PlannedFile, frame: number) => {

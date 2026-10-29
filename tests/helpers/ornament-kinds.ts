@@ -6,7 +6,7 @@ import {BorderFrame, borderLoopSchema, getBorderGeometry, getBorderSceneParts, g
 import {ChatFrame, chatLoopSchema, getChatLayers, getChatLayout, getChatScene} from '../../src/overlays/chat';
 import type {FlashElement, OrnamentElement, OrnamentLayout, OrnamentStyle} from '../../src/overlays/shared';
 import {getCompositionMetadata} from '../../src/settings';
-import {sizeProps, sizesForKind, type NamedSize} from '../../src/sizes';
+import {NAMED_SIZES, sizeProps, sizesForKind, type NamedSize} from '../../src/sizes';
 import type {Scene} from './scene-scans';
 
 /**
@@ -89,6 +89,10 @@ export const ORNAMENT_KINDS: Record<OrnamentKindName, OrnamentKindAdapter> = {
     preset: (theme) => readPreset(`border-${theme}`),
   },
 };
+
+/** The named sizes of the kinds that carry ornaments, in table order: the vertical kind's frame
+ * places its own decoration, so its size is no slot of these sets. */
+export const ORNAMENT_SIZES: readonly NamedSize[] = NAMED_SIZES.filter((size) => size.kind in ORNAMENT_KINDS);
 
 export const ORNAMENT_KIND_NAMES = ['chat', 'block', 'border'] as const;
 

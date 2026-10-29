@@ -1,7 +1,10 @@
 import type {OutputFormat} from './settings';
 
-/** Every asset kind the studio produces; backgrounds are the original 1920×1080 loops. */
-export const ASSET_KINDS = ['background', 'chat', 'block', 'border'] as const;
+/**
+ * Every asset kind the studio produces; backgrounds are the original 1920×1080 loops, and
+ * vertical overlays fill a whole 1080×1920 portrait screen (mobile live streams) around windows.
+ */
+export const ASSET_KINDS = ['background', 'chat', 'block', 'border', 'vertical'] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 
 /** Kinds whose box size comes from props (named sizes or free even sizes). */
@@ -39,7 +42,16 @@ export const kindPolicies: Record<AssetKind, KindPolicy> = {
     kind: 'border', folder: 'borders', label: 'Borders',
     fixedSize: null, defaultSizeId: 'webcam-16x9', transparent: true, format: 'webm',
   },
+  // The canvas is the phone screen itself; the layout (src/overlays/vertical/layouts.ts) places the windows.
+  // Its one named size only names the file, it sets no props (see sizeProps).
+  vertical: {
+    kind: 'vertical', folder: 'vertical', label: 'Vertical overlays',
+    fixedSize: {width: 1080, height: 1920}, defaultSizeId: 'live-frame', transparent: true, format: 'webm',
+  },
 };
+
+/** The kinds whose box size comes from props (--size, --width, --height, --bleed). */
+export const sizedKinds = (): AssetKind[] => ASSET_KINDS.filter((kind) => kindPolicies[kind].fixedSize === null);
 
 export const isAssetKind = (value: unknown): value is AssetKind =>
   typeof value === 'string' && (ASSET_KINDS as readonly string[]).includes(value);
