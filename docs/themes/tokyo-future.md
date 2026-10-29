@@ -51,6 +51,11 @@ npm run render:mp4 -- TokyoFutureLoop --props presets/tokyo-after-rain.json
 - Seven rounded paper lanterns have ribbed envelopes, printed fibres, dark collars, hanging cords
   and wall-mounted brackets. Cream, vermilion and amber finishes share three original textures.
 - A real planar reflection with periodic ripple distortion and irregular puddles, asphalt grain, cracks and tire wear. Rain uses soft, metre-sized streaks with varied fall speeds, exposure lengths, wind drift and depth attenuation. Small roadway impact rings stay at their contact points; every drop completes an integer number of falls per loop.
+- TK-07 raises the preset rain from 0.55 to 0.66 while preserving those trajectories. Short impacts
+  vary with drop size and use the reflection's exact world-space puddle mask, keeping dry asphalt quiet.
+  Sparse beads run down nearby sign margins, with one occasional lower-edge drip per panel. The water
+  inherits each actual panel transform, preserves its runoff velocity when gravity takes over, and stays
+  depth-tested. Lettering, lighting, atmosphere, camera and film treatment remain unchanged.
 - World-space procedural concrete stains, worn plaster edges, mineral deposits, ledge runoff,
   sparse cracks, oxidized metal and chipped paint, plus scratched signs and gutter debris.
   Near windows vary in blinds, curtains, mullions and repairs. Static glass haze and water trails

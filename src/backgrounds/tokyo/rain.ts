@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import {createTokyoRain, getTokyoDropState} from './motion';
+import {createTokyoRain, getTokyoDropState, getTokyoImpactState} from './motion';
+import {tokyoPuddleMask, tokyoSurfaceNoise} from './effects';
 
 /** Soft, metre-sized streaks: distant rain gets thinner instead of staying one pixel wide. */
 export const createTokyoRainField = (scene: THREE.Scene, seed: number, height: number) => {
@@ -10,6 +11,7 @@ export const createTokyoRainField = (scene: THREE.Scene, seed: number, height: n
   const impacts = new Float32Array(drops.length * 3);
   const impactAlphas = new Float32Array(drops.length);
   const radii = new Float32Array(drops.length);
+  const ages = new Float32Array(drops.length);
 
   const quad = () => {
     const geometry = new THREE.InstancedBufferGeometry();
@@ -89,35 +91,49 @@ export const createTokyoRainField = (scene: THREE.Scene, seed: number, height: n
   impactGeometry.setAttribute('impactCenter', new THREE.InstancedBufferAttribute(impacts, 3).setUsage(THREE.DynamicDrawUsage));
   impactGeometry.setAttribute('impactRadius', new THREE.InstancedBufferAttribute(radii, 1).setUsage(THREE.DynamicDrawUsage));
   impactGeometry.setAttribute('impactAlpha', new THREE.InstancedBufferAttribute(impactAlphas, 1).setUsage(THREE.DynamicDrawUsage));
+  impactGeometry.setAttribute('impactAge', new THREE.InstancedBufferAttribute(ages, 1).setUsage(THREE.DynamicDrawUsage));
   const impactMaterial = new THREE.ShaderMaterial({
-    uniforms: {amount: {value: 0.55}},
+    uniforms: {amount: {value: 0.55}, fogDensity: {value: 0.011}},
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
     vertexShader: /* glsl */ `
       attribute vec3 impactCenter;
-      attribute float impactRadius, impactAlpha;
+      attribute float impactRadius, impactAlpha, impactAge;
+      uniform float fogDensity;
       varying vec2 rippleUv;
-      varying float visibility;
+      varying vec2 waterPosition;
+      varying float visibility, age;
       varying vec3 tint;
       ${light}
       void main() {
         rippleUv = uv * 2.0 - 1.0;
         vec3 p = impactCenter + vec3(rippleUv.x, 0.0, rippleUv.y) * impactRadius;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-        visibility = impactAlpha;
-        tint = rainLight(p) * 0.8;
+        vec4 view = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * view;
+        waterPosition = p.xz;
+        visibility = impactAlpha * exp(-fogDensity * fogDensity * view.z * view.z);
+        age = impactAge;
+        tint = rainLight(p);
       }
     `,
     fragmentShader: /* glsl */ `
       uniform float amount;
       varying vec2 rippleUv;
-      varying float visibility;
+      varying vec2 waterPosition;
+      varying float visibility, age;
       varying vec3 tint;
+      ${tokyoSurfaceNoise}
+      ${tokyoPuddleMask}
       void main() {
         float r = length(rippleUv);
         float aa = max(fwidth(r), 0.018);
-        float ring = (1.0 - smoothstep(0.0, aa * 1.5, abs(r - 0.72)))
-          * min(1.0, 0.035 / aa);
-        gl_FragColor = vec4(tint, ring * visibility * amount);
+        float ring = (1.0 - smoothstep(0.0, aa * 1.5, abs(r - 0.76)))
+          * min(1.0, 0.055 / aa);
+        float inner = (1.0 - smoothstep(0.0, aa * 1.5, abs(r - 0.43)))
+          * min(1.0, 0.028 / aa) * smoothstep(0.12, 0.35, age) * 0.3;
+        // A short central dimple accompanies the first expanding wave.
+        float dimple = exp(-r * r * 70.0) * (1.0 - smoothstep(0.0, 0.22, age)) * 0.55;
+        float water = smoothstep(0.28, 0.76, tokyoPuddle(waterPosition));
+        gl_FragColor = vec4(tint, (ring + inner + dimple) * visibility * amount * water);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
@@ -132,20 +148,20 @@ export const createTokyoRainField = (scene: THREE.Scene, seed: number, height: n
       material.uniforms.amount!.value = amount;
       material.uniforms.fogDensity!.value = atmosphere * 0.012;
       impactMaterial.uniforms.amount!.value = amount;
+      impactMaterial.uniforms.fogDensity!.value = atmosphere * 0.012;
       for (let i = 0; i < drops.length; i++) {
         const state = getTokyoDropState(drops[i]!, phase);
         centers.set([state.x, state.y, state.z], i * 3);
         tails.set([state.tailX, state.tailY], i * 2);
         alphas[i] = state.opacity;
-        impacts.set([state.impactX, 0.045, state.impactZ], i * 3);
-        const age = Math.min(1, state.impactAge / 0.32);
-        radii[i] = 0.025 + Math.sqrt(age) * 0.19;
-        // Only the open roadway receives visible rings, never roofs or hidden indoor floors.
-        const roadway = Math.abs(state.impactX) < 5.8 && state.impactZ > -62 && state.impactZ < 11;
-        impactAlphas[i] = roadway ? Math.min(1, age * 12) * (1 - age) ** 2 * 0.28 : 0;
+        const impact = getTokyoImpactState(drops[i]!, phase);
+        impacts.set([impact.x, 0.025, impact.z], i * 3);
+        radii[i] = impact.radius;
+        impactAlphas[i] = impact.opacity;
+        ages[i] = impact.age;
       }
       for (const name of ['dropCenter', 'dropTail', 'dropAlpha']) geometry.attributes[name]!.needsUpdate = true;
-      for (const name of ['impactCenter', 'impactRadius', 'impactAlpha']) impactGeometry.attributes[name]!.needsUpdate = true;
+      for (const name of ['impactCenter', 'impactRadius', 'impactAlpha', 'impactAge']) impactGeometry.attributes[name]!.needsUpdate = true;
     },
   };
 };

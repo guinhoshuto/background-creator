@@ -95,3 +95,17 @@ export const getTokyoDropState = (drop: TokyoRainDrop, phase: number) => {
     impactAge: (progress * LOOP_SECONDS) / drop.turns,
   };
 };
+
+/** A contact grows in real metres and fades before the next seeded fall. */
+export const getTokyoImpactState = (drop: TokyoRainDrop, phase: number) => {
+  const state = getTokyoDropState(drop, phase);
+  const size = (drop.width - 0.006) / 0.012;
+  const age = Math.min(1, state.impactAge / (0.38 + size * 0.14));
+  const roadway = Math.abs(state.impactX) < 5.8 && state.impactZ > -62 && state.impactZ < 11;
+  return {
+    x: state.impactX, z: state.impactZ,
+    radius: 0.018 + (0.17 + size * 0.12) * (1 - (1 - age) ** 2),
+    opacity: roadway ? smoothstep(state.impactAge / 0.035) * (1 - age) ** 2 * 0.72 : 0,
+    age,
+  };
+};

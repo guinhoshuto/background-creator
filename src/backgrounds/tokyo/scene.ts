@@ -12,6 +12,7 @@ import {createTokyoRainField} from './rain';
 import {createTokyoFilmPass, createTokyoFog, wetRoadShader} from './effects';
 import {addTokyoStreetDebris} from './details';
 import {createTokyoSignFace} from './signs';
+import {createTokyoSignRain} from './sign-rain';
 import {addTokyoPropSurfaces} from './prop-art';
 import {addTokyoPaperLanterns} from './lanterns';
 import {applyTokyoWeathering} from './weathering';
@@ -89,12 +90,14 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
     }
   });
 
+  const signRain: ReturnType<typeof createTokyoSignRain>[] = [];
   signs.forEach((sign, i) => {
     const face = createTokyoSignFace(sign, i);
     const material = new THREE.MeshBasicMaterial({map: face.texture, color: new THREE.Color().setScalar(face.brightness)});
     const panel = new THREE.Mesh(new THREE.PlaneGeometry(sign.width, sign.height), material);
     panel.position.fromArray(sign.position); panel.rotation.y = sign.rotationY ?? 0;
     scene.add(panel);
+    if (sign.position[2] > -30) signRain.push(createTokyoSignRain(panel, sign, seed + i * 71));
   });
   for (const [x, z, color] of [[-7.8, 0, '#27B9DD'], [7.8, -4, '#FF6451'], [-7.8, -27, '#EFAD62'], [7.8, -48, '#28B5C2']] as const) {
     const light = new THREE.PointLight(color, 145, 26, 2);
@@ -140,6 +143,7 @@ export const createTokyoScene = async ({canvas, width, height, modelUrl, signsUr
       roadMaterial.uniforms.phase!.value = motion.phase;
       bloom.strength = props.glow;
       rain.draw(motion.phase, props.rain, props.atmosphere);
+      signRain.forEach((surface) => surface.draw(motion.phase, props.rain, props.atmosphere));
       emissives.forEach(({material, value}) => {material.emissiveIntensity = value * motion.neon;});
       steam.forEach((sprite, i) => {
         const p = motion.phase + i * Math.PI / 3;

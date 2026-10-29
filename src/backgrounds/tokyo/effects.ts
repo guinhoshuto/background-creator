@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 
 // Integer hashing keeps procedural detail stable on ANGLE and software WebGL.
-const noise = /* glsl */ `
+export const tokyoSurfaceNoise = /* glsl */ `
 uint tokyoHash(uint v) {
   uint state = v * 747796405u + 2891336453u;
   uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
@@ -23,6 +23,14 @@ float tokyoFbm(vec2 p) {
     + tokyoNoise(p * 4.13 + 73.1) * 0.15;
 }
 `;
+
+// Both the reflection and rain contacts use the same world-space standing water.
+export const tokyoPuddleMask = /* glsl */ `
+float tokyoPuddle(vec2 p) {
+  return smoothstep(0.35, 0.68, tokyoFbm(p * vec2(0.8, 0.38)));
+}
+`;
+const noise = tokyoSurfaceNoise;
 
 /** Standing water occupies irregular patches, with rough asphalt between them. */
 export const wetRoadShader = {
@@ -47,13 +55,14 @@ export const wetRoadShader = {
     varying vec4 reflectionUv;
     varying vec3 worldPosition;
     ${noise}
+    ${tokyoPuddleMask}
     void main() {
       vec2 p = worldPosition.xz;
       vec2 uv = reflectionUv.xy / reflectionUv.w;
       float ripple = sin(p.y * 17.0 + sin(p.x * 2.0) + phase * 4.0);
       float fine = sin(p.y * 44.0 - phase * 6.0) * sin(p.x * 31.0 + phase * 2.0);
       uv += vec2(ripple * 0.0008, fine * 0.00035);
-      float pool = smoothstep(0.35, 0.68, tokyoFbm(p * vec2(0.8, 0.38)));
+      float pool = tokyoPuddle(p);
       vec2 blur = vec2(0.001, 0.0028) * mix(2.4, 0.65, pool);
       vec3 reflection = texture2D(tDiffuse, uv).rgb * 0.4;
       reflection += texture2D(tDiffuse, uv + blur).rgb * 0.3;

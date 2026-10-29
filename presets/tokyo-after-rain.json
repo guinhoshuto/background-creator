@@ -5,7 +5,7 @@
   "backgroundColor": "#08131D",
   "colors": ["#55DDE8", "#FF7665", "#FFCA87"],
   "outputFormat": "mp4",
-  "rain": 0.55,
+  "rain": 0.66,
   "atmosphere": 0.95,
   "glow": 0.62,
   "cameraMotion": 0.65,
