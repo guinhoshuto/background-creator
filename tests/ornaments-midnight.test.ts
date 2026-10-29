@@ -11,9 +11,9 @@ import {
 import {
   BAT_EXTENT, BAT_INK, BAT_MAX_SPANS, BAT_REACH, BAT_RIM, EMBER, EMBER_REACH, emberExtent, MOON_MIN_EXTENT, PUMPKIN_MAX, STAR_SIZES,
 } from '../src/overlays/shared/ornaments/sets/midnight-place';
-import {NAMED_SIZES, sizeProps, type NamedSize} from '../src/sizes';
+import {sizeProps, type NamedSize} from '../src/sizes';
 import {inkOf} from './helpers/ink';
-import {framesOf, kitProps, kitSizeIds, ORNAMENT_KINDS, type OrnamentKindName, type OrnamentProps} from './helpers/ornament-kinds';
+import {framesOf, kitProps, kitSizeIds, ORNAMENT_KINDS, ORNAMENT_SIZES, type OrnamentKindName, type OrnamentProps} from './helpers/ornament-kinds';
 
 /**
  * The 'midnight' set's own guarantees (the shared harness, tests/helpers/ornament-harness.ts, checks the
@@ -39,8 +39,8 @@ const build = (frame: OrnamentFrame, placements: readonly OrnamentPlacement[], p
   midnight.build(frame, placements, props, f, n);
 
 test('[midnight] a lua (principal) está em todos os 27 tamanhos, atrás, e na frente só em tela e sem sangria', () => {
-  assert.equal(NAMED_SIZES.length, 27);
-  for (const size of NAMED_SIZES) {
+  assert.equal(ORNAMENT_SIZES.length, 27);
+  for (const size of ORNAMENT_SIZES) {
     for (const ornamentSize of [12, 44, 256]) {
       const {frame, placements} = layoutAt(size, {ornamentSize});
       assert.equal(placements[0]?.motif, 'moon', `${size.id} @${ornamentSize}`);
@@ -95,7 +95,7 @@ test('[midnight] kit: quais motivos ficam em cada tamanho e com que tamanho (pre
   };
   // Every size the pack renders with ornaments (the screen frames come only without them).
   assert.deepEqual(Object.keys(expected).sort(), kitSizeIds('halloween-midnight').sort());
-  for (const size of NAMED_SIZES.filter((entry) => entry.id in expected)) {
+  for (const size of ORNAMENT_SIZES.filter((entry) => entry.id in expected)) {
     const {props, frame, placements} = kitAt(size);
     const stars = placements.filter((placement) => placement.motif.startsWith('star')).length;
     assert.deepEqual(
@@ -122,10 +122,10 @@ test('[midnight] kit: quais motivos ficam em cada tamanho e com que tamanho (pre
     }
   }
   // Too small an ornamentSize leaves the moon alone (every secondary is under its minimum).
-  const chat = NAMED_SIZES.find((entry) => entry.id === 'chat-standard')!;
+  const chat = ORNAMENT_SIZES.find((entry) => entry.id === 'chat-standard')!;
   assert.deepEqual(motifs(layoutAt(chat, {ornamentSize: 12}).placements).filter((motif) => !motif.startsWith('star')), ['moon']);
   // A huge ornamentSize never grows the secondaries past their px caps.
-  for (const placement of layoutAt(NAMED_SIZES.find((entry) => entry.id === 'gameplay')!, {ornamentSize: 256}).placements) {
+  for (const placement of layoutAt(ORNAMENT_SIZES.find((entry) => entry.id === 'gameplay')!, {ornamentSize: 256}).placements) {
     if (placement.motif === 'bat') assert.ok(placement.size <= BAT_MAX_SPANS[0] + 1e-9);
     if (placement.motif.startsWith('pumpkin')) assert.ok(placement.size <= PUMPKIN_MAX.large + 1e-9);
   }
@@ -133,7 +133,7 @@ test('[midnight] kit: quais motivos ficam em cada tamanho e com que tamanho (pre
 
 test('[midnight] estrelas e brasas: passo fixo nas bordas longas, longe dos outros motivos, nenhuma nas etiquetas', () => {
   const isEdge = (placement: OrnamentPlacement) => placement.motif.startsWith('star') || placement.motif === 'ember';
-  for (const size of NAMED_SIZES) {
+  for (const size of ORNAMENT_SIZES) {
     const {frame, placements} = kitAt(size);
     const stars = placements.filter(isEdge);
     const others = placements.filter((placement) => !isEdge(placement));
@@ -164,7 +164,7 @@ test('[midnight] estrelas e brasas: passo fixo nas bordas longas, longe dos outr
 });
 
 test('[midnight] luz nunca come o espaço do corpo: light ≤ reach + max(4, 0,25·reach) (a brasa: o disco é o corpo)', () => {
-  for (const size of NAMED_SIZES) {
+  for (const size of ORNAMENT_SIZES) {
     const {props, frame, placements} = kitAt(size);
     for (const element of build(frame, placements, props, 0, framesOf(props))) {
       // As in the background, the ember's soft disc is what reads as the ember: it may exceed the
@@ -183,7 +183,7 @@ test('[midnight] blocos redondos: a lua fica no céu (TR) e nada da frente toca 
   // The arc (BlockLoop: 60° to each side of the top or the left), in degrees counter-clockwise from the right, y up.
   const arcSpan = {top: [30, 150], left: [120, 240]} as const;
   for (const id of ['circle-sm', 'circle', 'circle-lg']) {
-    const size = NAMED_SIZES.find((entry) => entry.id === id)!;
+    const size = ORNAMENT_SIZES.find((entry) => entry.id === id)!;
     for (const accent of ['left', 'top', 'none'] as const) {
       for (const glow of [0, 14]) {
         const where = `${id} ${accent} glow ${glow}`;
@@ -212,7 +212,7 @@ test('[midnight] blocos redondos: a lua fica no céu (TR) e nada da frente toca 
 
 test('[midnight] tela: lua, morcegos e abóboras na faixa com o preset, radius 64 e thickness 24', () => {
   for (const id of ['fullscreen', 'fullscreen-vertical']) {
-    const size = NAMED_SIZES.find((entry) => entry.id === id)!;
+    const size = ORNAMENT_SIZES.find((entry) => entry.id === id)!;
     const adapter = ORNAMENT_KINDS.border;
     const {placements} = adapter.ornamentLayout(adapter.parse({...adapter.preset('halloween-midnight'), ...sizeProps(size), radius: 64, thickness: 24}));
     assert.ok(placements.every((placement) => placement.layer === 'front'), id);
@@ -222,7 +222,7 @@ test('[midnight] tela: lua, morcegos e abóboras na faixa com o preset, radius 6
   }
   // The bare preset (radius 12, thickness 12) keeps the moon and still fits bats in the band.
   for (const id of ['fullscreen', 'fullscreen-vertical']) {
-    const size = NAMED_SIZES.find((entry) => entry.id === id)!;
+    const size = ORNAMENT_SIZES.find((entry) => entry.id === id)!;
     const adapter = ORNAMENT_KINDS.border;
     const {placements} = adapter.ornamentLayout(adapter.parse({...adapter.preset('halloween-midnight'), ...sizeProps(size)}));
     assert.equal(placements[0]!.motif, 'moon');
@@ -233,7 +233,7 @@ test('[midnight] tela: lua, morcegos e abóboras na faixa com o preset, radius 6
 test('[midnight] frame 0 é a pose do pack: asas abertas, abóboras acesas perto da média, lua inteira', () => {
   for (const seed of [1, 7, 31, 99, 2024]) {
     for (const id of ['chat-standard', 'lower-third', 'webcam-round', 'gameplay', 'fullscreen', 'twitch-panel']) {
-      const size = NAMED_SIZES.find((entry) => entry.id === id)!;
+      const size = ORNAMENT_SIZES.find((entry) => entry.id === id)!;
       const {props, frame, placements} = layoutAt(size, {seed});
       const elements = build(frame, placements, props, 0, framesOf(props));
       for (const element of elements) {
@@ -271,7 +271,7 @@ const spectrum = (values: readonly number[]) => {
 };
 
 test('[midnight] ritmos do fundo: asas a 2 Hz, chama 3 e 7 por 12 s, voo 1×; periódicos em 3,7 e 12,25 s', () => {
-  const size = NAMED_SIZES.find((entry) => entry.id === 'chat-standard')!;
+  const size = ORNAMENT_SIZES.find((entry) => entry.id === 'chat-standard')!;
   const {props, frame, placements} = layoutAt(size);
   const n = framesOf(props);
   const series = Array.from({length: n}, (_, f) => build(frame, placements, props, f, n));
@@ -288,7 +288,7 @@ test('[midnight] ritmos do fundo: asas a 2 Hz, chama 3 e 7 por 12 s, voo 1×; pe
   assert.deepEqual(spectrum(field('midnight-bat', 'y')), [2]);
   // Embers (lower-third's bottom run): an in-place orbit once per loop, the disc breathing twice.
   {
-    const at = layoutAt(NAMED_SIZES.find((entry) => entry.id === 'lower-third')!);
+    const at = layoutAt(ORNAMENT_SIZES.find((entry) => entry.id === 'lower-third')!);
     const frames = framesOf(at.props);
     const embers = Array.from({length: frames}, (_, f) => build(at.frame, at.placements, at.props, f, frames).filter((element) => element.type === 'midnight-ember'));
     assert.ok(embers[0]!.length >= 2);
@@ -311,7 +311,7 @@ test('[midnight] ritmos do fundo: asas a 2 Hz, chama 3 e 7 por 12 s, voo 1×; pe
 
   for (const durationSeconds of [3.7, 12.25]) {
     for (const id of ['chat-standard', 'circle', 'webcam-16x9', 'fullscreen-vertical']) {
-      const target = NAMED_SIZES.find((entry) => entry.id === id)!;
+      const target = ORNAMENT_SIZES.find((entry) => entry.id === id)!;
       const at = layoutAt(target, {durationSeconds});
       const frames = framesOf(at.props);
       const same = (a: readonly OrnamentElement[], b: readonly OrnamentElement[], where: string) => {
@@ -352,7 +352,7 @@ test('[midnight] formas e cores do fundo', () => {
   assert.ok(BAT_EXTENT > 0.54 && BAT_EXTENT < 0.7);
   assert.ok(BAT_INK >= BAT_RIM + 0.35 - 1e-9);
 
-  const size = NAMED_SIZES.find((entry) => entry.id === 'chat-standard')!;
+  const size = ORNAMENT_SIZES.find((entry) => entry.id === 'chat-standard')!;
   const {props} = layoutAt(size);
   const markup = ORNAMENT_KINDS.chat.render(props, 0, framesOf(props));
   // No moon disc (its gradient's moonlight stop at 0.63); the pumpkins in the warm colour.
@@ -384,7 +384,7 @@ test('[midnight] formas e cores do fundo', () => {
 });
 
 test('[midnight] nada desenhado sobre o texto nos tamanhos extremos', () => {
-  for (const size of NAMED_SIZES.filter((entry) => entry.kind !== 'border')) {
+  for (const size of ORNAMENT_SIZES.filter((entry) => entry.kind !== 'border')) {
     for (const ornamentSize of [12, 48, 256]) {
       const tight = size.kind === 'chat' ? {padding: 0} : {paddingX: 0, paddingY: 0};
       for (const extra of [{}, tight]) {
@@ -412,7 +412,7 @@ test('[midnight] nada desenhado sobre o texto nos tamanhos extremos', () => {
 test('[midnight] a tinta desenhada (traços e luz inclusos) cabe no lugar, no arquivo, fora da janela e longe do texto', () => {
   // What the markup paints (helpers/ink.ts), not what the elements declare: a bat or a halo drawn
   // larger than its reach fails here even when the element's own numbers still fit.
-  for (const size of NAMED_SIZES) {
+  for (const size of ORNAMENT_SIZES) {
     const {props, frame, placements} = kitAt(size);
     const n = framesOf(props);
     for (let f = 0; f < n; f += 9) {
