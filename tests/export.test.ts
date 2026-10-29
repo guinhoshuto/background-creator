@@ -253,8 +253,10 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
 test('CLI: --list agrupa por tipo com cabeçalhos em inglês', () => {
   const text = listText();
   const headers = text.split('\n').filter((line) => /^\S/.test(line));
-  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders (border):']);
+  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders (border):', 'Vertical overlays (vertical):']);
   assert.match(text, /^ {2}GradientLoop$/m);
+  assert.match(text, /^ {2}LiveFrameLoop$/m);
+  assert.match(text, /^ {2}Fixed size: 1080×1920; files tagged live-frame\.$/m);
   assert.match(text, /webcam-16x9: box 640×360, file 736×456; standard camera/);
 });
 

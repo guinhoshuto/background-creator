@@ -130,7 +130,8 @@ test('Tamanhos redondos: caixa quadrada, bleed, arquivo = caixa + 2·bleed e for
   }
   // Every block and border size spells its shape out, so a size id alone fixes the product; the chat has none.
   for (const size of NAMED_SIZES) {
-    if (size.kind === 'chat') {
+    // The chat and the vertical kind (fixed 1080×1920 screen, windows set by the layout) have none.
+    if (size.kind === 'chat' || size.kind === 'vertical') {
       assert.equal(size.props?.shape, undefined, size.id);
       continue;
     }

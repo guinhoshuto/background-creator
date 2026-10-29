@@ -7,6 +7,7 @@ Product and market: the store, its runbook and one note per pack live in the vau
 - `src/settings.ts`: shared parameters, duration/FPS, alpha rule and export presets.
 - `src/kinds.ts`: asset kinds (Studio folder, size, default alpha); `src/sizes.ts`: named sizes.
 - `src/`: catalog and compositions; `src/overlays/`: ChatLoop, BlockLoop, BorderLoop and the shared engine in `shared/` (themed ornaments in `shared/ornaments/`, one set per name in `sets/` (`<name>.tsx` plus helpers `<name>-*.ts(x)`)).
+- `src/overlays/vertical/`: the `vertical` kind (1080×1920 mobile LIVE frames with transparent windows: zones, layouts, safe-zone guide, QA-only UI mocks); zones, layouts and rules in `docs/vertical-overlays.md`.
 - `scripts/`: export, validation and the pack builder (`scripts/pack.ts`); `packs/`: manifests per theme.
 - `presets/`: ready-made JSON parameters; `tests/`: determinism, periodicity and configuration tests.
 

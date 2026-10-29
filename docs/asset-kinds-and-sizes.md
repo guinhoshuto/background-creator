@@ -10,8 +10,9 @@ Every composition belongs to a kind, defined in `src/kinds.ts`. The kind sets th
 | `chat` (chat backgrounds) | `chat` | `ChatLoop` | Free; starts at `chat-standard` | `true` |
 | `block` (text boxes) | `text-boxes` | `BlockLoop` | Free; starts at `card` | `true` |
 | `border` (borders and frames) | `borders` | `BorderLoop` | Free; starts at `webcam-16x9` | `true` |
+| `vertical` (vertical overlays) | `vertical` | `LiveFrameLoop`, `SafeZoneGuide` and the QA-only `LiveUiMock`, `FeedUiMock` | Fixed, 1080×1920; files tagged `live-frame` | `true` |
 
-Backgrounds have no size controls. In the other three kinds, size follows a single model:
+Backgrounds and vertical overlays have no size controls: a vertical overlay is the whole portrait screen, and its layout places the transparent windows (zones, layouts and rules in [Vertical overlays](vertical-overlays.md)). In the other three kinds, size follows a single model:
 
 - **Box** (`width` × `height`): in the chat and the block, the visible panel; in the border, the transparent window the camera or the game shows through.
 - **Bleed** (`bleed`): an equal transparent margin on the four sides of the box, which holds the stroke glow, the halo and, in the border, the frame itself. The final file measures **box + 2·bleed** in each direction, with the box in the center: `chat-standard` has a 400×600 box and a bleed of 32, so the file is 464×664 and the box starts at (32, 32). Nothing is drawn past the bleed: if the glow does not fit, the schema refuses and gives the smallest bleed that works (`The glow goes past the margin: use bleed ≥ N or reduce the glow.`). With bleed 0, nothing leaves the box. The file may be up to 3840 px on a side and up to the area of 3840×2160.
@@ -69,5 +70,11 @@ Borders and frames (the box is the transparent window):
 | `gameplay` | 1440×810 | 48 | 1536×906 | Game capture in layouts with a side column |
 | `fullscreen` | 1920×1080 | 0 | 1920×1080 | Whole-screen frame (`fit: "screen"`) |
 | `fullscreen-vertical` | 1080×1920 | 0 | 1080×1920 | Vertical whole-screen frame (`fit: "screen"`) |
+
+Vertical overlays (the canvas is the kind's fixed screen, so the size sets no props and only names the file: `LiveFrameLoop-live-frame.webm`):
+
+| Id | Box | Bleed | Final file | Use |
+| --- | --- | --- | --- | --- |
+| `live-frame` | 1080×1920 | 0 | 1080×1920 | Full frame for mobile live streams, with transparent windows (provisional id: it goes to the owner before a pack ships it) |
 
 The round sizes (`circle*` and `webcam-round*`) draw a circle inscribed in the box; the round camera needs the [mask](packs.md#masks) in OBS to become round. `webcam-square` and `webcam-round` have the same box, but they are different products, with different file names. Outside the catalog, any even box works: use `--width`, `--height` and `--bleed` (or the same fields in the JSON and in the Studio); a circle outside the catalog carries the shape in its name (`BlockLoop-300x300-circle.webm`). Theme presets do not fix a size and work in every size of their kind.
