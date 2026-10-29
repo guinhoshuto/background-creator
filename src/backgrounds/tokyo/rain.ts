@@ -54,17 +54,21 @@ export const createTokyoRainField = (scene: THREE.Scene, seed: number, height: n
         vec3 trail = (modelViewMatrix * vec4(dropTail, 0.0, 0.0)).xyz;
         vec2 across = normalize(vec2(trail.y, -trail.x));
         float depth = max(0.1, -head.z);
+        float nearPresence = 1.0 - smoothstep(10.0, 32.0, depth);
+        // A slightly longer exposure follows the same fall/wind vector in the sparse near field.
+        trail *= 1.0 + nearPresence * 0.18;
         float pixelSize = 2.0 * depth / (projectionMatrix[1][1] * viewportHeight);
         float defocus = 1.0 + (1.0 - smoothstep(7.0, 17.0, depth)) * 0.8;
-        float width = max(dropWidth * defocus, pixelSize * 0.8);
+        float physicalWidth = dropWidth * (1.0 + nearPresence * 0.16);
+        float width = max(physicalWidth * defocus, pixelSize * 0.8);
         // Widen the raster footprint but conserve coverage for subpixel drops.
-        visibility = dropAlpha * min(1.0, dropWidth / width)
+        visibility = dropAlpha * (1.0 + nearPresence * 0.12) * min(1.0, physicalWidth / width)
           * exp(-fogDensity * fogDensity * depth * depth);
         vec3 point = head.xyz + trail * uv.y;
         point.xy += across * position.x * width;
         gl_Position = projectionMatrix * vec4(point, 1.0);
         streakUv = uv;
-        tint = rainLight(dropCenter);
+        tint = rainLight(dropCenter) * (1.0 + nearPresence * 0.08);
       }
     `,
     fragmentShader: /* glsl */ `
@@ -127,13 +131,15 @@ export const createTokyoRainField = (scene: THREE.Scene, seed: number, height: n
         float r = length(rippleUv);
         float aa = max(fwidth(r), 0.018);
         float ring = (1.0 - smoothstep(0.0, aa * 1.5, abs(r - 0.76)))
-          * min(1.0, 0.055 / aa);
+          * min(1.0, 0.066 / aa);
         float inner = (1.0 - smoothstep(0.0, aa * 1.5, abs(r - 0.43)))
-          * min(1.0, 0.028 / aa) * smoothstep(0.12, 0.35, age) * 0.3;
+          * min(1.0, 0.032 / aa) * smoothstep(0.12, 0.35, age) * 0.3;
+        // Side lighting catches one rim more strongly; the water is not a uniformly luminous circle.
+        float crestLight = 0.82 + 0.36 * smoothstep(-0.6, 0.6, rippleUv.x);
         // A short central dimple accompanies the first expanding wave.
         float dimple = exp(-r * r * 70.0) * (1.0 - smoothstep(0.0, 0.22, age)) * 0.55;
         float water = smoothstep(0.28, 0.76, tokyoPuddle(waterPosition));
-        gl_FragColor = vec4(tint, (ring + inner + dimple) * visibility * amount * water);
+        gl_FragColor = vec4(tint, ((ring + inner) * crestLight + dimple) * visibility * amount * water);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
