@@ -381,7 +381,8 @@ test('BGC-36: a release takes the slot path away before deleting anything, and l
   assert.ok(removals.length > 0, 'the release deleted nothing');
   assert.deepEqual(removals.filter((removal) => removal.slotThere), [], `a removal ran with the slot path still there, where a waiter reads it ownerless: ${JSON.stringify(removals)}`);
   assert.equal(existsSync(dir), false);
-  assert.deepEqual(readdirSync(path.dirname(dir)), []);
+  // Beside the slot, only its history (HAR-335), which the release writes to and never deletes.
+  assert.deepEqual(readdirSync(path.dirname(dir)), ['render-slot.historico']);
 });
 
 test('render-slot run stopped 200 ms under a SIGTERM: ends with 143, frees the slot and ends its command group', async (t) => {
