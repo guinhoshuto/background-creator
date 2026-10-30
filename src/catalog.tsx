@@ -26,6 +26,7 @@ import type {AssetMotion} from './overlays/shared/motion';
 import {
   feedUiMockCatalogEntry, liveFrameCatalogEntry, liveUiMockCatalogEntry, safeZoneGuideCatalogEntry,
 } from './overlays/vertical';
+import {y2kDirectionDraftCatalogEntry} from './overlays/vertical/Y2KDirectionDraft';
 
 /** The 1920×1080 backgrounds: one registry shared by the Studio, renderer, validation, and documentation. */
 export const backgroundCatalog = {
@@ -211,10 +212,16 @@ export const overlayCatalog = {
   FeedUiMock: feedUiMockCatalogEntry,
 } as const satisfies Record<string, CatalogEntry>;
 
-/** Every composition of every kind: the backgrounds, then the overlays. */
+/** Temporary, unshipped direction boards; separate from the production overlay registry. */
+export const draftCatalog = {
+  Y2KDirectionDraft: y2kDirectionDraftCatalogEntry,
+} as const satisfies Record<string, CatalogEntry>;
+
+/** Every composition of every kind, including temporary QA direction boards. */
 export const assetCatalog = {
   ...backgroundCatalog,
   ...overlayCatalog,
+  ...draftCatalog,
 } as const satisfies Record<string, CatalogEntry>;
 
 export type AssetId = keyof typeof assetCatalog;

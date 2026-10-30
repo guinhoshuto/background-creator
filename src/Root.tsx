@@ -1,5 +1,5 @@
 import {Composition, Folder} from 'remotion';
-import {backgroundCatalog, getAsset, getLayoutOf, overlayCatalog} from './catalog';
+import {backgroundCatalog, draftCatalog, getAsset, getLayoutOf, overlayCatalog} from './catalog';
 import {kindPolicies} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
 import {getCompositionMetadata, getExportPreset, type BaseBackgroundProps} from './settings';
@@ -32,6 +32,7 @@ const liveFrame = overlayCatalog.LiveFrameLoop;
 const safeZoneGuide = overlayCatalog.SafeZoneGuide;
 const liveUiMock = overlayCatalog.LiveUiMock;
 const feedUiMock = overlayCatalog.FeedUiMock;
+const y2kDirection = draftCatalog.Y2KDirectionDraft;
 const vertical = {...VERTICAL_CANVAS};
 
 type MetadataProps = Pick<BaseBackgroundProps, 'durationSeconds' | 'outputFormat' | 'transparent'>
@@ -298,6 +299,14 @@ export const RemotionRoot = () => (
     </Folder>
     {/* Vertical overlays: the kind's fixed 1080×1920 screen, passed explicitly (the default is 1920×1080). */}
     <Folder name={kindPolicies.vertical.folder}>
+      <Composition
+        id="Y2KDirectionDraft"
+        component={y2kDirection.component}
+        schema={y2kDirection.schema}
+        defaultProps={y2kDirection.defaultProps}
+        {...getCompositionMetadata(y2kDirection.defaultProps, vertical)}
+        calculateMetadata={({props}: {props: typeof y2kDirection.defaultProps}) => ({...metadataFor(y2kDirection.id, y2kDirection.schema.parse(props)), ...vertical})}
+      />
       <Composition
         id="LiveFrameLoop"
         component={liveFrame.component}
