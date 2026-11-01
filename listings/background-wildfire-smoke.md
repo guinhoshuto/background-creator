@@ -6,7 +6,7 @@ caption: WS
 
 ## Title
 
-Animated Wildfire Smoke Stream Background, 3 Looks: Red Fire Smoke with Rising Embers, Dark Ember Haze for OBS Twitch VTuber, 1080p 60fps
+Animated Wildfire Smoke Stream Background, 6 Colors x 3 Looks, Red Blue Green Purple Smoke with Rising Embers, OBS Twitch VTuber 1080p 60fps
 
 ## Tags
 
@@ -14,14 +14,13 @@ wildfire background, smoke background, fire background, animated background, str
 
 ## Description
 
-A wall of wildfire smoke for your stream: deep red plumes rise and roll over a glowing ember haze, lit from behind, with the top of the frame kept dark. Rendered in Blender as a real volume, not a filter, in a seamless 1920×1080 loop at 60 fps, in three looks: the smoke alone, or with embers rising from the corner or along the whole bottom.
+A wall of wildfire smoke for your stream: deep red plumes rise and roll over a glowing ember haze, lit from behind, with the top of the frame kept dark. Rendered in Blender as a real volume, not a filter, in a seamless 1920×1080 loop at 60 fps, in six colors (red, amber, green, blue, purple, magenta) and three looks each: the smoke alone, or with embers rising from the corner or along the whole bottom.
 
 ✦ WHAT YOU GET
-- Smoke: the wall of red smoke alone
-- Embers from the corner: sparks rising diagonally from the bottom right
-- Embers from below: sparks rising along the whole bottom edge
+- 6 colors: red, amber, green, blue, purple and magenta
+- 3 looks per color: the smoke alone, embers rising diagonally from the bottom right, embers rising along the whole bottom
 - Each look as .mp4 and .webm (animated, 8 s seamless loop) and .png (still)
-- 9 files, 1920×1080, 60 fps
+- 54 files, 1920×1080, 60 fps
 - The top stays dark, so your camera, game or title reads over it
 - PDF guide with your download link (zip, about {{ZIP_SIZE}})
 

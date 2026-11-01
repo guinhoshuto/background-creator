@@ -112,7 +112,7 @@ The second look, asked for on 2026-11-01 («com fagulhas, saindo do canto inferi
 
 ## Pack
 
-`background-wildfire-smoke` (`packs/background-wildfire-smoke.json`) sells the print alone, as the owner chose on 2026-11-01 (a kit may follow), in its three looks as variants (`smoke`, `sparks-corner`, `sparks-bottom`; version 2, decided the same day once the embers were done; version 1 shipped the smoke alone and was never listed): each as MP4 and WebM and a PNG still, compressed with the `delivery` profile; the listing text is `listings/background-wildfire-smoke.md`. It builds and ships like every pack ([Packs](../packs.md)):
+`background-wildfire-smoke` (`packs/background-wildfire-smoke.json`) sells the print alone, as the owner chose on 2026-11-01 (a kit may follow), in six colours (`tint` 0 red, 35 amber, 110 green, 230 blue, 275 purple, 320 magenta, chosen by the owner on 2026-11-01 from a sheet of seven) and three looks each, as the variants `<colour>-smoke`, `<colour>-sparks-corner` and `<colour>-sparks-bottom` (version 3; version 1 shipped the red smoke alone and version 2 its three looks, neither listed): each as MP4 and WebM and a PNG still, compressed with the `delivery` profile; the listing text is `listings/background-wildfire-smoke.md`. It builds and ships like every pack ([Packs](../packs.md)):
 
 ```sh
 npm run render:pack -- background-wildfire-smoke --dry-run

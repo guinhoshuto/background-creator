@@ -1,6 +1,6 @@
 {
   "name": "background-wildfire-smoke",
-  "version": 2,
+  "version": 3,
   "profile": "delivery",
   "items": [
     {
@@ -11,7 +11,7 @@
         "webm",
         "png"
       ],
-      "variant": "smoke"
+      "variant": "red-smoke"
     },
     {
       "composition": "WildfireSmokeLoop",
@@ -21,7 +21,7 @@
         "webm",
         "png"
       ],
-      "variant": "sparks-corner"
+      "variant": "red-sparks-corner"
     },
     {
       "composition": "WildfireSmokeLoop",
@@ -31,7 +31,202 @@
         "webm",
         "png"
       ],
-      "variant": "sparks-bottom"
+      "variant": "red-sparks-bottom"
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "amber-smoke",
+      "props": {
+        "tint": 35
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-corner",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "amber-sparks-corner",
+      "props": {
+        "tint": 35
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-bottom",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "amber-sparks-bottom",
+      "props": {
+        "tint": 35
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "green-smoke",
+      "props": {
+        "tint": 110
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-corner",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "green-sparks-corner",
+      "props": {
+        "tint": 110
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-bottom",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "green-sparks-bottom",
+      "props": {
+        "tint": 110
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "blue-smoke",
+      "props": {
+        "tint": 230
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-corner",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "blue-sparks-corner",
+      "props": {
+        "tint": 230
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-bottom",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "blue-sparks-bottom",
+      "props": {
+        "tint": 230
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "purple-smoke",
+      "props": {
+        "tint": 275
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-corner",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "purple-sparks-corner",
+      "props": {
+        "tint": 275
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-bottom",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "purple-sparks-bottom",
+      "props": {
+        "tint": 275
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "magenta-smoke",
+      "props": {
+        "tint": 320
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-corner",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "magenta-sparks-corner",
+      "props": {
+        "tint": 320
+      }
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-bottom",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "magenta-sparks-bottom",
+      "props": {
+        "tint": 320
+      }
     }
   ]
 }
