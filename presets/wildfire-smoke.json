@@ -3,5 +3,10 @@
   "seed": 1,
   "transparent": false,
   "backgroundColor": "#260401",
-  "outputFormat": "webm"
+  "outputFormat": "webm",
+  "sparks": "none",
+  "sparkCount": 90,
+  "sparkSize": 3,
+  "sparkRise": 260,
+  "sparkTrail": 0.5
 }
