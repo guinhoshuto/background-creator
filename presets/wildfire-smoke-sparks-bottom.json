@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 8,
+  "seed": 1,
+  "transparent": false,
+  "backgroundColor": "#260401",
+  "outputFormat": "webm",
+  "sparks": "bottom",
+  "sparkCount": 300,
+  "sparkSize": 2.8,
+  "sparkRise": 330,
+  "sparkTrail": 0.4,
+  "sparkAngle": 0
+}

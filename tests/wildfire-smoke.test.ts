@@ -7,6 +7,7 @@ import {
   type SequenceExpectation, type WildfireManifest,
 } from '../src/backgrounds/wildfire/manifest';
 import {DURATION_MESSAGE, LOOP_SECONDS, OPAQUE_MESSAGE, wildfireFrameFile, wildfireSmokeLoopSchema} from '../src/backgrounds/WildfireSmokeLoop';
+import {SPARK_CORNERS, emberColor, getSparkScene, type Spark} from '../src/backgrounds/wildfire/sparks';
 import {backgroundCatalog, getOpenGlRenderer} from '../src/catalog';
 import {getCompositionMetadata} from '../src/settings';
 
@@ -152,4 +153,116 @@ test('WildfireSmokeLoop: validate:exports samples it opaque in every format, ove
     `WildfireSmokeLoop: sampled over 8 s, its own duration, not 0.4 s: durationSeconds: ${DURATION_MESSAGE}`,
     `WildfireSmokeLoop: sampled opaque in every format, with no alpha profile: transparent: ${OPAQUE_MESSAGE}`,
   ]);
+});
+
+const sparkProps = (over: Record<string, unknown> = {}) => wildfireSmokeLoopSchema.parse({sparks: 'bottom-right', ...over});
+const scene = (over: Record<string, unknown>, frame: number, length = 480) => getSparkScene(sparkProps(over), frame, length);
+
+test('WildfireSmokeLoop sparks: off by default, and a scene only with a corner and slots', () => {
+  assert.equal(wildfireSmokeLoopSchema.parse({}).sparks, 'none');
+  assert.deepEqual(SPARK_CORNERS, ['none', 'bottom-left', 'bottom-right', 'bottom']);
+  assert.deepEqual(getSparkScene(wildfireSmokeLoopSchema.parse({}), 200, 480), []);
+  assert.deepEqual(scene({sparkCount: 0}, 200), []);
+  assert.ok(scene({}, 200).length > 0);
+  for (const bad of [{sparks: 'top'}, {sparkCount: -1}, {sparkCount: 401}, {sparkSize: 0}, {sparkRise: 10}, {sparkTrail: -1}, {sparkAngle: -1}, {sparkAngle: 71}]) {
+    assert.equal(wildfireSmokeLoopSchema.safeParse(bad).success, false, JSON.stringify(bad));
+  }
+});
+
+test('WildfireSmokeLoop sparks: the same seed draws the same embers, another seed others, and frame 480 is frame 0', () => {
+  const first = scene({seed: 42}, 137);
+  assert.deepEqual(scene({seed: 42}, 137), first);
+  assert.notDeepEqual(scene({seed: 43}, 137), first);
+  assert.notDeepEqual(scene({seed: 42}, 180), first);
+  // One pass, two passes and the 50 fps GIF all close on frame 0 and repeat the sequence frame.
+  assert.deepEqual(scene({seed: 42}, 480), scene({seed: 42}, 0));
+  assert.deepEqual(scene({seed: 42}, 497, 960), scene({seed: 42}, 17, 960));
+  assert.deepEqual(scene({seed: 42}, 17, 960), scene({seed: 42}, 17, 480));
+  assert.deepEqual(scene({seed: 42}, 400, 400), scene({seed: 42}, 0, 400));
+  assert.deepEqual(scene({seed: 42}, 479), scene({seed: 42}, -1));
+});
+
+test('WildfireSmokeLoop sparks: embers are born in the chosen corner strip, rise, drift inwards and fade', () => {
+  const alive: Spark[] = [];
+  for (let frame = 0; frame < 480; frame += 7) alive.push(...scene({seed: 7, sparkCount: 120}, frame));
+  assert.ok(alive.length > 120 * 10, `${alive.length} embers seen in 69 frames`);
+  for (const spark of alive) {
+    assert.ok(spark.x > 1920 - 320 - 90 * 8 - 40 && spark.x <= 1920 + 40, `x ${spark.x} stays near the right corner`);
+    assert.ok(spark.y <= 1080 + 90 && spark.y > -200, `y ${spark.y}`);
+    assert.ok(spark.opacity >= 0 && spark.opacity <= 1, `opacity ${spark.opacity}`);
+    assert.ok(spark.radius > 0);
+    assert.match(spark.color, /^#[0-9a-f]{6}$/);
+    assert.ok(spark.tail !== null && spark.tail.y > spark.y, 'the streak hangs below the ember');
+  }
+  const left = scene({seed: 7, sparks: 'bottom-left'}, 100);
+  assert.ok(left.length > 0 && left.every((spark) => spark.x < 320 + 90 * 8 + 40 && spark.x >= -40));
+  assert.ok(scene({seed: 7, sparkTrail: 0}, 100).every((spark) => spark.tail === null));
+  // Along the whole bottom, the embers come from everywhere and drift either way.
+  const bottom: Spark[] = [];
+  for (let frame = 0; frame < 480; frame += 7) bottom.push(...scene({seed: 7, sparks: 'bottom', sparkCount: 300}, frame));
+  assert.ok(bottom.some((spark) => spark.x < 400) && bottom.some((spark) => spark.x > 1500) && bottom.some((spark) => spark.x > 800 && spark.x < 1100), 'the whole width');
+  assert.ok(bottom.every((spark) => spark.x >= -200 && spark.x <= 2120 && spark.y <= 1080 + 90));
+  // An ember with no fade room is never shown at full brightness in its first frame of life.
+  assert.ok(alive.some((spark) => spark.opacity < 0.5) && alive.some((spark) => spark.opacity > 0.5));
+});
+
+test('WildfireSmokeLoop sparks: an ember cools from white-yellow to deep red', () => {
+  assert.equal(emberColor(0), '#ffe8a0');
+  assert.equal(emberColor(0.5), '#ff9628');
+  assert.equal(emberColor(1), '#ff3a1a');
+  assert.equal(emberColor(-3), emberColor(0));
+  assert.equal(emberColor(9), emberColor(1));
+});
+
+test('WildfireSmokeLoop sparks: the embers cross the loop seam at the speed of any other frame', () => {
+  // Frame 480 is frame 0: an ember alive on both sides moves there by the same step as between two
+  // ordinary frames. A period that does not divide the loop would make it jump (or vanish) at the seam.
+  const at = (frame: number) => new Map(scene({seed: 11, sparkCount: 200}, frame).map((spark) => [spark.slot, spark] as const));
+  const steps = (a: Map<number, Spark>, b: Map<number, Spark>) => {
+    const deltas = new Map<number, {dx: number; dy: number}>();
+    for (const [slot, spark] of b) {
+      const before = a.get(slot);
+      if (before) deltas.set(slot, {dx: spark.x - before.x, dy: spark.y - before.y});
+    }
+    return deltas;
+  };
+  const regular = steps(at(477), at(478));
+  const seam = steps(at(479), at(480));
+  assert.ok(seam.size > 20, `${seam.size} embers alive across the seam`);
+  let compared = 0;
+  for (const [slot, step] of seam) {
+    const usual = regular.get(slot);
+    if (!usual) continue;
+    compared++;
+    assert.ok(step.dy < 0, `slot ${slot} rises across the seam`);
+    assert.ok(Math.abs(step.dy - usual.dy) < 1 && Math.abs(step.dx - usual.dx) < 2,
+      `slot ${slot}: seam step ${step.dx.toFixed(2)}, ${step.dy.toFixed(2)} against ${usual.dx.toFixed(2)}, ${usual.dy.toFixed(2)}`);
+  }
+  assert.ok(compared > 20, `${compared} embers compared`);
+});
+
+test('WildfireSmokeLoop sparks: sparkAngle tilts the embers of a corner towards the middle, and the bottom ignores it', () => {
+  const slopeOf = (over: Record<string, unknown>) => {
+    const before = new Map(scene({seed: 5, sparkCount: 200, sparkTrail: 0, ...over}, 100).map((spark) => [spark.slot, spark] as const));
+    let dx = 0;
+    let dy = 0;
+    let seen = 0;
+    for (const spark of scene({seed: 5, sparkCount: 200, sparkTrail: 0, ...over}, 101)) {
+      const was = before.get(spark.slot);
+      if (!was) continue;
+      dx += spark.x - was.x;
+      dy += was.y - spark.y;
+      seen++;
+    }
+    assert.ok(seen > 20, `${seen} embers followed`);
+    return dx / dy;
+  };
+  const straight = slopeOf({});
+  assert.ok(straight < 0 && straight > -0.3, `straight up from the right corner, slope ${straight.toFixed(3)}`);
+  const tilted = slopeOf({sparkAngle: 40});
+  assert.ok(tilted < -0.65 && tilted > -1.15, `40 degrees towards the left, slope ${tilted.toFixed(3)} (tan 40 is 0.84)`);
+  const mirrored = slopeOf({sparks: 'bottom-left', sparkAngle: 40});
+  assert.ok(mirrored > 0.65 && mirrored < 1.15, `the left corner tilts right, slope ${mirrored.toFixed(3)}`);
+  const bottom = slopeOf({sparks: 'bottom', sparkCount: 300, sparkAngle: 40});
+  assert.ok(Math.abs(bottom) < 0.1, `the bottom keeps rising straight, slope ${bottom.toFixed(3)}`);
 });
