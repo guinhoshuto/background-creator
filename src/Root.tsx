@@ -22,6 +22,7 @@ const checkerboard = backgroundCatalog.CheckerboardLoop;
 const terminalGrid = backgroundCatalog.TerminalGridLoop;
 const webgl = backgroundCatalog.WebGLLoop;
 const tokyo = backgroundCatalog.TokyoFutureLoop;
+const wildfire = backgroundCatalog.WildfireSmokeLoop;
 const wutheringWaves = backgroundCatalog.WutheringWavesLoop;
 const watercolor = backgroundCatalog.WatercolorLoop;
 const galaxy = backgroundCatalog.GalaxyLoop;
@@ -70,6 +71,14 @@ export const RemotionRoot = () => (
         defaultProps={tokyo.defaultProps}
         {...getCompositionMetadata(tokyo.defaultProps)}
         calculateMetadata={({props}: {props: typeof tokyo.defaultProps}) => metadataFor(tokyo.id, tokyo.schema.parse(props))}
+      />
+      <Composition
+        id="WildfireSmokeLoop"
+        component={wildfire.component}
+        schema={wildfire.schema}
+        defaultProps={wildfire.defaultProps}
+        {...getCompositionMetadata(wildfire.defaultProps)}
+        calculateMetadata={({props}: {props: typeof wildfire.defaultProps}) => metadataFor(wildfire.id, wildfire.schema.parse(props))}
       />
       <Composition
         id="WutheringWavesLoop"

@@ -4,7 +4,9 @@ import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {VALIDATE_HELP_TEXT, parseValidateArgs} from '../scripts/validate-args';
-import {fixtureProps, planFixtures, shippedPresetPairs, type FixtureAsset, type PresetPair} from '../scripts/validate-fixtures';
+import {
+  catalogFixtureAssets, fixtureProps, opaqueProfiles, planFixtures, profilesFor, shippedPresetPairs, type FixtureAsset, type PresetPair,
+} from '../scripts/validate-fixtures';
 
 // What validate:exports would render, read without rendering: fake compositions, literal presets.
 
@@ -28,13 +30,24 @@ const pairs: PresetPair[] = [
   {composition: 'ChatLoop', preset: 'chat-test', props: {glow: 20, seed: 9}},
   {composition: 'FakeLoop', preset: 'fake-test', props: {speed: 3}},
 ];
+/** A rendered frame sequence: it loops in whole 8 s passes and is an opaque scene, like WildfireSmokeLoop. */
+const sequence: FixtureAsset = {
+  id: 'SequenceLoop', kind: 'background', defaultProps: base,
+  parse: (props) => {
+    if (typeof props.durationSeconds !== 'number' || props.durationSeconds % 8 !== 0) throw new Error('durationSeconds: whole 8 s passes only');
+    if (props.transparent === true) throw new Error('transparent: an opaque scene');
+    return props;
+  },
+};
 const plan = (extra: Partial<Parameters<typeof planFixtures>[0]> = {}) =>
-  planFixtures({assets, kinds: ['background', 'chat'], presets: false, pairs, ...extra});
+  planFixtures({assets, kinds: ['background', 'chat'], presets: false, pairs, durationSeconds: 0.4, ...extra});
 
 test('--help names every option, --props and --presets included', () => {
   for (const option of ['--kind', '--composition', '--only', '--props', '--presets', '--duration', '--reuse-existing', '--out']) {
     assert.match(VALIDATE_HELP_TEXT, new RegExp(`^  ${option}\\b`, 'm'), option);
   }
+  assert.match(VALIDATE_HELP_TEXT, /refuses the sample length[\s\S]*sampled over its own duration/);
+  assert.match(VALIDATE_HELP_TEXT, /refuses alpha[\s\S]*opaque in every format/);
   assert.equal(parseValidateArgs(['--help'], '/repo').values.help, true);
 });
 
@@ -57,7 +70,7 @@ test('--presets validates each shipped pair of the composition, named in the fil
   assert(fixtures.length > 0);
   assert(fixtures.every((fixture) => fixture.asset.id === 'ChatLoop' && fixture.source.label === 'chat-test'));
   assert(fixtures.every((fixture) => fixture.file.startsWith('ChatLoop-chat-test-')));
-  const props = fixtureProps(fixtures[0]!, 0.4, () => ({width: 10}));
+  const props = fixtureProps(fixtures[0]!, () => ({width: 10}));
   // The preset sets glow and seed; the sample still decides duration, alpha and size.
   assert.equal(props.glow, 20);
   assert.equal(props.seed, 9);
@@ -68,7 +81,7 @@ test('--presets validates each shipped pair of the composition, named in the fil
 });
 
 test('the defaults keep the fixed seed and colour', () => {
-  const props = fixtureProps(plan({composition: 'FakeLoop'})[0]!, 0.4, () => ({}));
+  const props = fixtureProps(plan({composition: 'FakeLoop'})[0]!, () => ({}));
   assert.equal(props.seed, 17);
   assert.equal(props.speed, 1);
 });
@@ -76,7 +89,72 @@ test('the defaults keep the fixed seed and colour', () => {
 test('--props replaces the defaults for its composition only', () => {
   const fixtures = plan({composition: 'FakeLoop', props: {label: 'mine', props: {speed: 5}}});
   assert(fixtures.length > 0 && fixtures.every((fixture) => fixture.asset.id === 'FakeLoop' && fixture.file.startsWith('FakeLoop-mine-')));
-  assert.equal(fixtureProps(fixtures[0]!, 0.4, () => ({})).speed, 5);
+  assert.equal(fixtureProps(fixtures[0]!, () => ({})).speed, 5);
+});
+
+test('a composition that refuses the sample length or alpha is sampled over its own duration, opaque in every format, and says so', () => {
+  // The schema decides: a fixed-loop opaque sequence gets one opaque sample per format, as long as one pass.
+  const fixtures = planFixtures({assets: [sequence], kinds: ['background'], presets: false, pairs: [], durationSeconds: 0.4});
+  assert.deepEqual(fixtures.map((fixture) => fixture.file), ['SequenceLoop-opaque.mp4', 'SequenceLoop-opaque.webm', 'SequenceLoop-opaque.gif']);
+  for (const fixture of fixtures) {
+    assert.equal(fixture.durationSeconds, 8);
+    assert.equal(fixture.profile.transparent, false);
+    const props = fixtureProps(fixture, () => ({}));
+    assert.equal(props.durationSeconds, 8);
+    assert.equal(props.transparent, false);
+    assert.doesNotThrow(() => sequence.parse(props), 'the sample is what the schema takes');
+    assert.deepEqual(fixture.notes, [
+      'SequenceLoop: sampled over 8 s, its own duration, not 0.4 s: durationSeconds: whole 8 s passes only',
+      'SequenceLoop: sampled opaque in every format, with no alpha profile: transparent: an opaque scene',
+    ]);
+  }
+  // A preset's own duration is the sample's, and the note names the preset.
+  const preset = planFixtures({
+    assets: [sequence], kinds: ['background'], presets: true, durationSeconds: 0.4,
+    pairs: [{composition: 'SequenceLoop', preset: 'two-passes', props: {durationSeconds: 16}}],
+  });
+  assert.equal(preset.length, 3);
+  assert(preset.every((fixture) => fixture.durationSeconds === 16 && fixtureProps(fixture, () => ({})).durationSeconds === 16));
+  assert.match(preset[0]!.notes[0]!, /^SequenceLoop \(two-passes\): sampled over 16 s, its own duration, not 0\.4 s: /);
+  // A --duration the schema takes is kept, and only alpha is noted.
+  const whole = planFixtures({assets: [sequence], kinds: ['background'], presets: false, pairs: [], durationSeconds: 16});
+  assert(whole.every((fixture) => fixture.durationSeconds === 16 && fixture.notes.length === 1 && /opaque/.test(fixture.notes[0]!)));
+  // The others keep the sample and their profiles, alpha included, with nothing to say.
+  const plain = plan({composition: 'FakeLoop'});
+  assert.equal(plain.length, 4);
+  assert(plain.every((fixture) => fixture.durationSeconds === 0.4 && fixture.notes.length === 0));
+  assert(plain.some((fixture) => fixture.profile.transparent));
+  // Opaque profiles: each format once, every overlay format included.
+  assert.deepEqual(opaqueProfiles(profilesFor('background')).map((profile) => `${profile.format}:${profile.label}`), ['mp4:opaque', 'webm:opaque', 'gif:opaque']);
+  assert.deepEqual(opaqueProfiles(profilesFor('chat')).map((profile) => profile.format), ['webm', 'mov', 'png', 'mp4']);
+  assert(opaqueProfiles(profilesFor('chat')).every((profile) => !profile.transparent && profile.label === 'opaque'));
+  // A composition that refuses the sample and has no duration of its own is refused, not guessed.
+  const bare: FixtureAsset = {
+    id: 'BareLoop', kind: 'background', defaultProps: {transparent: false},
+    parse: (props) => {
+      if ('durationSeconds' in props) throw new Error('durationSeconds: none');
+      return props;
+    },
+  };
+  assert.throws(
+    () => planFixtures({assets: [bare], kinds: ['background'], presets: false, pairs: [], durationSeconds: 0.4}),
+    /^Error: BareLoop refuses a 0\.4 s sample \(durationSeconds: none\) and has no duration of its own to sample over\.$/,
+  );
+});
+
+test('the real catalog: an opaque scene is sampled opaque in every format, the other backgrounds with alpha too', () => {
+  const real = planFixtures({assets: catalogFixtureAssets(), kinds: ['background'], presets: false, pairs: [], durationSeconds: 0.4});
+  const of = (id: string) => real.filter((fixture) => fixture.asset.id === id);
+  // TokyoFutureLoop refuses alpha only: the sample keeps its 0.4 s.
+  assert.deepEqual(of('TokyoFutureLoop').map((fixture) => fixture.file), ['TokyoFutureLoop-opaque.mp4', 'TokyoFutureLoop-opaque.webm', 'TokyoFutureLoop-opaque.gif']);
+  assert(of('TokyoFutureLoop').every((fixture) => fixture.durationSeconds === 0.4 && fixture.notes.length === 1 && /opaque/.test(fixture.notes[0]!)));
+  assert.deepEqual(of('DotGridLoop').map((fixture) => fixture.file), ['DotGridLoop-flattened.mp4', 'DotGridLoop-opaque.webm', 'DotGridLoop-alpha.webm', 'DotGridLoop-flattened.gif']);
+  assert(of('DotGridLoop').every((fixture) => fixture.durationSeconds === 0.4 && fixture.notes.length === 0));
+  // A misspelt key is still named, on one line (zod puts no path on an unrecognized key).
+  assert.throws(
+    () => planFixtures({assets: catalogFixtureAssets(), kinds: ['background'], composition: 'DotGridLoop', props: {label: 'mine', props: {sped: 5}}, presets: false, pairs: [], durationSeconds: 0.4}),
+    /^Error: DotGridLoop refuses mine: Unrecognized key: "sped"$/,
+  );
 });
 
 test('refuses before rendering: a key the schema rejects, an unknown composition, presets that select nothing', () => {

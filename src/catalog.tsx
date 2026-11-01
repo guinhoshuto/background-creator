@@ -16,6 +16,7 @@ import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
 import {WatercolorLoop, watercolorLoopSchema} from './backgrounds/WatercolorLoop';
 import {GalaxyLoop, galaxyLoopSchema} from './backgrounds/GalaxyLoop';
 import {TokyoFutureLoop, tokyoFutureLoopSchema} from './backgrounds/TokyoFutureLoop';
+import {WildfireSmokeLoop, wildfireSmokeLoopSchema} from './backgrounds/WildfireSmokeLoop';
 import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
 import type {AssetKind} from './kinds';
 import {blockCatalogEntry} from './overlays/block';
@@ -110,6 +111,14 @@ export const backgroundCatalog = {
     schema: tokyoFutureLoopSchema,
     defaultProps: tokyoFutureLoopSchema.parse({}),
     gl: 'angle',
+  },
+  WildfireSmokeLoop: {
+    id: 'WildfireSmokeLoop',
+    kind: 'background',
+    component: WildfireSmokeLoop,
+    schema: wildfireSmokeLoopSchema,
+    defaultProps: wildfireSmokeLoopSchema.parse({}),
+    // A Blender frame sequence shown with <Img>: no WebGL, so Chrome keeps its default backend.
   },
   DotGridLoop: {
     id: 'DotGridLoop',

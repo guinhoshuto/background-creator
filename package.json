@@ -30,7 +30,9 @@
     "clean": "tsx scripts/clean.ts",
     "ornaments:report": "tsx scripts/ornaments-report.ts",
     "build:tokyo": "node ~/obsidian/AI/scripts/render-slot.ts run -- /Volumes/Sandisk/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/create-tokyo-city.py -- --output-dir public/tokyo/organic",
-    "preview:tokyo": "tsx scripts/tokyo-preview.ts"
+    "preview:tokyo": "tsx scripts/tokyo-preview.ts",
+    "build:wildfire": "node ~/obsidian/AI/scripts/render-slot.ts run -- /Volumes/Sandisk/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/create-wildfire-smoke.py -- --output-dir public/wildfire-smoke",
+    "preview:wildfire": "node ~/obsidian/AI/scripts/render-slot.ts run -- /Volumes/Sandisk/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/create-wildfire-smoke.py -- --preview"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.529",

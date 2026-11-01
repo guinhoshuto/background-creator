@@ -4,7 +4,7 @@ import {mkdir, readFile, rename, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {renderStill, selectComposition} from '@remotion/renderer';
 import {PNG} from 'pngjs';
-import {assetCatalog, getAsset, getOpenGlRenderer} from '../src/catalog';
+import {getAsset, getOpenGlRenderer} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy} from '../src/kinds';
 import {hasAlpha, type OutputFormat} from '../src/settings';
 import {sizeProps} from '../src/sizes';
@@ -14,7 +14,7 @@ import {compositedRgbError} from './image-comparison';
 import {assertFullFfmpeg, ffmpegPath, ffprobePath, runProcess} from './process';
 import {acquireRenderSlot, currentCommand, type SlotHandle} from './render-slot';
 import {VALIDATE_HELP_TEXT, parseValidateArgs} from './validate-args';
-import {fixtureProps, planFixtures, shippedPresetPairs} from './validate-fixtures';
+import {catalogFixtureAssets, fixtureProps, planFixtures, shippedPresetPairs} from './validate-fixtures';
 
 type Probe = {
   streams: {
@@ -44,14 +44,13 @@ const main = async () => {
   const kinds = values.kind === undefined ? ASSET_KINDS : [getKindPolicy(values.kind).kind];
   // Props are checked against the schema here, so a misspelt key never waits for the slot.
   const fixtures = planFixtures({
-    assets: Object.values(assetCatalog).map((asset) => ({
-      id: asset.id, kind: asset.kind, defaultProps: asset.defaultProps as Record<string, unknown>,
-      parse: (props) => asset.schema.strict().parse(props),
-    })),
-    kinds, only: values.only, composition: values.composition, presets: values.presets,
+    assets: catalogFixtureAssets(),
+    kinds, only: values.only, composition: values.composition, presets: values.presets, durationSeconds,
     pairs: values.presets ? shippedPresetPairs(projectRoot) : [],
     ...(propsFile === undefined ? {} : {props: {label: path.basename(propsFile, path.extname(propsFile)), props: await readPropsFile(propsFile)}}),
   });
+  // A sample bent to a composition's schema (its own duration, opaque) is announced before any wait for the slot.
+  for (const note of new Set(fixtures.flatMap((fixture) => fixture.notes))) console.log(note);
   await assertFullFfmpeg();
   // Arguments and tools are checked first: a typo never waits hours for the slot.
   slot = await acquireRenderSlot({command: currentCommand()});
@@ -77,7 +76,7 @@ const main = async () => {
     const options = {
       compositionId, format: profile.format, serveUrl, overwrite: true,
       // Fixed fixtures keep validation independent of a user's saved Studio edits.
-      props: fixtureProps(fixture, durationSeconds, sizeProps),
+      props: fixtureProps(fixture, sizeProps),
       output: path.join(destination, fixture.file),
     };
     const result = values['reuse-existing'] && existsSync(options.output)

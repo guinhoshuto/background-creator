@@ -20,6 +20,15 @@
 // wait gave up. It refuses a .sh script, run directly or through a shell: the slot covers each heavy
 // step, never the script that chains them (2026-10-06, a chain held it 50 minutes through light steps).
 //
+// `node render-slot.ts run --repo <dir> -- <cmd> [args]` (2026-10-31) also guards the worktree the command reads: on
+// joining the queue it records the HEAD of <dir> and a hash of what `git status --porcelain` lists there (each path
+// with the sha256 of its content, so a second edit to a file already dirty counts too), and with the slot in hand it
+// reads them again. Changed: it gives the slot back, runs nothing, exits 2 and says on stderr what changed (the HEAD
+// before and after, each path that became dirty, became clean or changed again). Why: on 2026-10-29 a base build
+// joined the queue with the worktree clean, the session edited two files of that same worktree while it waited, and
+// only the session noticing it kept a before-and-after comparison that proved nothing. A <dir> that is not a git
+// worktree is a usage error (2), before the queue.
+//
 // With the slot in hand, `run` asks the machine check about what the slot does not cover (HAR-32,
 // 2026-10-16): `python3 ~/obsidian/AI/scripts/maquina_livre.py --json --fora-da-trava --familia <its pid>`,
 // without RENDER_SLOT_HELD (under the slot it names, the check looks only at the disk and at renders
@@ -201,7 +210,7 @@
 // critical section), and the move back can replace a mutex that was just made and is still an empty
 // directory (whose maker then gives up, as above).
 import {spawn, spawnSync, type ChildProcess} from 'node:child_process';
-import {randomBytes} from 'node:crypto';
+import {createHash, randomBytes} from 'node:crypto';
 import {appendFileSync, closeSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, realpathSync, renameSync, rmSync, rmdirSync, statSync, utimesSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -291,6 +300,17 @@ export class RenderSlotError extends Error {
     this.hint = hint;
   }
 }
+
+// HAR-350 (2026-10-29): with the disk full, the mkdir of the slot threw ENOSPC, which only EEXIST was handled for, and a
+// detached run waiting in the queue died with a stack trace, its command never run.
+const DISK_FULL = new Set(['ENOSPC', 'EDQUOT']);
+const DISK_FULL_HINT = 'Free some disk and run again; python3 ~/obsidian/AI/scripts/maquina_livre.py says how much is free.';
+/** ENOSPC or EDQUOT, raw or as RENDER_SLOT_DISK_FULL: the disk is full, not a bug of the slot. */
+export const diskFull = (error: unknown) => (error instanceof RenderSlotError
+  ? error.code === 'RENDER_SLOT_DISK_FULL'
+  : DISK_FULL.has((error as NodeJS.ErrnoException | undefined)?.code ?? ''));
+const diskFullError = (error: unknown) => (error instanceof RenderSlotError ? error : new RenderSlotError('RENDER_SLOT_DISK_FULL',
+  `The disk is full: the render slot could not write ${(error as NodeJS.ErrnoException).path ?? 'its files'} (${(error as NodeJS.ErrnoException).code}).`, DISK_FULL_HINT));
 
 /** The name of the package whose folder holds the working directory, else the folder's name. */
 export const defaultRepo = (from = process.cwd()) => {
@@ -882,7 +902,10 @@ const touchTicket = (queue: string, name: string, body: string) => {
 
 const describeTicket = (ticket: QueueTicket) => `pid ${ticket.pid} (${ticket.repo}: ${ticket.command}) since ${new Date(ticket.enqueuedAt).toISOString()}`;
 
-/** Takes the slot directory with the atomic mkdir: false when another process has it. */
+/**
+ * Takes the slot directory with the atomic mkdir: false when another process has it. A full disk (ENOSPC, EDQUOT) goes
+ * up: `run` waits for it as for a busy machine, and `run`, `hold` and `vez` end with one line and EXIT_DISK_FULL.
+ */
 const makeSlotDir = (dir: string) => {
   try {
     mkdirSync(dir);
@@ -1100,6 +1123,17 @@ const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh']);
 const SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 const EXIT_USAGE = 2;
 const EXIT_GAVE_UP = 75;
+const EXIT_DISK_FULL = 74; // EX_IOERR: the disk is full (HAR-350)
+/** The exit of a refused slot: one line and EXIT_DISK_FULL for a full disk, EXIT_GAVE_UP for a refusal; the rest throws. */
+const gaveUp = (error: unknown) => {
+  if (diskFull(error)) {
+    console.error(diskFullError(error).message);
+    return EXIT_DISK_FULL;
+  }
+  if (!(error instanceof RenderSlotError)) throw error;
+  console.error(error.message);
+  return EXIT_GAVE_UP;
+};
 
 /** Why `run` refuses this command line, or null: a .sh script, run directly or through a shell. */
 export const refusedCommand = (command: string[]) => {
@@ -1170,8 +1204,55 @@ const checkMachine = async (dir: string, timeoutMs: number): Promise<{busy: stri
   return {busy: null, note: `The machine check failed (${answer.failure ?? `exit ${answer.status}`}): running without it.`};
 };
 
-/** What only `run` takes (HAR-32): how long it leaves the slot to the next when the machine is busy, and how long the check may take. */
-export type RunOptions = {backoffMs?: number; checkTimeoutMs?: number};
+/** What only `run` takes (HAR-32): how long it leaves the slot to the next when the machine is busy, and how long the check may take; and the worktree it guards (--repo). */
+export type RunOptions = {backoffMs?: number; checkTimeoutMs?: number; repo?: string};
+
+/** The worktree `run --repo` guards: its HEAD and, for each path `git status --porcelain` lists, the sha256 of its content ("" when gone). */
+export type WorktreeState = {head: string; dirty: Record<string, string>};
+
+const git = (dir: string, args: string[]) => {
+  const result = spawnSync('git', ['-C', dir, ...args], {encoding: 'buffer', maxBuffer: 64 * 1024 * 1024});
+  if (result.status !== 0) throw new Error(String(result.stderr ?? result.error?.message ?? `git exited ${result.status}`).trim() || `git ${args[0]} failed`);
+  return result.stdout;
+};
+
+/** The state of the worktree at dir, or an Error when it is not a git worktree. A repo with no commit has the HEAD "none". */
+export const worktreeState = (dir: string): WorktreeState | Error => {
+  try {
+    git(dir, ['rev-parse', '--is-inside-work-tree']);
+    let head = 'none';
+    try { head = String(git(dir, ['rev-parse', 'HEAD'])).trim(); } catch { /* no commit yet */ }
+    const top = String(git(dir, ['rev-parse', '--show-toplevel'])).trim();
+    const fields = String(git(dir, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).split('\0');
+    const dirty: Record<string, string> = {};
+    for (let i = 0; i < fields.length; i += 1) {
+      const entry = fields[i];
+      if (entry.length < 4) continue;
+      const file = entry.slice(3);
+      if (entry[0] === 'R' || entry[0] === 'C') i += 1; // -z: the path it came from follows, as a field of its own
+      let hash = '';
+      try { hash = createHash('sha256').update(readFileSync(path.join(top, file))).digest('hex'); } catch { /* deleted */ }
+      dirty[file] = `${entry.slice(0, 2)} ${hash}`;
+    }
+    return {head, dirty};
+  } catch (error) {
+    return new Error(`${dir} is not a git worktree (${error instanceof Error ? error.message : String(error)}).`);
+  }
+};
+
+/** What changed between two states of a worktree, one line per change; empty when nothing did. */
+export const worktreeChanges = (before: WorktreeState, after: WorktreeState): string[] => {
+  const lines = before.head === after.head ? [] : [`HEAD ${before.head.slice(0, 12)} → ${after.head.slice(0, 12)}`];
+  for (const file of [...new Set([...Object.keys(before.dirty), ...Object.keys(after.dirty)])].sort()) {
+    const was = before.dirty[file];
+    const now = after.dirty[file];
+    if (was === now) continue;
+    if (was === undefined) lines.push(`+ ${now.slice(0, 2)} ${file} (dirty since it joined the queue)`);
+    else if (now === undefined) lines.push(`- ${was.slice(0, 2)} ${file} (clean again)`);
+    else lines.push(`~ ${now.slice(0, 2)} ${file} (changed again${was.slice(0, 2) === now.slice(0, 2) ? '' : `, was ${was.slice(0, 2).trim()}`})`);
+  }
+  return lines;
+};
 
 /**
  * Takes the slot for `run` on a machine free besides it (HAR-32). With the slot in hand it asks the machine
@@ -1188,11 +1269,21 @@ const takeSlotToRun = async (options: SlotOptions & RunOptions): Promise<SlotHan
   const waitLimitMs = slotOptions.waitLimitMs ?? WAIT_LIMIT_MS;
   let gaveBack = 0;
   let said = '';
+  let diskSaid = '';
   for (;;) {
     let slot: SlotHandle;
     try {
       slot = await acquireRenderSlot({...slotOptions, since, waitLimitMs: Math.max(0, waitLimitMs - (Date.now() - since))});
     } catch (error) {
+      if (diskFull(error)) {
+        const full = diskFullError(error);
+        const waited = Date.now() - since;
+        if (waited >= waitLimitMs || slotOptions.wait === false) throw full;
+        if (full.detail !== diskSaid) log(`${full.detail} Asking again in ${backoffMs / 1000} s, in the place it first came (${new Date(since).toISOString()}).`);
+        diskSaid = full.detail;
+        await sleep(Math.min(backoffMs, Math.max(0, waitLimitMs - waited)));
+        continue;
+      }
       if (!(error instanceof RenderSlotError) || gaveBack === 0) throw error;
       throw new RenderSlotError(error.code, `${error.detail} It had given the slot back ${gaveBack}× since ${new Date(since).toISOString()}, the machine busy outside it: ${said}.`, error.hint);
     }
@@ -1224,6 +1315,12 @@ export const runCommand = async (command: string[], options: Partial<SlotOptions
     return EXIT_USAGE;
   }
   const [program = '', ...args] = command;
+  const {repo, ...runOptions} = options;
+  const guarded = repo === undefined ? null : worktreeState(repo);
+  if (guarded instanceof Error) {
+    console.error(`render-slot run --repo: ${guarded.message}`);
+    return EXIT_USAGE;
+  }
   let child: ChildProcess | null = null;
   const forwarded = new Set<NodeJS.Signals>();
   // Registered before the slot's own handlers: while waiting, a signal leaves the queue (the 'exit'
@@ -1238,11 +1335,19 @@ export const runCommand = async (command: string[], options: Partial<SlotOptions
   try {
     let slot: SlotHandle;
     try {
-      slot = await takeSlotToRun({command: command.join(' ').slice(0, 200), log: (message) => console.error(message), ...options, cede: options.cede ?? process.env[CEDE_ENV] === '1'});
+      slot = await takeSlotToRun({command: command.join(' ').slice(0, 200), log: (message) => console.error(message), ...runOptions, cede: options.cede ?? process.env[CEDE_ENV] === '1'});
     } catch (error) {
-      if (!(error instanceof RenderSlotError)) throw error;
-      console.error(error.message);
-      return EXIT_GAVE_UP;
+      return gaveUp(error);
+    }
+    if (guarded !== null && repo !== undefined) {
+      // The command reads the worktree as it is now, not as it was when the job joined the queue.
+      const now = worktreeState(repo);
+      const changes = now instanceof Error ? [now.message] : worktreeChanges(guarded, now);
+      if (changes.length > 0) {
+        slot.release();
+        console.error(`render-slot run --repo: the worktree ${repo} changed while this job waited in the queue, and the command would read it as it is now; it did not run. What changed:\n${changes.map((line) => `  ${line}`).join('\n')}\nRun it again from a commit, or once the edits are done.`);
+        return EXIT_USAGE;
+      }
     }
     // The slot's own signal handlers would release it at once, while the command still runs: only
     // onSignal stays, and the slot is released below, or by its 'exit' handler.
@@ -1304,9 +1409,7 @@ export const holdSlot = async (label: string, maxMinutes: number, options: Parti
     try {
       slot = await acquireRenderSlot({command: `${HOLD_PREFIX}${label}`, log: (message) => console.error(message), ...options});
     } catch (error) {
-      if (!(error instanceof RenderSlotError)) throw error;
-      console.error(error.message);
-      return EXIT_GAVE_UP;
+      return gaveUp(error);
     }
     // Only onSignal stays: the slot is released below, once, whatever ends the hold.
     for (const signal of SIGNALS) for (const listener of process.listeners(signal)) if (listener !== onSignal) process.off(signal, listener);
@@ -1378,9 +1481,7 @@ export const waitForTurn = async (label: string, maxMinutes = HOLD_MAX_MINUTES, 
   try {
     await acquireRenderSlot({command, log: (message) => console.error(message), ...slotOptions, since, waitLimitMs: Math.max(0, limitMs - (now - since)), cede: false, take: false});
   } catch (error) {
-    if (!(error instanceof RenderSlotError)) throw error;
-    console.error(error.message);
-    return EXIT_GAVE_UP;
+    return gaveUp(error);
   }
   const queue = queueDir(slotOptions.dir ?? slotDir());
   const handBaton = () => writeTicket(queue, BATON_FILE, `${JSON.stringify({protocol: PROTOCOL, pid: process.pid, label, at: Date.now()})}\n`);
@@ -1686,6 +1787,8 @@ if (isMain()) {
   const args = process.argv.slice(3);
   if (verb === 'run' && separator === '--') {
     process.exitCode = await runCommand(command);
+  } else if (verb === 'run' && separator === '--repo' && command[0] !== undefined && command[1] === '--') {
+    process.exitCode = await runCommand(command.slice(2), {repo: command[0]});
   } else if (verb === 'hold') {
     const max = optionValue(args, '--max');
     process.exitCode = await holdSlot(optionValue(args, '--rotulo') ?? '', max === undefined ? NaN : Number(max), {cede: args.includes('--ceder')});
@@ -1715,7 +1818,7 @@ if (isMain()) {
   } else if (verb === 'status' && separator === '--json' && command.length === 0) {
     console.log(JSON.stringify(slotStatusJson()));
   } else {
-    console.error('Usage: node render-slot.ts run -- <command> [args] | hold --rotulo <label> --max <minutes> [--ceder] | vez --rotulo <label> [--since <ms>] [--max <minutes>] [--conferir] | vez --historico [--horas <n>] [--json] | release --rotulo <label> | status [--json] | move --pid <pid> --up|--down');
+    console.error('Usage: node render-slot.ts run [--repo <dir>] -- <command> [args] | hold --rotulo <label> --max <minutes> [--ceder] | vez --rotulo <label> [--since <ms>] [--max <minutes>] [--conferir] | vez --historico [--horas <n>] [--json] | release --rotulo <label> | status [--json] | move --pid <pid> --up|--down');
     process.exitCode = EXIT_USAGE;
   }
 }

@@ -8,3 +8,4 @@ build/
 !.env.example
 # Procedural Blender city, regenerated with npm run build:tokyo.
 public/tokyo/
+public/wildfire-smoke/

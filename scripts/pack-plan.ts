@@ -221,7 +221,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 const describeItem = (item: PackItem, index: number) => `Item ${index + 1} (${item.composition})`;
 
 /** zod issues flattened into one line per problem, with the field path. */
-const issuesText = (error: z.ZodError) =>
+export const issuesText = (error: z.ZodError) =>
   error.issues.map((issue) => `${issue.path.length > 0 ? `${issue.path.join('.')}: ` : ''}${issue.message}`).join('; ');
 
 /** The version a pack ships as: zip:pack and ship:pack refuse a manifest without one. */
