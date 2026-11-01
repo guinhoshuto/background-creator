@@ -11,6 +11,7 @@ import {
 /** One pass of the sequence: 480 frames at 60 fps. */
 export const LOOP_SECONDS = WILDFIRE_SEQUENCE.frames / WILDFIRE_SEQUENCE.fps;
 export const DURATION_MESSAGE = `The wildfire smoke frames loop every ${LOOP_SECONDS} s: use 8, 16 or 24 s.`;
+export const OPAQUE_MESSAGE = 'The smoke is an opaque scene: choose a different background for alpha.';
 
 /**
  * A Blender frame sequence (public/wildfire-smoke/, from `npm run build:wildfire`) shown frame by
@@ -21,7 +22,7 @@ export const DURATION_MESSAGE = `The wildfire smoke frames loop every ${LOOP_SEC
 export const wildfireSmokeLoopSchema = baseBackgroundSchema.omit({colors: true}).extend({
   durationSeconds: z.number().finite().positive().refine((seconds) => seconds % LOOP_SECONDS === 0, DURATION_MESSAGE)
     .describe('Cycle duration, in seconds: a whole number of 8 s passes of the frame sequence').default(LOOP_SECONDS),
-  transparent: z.literal(false).describe('The smoke is an opaque scene; choose a different background for alpha').default(false),
+  transparent: z.literal(false, {error: OPAQUE_MESSAGE}).describe('The smoke is an opaque scene; choose a different background for alpha').default(false),
   backgroundColor: baseBackgroundSchema.shape.backgroundColor.default('#260401'),
 });
 

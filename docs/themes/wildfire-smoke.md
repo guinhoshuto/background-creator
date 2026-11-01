@@ -104,6 +104,8 @@ The final render uses TAA 16 and 4 px froxels: about 8 s a frame, 480 frames ≈
 - Checks: `npm run test:quick -- tests/wildfire-smoke.test.ts`; the preset is in the list of
   `tests/backgrounds.test.ts`.
 
+`npm run validate:exports -- --composition WildfireSmokeLoop` samples it opaque in MP4, WebM and GIF over one 8 s pass (480 frames; 400 in the 50 fps GIF): the schema refuses the validator's 0.4 s sample and alpha, and the validator says so before rendering (`scripts/validate-fixtures.ts`).
+
 ## Pitfalls
 
 - **The 25 % preview does not predict the sharpness of the full-size render.** The volumetric

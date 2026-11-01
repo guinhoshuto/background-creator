@@ -12,6 +12,10 @@ alpha WebM, GIF; overlays: WebM, MOV, PNG, MP4) at its smallest and tallest size
 and compares it with a reference PNG: codec, size, FPS, frames, alpha and colour. Waits for the render
 slot. Does not validate packs (npm run validate:pack -- <name>).
 
+A composition whose schema refuses the sample length (a frame sequence that loops in whole passes) is
+sampled over its own duration, and one that refuses alpha (an opaque scene) opaque in every format;
+each case is printed before the renders.
+
 Options:
   --kind <kind>          only one asset kind (background, chat, block, border)
   --composition <id>     only one composition, for example ChatLoop

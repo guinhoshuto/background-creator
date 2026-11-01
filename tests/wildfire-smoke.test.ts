@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
+import {catalogFixtureAssets, planFixtures} from '../scripts/validate-fixtures';
 import {
   BUILD_FIX, MISSING_FRAMES_MESSAGE, WILDFIRE_SEQUENCE, frameFileOf, manifestProblems, parseManifest, sequenceFrame,
   type SequenceExpectation, type WildfireManifest,
 } from '../src/backgrounds/wildfire/manifest';
-import {DURATION_MESSAGE, LOOP_SECONDS, wildfireFrameFile, wildfireSmokeLoopSchema} from '../src/backgrounds/WildfireSmokeLoop';
+import {DURATION_MESSAGE, LOOP_SECONDS, OPAQUE_MESSAGE, wildfireFrameFile, wildfireSmokeLoopSchema} from '../src/backgrounds/WildfireSmokeLoop';
 import {backgroundCatalog, getOpenGlRenderer} from '../src/catalog';
 import {getCompositionMetadata} from '../src/settings';
 
@@ -121,6 +122,10 @@ test('WildfireSmokeLoop: the duration is a whole number of 8 s passes, the scene
   for (const input of [{durationSeconds: 0}, {durationSeconds: -8}, {transparent: true}, {colors: ['#000000', '#ffffff']}]) {
     assert.equal(wildfireSmokeLoopSchema.strict().safeParse(input).success, false, JSON.stringify(input));
   }
+  const alpha = wildfireSmokeLoopSchema.safeParse({transparent: true});
+  assert.equal(alpha.success, false);
+  assert.ok(alpha.error!.issues.some((issue) => issue.message === OPAQUE_MESSAGE), alpha.error!.message);
+  assert.equal(OPAQUE_MESSAGE, 'The smoke is an opaque scene: choose a different background for alpha.');
   assert.deepEqual(getCompositionMetadata(defaults), {width: 1920, height: 1080, fps: 60, durationInFrames: 480});
   assert.deepEqual(getCompositionMetadata({...defaults, durationSeconds: 16}).durationInFrames, 960);
   assert.deepEqual(getCompositionMetadata({...defaults, outputFormat: 'gif'}), {width: 1920, height: 1080, fps: 50, durationInFrames: 400});
@@ -135,4 +140,16 @@ test('WildfireSmokeLoop: the catalog entry has no WebGL backend, and the preset 
   const preset: unknown = JSON.parse(readFileSync(new URL('../presets/wildfire-smoke.json', import.meta.url), 'utf8'));
   assert.deepEqual(wildfireSmokeLoopSchema.strict().parse(preset), defaults);
   assert.deepEqual(preset, defaults, 'the preset spells every default out');
+});
+
+test('WildfireSmokeLoop: validate:exports samples it opaque in every format, over one 8 s pass, and says why', () => {
+  const fixtures = planFixtures({
+    assets: catalogFixtureAssets(), kinds: ['background'], composition: 'WildfireSmokeLoop', presets: false, pairs: [], durationSeconds: 0.4,
+  });
+  assert.deepEqual(fixtures.map((fixture) => fixture.file), ['WildfireSmokeLoop-opaque.mp4', 'WildfireSmokeLoop-opaque.webm', 'WildfireSmokeLoop-opaque.gif']);
+  assert.ok(fixtures.every((fixture) => fixture.durationSeconds === LOOP_SECONDS && !fixture.profile.transparent));
+  assert.deepEqual(fixtures[0]!.notes, [
+    `WildfireSmokeLoop: sampled over 8 s, its own duration, not 0.4 s: durationSeconds: ${DURATION_MESSAGE}`,
+    `WildfireSmokeLoop: sampled opaque in every format, with no alpha profile: transparent: ${OPAQUE_MESSAGE}`,
+  ]);
 });
