@@ -110,6 +110,14 @@ The final render uses TAA 16 and 4 px froxels: about 8 s a frame, 480 frames ≈
 
 The second look, asked for on 2026-11-01 («com fagulhas, saindo do canto inferior»), draws embers in code over the frames (`src/backgrounds/wildfire/sparks.ts`), never in Blender: a particle system there would not close the loop (the embers alive at frame 480 are not the ones of frame 0) and would cost another 80-minute render. `sparks` picks the source: `bottom-right` or `bottom-left` (a strip of 320 px at the corner, drifting inwards) or `bottom` (the whole edge, drifting either way); `sparkCount` lays out the slots, `sparkSize`, `sparkRise` (px/s), `sparkTrail` (the streak as a share of the motion over 60 ms) and `sparkAngle` (degrees from vertical towards the middle of the frame, for a corner; the owner asked for a diagonal rise on 2026-11-01) shape them, and `seed` places them. Each slot lives 1 to 4 whole times per 8 s loop, born at its own phase, so an ember crosses the seam 479 → 0 at the speed of any other frame, at every duration and FPS the schema allows (the GIF follows the same sequence frame); it fades in over 0.15 s, flickers, cools from white-yellow through orange to deep red and fades out over the last third of its life, and most die inside the frame. The glow is a radial gradient in plain alpha: no blend mode (README, Known pitfalls). The direction sheet of 2026-11-01 (`out/review/2026-11-01-wildfire-sparks-directions/`: D-01 sparse embers, D-02 ember rain, D-03 big slow embers, D-04 fast sparks with streaks) chose D-02, thinned and warmed, in two presets: `wildfire-smoke-sparks-corner` (bottom-right, tilted 40 degrees) and `wildfire-smoke-sparks-bottom` (the whole edge, straight up, 300 slots for a similar density). `tests/wildfire-smoke.test.ts` checks the determinism, the frame wrap at 8 and 16 s and in the GIF, the seam speed (the check that a period not dividing the loop fails), the source strip, the fade and the colours.
 
+## Pack
+
+`background-wildfire-smoke` (`packs/background-wildfire-smoke.json`) sells the print alone, as the owner chose on 2026-11-01 (a kit may follow): the loop as MP4 and WebM and a PNG still, compressed with the `delivery` profile, version 1; the listing text is `listings/background-wildfire-smoke.md`. It builds and ships like every pack ([Packs](../packs.md)):
+
+```sh
+npm run render:pack -- background-wildfire-smoke --dry-run
+```
+
 ## Pitfalls
 
 - **The 25 % preview does not predict the sharpness of the full-size render.** The volumetric
