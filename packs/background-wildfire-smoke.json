@@ -1,0 +1,12 @@
+{
+  "name": "background-wildfire-smoke",
+  "version": 1,
+  "profile": "delivery",
+  "items": [
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke",
+      "formats": ["mp4", "webm", "png"]
+    }
+  ]
+}
