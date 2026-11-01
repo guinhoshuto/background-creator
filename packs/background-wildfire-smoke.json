@@ -1,12 +1,37 @@
 {
   "name": "background-wildfire-smoke",
-  "version": 1,
+  "version": 2,
   "profile": "delivery",
   "items": [
     {
       "composition": "WildfireSmokeLoop",
       "preset": "wildfire-smoke",
-      "formats": ["mp4", "webm", "png"]
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "smoke"
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-corner",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "sparks-corner"
+    },
+    {
+      "composition": "WildfireSmokeLoop",
+      "preset": "wildfire-smoke-sparks-bottom",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "sparks-bottom"
     }
   ]
 }
