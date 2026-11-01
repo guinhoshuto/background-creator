@@ -31,6 +31,7 @@ export const wildfireSmokeLoopSchema = baseBackgroundSchema.omit({colors: true})
   sparkSize: z.number().finite().min(0.5).max(12).describe('Ember size, in px').default(3),
   sparkRise: z.number().finite().min(40).max(1200).describe('How fast the embers rise, in px per second').default(260),
   sparkTrail: z.number().finite().min(0).max(3).describe('Streak behind each ember, as a share of its motion over 60 ms; 0 for none').default(0.5),
+  sparkAngle: z.number().finite().min(0).max(70).describe('How far from vertical the embers of a corner rise, in degrees towards the middle of the frame; 0 for straight up (bottom ignores it)').default(0),
 });
 
 export type WildfireSmokeLoopProps = z.infer<typeof wildfireSmokeLoopSchema>;

@@ -15,6 +15,8 @@ export type SparkProps = {
   sparkSize: number;
   sparkRise: number;
   sparkTrail: number;
+  /** Degrees from vertical, towards the middle of the frame, for the embers of a corner; `bottom` ignores it. */
+  sparkAngle: number;
 };
 
 export type Spark = {
@@ -53,8 +55,8 @@ export const emberColor = (cooling: number): string => {
 /**
  * The embers alive at frame `frame` of a composition `durationInFrames` long: each of the
  * `sparkCount` slots lives 1 to 4 times per loop, born at its own phase, rising from the corner
- * strip (drifting inwards) or from anywhere along the bottom (drifting either way), with a sway,
- * flickering, and cooling until it fades. The same slot
+ * strip (drifting inwards, `sparkAngle` degrees from vertical) or from anywhere along the bottom
+ * (drifting either way), with a sway, flickering, and cooling until it fades. The same slot
  * draws the same random numbers whether or not it is alive, so a frame never depends on another.
  */
 export const getSparkScene = (props: SparkProps, frame: number, durationInFrames: number): Spark[] => {
@@ -63,6 +65,7 @@ export const getSparkScene = (props: SparkProps, frame: number, durationInFrames
   const random = createSeededRandom(props.seed);
   const inward = props.sparks === 'bottom-left' ? 1 : -1;
   const wholeBottom = props.sparks === 'bottom';
+  const slope = Math.tan((props.sparkAngle * Math.PI) / 180);
   const sparks: Spark[] = [];
   for (let slot = 0; slot < props.sparkCount; slot++) {
     const lives = 1 + Math.floor(random() * 4);
@@ -73,7 +76,7 @@ export const getSparkScene = (props: SparkProps, frame: number, durationInFrames
     const birth = random() * period;
     const x0 = wholeBottom ? random() * WIDTH : props.sparks === 'bottom-left' ? random() * SOURCE_WIDTH : WIDTH - random() * SOURCE_WIDTH;
     const y0 = HEIGHT + random() * SOURCE_DEPTH;
-    const drift = wholeBottom ? randomBetween(random, -40, 40) : inward * randomBetween(random, 10, 90);
+    const drift = wholeBottom ? randomBetween(random, -40, 40) : inward * (rise * slope + randomBetween(random, 10, 90));
     const swayAmplitude = randomBetween(random, 6, 28) * (props.sparkSize / 3);
     const swayRate = randomBetween(random, 1.5, 4);
     const swayPhase = random() * TAU;

@@ -8,5 +8,6 @@
   "sparkCount": 300,
   "sparkSize": 2.8,
   "sparkRise": 330,
-  "sparkTrail": 0.4
+  "sparkTrail": 0.4,
+  "sparkAngle": 0
 }

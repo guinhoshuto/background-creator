@@ -164,7 +164,7 @@ test('WildfireSmokeLoop sparks: off by default, and a scene only with a corner a
   assert.deepEqual(getSparkScene(wildfireSmokeLoopSchema.parse({}), 200, 480), []);
   assert.deepEqual(scene({sparkCount: 0}, 200), []);
   assert.ok(scene({}, 200).length > 0);
-  for (const bad of [{sparks: 'top'}, {sparkCount: -1}, {sparkCount: 401}, {sparkSize: 0}, {sparkRise: 10}, {sparkTrail: -1}]) {
+  for (const bad of [{sparks: 'top'}, {sparkCount: -1}, {sparkCount: 401}, {sparkSize: 0}, {sparkRise: 10}, {sparkTrail: -1}, {sparkAngle: -1}, {sparkAngle: 71}]) {
     assert.equal(wildfireSmokeLoopSchema.safeParse(bad).success, false, JSON.stringify(bad));
   }
 });
@@ -239,4 +239,30 @@ test('WildfireSmokeLoop sparks: the embers cross the loop seam at the speed of a
       `slot ${slot}: seam step ${step.dx.toFixed(2)}, ${step.dy.toFixed(2)} against ${usual.dx.toFixed(2)}, ${usual.dy.toFixed(2)}`);
   }
   assert.ok(compared > 20, `${compared} embers compared`);
+});
+
+test('WildfireSmokeLoop sparks: sparkAngle tilts the embers of a corner towards the middle, and the bottom ignores it', () => {
+  const slopeOf = (over: Record<string, unknown>) => {
+    const before = new Map(scene({seed: 5, sparkCount: 200, sparkTrail: 0, ...over}, 100).map((spark) => [spark.slot, spark] as const));
+    let dx = 0;
+    let dy = 0;
+    let seen = 0;
+    for (const spark of scene({seed: 5, sparkCount: 200, sparkTrail: 0, ...over}, 101)) {
+      const was = before.get(spark.slot);
+      if (!was) continue;
+      dx += spark.x - was.x;
+      dy += was.y - spark.y;
+      seen++;
+    }
+    assert.ok(seen > 20, `${seen} embers followed`);
+    return dx / dy;
+  };
+  const straight = slopeOf({});
+  assert.ok(straight < 0 && straight > -0.3, `straight up from the right corner, slope ${straight.toFixed(3)}`);
+  const tilted = slopeOf({sparkAngle: 40});
+  assert.ok(tilted < -0.65 && tilted > -1.15, `40 degrees towards the left, slope ${tilted.toFixed(3)} (tan 40 is 0.84)`);
+  const mirrored = slopeOf({sparks: 'bottom-left', sparkAngle: 40});
+  assert.ok(mirrored > 0.65 && mirrored < 1.15, `the left corner tilts right, slope ${mirrored.toFixed(3)}`);
+  const bottom = slopeOf({sparks: 'bottom', sparkCount: 300, sparkAngle: 40});
+  assert.ok(Math.abs(bottom) < 0.1, `the bottom keeps rising straight, slope ${bottom.toFixed(3)}`);
 });
