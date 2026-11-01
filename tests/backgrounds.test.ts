@@ -508,6 +508,7 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['CheckerboardLoop', 'checkerboard-diamonds.json'],
     ['CheckerboardLoop', 'checkerboard-tilted.json'],
     ['CheckerboardLoop', 'checkerboard-alpha.json'],
+    ['WildfireSmokeLoop', 'wildfire-smoke.json'],
   ];
   for (const entry of Object.values(backgroundCatalog)) {
     assert.deepEqual(entry.schema.parse(entry.defaultProps), entry.defaultProps);
