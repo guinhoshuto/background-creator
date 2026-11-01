@@ -9,5 +9,6 @@
   "sparkSize": 3,
   "sparkRise": 260,
   "sparkTrail": 0.5,
-  "sparkAngle": 0
+  "sparkAngle": 0,
+  "tint": 0
 }
