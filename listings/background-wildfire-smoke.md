@@ -33,7 +33,3 @@ Horror and action games, fire and apocalypse themes, intense Just Chatting rooms
 
 Digital download only: no physical item will be shipped.
 Feel free to send me a message if you have any questions!
-
-## Before publishing
-
-- Price to confirm: US$ 5.99 proposed for one look (the Galaxy pack sells 3 palettes at US$ 7.99; standalone backgrounds on Etsy go from US$ 3.68 to 8.03).
