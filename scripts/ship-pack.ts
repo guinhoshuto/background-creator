@@ -10,16 +10,17 @@ import {projectRoot} from './export';
 import {machineVerdict} from './machine-check';
 import {deliveryVersion, existingManifestFile, parsePackManifest} from './pack-plan';
 import {
-  DEFAULT_REMOTE, decideShip, parseLsjson, parseLsjsonTree, parsePs, shipPacks, signalReport, uploadArgs, watchEntryOf, zipPathOf, type ShipEffects, type ShipState,
+  DEFAULT_REMOTE, decideShip, headLink, parseLsjson, parseLsjsonTree, parsePs, shipPacks, signalReport, uploadArgs, watchEntryOf, zipPathOf, type ShipEffects, type ShipState,
 } from './ship-plan';
 
 const SHIP_HELP_TEXT = `usage: npm run ship:pack -- <name> [<name>...] [options]
 
 Ships each pack in order: waits for the machine check, then render:pack (finished files are skipped),
 validate:pack and zip:pack; uploads the zip to <remote>/packs/<name>/<sha8>/<name>-overlay-pack-v<N>.zip
-with rclone, reads it back and compares name and size, and records the public link. The first failure
-stops the chain and keeps every local file. Run it again to resume: each step skips what is done, and
-a zip already on R2 with the same bytes is not uploaded twice.
+with rclone, reads it back and compares name and size, then requests the public link (HEAD, following
+redirects, 30 s for the whole chain) and records it only when the final answer is 200 with the zip's size.
+The first failure, a failing link included, stops the chain and keeps every local file. Run it again to
+resume: each step skips what is done, and a zip already on R2 with the same bytes is not uploaded twice.
 
 N is "version" in packs/<name>.json. A version already shipped, with nothing local left, is skipped; to
 ship a changed pack, raise the version. The same version on R2 with other content is refused.
@@ -164,6 +165,7 @@ const effects: ShipEffects = {
     const code = await run(rclone(), uploadArgs(fromRoot(relative), key), path.join(LOG_DIRECTORY, 'rclone.log'));
     if (code !== 0) throw new Error(`rclone copyto failed (exit ${code}); see .cache/ship-pack/rclone.log.`);
   },
+  publicHead: (url) => headLink(url),
   removeLocal: (relative) => rm(fromRoot(relative), {recursive: true, force: true}),
   readState: async () => (existsSync(STATE_FILE) ? JSON.parse(await readFile(STATE_FILE, 'utf8')) as ShipState : {}),
   writeState: async (state) => {
@@ -205,8 +207,8 @@ const main = async () => {
       const then = values['delete-local'] ? ' and delete the local zip and pack folder' : '';
       console.log(`${pack.name} v${pack.version}: ${before}; ${{
         skip: 'would skip it: nothing local is left (raise "version" to ship a changed pack)',
-        resume: `would check the local zip on R2${then}`,
-        build: `would run render:pack, validate:pack and zip:pack, then upload ${zipPathOf(pack)} to ${values.remote}/packs/${pack.name}/<sha8>/${then}`,
+        resume: `would check the local zip on R2 and its public link${then}`,
+        build: `would run render:pack, validate:pack and zip:pack, then upload ${zipPathOf(pack)} to ${values.remote}/packs/${pack.name}/<sha8>/ and check its public link${then}`,
       }[action]}`);
     }
     return;
