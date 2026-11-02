@@ -1226,7 +1226,7 @@ export const worktreeState = (dir: string): WorktreeState | Error => {
     const fields = String(git(dir, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).split('\0');
     const dirty: Record<string, string> = {};
     for (let i = 0; i < fields.length; i += 1) {
-      const entry = fields[i];
+      const entry = fields[i] ?? '';
       if (entry.length < 4) continue;
       const file = entry.slice(3);
       if (entry[0] === 'R' || entry[0] === 'C') i += 1; // -z: the path it came from follows, as a field of its own
@@ -1247,7 +1247,7 @@ export const worktreeChanges = (before: WorktreeState, after: WorktreeState): st
     const was = before.dirty[file];
     const now = after.dirty[file];
     if (was === now) continue;
-    if (was === undefined) lines.push(`+ ${now.slice(0, 2)} ${file} (dirty since it joined the queue)`);
+    if (was === undefined) lines.push(`+ ${now?.slice(0, 2)} ${file} (dirty since it joined the queue)`);
     else if (now === undefined) lines.push(`- ${was.slice(0, 2)} ${file} (clean again)`);
     else lines.push(`~ ${now.slice(0, 2)} ${file} (changed again${was.slice(0, 2) === now.slice(0, 2) ? '' : `, was ${was.slice(0, 2).trim()}`})`);
   }
