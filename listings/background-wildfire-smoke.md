@@ -6,15 +6,15 @@ caption: WS
 
 ## Title
 
-Animated Wildfire Smoke Stream Background, 6 Colors x 3 Looks, Red Blue Green Purple Smoke with Rising Embers, OBS Twitch VTuber 1080p 60fps
+Blaze Animated Background, Fire Smoke Loop in 6 Colors x 3 Looks, Seamless 1080p 60fps Video for Streams, Intros, Edits and Wallpapers
 
 ## Tags
 
-wildfire background, smoke background, fire background, animated background, stream background, twitch background, vtuber background, obs background, red background, looping background, ember background, purple background, horror background
+animated background, smoke background, fire background, red background, looping background, video background, stream background, obs background, vtuber background, ember background, purple background, horror background, blaze background
 
 ## Description
 
-A wall of wildfire smoke for your stream: deep red plumes rise and roll over a glowing ember haze, lit from behind, with the top of the frame kept dark. Rendered in Blender as a real volume, not a filter, in a seamless 1920×1080 loop at 60 fps, in six colors (red, amber, green, blue, purple, magenta) and three looks each: the smoke alone, or with embers rising from the corner or along the whole bottom.
+Blaze is a wall of fire smoke for any screen: deep red plumes rise and roll over a glowing ember haze, lit from behind, with the top of the frame kept dark. Rendered in Blender as a real volume, not a filter, in a seamless 1920×1080 loop at 60 fps, in six colors (red, amber, green, blue, purple, magenta) and three looks each: the smoke alone, or with embers rising from the corner or along the whole bottom.
 
 ✦ WHAT YOU GET
 - 6 colors: red, amber, green, blue, purple and magenta
@@ -29,9 +29,10 @@ A wall of wildfire smoke for your stream: deep red plumes rise and roll over a g
 - OBS Studio → Sources → + → Media Source → pick the .mp4 → turn on Loop
 - Keep the background at the bottom of the scene, under your camera and game
 - Works with OBS Studio, Streamlabs and any app that plays .mp4
+- In a video editor, drop the .mp4 on your timeline; as a live wallpaper, use any app that loops video
 
 ✦ PERFECT FOR
-Horror and action games, fire and apocalypse themes, intense Just Chatting rooms, Halloween streams and dramatic BRB screens.
+Horror and action streams, fire and apocalypse themes, Halloween, dramatic starting-soon and BRB screens, video intros and edits, and a living wallpaper.
 
 Digital download only: no physical item will be shipped.
 Feel free to send me a message if you have any questions!
