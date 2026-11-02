@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {packCounter} from '../scripts/pack-plan';
 import {
   MACHINE_WAIT_MS, decideShip, parseLsjson, parseLsjsonTree, parsePs, publicUrlOf, shipPacks, signalReport, signalSuspects, uploadArgs, watchEntryOf,
-  type RemoteFile, type ShipEffects, type ShippedPack, type ShipState,
+  type LinkAnswer, type RemoteFile, type ShipEffects, type ShippedPack, type ShipState,
 } from '../scripts/ship-plan';
 
 // The whole chain against a fake npm, a fake machine check and a fake R2 kept in memory; no render, no upload.
@@ -19,6 +19,8 @@ const OTHER_SHA = '99999999'.repeat(8);
 
 type World = {
   calls: string[];
+  /** The public links requested, apart from `calls`, whose exact lists other tests compare. */
+  heads: string[];
   /** Step logs and watch-band updates, in order: `log <name>` and `watch <pack>`. */
   trail: string[];
   logs: string[];
@@ -29,11 +31,11 @@ type World = {
   effects: ShipEffects;
 };
 
-/** A fake world. `npmCodes` fails a step by name; `uploadBytes` makes R2 keep another size; `busy` checks say wait first. */
-const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}, version = 1}: {
-  npmCodes?: Record<string, number>; uploadBytes?: number; busy?: string[][]; state?: ShipState; version?: number;
+/** A fake world. `npmCodes` fails a step by name; `uploadBytes` makes R2 keep another size; `busy` checks say wait first; `linkAnswer` is what the public link answers. */
+const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}, version = 1, linkAnswer = {redirects: [], status: 200, length: '1000'}}: {
+  npmCodes?: Record<string, number>; uploadBytes?: number; busy?: string[][]; state?: ShipState; version?: number; linkAnswer?: LinkAnswer;
 } = {}): World => {
-  const w: World = {calls: [], trail: [], logs: [], local: new Map(), remote: new Map(), state: {...state}, sleeps: [], effects: undefined as unknown as ShipEffects};
+  const w: World = {calls: [], heads: [], trail: [], logs: [], local: new Map(), remote: new Map(), state: {...state}, sleeps: [], effects: undefined as unknown as ShipEffects};
   const verdicts = [...busy];
   w.effects = {
     npm: async (script, args, logName) => {
@@ -65,6 +67,7 @@ const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}, version = 1}:
       const name = key.slice(key.lastIndexOf('/') + 1);
       w.remote.set(directory, [...(w.remote.get(directory) ?? []), {name, size: uploadBytes ?? w.local.get(relative)!.bytes}]);
     },
+    publicHead: async (url) => {w.heads.push(url); return linkAnswer;},
     removeLocal: async (relative) => {w.calls.push(`rm ${relative}`); w.local.delete(relative);},
     readState: async () => ({...w.state}),
     writeState: async (next) => {w.state = next;},
@@ -245,6 +248,48 @@ test('the command refuses before any step: --help lists the options, files and u
   assert.match(cli('packs/x.json').stderr, /not files/);
   assert.match(cli('no-such-pack').stderr, /Unknown pack: no-such-pack/);
   assert.match(cli().stderr, /Name at least one pack/);
+});
+
+/** The 2026-11-01 outage: a redirect rule sent every link to a host that answered 404. */
+const REDIRECT_TO_404: LinkAnswer = {redirects: [{status: 301, location: 'https://www.cacare.co/packs/kit/abcdef01/kit-overlay-pack-v1.zip'}], status: 404, length: null};
+
+test('public link: a redirect to a 404 stops the chain, records nothing and keeps every local file', async () => {
+  const w = world({linkAnswer: REDIRECT_TO_404});
+  assert.equal((await shipPacks([KIT, NEXT], {...options, deleteLocal: true}, w.effects)).code, 1);
+  assert.equal(w.state.kit, undefined);
+  assert(!w.calls.some((call) => call.startsWith('rm ')));
+  assert(w.local.has(ZIP) && w.local.has('out/packs/kit'));
+  assert(w.logs.some((line) => line.startsWith(`FAILED kit: ${SHIPPED_V1.url} does not serve the zip: 301 -> ${REDIRECT_TO_404.redirects[0]!.location} -> 404; final status 404`)), w.logs.join('\n'));
+  assert(w.logs.includes('not started: next'));
+  assert(!w.calls.some((call) => call.includes(' next')));
+});
+
+test('public link: the success path requests the recorded url once and logs the answer', async () => {
+  const w = world();
+  const {code, shipped} = await shipPacks([KIT], options, w.effects);
+  assert.equal(code, 0);
+  assert.deepEqual(w.heads, [shipped[0]!.url]);
+  assert(w.logs.includes('kit: public link answers 200 with 1000 B'), w.logs.join('\n'));
+  // In order: the read-back, the link, and only then the record.
+  const at = (line: string) => w.logs.findIndex((logged) => logged.startsWith(line));
+  assert(at('kit: uploaded and checked') < at('kit: public link answers') && at('kit: public link answers') < at('kit: shipped'), w.logs.join('\n'));
+});
+
+test('public link: a resume with a failing link leaves the record as it was and keeps the local files', async () => {
+  const w = world({state: {kit: SHIPPED_V1}, linkAnswer: REDIRECT_TO_404});
+  w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack-v1.zip', size: 1000}]);
+  assert.equal((await shipPacks([KIT], {...options, deleteLocal: true}, w.effects)).code, 1);
+  assert.deepEqual(w.heads, [SHIPPED_V1.url]);
+  assert.deepEqual(w.state.kit, SHIPPED_V1);
+  assert(!w.calls.some((call) => call.startsWith('rm ')));
+  assert(w.local.has(ZIP));
+});
+
+test('public link: a version already shipped with nothing local left is not requested again', async () => {
+  const w = world({state: {kit: SHIPPED_V1}, linkAnswer: REDIRECT_TO_404});
+  assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
+  assert.deepEqual(w.heads, []);
 });
 
 test('--dry-run says what the run would do: skip a version shipped with nothing local, build a record from before versions', () => {

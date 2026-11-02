@@ -1,6 +1,7 @@
 // The delivery chain of `npm run ship:pack`, apart from the script so tests run it with a fake rclone:
 // render:pack, validate:pack and zip:pack, the upload to R2 under the zip's sha8, the check of key and
-// size, and the local cleanup only when asked. Every step is idempotent, so a stopped run resumes.
+// size, the request of the public link, and the local cleanup only when asked. Every step is idempotent,
+// so a stopped run resumes.
 // The manifest's version names the zip (<pack>-overlay-pack-v<N>.zip) and says when a pack ships again.
 import path from 'node:path';
 import {zipFileName} from './pack-contents';
@@ -35,6 +36,8 @@ export type ShipEffects = {
   /** Every file under a remote folder, at any depth, `name` being its path inside it (none when it does not exist). */
   remoteTree: (directory: string) => Promise<RemoteFile[]>;
   upload: (relative: string, key: string) => Promise<void>;
+  /** HEAD of the public link, following redirects: what a buyer reaches, which the R2 read-back cannot see. */
+  publicHead: (url: string) => Promise<LinkAnswer>;
   removeLocal: (relative: string) => Promise<void>;
   readState: () => Promise<ShipState>;
   writeState: (state: ShipState) => Promise<void>;
@@ -168,6 +171,50 @@ const uploadChecked = async (effects: ShipEffects, {pack, zip, sha256, bytes, re
   return key;
 };
 
+/** How long the whole chain of a link may take, every redirect included, not each hop. */
+export const LINK_TIMEOUT_MS = 30_000;
+export const MAX_LINK_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+/** The redirects followed, then the last status and raw content-length; `failure` says why there is no final answer. */
+export type LinkAnswer = {redirects: {status: number; location: string}[]; status: number | null; length: string | null; failure?: string};
+
+/** Requests a link as a buyer's browser reaches it, through the zone's rules, which the R2 API never crosses. Never throws. */
+export const headLink = async (url: string, timeoutMs = LINK_TIMEOUT_MS): Promise<LinkAnswer> => {
+  const signal = AbortSignal.timeout(timeoutMs);
+  const redirects: LinkAnswer['redirects'] = [];
+  let current = url;
+  try {
+    for (;;) {
+      // Manual, to see each Location; identity, so the length is the file's, not a compressed copy's.
+      const response = await fetch(current, {method: 'HEAD', redirect: 'manual', signal, headers: {'accept-encoding': 'identity'}});
+      const {status} = response;
+      const length = response.headers.get('content-length');
+      const location = response.headers.get('location');
+      if (!REDIRECT_STATUSES.has(status) || location === null) return {redirects, status, length};
+      redirects.push({status, location});
+      if (redirects.length > MAX_LINK_REDIRECTS) return {redirects, status, length, failure: `stopped after ${MAX_LINK_REDIRECTS} redirects`};
+      current = new URL(location, current).href;
+    }
+  } catch (error) {
+    if (signal.aborted) return {redirects, status: null, length: null, failure: `no answer within ${timeoutMs} ms`};
+    const {message, cause} = error as Error & {cause?: {message?: string}};
+    // fetch's own message is only "fetch failed"; the cause names the refusal. A host with several addresses leaves it empty.
+    return {redirects, status: null, length: null, failure: (cause?.message || message).replace(/\s+/g, ' ').trim()};
+  }
+};
+
+/** `301 -> https://www.x/y -> 404`: each redirect, then the failure or the final status. */
+export const linkChain = ({redirects, status, failure}: LinkAnswer) =>
+  [...redirects.map((hop) => `${hop.status} -> ${hop.location}`), String(failure ?? status)].join(' -> ');
+
+/** The one line that says why a link does not serve the zip, or null when it does: 200 or 206 with its exact size. */
+export const linkProblem = (url: string, answer: LinkAnswer, bytes: number): string | null => {
+  const {status, length} = answer;
+  if ((status === 200 || status === 206) && length === String(bytes)) return null;
+  return `${url} does not serve the zip: ${linkChain(answer)}; final status ${status ?? 'none'}, content-length ${length ?? 'none'}, expected 200 with ${bytes} B; state.json was not updated and the local files were kept.`;
+};
+
 /** One pack, every step. Throws ShipError at the first failure, before any local file is removed. */
 export const shipPack = async (pack: PackToShip, options: ShipOptions, effects: ShipEffects) => {
   const zip = zipPathOf(pack);
@@ -193,7 +240,13 @@ export const shipPack = async (pack: PackToShip, options: ShipOptions, effects: 
   if (bytes === null) throw new ShipError(`${zip} is missing after zip:pack.`);
   const sha256 = await effects.sha256(zip);
   const key = await uploadChecked(effects, {pack, zip, sha256, bytes, remote: options.remote});
-  const record: ShippedPack = {version: pack.version, sha256, key, url: publicUrlOf(pack, sha256), bytes, shippedAt: effects.now().toISOString()};
+  const url = publicUrlOf(pack, sha256);
+  const answer = await effects.publicHead(url);
+  // Before the record is written: a failure leaves state.json as it was, so a zone-wide outage never erases a sold link.
+  const problem = linkProblem(url, answer, bytes);
+  if (problem !== null) throw new ShipError(problem);
+  effects.log(`${pack.name}: public link answers ${linkChain(answer)} with ${bytes} B`);
+  const record: ShippedPack = {version: pack.version, sha256, key, url, bytes, shippedAt: effects.now().toISOString()};
   await effects.writeState({...await effects.readState(), [pack.name]: record});
   effects.log(`${pack.name}: shipped ${record.url}`);
   if (options.deleteLocal) {
