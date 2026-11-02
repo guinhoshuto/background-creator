@@ -10,7 +10,7 @@ Animated Wildfire Smoke Stream Background, 6 Colors x 3 Looks, Red Blue Green Pu
 
 ## Tags
 
-wildfire background, smoke background, fire background, animated background, stream background, twitch background, vtuber background, obs background, red background, looping background, ember background, dark background, fire stream overlay
+wildfire background, smoke background, fire background, animated background, stream background, twitch background, vtuber background, obs background, red background, looping background, ember background, purple background, horror background
 
 ## Description
 
