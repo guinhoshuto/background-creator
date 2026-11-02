@@ -32,6 +32,7 @@ export const wildfireSmokeLoopSchema = baseBackgroundSchema.omit({colors: true})
   sparkRise: z.number().finite().min(40).max(1200).describe('How fast the embers rise, in px per second').default(260),
   sparkTrail: z.number().finite().min(0).max(3).describe('Streak behind each ember, as a share of its motion over 60 ms; 0 for none').default(0.5),
   sparkAngle: z.number().finite().min(0).max(70).describe('How far from vertical the embers of a corner rise, in degrees towards the middle of the frame; 0 for straight up (bottom ignores it)').default(0),
+  tint: z.number().finite().min(0).max(360).describe('Hue rotation of the whole picture, smoke and embers, in degrees: 0 keeps the red').default(0),
 });
 
 export type WildfireSmokeLoopProps = z.infer<typeof wildfireSmokeLoopSchema>;
@@ -85,6 +86,8 @@ export const WildfireSmokeLoop = (props: WildfireSmokeLoopProps) => {
   // The frame comes in only after the manifest passed, so a missing file is reported with the way out above.
   return (
     <Canvas {...props}>
+      {/* The colour variations rotate the hue of the whole picture, so the embers follow the smoke (owner, 2026-11-01). */}
+      <div style={{position: 'absolute', inset: 0, filter: props.tint === 0 ? undefined : `hue-rotate(${props.tint}deg)`}}>
       {ready ? (
         <Img
           src={staticFile(wildfireFrameFile(frame, durationInFrames))}
@@ -113,6 +116,7 @@ export const WildfireSmokeLoop = (props: WildfireSmokeLoopProps) => {
           ))}
         </svg>
       ) : null}
+      </div>
     </Canvas>
   );
 };

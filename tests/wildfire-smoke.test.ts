@@ -110,6 +110,7 @@ test('WildfireSmokeLoop: the duration is a whole number of 8 s passes, the scene
   assert.equal(defaults.durationSeconds, 8);
   assert.equal(defaults.transparent, false);
   assert.equal(defaults.backgroundColor, '#260401');
+  assert.equal(defaults.tint, 0, 'the red of the frames, untouched');
   assert.ok(!('colors' in defaults), 'the sequence does not recolour');
   for (const durationSeconds of [8, 16, 24]) {
     assert.equal(wildfireSmokeLoopSchema.safeParse({durationSeconds}).success, true, `${durationSeconds} s`);
@@ -164,7 +165,7 @@ test('WildfireSmokeLoop sparks: off by default, and a scene only with a corner a
   assert.deepEqual(getSparkScene(wildfireSmokeLoopSchema.parse({}), 200, 480), []);
   assert.deepEqual(scene({sparkCount: 0}, 200), []);
   assert.ok(scene({}, 200).length > 0);
-  for (const bad of [{sparks: 'top'}, {sparkCount: -1}, {sparkCount: 401}, {sparkSize: 0}, {sparkRise: 10}, {sparkTrail: -1}, {sparkAngle: -1}, {sparkAngle: 71}]) {
+  for (const bad of [{sparks: 'top'}, {sparkCount: -1}, {sparkCount: 401}, {sparkSize: 0}, {sparkRise: 10}, {sparkTrail: -1}, {sparkAngle: -1}, {sparkAngle: 71}, {tint: -1}, {tint: 361}]) {
     assert.equal(wildfireSmokeLoopSchema.safeParse(bad).success, false, JSON.stringify(bad));
   }
 });
