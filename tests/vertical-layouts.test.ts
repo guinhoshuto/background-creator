@@ -90,6 +90,15 @@ const COMMENTS_CLEAR_CROSSINGS: Record<string, Record<string, 'window' | 'ring'>
   'three-blocks/panel': {game: 'ring'},
   'three-blocks/open': {game: 'ring'},
   'phone-game-bubble/open': {game: 'window', camera: 'window'},
+  'three-blocks-compact/window': {chat: 'window'},
+  'three-blocks-compact/panel': {},
+  'three-blocks-compact/open': {},
+  'three-blocks-rect/window': {game: 'ring', chat: 'window'},
+  'three-blocks-rect/panel': {game: 'ring'},
+  'three-blocks-rect/open': {game: 'ring'},
+  'three-blocks-rect-compact/window': {chat: 'window'},
+  'three-blocks-rect-compact/panel': {},
+  'three-blocks-rect-compact/open': {},
 };
 
 test('vertical layouts: what reaches into the comments keep-clear zone is exactly the fixed table', () => {
@@ -184,7 +193,7 @@ test('vertical frame: a chat mode without a chat block is refused with the way o
 
 test('vertical mocks: the UI mocks are QA only, and the pack planner refuses them', () => {
   const qa = Object.values(overlayCatalog).filter((entry) => isQaOnly(entry)).map((entry) => entry.id);
-  assert.deepEqual(qa, ['PrismaticPopDirectionDraft', 'LiveUiMock', 'FeedUiMock']);
+  assert.deepEqual(qa, ['LiveUiMock', 'FeedUiMock']);
   for (const composition of qa) {
     assert.throws(
       () => planPack({name: 'test-vertical', items: [{composition, formats: ['png']}]} as never, realPackDeps),

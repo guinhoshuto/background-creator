@@ -1,0 +1,390 @@
+{
+  "name": "prismatic-pop-vertical",
+  "version": 1,
+  "items": [
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": true
+      },
+      "variant": "electric-candy-arched",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": false
+      },
+      "variant": "electric-candy-arched-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": true
+      },
+      "variant": "electric-candy-arched-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": false
+      },
+      "variant": "electric-candy-arched-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-rect",
+        "ornaments": true
+      },
+      "variant": "electric-candy-rect",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-rect",
+        "ornaments": false
+      },
+      "variant": "electric-candy-rect-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-rect-compact",
+        "ornaments": true
+      },
+      "variant": "electric-candy-rect-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-rect-compact",
+        "ornaments": false
+      },
+      "variant": "electric-candy-rect-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": true
+      },
+      "variant": "night-signal-arched",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": false
+      },
+      "variant": "night-signal-arched-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": true
+      },
+      "variant": "night-signal-arched-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": false
+      },
+      "variant": "night-signal-arched-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-rect",
+        "ornaments": true
+      },
+      "variant": "night-signal-rect",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-rect",
+        "ornaments": false
+      },
+      "variant": "night-signal-rect-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-rect-compact",
+        "ornaments": true
+      },
+      "variant": "night-signal-rect-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-rect-compact",
+        "ornaments": false
+      },
+      "variant": "night-signal-rect-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-arched",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-arched-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-arched-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-arched-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-rect",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-rect",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-rect",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-rect-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-rect-compact",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-rect-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-rect-compact",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-rect-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-arched",
+      "formats": [
+        "png"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks-compact",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-arched-compact",
+      "formats": [
+        "png"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks-rect",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-rect",
+      "formats": [
+        "png"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks-rect-compact",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-rect-compact",
+      "formats": [
+        "png"
+      ]
+    }
+  ]
+}

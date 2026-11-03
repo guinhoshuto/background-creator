@@ -6,3 +6,5 @@ export * from './LiveUiMock';
 export * from './SafeZoneGuide';
 export * from './schema';
 export * from './zones';
+
+export * from './PrismaticPopLoop';

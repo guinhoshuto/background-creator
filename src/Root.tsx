@@ -30,7 +30,7 @@ const chat = overlayCatalog.ChatLoop;
 const block = overlayCatalog.BlockLoop;
 const border = overlayCatalog.BorderLoop;
 const liveFrame = overlayCatalog.LiveFrameLoop;
-const prismaticPopDirection = overlayCatalog.PrismaticPopDirectionDraft;
+const prismaticPop = overlayCatalog.PrismaticPopLoop;
 const safeZoneGuide = overlayCatalog.SafeZoneGuide;
 const liveUiMock = overlayCatalog.LiveUiMock;
 const feedUiMock = overlayCatalog.FeedUiMock;
@@ -317,12 +317,12 @@ export const RemotionRoot = () => (
         calculateMetadata={({props}: {props: typeof liveFrame.defaultProps}) => ({...metadataFor(liveFrame.id, liveFrame.schema.parse(props)), ...vertical})}
       />
       <Composition
-        id="PrismaticPopDirectionDraft"
-        component={prismaticPopDirection.component}
-        schema={prismaticPopDirection.schema}
-        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"direction":"electric-candy" as const}}
-        {...getCompositionMetadata(prismaticPopDirection.defaultProps, vertical)}
-        calculateMetadata={({props}: {props: typeof prismaticPopDirection.defaultProps}) => ({...metadataFor(prismaticPopDirection.id, prismaticPopDirection.schema.parse(props)), ...vertical})}
+        id="PrismaticPopLoop"
+        component={prismaticPop.component}
+        schema={prismaticPop.schema}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"look":"electric-candy" as const,"layout":"three-blocks" as const,"chatMode":"open" as const,"ornaments":true}}
+        {...getCompositionMetadata(prismaticPop.defaultProps, vertical)}
+        calculateMetadata={({props}: {props: typeof prismaticPop.defaultProps}) => ({...metadataFor(prismaticPop.id, prismaticPop.schema.parse(props)), ...vertical})}
       />
       <Composition
         id="SafeZoneGuide"

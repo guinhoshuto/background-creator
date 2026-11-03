@@ -39,7 +39,7 @@ const sizePatch = sizeProps;
 test('overlays: o catálogo registra chat, bloco e borda com layout e o tipo de cada um', () => {
   assert.deepEqual(overlays.map((entry) => [entry.id, entry.kind]), [
     ['ChatLoop', 'chat'], ['BlockLoop', 'block'], ['BorderLoop', 'border'],
-    ['LiveFrameLoop', 'vertical'], ['PrismaticPopDirectionDraft', 'vertical'], ['SafeZoneGuide', 'vertical'], ['LiveUiMock', 'vertical'], ['FeedUiMock', 'vertical'],
+    ['LiveFrameLoop', 'vertical'], ['PrismaticPopLoop', 'vertical'], ['SafeZoneGuide', 'vertical'], ['LiveUiMock', 'vertical'], ['FeedUiMock', 'vertical'],
   ]);
   for (const entry of sized) {
     assert.ok(getLayoutOf(entry), `${entry.id}: sem getLayout o export não publica o JSON de posição`);
@@ -111,7 +111,7 @@ test('overlays: o Studio abre cada tamanho nomeado com o canvas do layout e o no
 
 test('overlays: o tipo vertical abre em 1080×1920, sem layout de caixa, nomeado live-frame, e recusa --size', () => {
   const root = RemotionRoot();
-  assert.deepEqual(verticals.map((entry) => entry.id), ['LiveFrameLoop', 'PrismaticPopDirectionDraft', 'SafeZoneGuide', 'LiveUiMock', 'FeedUiMock']);
+  assert.deepEqual(verticals.map((entry) => entry.id), ['LiveFrameLoop', 'PrismaticPopLoop', 'SafeZoneGuide', 'LiveUiMock', 'FeedUiMock']);
   for (const entry of verticals) {
     assert.equal(getLayoutOf(entry), null, `${entry.id}: the canvas is the kind's, not a box's`);
     assert.deepEqual(entry.schema.parse({}), entry.defaultProps, entry.id);

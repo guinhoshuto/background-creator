@@ -1,16 +1,17 @@
 # Vertical overlays
 
-The `vertical` kind draws a whole 1080×1920 portrait screen for mobile live streams (TikTok LIVE and the like): a background around transparent windows for the camera, the game and, in one layout, a chat widget. Phase 1 is the engine only and look-neutral: a solid or shared fill, a plain ring around each window, no theme and no ornaments. The look comes later, from a direction sheet (see [Still to do](#still-to-do)).
+The `vertical` kind draws a whole 1080×1920 portrait screen for mobile live streams (TikTok LIVE and the like): a background around transparent windows for the camera, the game and, in stacked layouts, a chat widget. `LiveFrameLoop` is the look-neutral engine. `PrismaticPopLoop` is the first themed composition, with three approved looks sharing the four-variant stacked standard below.
 
 Code: `src/overlays/vertical/` (`zones.ts`, `layouts.ts`, `geometry.ts`, `schema.ts`, `LiveFrameLoop.tsx`, `SafeZoneGuide.tsx`, `LiveUiMock.tsx`, `FeedUiMock.tsx`). Tests: `tests/vertical-layouts.test.ts`, plus the `vertical` rows of `tests/kinds.test.ts`, `tests/sizes.test.ts`, `tests/overlay-registry.test.ts` and the `vertical …` entries of the markup snapshot.
 
 ## Compositions
 
-All four sit in the Studio folder `vertical`, at the kind's fixed 1080×1920, 60 fps, transparent by default.
+All five sit in the Studio folder `vertical`, at the kind's fixed 1080×1920, 60 fps, transparent by default.
 
 | Id | What it is | Ships |
 | --- | --- | --- |
 | `LiveFrameLoop` | The frame: the fill with the layout's windows cut out, a ring around each window and, in `panel` mode, the opaque chat panel. Props: `layout`, `chatMode`, the shared `fill*` group (default solid `#3A3548`), `ring`, `ringColor`, `ringLineColor`, `panelColor`, `panelOpacity`. | Yes, once a vertical pack exists |
+| `PrismaticPopLoop` | Electric Candy, Night Signal and Sugar Voltage. Four stacked layouts, restrained looping halftone/glints and an `ornaments: false` plain option. See [theme specification](themes/prismatic-pop.md). | Yes |
 | `SafeZoneGuide` | The buyer's PNG guide: the zones below as translucent boxes with generic English labels and the layout's windows dashed on top; `view` is `live` or `feed`. It never moves. | Yes, as a PNG |
 | `LiveUiMock` | A generic LIVE interface (host card, viewers, comment pills, message bar) to check a frame against. | Never: QA only |
 | `FeedUiMock` | A generic feed interface (action column, caption) for the same check. | Never: QA only |
@@ -50,6 +51,9 @@ The spec's §4.2 layouts as data in `src/overlays/vertical/layouts.ts`: each win
 | `single-stadium` | Chatting and IRL, feed videos | `camera` (110, 210) 860×1310, radius 430: a pill, half circles top and bottom | `open` |
 | `single-rect` | Chatting and IRL, feed videos | `camera` (100, 250) 880×1230, radius 0 | `open` |
 | `three-blocks` (default) | PC gameplay | `camera` (110, 260) 860×484 `[200, 200, 56, 56]`; `game` (110, 800) 860×484, 56; `chat` (110, 1340) 860×420 `[56, 56, 200, 200]` | `window`, `panel`, `open` |
+| `three-blocks-compact` | PC gameplay, compact gap | Same camera/chat; game at (110, 784), unchanged size/radii | `window`, `panel`, `open` |
+| `three-blocks-rect` | PC gameplay, rectangular windows | Same positions/sizes as `three-blocks`; camera corners all 56 | `window`, `panel`, `open` |
+| `three-blocks-rect-compact` | PC gameplay, rectangular windows and compact gap | Camera corners all 56; game at (110, 784); chat unchanged | `window`, `panel`, `open` |
 | `phone-game-bubble` | Mobile gameplay | `game` (160, 260) 760×1352, 56; `camera` (60, 1360) 300×300, 150: a round bubble over the game | `open` |
 
 Chat modes (`chatMode`, default `open`):
@@ -59,6 +63,21 @@ Chat modes (`chatMode`, default `open`):
 - `open`: no frame and no panel, only the background, for who streams to the one app only.
 
 A layout without a chat block accepts only `open`; the schema refuses the rest with the way out: `single-rect has no chat block: use chatMode "open", or the layout three-blocks for "window".`
+
+### Standard four-variant delivery matrix
+
+Owner decision, 2026-11-03: every new stacked vertical look ships **all four** combinations, not a choice of one. Use the exported `STACKED_LAYOUT_VARIANTS` from `layouts.ts` for presets, pack items, QA and review jobs. The original pill, rectangle and phone-game layouts remain supported; they are not substitutes for this delivery matrix.
+
+| Variant suffix | Layout id | Upper corners | Camera–game window gap |
+| --- | --- | --- | --- |
+| `arched` | `three-blocks` | 200 px top, 56 px bottom | 56 px |
+| `arched-compact` | `three-blocks-compact` | 200 px top, 56 px bottom | 40 px |
+| `rect` | `three-blocks-rect` | Uniform 56 px | 56 px |
+| `rect-compact` | `three-blocks-rect-compact` | Uniform 56 px | 40 px |
+
+The lower window always has uniform 56 px corners. Both source windows stay 860×484, at x110; the camera stays at y260. Compact variants move only the game up by 16 px, from y800 to y784. Chat stays at y1340. The raw gap is measured between the transparent windows: subtract both outer decorative extents for visible clearance. Prismatic Pop's 19 px ink outline leaves 18 px normally and 2 px in compact mode; a future theme must keep positive clearance. Do not shrink the sources to create a gap or let the rings overlap.
+
+Shapes should stay restrained and thick decorative ribbons must continue beyond the canvas or meet their support cleanly; no unexplained cut ends. Review every sibling variant and enlarge the window corners and bridge between blocks.
 
 ## Rules
 
@@ -88,12 +107,14 @@ The spec's own layouts break two of its rules in places. Both tables are compare
 
 In `three-blocks` the game block ends at y 1284, so its ring band (to y 1297) reaches 7 px into the zone in every mode; in `phone-game-bubble` the 9:16 game (to y 1612) enters too, not only the bubble.
 
+`three-blocks-rect` has the same crossings as `three-blocks`. Both compact layouts end the game at y1268: the neutral 13 px ring ends at y1281, outside the comments zone; the themed 19 px ink ends at y1287. Their `open`/`panel` modes have no crossing, and `window` mode has only the intended chat window. These cases are pinned in `tests/vertical-layouts.test.ts`.
+
 ## Deviation from the spec: 1351 → 1352
 
 The spec's `phone-game-bubble` game is 760×1351. An odd height breaks the even-size rule (H.264 needs even sides, and Remotion crops an odd one by 1 px without warning), so the window is 760×1352 and ends at y 1612 (commented in `layouts.ts`).
 
 ## Still to do
 
-- **Style and ornaments**: a look for the frame (fill, ring, decoration), only after a direction sheet with 2 to 4 directions, made when the owner brings the idea and the references (`AGENTS.md`, "Art direction before polish").
-- **A `*-vertical` pack and vertical QA**: the manifest, the layouts and chat modes it ships, and a `qa:kit` path with 1080×1920 mockups over the UI mocks.
+- **More themes**: use the four-variant matrix after the owner approves the direction sheet (`AGENTS.md`, "Art direction before polish"). Prismatic Pop's production composition, presets and pack establish the first example.
+- **Vertical QA is available**: `npm run qa:kit -- prismatic-pop-vertical` builds per-look/plain portrait sheets and 1080×1920 LIVE mockups. MP4 gets a separate still with `previewFormat: "mp4"`, so PNG/WebM transparency cannot hide a broken green-screen composite. A stills job always writes PNG images; `previewFormat` chooses the composition's alpha policy for the image.
 - **File names per layout in the one-off render**: today every layout renders to `LiveFrameLoop-live-frame.<ext>` (a pack names them by `variant`); see `docs/review-followups.md`.

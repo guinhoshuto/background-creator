@@ -1,18 +1,33 @@
-import type {ReactNode} from 'react';
-import {AbsoluteFill} from 'remotion';
+import {createContext, useContext, type ReactNode} from 'react';
+import {useCurrentFrame, useVideoConfig} from 'remotion';
+import {OverlayCanvas} from '../shared/render';
+import {STACKED_LAYOUT_IDS} from './layouts';
 import {z} from 'zod';
 import {bandPath, getLiveFrameScene, holePath} from './LiveFrameLoop';
 import {cornerRectPath} from './geometry';
 import {liveFrameLoopSchema, verticalBaseFields} from './schema';
 
-/** Original vector studies: reference provenance and visual brief live in the ignored task handoff. */
-const schema = z.object({
+/** Three original code-drawn looks approved on the direction sheet. */
+export const PRISMATIC_POP_LOOKS = ['electric-candy', 'night-signal', 'sugar-voltage'] as const;
+export const prismaticPopSchema = z.object({
   ...verticalBaseFields(),
-  direction: z.enum(['electric-candy', 'night-signal', 'sugar-voltage'])
-    .describe('First-round art direction; identical three-blocks/open windows in all studies')
-    .default('electric-candy'),
-});
-type Props = z.infer<typeof schema>;
+  look: z.enum(PRISMATIC_POP_LOOKS).describe('Prismatic Pop palette and artwork').default('electric-candy'),
+  layout: z.enum(STACKED_LAYOUT_IDS).describe('Stacked windows: arched or rectangular, regular or compact gap').default('three-blocks'),
+  chatMode: z.literal('open').describe('Open field for native LIVE comments').default('open'),
+  ornaments: z.boolean().describe('Decorative ribbons, shapes, halftone and glints; off keeps the palette and rings').default(true),
+}).strict();
+export type PrismaticPopProps = z.infer<typeof prismaticPopSchema>;
+/** Includes the outer ink keyline; the compact layout must leave two of these apart. */
+export const PRISMATIC_RING_EXTENT = 19;
+
+/** Whole-tile drift and smooth glint breathing; the windows and ribbons never move. */
+export const getPrismaticPopMotion = (frame: number, durationInFrames: number, seed = 1) => {
+  const phase = ((frame % durationInFrames) + durationInFrames) % durationInFrames / durationInFrames;
+  const angle = phase * Math.PI * 2 + (seed - 1) * 0.37;
+  const breath = (1 - Math.cos(angle)) / 2;
+  return {dots: phase * 15, glintOpacity: 1 - breath * 0.12, glintScale: 1 - breath * 0.035};
+};
+const GlintMotion = createContext({glintOpacity: 1, glintScale: 1});
 const INK = '#121021';
 const PAPER = '#FFF8E9';
 const palettes = {
@@ -30,10 +45,12 @@ const Cutouts = ({holes, prefix, children}: {holes: string[]; prefix: string; ch
     </g>
   ), children);
 
-const Spark = ({x, y, size, color, turn = 0}: {x: number; y: number; size: number; color: string; turn?: number}) => (
-  <path d="M0 -1 L.2 -.2 L1 0 L.2 .2 L0 1 L-.2 .2 L-1 0 L-.2 -.2 Z"
-    transform={`translate(${x} ${y}) rotate(${turn}) scale(${size})`} fill={color} />
-);
+const Spark = ({x, y, size, color, turn = 0}: {x: number; y: number; size: number; color: string; turn?: number}) => {
+  const motion = useContext(GlintMotion);
+  return <path d="M0 -1 L.2 -.2 L1 0 L.2 .2 L0 1 L-.2 .2 L-1 0 L-.2 -.2 Z"
+    transform={`translate(${x} ${y}) rotate(${turn}) scale(${size * motion.glintScale})`}
+    opacity={motion.glintOpacity} fill={color} />;
+};
 
 const Ribbon = ({d, color, width = 26}: {d: string; color: string; width?: number}) => (
   <g fill="none" strokeLinejoin="round">
@@ -133,32 +150,32 @@ const SugarVoltage = ({prefix}: {prefix: string}) => (
   </g>
 );
 
-export const PrismaticPopDirectionDraft = (props: Props) => {
-  const palette = palettes[props.direction];
-  const prefix = `prismatic-${props.direction}`;
-  const scene = getLiveFrameScene(liveFrameLoopSchema.parse({layout: 'three-blocks', chatMode: 'open'}), 0, 480);
+export const PrismaticPopFrame = ({props, frame, durationInFrames}: {props: PrismaticPopProps; frame: number; durationInFrames: number}) => {
+  const motion = getPrismaticPopMotion(frame, durationInFrames, props.seed);
+  const palette = palettes[props.look];
+  const prefix = `prismatic-${props.look}`;
+  const scene = getLiveFrameScene(liveFrameLoopSchema.parse({layout: props.layout, chatMode: props.chatMode}), frame, durationInFrames);
   // Native comments stay on a solid dark field. This clip also prevents decorative strokes entering it.
   const comments = {x: 0, y: 1290, width: 780, height: 485, radii: [0, 0, 0, 0] as const};
-  const art = props.direction === 'electric-candy' ? <ElectricCandy prefix={prefix} />
-    : props.direction === 'night-signal' ? <NightSignal prefix={prefix} /> : <SugarVoltage prefix={prefix} />;
+  const art = props.look === 'electric-candy' ? <ElectricCandy prefix={prefix} />
+    : props.look === 'night-signal' ? <NightSignal prefix={prefix} /> : <SugarVoltage prefix={prefix} />;
   return (
-    <AbsoluteFill style={{backgroundColor: props.transparent ? 'transparent' : props.backgroundColor}}>
-      <svg width={1080} height={1920} viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+    <OverlayCanvas key={frame} props={props} width={1080} height={1920} idPrefix={prefix}>
         <defs>
-          <pattern id={`${prefix}-dots`} width={15} height={15} patternUnits="userSpaceOnUse" patternTransform="rotate(16)">
-            <circle cx={4} cy={4} r={3.1} fill={props.direction === 'night-signal' ? '#8E59BD' : INK} />
+          <pattern id={`${prefix}-dots`} width={15} height={15} patternUnits="userSpaceOnUse" patternTransform={`rotate(16) translate(${motion.dots} 0)`}>
+            <circle cx={4} cy={4} r={3.1} fill={props.look === 'night-signal' ? '#8E59BD' : INK} />
           </pattern>
         </defs>
         <Cutouts holes={scene.holes} prefix={`${prefix}-windows`}>
           <rect width={1080} height={1920} fill={palette.dark} />
           <Cutouts holes={[holePath(comments)]} prefix={`${prefix}-comments`}>
             <path d="M0 0 H1080 V1920 H0 V1775 H780 V1290 H0Z" fill={palette.ground} />
-            {art}
+            {props.ornaments ? <GlintMotion.Provider value={motion}>{art}</GlintMotion.Provider> : null}
           </Cutouts>
           <g data-layer="window-rings">
             {scene.windows.map((window) => (
               <g key={window.id}>
-                <path d={bandPath(window, 0, 19)} fill={INK} fillRule="evenodd" />
+                <path d={bandPath(window, 0, PRISMATIC_RING_EXTENT)} fill={INK} fillRule="evenodd" />
                 <path d={bandPath(window, 3, 13)} fill={palette.edge} fillRule="evenodd" />
                 <path d={bandPath(window, 0, 3)} fill={palette.line} fillRule="evenodd" />
                 <path d={cornerRectPath(window)} fill="none" stroke={palette.line} strokeWidth={1} />
@@ -166,12 +183,17 @@ export const PrismaticPopDirectionDraft = (props: Props) => {
             ))}
           </g>
         </Cutouts>
-      </svg>
-    </AbsoluteFill>
+    </OverlayCanvas>
   );
 };
 
-export const prismaticPopDirectionCatalogEntry = {
-  id: 'PrismaticPopDirectionDraft', kind: 'vertical', component: PrismaticPopDirectionDraft,
-  schema, defaultProps: schema.parse({}), qaOnly: true,
+export const PrismaticPopLoop = (props: PrismaticPopProps) => {
+  const frame = useCurrentFrame();
+  const {durationInFrames} = useVideoConfig();
+  return <PrismaticPopFrame props={props} frame={frame} durationInFrames={durationInFrames} />;
+};
+
+export const prismaticPopCatalogEntry = {
+  id: 'PrismaticPopLoop', kind: 'vertical', component: PrismaticPopLoop,
+  schema: prismaticPopSchema, defaultProps: prismaticPopSchema.parse({}),
 } as const;

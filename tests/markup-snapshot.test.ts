@@ -20,7 +20,7 @@ import {BorderFrame} from '../src/overlays/border';
 import {ChatFrame} from '../src/overlays/chat';
 import {
   FeedUiMockFrame, LiveFrameFrame, LiveUiMockFrame, SafeZoneGuideFrame, feedUiMockSchema, layoutModes, liveFrameLoopSchema,
-  liveUiMockSchema, safeZoneGuideSchema,
+  liveUiMockSchema, safeZoneGuideSchema, PrismaticPopFrame,
 } from '../src/overlays/vertical';
 import {getCompositionMetadata} from '../src/settings';
 
@@ -168,7 +168,7 @@ for (const background of HALLOWEEN_BACKGROUNDS) {
 }
 
 const OVERLAY_FRAMES: Record<string, ComponentType<{props: never; frame: number; durationInFrames: number}>> = {
-  ChatLoop: ChatFrame, BlockLoop: BlockFrame, BorderLoop: BorderFrame, LiveFrameLoop: LiveFrameFrame,
+  ChatLoop: ChatFrame, BlockLoop: BlockFrame, BorderLoop: BorderFrame, LiveFrameLoop: LiveFrameFrame, PrismaticPopLoop: PrismaticPopFrame,
 };
 
 // The vertical kind before any pack ships it: every layout and chat mode of the look-neutral

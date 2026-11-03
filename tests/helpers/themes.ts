@@ -81,5 +81,7 @@ export const BACKGROUND_PACK_KITS: Readonly<Record<string, readonly KitTheme[]>>
  * packs/*.json `files` (the names in packs/) must hold, sorted: every theme's pack, exactly, and the background
  * packs among them (BACKGROUND_PACK_FILE); any other file is unexpected.
  */
+/** Portrait packs have their own layout matrix and never enter the landscape ornament harness. */
+export const VERTICAL_PACKS = ['prismatic-pop-vertical'] as const;
 export const expectedPackFiles = (files: readonly string[]): string[] =>
-  [...new Set([...OVERLAY_THEMES.map((name) => `${name}.json`), ...files.filter((file) => BACKGROUND_PACK_FILE.test(file))])].sort();
+  [...new Set([...OVERLAY_THEMES.map((name) => `${name}.json`), ...VERTICAL_PACKS.map((name) => `${name}.json`), ...files.filter((file) => BACKGROUND_PACK_FILE.test(file))])].sort();

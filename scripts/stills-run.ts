@@ -44,7 +44,7 @@ const prepare = (job: StillsJob): Prepared[] => {
       if (presetFile && !existsSync(presetFile)) throw new Error(`preset not found: presets/${spec.preset}.json`);
       const preset = presetFile ? JSON.parse(readFileSync(presetFile, 'utf8')) as Record<string, unknown> : {};
       const sizeProps = spec.size === undefined ? {} : expandSize(asset.kind, spec.size);
-      const merged = mergeStillProps({preset, props: spec.props, sizeProps, overlay: asset.kind !== 'background'});
+      const merged = mergeStillProps({preset, props: spec.props, sizeProps, overlay: asset.kind !== 'background', previewFormat: spec.previewFormat});
       const props = asset.schema.strict().parse(merged) as Record<string, unknown>;
       const canvas = getLayoutOf(asset)?.(props).canvas ?? kindPolicies[asset.kind].fixedSize;
       if (!canvas) throw new Error('the composition does not report its canvas');

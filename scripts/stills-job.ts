@@ -4,6 +4,7 @@
 import path from 'node:path';
 import {PNG} from 'pngjs';
 import {z} from 'zod';
+import {outputFormatSchema, type OutputFormat} from '../src/settings';
 import type {PlannedFile} from './pack-plan';
 import {MAX_CROP, backdropColor, boxProblem, cropImage, regionStats, type RegionStats} from './pixel-stats';
 
@@ -21,6 +22,7 @@ export const stillSchema = z.object({
   preset: z.string().regex(/^[a-z0-9-]+$/).optional().describe('File in presets/, without .json'),
   size: z.string().min(1).optional().describe('Named size (chat, block and border only)'),
   props: z.record(z.string(), z.unknown()).optional().describe('Props applied over the preset'),
+  previewFormat: outputFormatSchema.optional().describe('Render a PNG using this format\'s alpha policy; default png. Use mp4 to inspect a green-screen composite.'),
   frame: z.number().int().default(0).describe('Frame; negative counts from the end (-1 is the last)'),
 }).strict();
 
@@ -146,11 +148,12 @@ export const resolveOutDir = (job: StillsJob, jobFile: string, projectRoot: stri
  * bleed < PNG output (and transparency for overlays). Parsed by the catalog schema (strict) in
  * the runner, so a still renders exactly what a pack would.
  */
-export const mergeStillProps = ({preset, props, sizeProps, overlay}: {
+export const mergeStillProps = ({preset, props, sizeProps, overlay, previewFormat = 'png'}: {
   preset: Record<string, unknown>; props: Record<string, unknown> | undefined; sizeProps: Record<string, unknown>; overlay: boolean;
+  previewFormat?: OutputFormat;
 }) => {
   const bleed = props?.bleed === undefined ? {} : {bleed: props.bleed};
-  return {...preset, ...(props ?? {}), ...sizeProps, ...bleed, outputFormat: 'png', ...(overlay ? {transparent: true} : {})};
+  return {...preset, ...(props ?? {}), ...sizeProps, ...bleed, outputFormat: previewFormat, ...(overlay ? {transparent: true} : {})};
 };
 
 /** A frame index inside the loop: negative frames count from the end. */
@@ -378,6 +381,25 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
     for (const sheet of SHEETS) {
       const names = files.filter(({file}) => file.kind === sheet.kind).map(({stem}) => `${stem}-${frame}`);
       if (names.length > 0) sheets.push({out: `${sheet.out}-${frame}.png`, names, cols: Math.min(sheet.cols, names.length), width: sheet.width, bg: sheet.bg});
+    }
+    const verticals = files.filter(({file}) => file.kind === 'vertical' && file.composition !== 'SafeZoneGuide');
+    if (verticals.length > 0) {
+      const ui = `vertical-live-ui-${frame}`;
+      stills.push({name: ui, id: 'LiveUiMock', props: {comments: 5}, frame});
+      const groups = new Map<string, string[]>();
+      for (const {stem, file} of verticals) {
+        const name = `${stem}-${frame}`;
+        const look = typeof file.props.look === 'string' ? file.props.look : file.composition;
+        const group = `${look}${file.props.ornaments === false ? '-plain' : ''}`;
+        groups.set(group, [...(groups.get(group) ?? []), name]);
+        mockups.push({out: `mock-${name}.png`, base: '#373544', width: 1080, height: 1920, maxWidth: 1080,
+          layers: [{name, x: 0, y: 0}, {name: ui, x: 0, y: 0}]});
+        // A transparent still cannot prove an opaque export's alpha policy.
+        if (plan.some((other) => other.composition === file.composition && other.variant === file.variant && other.format === 'mp4')) {
+          stills.push({name: `${stem}-green-screen-${frame}`, id: file.composition, props: file.props, previewFormat: 'mp4', frame});
+        }
+      }
+      for (const [group, names] of groups) sheets.push({out: `sheet-vertical-${group}-${frame}.png`, names, cols: Math.min(4, names.length), width: 360, bg: 'checker'});
     }
     const light = ['chat-standard', 'card', 'webcam-16x9', 'webcam-round-sm'].flatMap((size) => bySize.get(size) ?? []);
     if (light.length > 0) sheets.push({out: `sheet-light-${frame}.png`, names: light, cols: light.length, width: 390, bg: 'light'});
