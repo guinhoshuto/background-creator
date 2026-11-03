@@ -184,7 +184,7 @@ test('vertical frame: a chat mode without a chat block is refused with the way o
 
 test('vertical mocks: the UI mocks are QA only, and the pack planner refuses them', () => {
   const qa = Object.values(overlayCatalog).filter((entry) => isQaOnly(entry)).map((entry) => entry.id);
-  assert.deepEqual(qa, ['LiveUiMock', 'FeedUiMock']);
+  assert.deepEqual(qa, ['PrismaticPopDirectionDraft', 'LiveUiMock', 'FeedUiMock']);
   for (const composition of qa) {
     assert.throws(
       () => planPack({name: 'test-vertical', items: [{composition, formats: ['png']}]} as never, realPackDeps),

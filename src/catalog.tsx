@@ -24,6 +24,7 @@ import {borderCatalogEntry} from './overlays/border';
 import {chatCatalogEntry} from './overlays/chat';
 import type {AssetLayout} from './overlays/shared/box';
 import type {AssetMotion} from './overlays/shared/motion';
+import {prismaticPopDirectionCatalogEntry} from './overlays/vertical/PrismaticPopDirectionDraft';
 import {
   feedUiMockCatalogEntry, liveFrameCatalogEntry, liveUiMockCatalogEntry, safeZoneGuideCatalogEntry,
 } from './overlays/vertical';
@@ -215,6 +216,7 @@ export const overlayCatalog = {
   BlockLoop: blockCatalogEntry,
   BorderLoop: borderCatalogEntry,
   LiveFrameLoop: liveFrameCatalogEntry,
+  PrismaticPopDirectionDraft: prismaticPopDirectionCatalogEntry,
   SafeZoneGuide: safeZoneGuideCatalogEntry,
   LiveUiMock: liveUiMockCatalogEntry,
   FeedUiMock: feedUiMockCatalogEntry,
