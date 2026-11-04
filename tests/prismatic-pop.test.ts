@@ -45,16 +45,53 @@ test('Prismatic Pop: motion closes in phase and velocity and is independent of r
       assert.deepEqual(getPrismaticPopMotion(frame, duration, seed), before);
       assert.deepEqual(getPrismaticPopMotion(frame + duration, duration, seed), before);
     }
-    // Translate is periodic modulo one 15 px tile, with constant speed on both sides.
+    // Four complete 15 px tiles per cycle, with constant speed on both sides.
     const e = 0.001;
     const a = getPrismaticPopMotion(-e, duration, seed);
     const b = getPrismaticPopMotion(0, duration, seed);
     const c = getPrismaticPopMotion(e, duration, seed);
-    assert.ok(Math.abs((15 - a.dots) / e - c.dots / e) < 1e-8);
-    for (const key of ['glintOpacity', 'glintScale'] as const) {
-      assert.ok(Math.abs((b[key] - a[key]) / e - (c[key] - b[key]) / e) < 1e-6, key);
+    assert.ok(Math.abs((60 - a.dots) / e - c.dots / e) < 1e-8);
+    for (const key of ['glintOpacity', 'glintScale', 'ribbonWave', 'ribbonCounterWave'] as const) {
+      assert.ok(Math.abs((b[key] - a[key]) / e - (c[key] - b[key]) / e) < 1e-5, key);
     }
     assert.notDeepEqual(getPrismaticPopMotion(0, duration, seed), getPrismaticPopMotion(duration / 2, duration, seed));
+  }
+});
+
+test('Prismatic Pop: visible motifs move, with ribbon ends fixed off canvas and satellites on their rails', () => {
+  const numbers = (value: string) => [...value.matchAll(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)].map(([number]) => Number(number));
+  const ribbonPaths = (html: string) => [...html.matchAll(/<g data-motion="ribbon"[^>]*><path d="([^"]+)"/g)].map((match) => numbers(match[1]!));
+  for (const look of ['electric-candy', 'sugar-voltage'] as const) {
+    const props = prismaticPopSchema.parse({look});
+    const samples = Array.from({length: 8}, (_, index) => ribbonPaths(markup(props, index * 60)));
+    assert.ok(samples[0]!.length >= 3, look);
+    for (const [index, start] of samples[0]!.entries()) {
+      const endpoints = [start.slice(0, 2), start.slice(-2)];
+      for (const [x, y] of endpoints) assert.ok(x! < 0 || x! >= 1080 || y! < 0 || y! >= 1920, `${look}: end stays outside canvas`);
+      for (const sample of samples) {
+        const path = sample[index]!;
+        assert.deepEqual([path.slice(0, 2), path.slice(-2)], endpoints, `${look}: ribbon ends remain anchored`);
+      }
+      const travel = Math.max(...start.map((_, coordinate) => {
+        const values = samples.map((sample) => sample[index]![coordinate]!);
+        return Math.max(...values) - Math.min(...values);
+      }));
+      assert.ok(travel >= 20, `${look} ribbon ${index}: geometry must visibly flex, not just change its texture (${travel}px)`);
+    }
+  }
+  const props = prismaticPopSchema.parse({look: 'night-signal'});
+  const satellites = (frame: number) => [...markup(props, frame).matchAll(/data-motion="satellite" cx="([^"]+)" cy="([^"]+)"/g)]
+    .map((match) => [Number(match[1]), Number(match[2])]);
+  const start = satellites(0);
+  assert.equal(start.length, 4);
+  for (let frame = 0; frame < 480; frame += 15) {
+    for (const [index, [x, y]] of satellites(frame).entries()) {
+      const [cx, cy, rx, ry] = index < 2 ? [312, 119, 330, 88] : [1043, 758, 54, 184];
+      assert.ok(Math.abs(((x! - cx!) / rx!) ** 2 + ((y! - cy!) / ry!) ** 2 - 1) < 1e-9, 'satellite stays on the ellipse');
+    }
+  }
+  for (const [index, [x, y]] of satellites(120).entries()) {
+    assert.ok(Math.hypot(x! - start[index]![0]!, y! - start[index]![1]!) > 50, 'satellites visibly travel');
   }
 });
 

@@ -1,5 +1,6 @@
 import {createContext, useContext, type ReactNode} from 'react';
 import {useCurrentFrame, useVideoConfig} from 'remotion';
+import {loopPhase, TAU} from '../../loop';
 import {OverlayCanvas} from '../shared/render';
 import {STACKED_LAYOUT_IDS} from './layouts';
 import {z} from 'zod';
@@ -20,14 +21,18 @@ export type PrismaticPopProps = z.infer<typeof prismaticPopSchema>;
 /** Includes the outer ink keyline; the compact layout must leave two of these apart. */
 export const PRISMATIC_RING_EXTENT = 19;
 
-/** Whole-tile drift and smooth glint breathing; the windows and ribbons never move. */
+/** Four halftone tiles per loop, flexible ribbons and complete satellite orbits. */
 export const getPrismaticPopMotion = (frame: number, durationInFrames: number, seed = 1) => {
-  const phase = ((frame % durationInFrames) + durationInFrames) % durationInFrames / durationInFrames;
-  const angle = phase * Math.PI * 2 + (seed - 1) * 0.37;
+  const phase = loopPhase(frame, durationInFrames) / TAU;
+  const angle = phase * TAU + (seed - 1) * 0.37;
   const breath = (1 - Math.cos(angle)) / 2;
-  return {dots: phase * 15, glintOpacity: 1 - breath * 0.12, glintScale: 1 - breath * 0.035};
+  return {
+    phase, angle, dots: phase * 60,
+    ribbonWave: Math.sin(angle), ribbonCounterWave: Math.sin(angle * 2 + 0.8),
+    glintOpacity: 1 - breath * 0.2, glintScale: 1.08 - breath * 0.3,
+  };
 };
-const GlintMotion = createContext({glintOpacity: 1, glintScale: 1});
+const Motion = createContext(getPrismaticPopMotion(0, 480));
 const INK = '#121021';
 const PAPER = '#FFF8E9';
 const palettes = {
@@ -46,21 +51,43 @@ const Cutouts = ({holes, prefix, children}: {holes: string[]; prefix: string; ch
   ), children);
 
 const Spark = ({x, y, size, color, turn = 0}: {x: number; y: number; size: number; color: string; turn?: number}) => {
-  const motion = useContext(GlintMotion);
-  return <path d="M0 -1 L.2 -.2 L1 0 L.2 .2 L0 1 L-.2 .2 L-1 0 L-.2 -.2 Z"
-    transform={`translate(${x} ${y}) rotate(${turn}) scale(${size * motion.glintScale})`}
-    opacity={motion.glintOpacity} fill={color} />;
+  const {angle} = useContext(Motion);
+  // Position-derived offsets keep neighboring glints from flashing in unison.
+  const local = angle * 2 + x * 0.013 + y * 0.007;
+  const breath = (1 - Math.cos(local)) / 2;
+  return <path data-motion="glint" d="M0 -1 L.2 -.2 L1 0 L.2 .2 L0 1 L-.2 .2 L-1 0 L-.2 -.2 Z"
+    transform={`translate(${x} ${y}) rotate(${turn + 18 * Math.sin(local)}) scale(${size * (1.08 - breath * 0.3)})`}
+    opacity={1 - breath * 0.2} fill={color} />;
 };
 
-const Ribbon = ({d, color, width = 26}: {d: string; color: string; width?: number}) => (
-  <g fill="none" strokeLinejoin="round">
+const Ribbon = ({d, color, width = 26, flow = false}: {d: string; color: string; width?: number; flow?: boolean}) => {
+  const {phase} = useContext(Motion);
+  return <g data-motion="ribbon" fill="none" strokeLinejoin="round">
     <path d={d} stroke={INK} strokeWidth={width + 10} />
     <path d={d} stroke={color} strokeWidth={width} />
-  </g>
-);
+    {flow ? <path d={d} pathLength={100} stroke={PAPER} strokeWidth={width * 0.3}
+      strokeLinecap="round" strokeDasharray="3 17" strokeDashoffset={-phase * 100} /> : null}
+  </g>;
+};
 
-const ElectricCandy = ({prefix}: {prefix: string}) => (
-  <g>
+/** Satellites stay attached to their own rail, including under its rotation. */
+const Orbit = ({cx, cy, rx, ry, turn, width, offset = 0}: {
+  cx: number; cy: number; rx: number; ry: number; turn: number; width: number; offset?: number;
+}) => {
+  const {angle} = useContext(Motion);
+  return <g transform={`rotate(${turn} ${cx} ${cy})`}>
+    <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="#2AE5EB" strokeWidth={width} />
+    {[0, 0.44].map((spacing, index) => {
+      const local = angle + (offset + spacing) * TAU;
+      return <circle key={index} data-motion="satellite" cx={cx + rx * Math.cos(local)} cy={cy + ry * Math.sin(local)}
+        r={index === 0 ? 13 : 9} fill={index === 0 ? '#C8FF3C' : PAPER} stroke={INK} strokeWidth={3} />;
+    })}
+  </g>;
+};
+
+const ElectricCandy = ({prefix}: {prefix: string}) => {
+  const {ribbonWave: a, ribbonCounterWave: b} = useContext(Motion);
+  return <g>
     {/* Large asymmetrical plates, with the frame windows cutting their inner edges. */}
     <path d="M-80 -30 H720 L420 126 L680 174 L236 382 L-80 500Z" fill="#FF7050" />
     <path d="M-40 200 L493 -45 L620 -45 L209 297 L-40 414Z" fill="#2637E9" stroke={INK} strokeWidth={8} />
@@ -75,9 +102,9 @@ const ElectricCandy = ({prefix}: {prefix: string}) => (
     <path d="M20 1848 L447 1815 L600 1878 L337 1859 L90 1922Z" fill={PAPER} />
     <path d="M0 46 L330 0 L254 99 L0 230Z M1044 480 L1110 430 V810 L998 864Z M863 1340 L1080 1285 V1490 L940 1540Z"
       fill={`url(#${prefix}-dots)`} />
-    <Ribbon d="M-80 102 C160 23 314 211 543 180 S845 -46 1040 80 S952 364 1150 417" color="#5BE8ED" width={28} />
-    <Ribbon d="M1110 790 C988 808 988 1120 1110 1208" color="#5BE8ED" width={20} />
-    <Ribbon d="M816 1960 C810 1850 985 1760 1120 1840" color="#FFABD0" width={30} />
+    <Ribbon d={`M-80 102 C160 ${23 + 22 * a} 314 ${211 + 28 * b} 543 ${180 + 18 * a} S845 ${-46 + 20 * b} 1040 80 S${952 + 22 * a} ${364 + 18 * b} 1150 417`} color="#5BE8ED" width={28} flow />
+    <Ribbon d={`M1110 790 C${988 + 16 * a} 808 ${988 - 16 * a} 1120 1110 1208`} color="#5BE8ED" width={20} flow />
+    <Ribbon d={`M816 1960 C810 ${1850 + 12 * a} 985 ${1760 + 16 * b} 1120 1840`} color="#FFABD0" width={30} flow />
     <g stroke={PAPER} strokeWidth={5} fill="none">
       <ellipse cx={160} cy={234} rx={66} ry={117} transform="rotate(48 160 234)" />
       <path d="M20 541 L67 510 M18 558 L65 527 M1008 1391 L1049 1368 M1016 1410 L1057 1387" />
@@ -86,8 +113,8 @@ const ElectricCandy = ({prefix}: {prefix: string}) => (
     <Spark x={58} y={770} size={26} color={PAPER} turn={12} />
     <Spark x={993} y={1560} size={42} color="#2637E9" turn={-12} />
     <circle cx={60} cy={1140} r={15} fill="#FFE745" stroke={INK} strokeWidth={5} />
-  </g>
-);
+  </g>;
+};
 
 const NightSignal = ({prefix}: {prefix: string}) => (
   <g>
@@ -106,9 +133,9 @@ const NightSignal = ({prefix}: {prefix: string}) => (
     <path d="M0 105 L504 0 L308 227 L0 413Z M1009 602 L1100 541 V975 L994 1001Z M810 1835 L1080 1770 V1920 H810Z"
       fill={`url(#${prefix}-dots)`} />
     <g fill="none" stroke="#2AE5EB">
-      <ellipse cx={312} cy={119} rx={330} ry={88} strokeWidth={13} transform="rotate(-17 312 119)" />
+      <Orbit cx={312} cy={119} rx={330} ry={88} width={13} turn={-17} />
       <ellipse cx={312} cy={119} rx={301} ry={62} strokeWidth={3} transform="rotate(-17 312 119)" />
-      <ellipse cx={1043} cy={758} rx={54} ry={184} strokeWidth={9} transform="rotate(20 1043 758)" />
+      <Orbit cx={1043} cy={758} rx={54} ry={184} width={9} turn={20} offset={0.27} />
       <path d="M37 937 L62 829 L23 853 L70 718" strokeWidth={8} />
     </g>
     <g fill="none" stroke={PAPER} strokeWidth={4}>
@@ -122,8 +149,9 @@ const NightSignal = ({prefix}: {prefix: string}) => (
   </g>
 );
 
-const SugarVoltage = ({prefix}: {prefix: string}) => (
-  <g>
+const SugarVoltage = ({prefix}: {prefix: string}) => {
+  const {ribbonWave: a, ribbonCounterWave: b} = useContext(Motion);
+  return <g>
     <path d="M-40 -30 H604 C551 97 327 100 217 235 C111 363 88 470 -40 507Z" fill="#FFB6A9" />
     <path d="M879 -30 H1100 V741 C955 671 1014 505 906 369 C845 294 697 254 735 164 C760 109 870 89 879 -30Z" fill="#FFAACD" />
     <path d="M-35 436 C80 417 108 581 57 696 C29 760 71 805 131 829 L49 898 L-35 861Z" fill="#A8E8EE" />
@@ -132,11 +160,11 @@ const SugarVoltage = ({prefix}: {prefix: string}) => (
     <path d="M-40 1835 C142 1748 206 1876 388 1817 C610 1741 688 1838 824 1808 L1009 1950 H-40Z" fill="#FFB6A9" />
     <path d="M-15 99 C159 37 229 118 288 183 L213 265 C159 176 53 191 -15 209Z M1005 442 L1100 466 V739 L1019 677Z"
       fill={`url(#${prefix}-dots)`} />
-    <Ribbon d="M-90 175 C34 -63 459 1 505 93 C564 207 215 252 216 149 C217 46 700 112 824 -50" color="#FA6EA7" width={44} />
-    <Ribbon d="M878 -70 C1039 27 771 207 930 277 C1025 319 1040 179 981 165 C914 151 967 402 1133 464" color="#353BDB" width={37} />
-    <Ribbon d="M1110 660 C970 720 970 966 1110 1040" color="#4DE0E8" width={23} />
-    <Ribbon d="M1098 1376 C970 1450 958 1710 1098 1790" color="#353BDB" width={26} />
-    <Ribbon d="M-55 1910 C100 1778 215 1927 413 1869 S670 1795 834 1970" color="#4DE0E8" width={24} />
+    <Ribbon d={`M-90 175 C34 ${-63 + 18 * a} 459 ${1 + 26 * b} 505 ${93 + 20 * a} C564 ${207 + 18 * b} ${215 + 20 * a} ${252 + 16 * b} 216 ${149 + 12 * a} C217 ${46 + 16 * b} 700 ${112 + 22 * a} 824 -50`} color="#FA6EA7" width={44} />
+    <Ribbon d={`M878 -70 C${1039 + 22 * a} 27 ${771 + 28 * b} 207 930 ${277 + 14 * a} C1025 ${319 + 18 * b} ${1040 - 18 * a} 179 981 ${165 + 12 * b} C${914 - 16 * a} 151 ${967 + 16 * b} 402 1133 464`} color="#353BDB" width={37} />
+    <Ribbon d={`M1110 660 C${970 + 22 * a} 720 ${970 - 22 * a} 966 1110 1040`} color="#4DE0E8" width={23} />
+    <Ribbon d={`M1098 1376 C${970 + 18 * b} 1450 ${958 - 18 * b} 1710 1098 1790`} color="#353BDB" width={26} />
+    <Ribbon d={`M-55 1910 C100 ${1778 + 18 * a} 215 ${1927 + 20 * b} 413 ${1869 + 12 * a} S670 ${1795 + 16 * b} 834 1970`} color="#4DE0E8" width={24} />
     <path d="M49 1004 L83 1051 L49 1158 L11 1120Z" fill="#353BDB" />
     <path d="M965 1370 L1051 1313 L1089 1376 L1005 1432Z" fill="#353BDB" />
     <g stroke="#353BDB" fill="none" strokeWidth={4}>
@@ -147,8 +175,8 @@ const SugarVoltage = ({prefix}: {prefix: string}) => (
     <Spark x={998} y={540} size={37} color={PAPER} turn={-8} />
     <Spark x={998} y={1600} size={21} color={PAPER} turn={12} />
     <circle cx={60} cy={1229} r={12} fill="#FA6EA7" stroke="#353BDB" strokeWidth={4} />
-  </g>
-);
+  </g>;
+};
 
 export const PrismaticPopFrame = ({props, frame, durationInFrames}: {props: PrismaticPopProps; frame: number; durationInFrames: number}) => {
   const motion = getPrismaticPopMotion(frame, durationInFrames, props.seed);
@@ -171,7 +199,7 @@ export const PrismaticPopFrame = ({props, frame, durationInFrames}: {props: Pris
         </defs>
         <Cutouts holes={scene.holes} prefix={`${prefix}-windows`}>
           <rect width={1080} height={1920} fill={`url(#${prefix}-ground)`} />
-          {props.ornaments ? <GlintMotion.Provider value={motion}>{art}</GlintMotion.Provider> : null}
+          {props.ornaments ? <Motion.Provider value={motion}>{art}</Motion.Provider> : null}
           <g data-layer="window-rings">
             {scene.windows.map((window) => (
               <g key={window.id}>
