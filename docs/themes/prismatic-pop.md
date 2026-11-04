@@ -12,12 +12,14 @@ Shapes are deliberately simple. Thick ribbons continue outside the canvas on bot
 
 ## Animation and plain versions
 
-The loop is 8 seconds. The first version moved only one halftone tile and barely changed glints; the owner found it visually static. Version 2 gives each motif a motion that follows its shape:
+The loop is 8 seconds. The first version moved only one halftone tile and barely changed glints; the owner found it visually static. Version 3 refines the motion of each motif:
 
-- Electric Candy: anchored ribbons flex, while short printed highlights travel along their centerlines. The dash period divides the total travel exactly.
+- Electric Candy: anchored ribbons flex with solid, uninterrupted color; no marks travel inside them. Selected angular plates make small, held shakes.
 - Night Signal: contrasting satellites follow the actual ellipses, making one complete orbit per loop; each rail keeps its own rotation and phase.
 - Sugar Voltage: the ribbon control points move in opposing smooth waves, bending the curls without translating the whole composition or exposing a cut end.
 - All looks: halftone advances four 15 px tiles per loop. Glints gently rock and breathe on staggered four-second cycles, between 0.78–1.08 scale and 0.8–1 opacity.
+
+Selected polygons in all three looks move by at most 2 px horizontally and 1 px vertically. Each makes two short shakes per 8-second loop, in five held poses at 8 steps per second, with long rests and staggered timing. The rest pose spans the loop seam; windows, rings and the chat field never shake.
 
 Ribbon endpoints remain fixed outside the canvas; only the internal control points flex (up to 28 px). Smooth sine waves and whole-turn linear motion close in position and velocity, driven only by frame and seed. No full-screen flashes or movement in the reading area. The SVG is recreated per frame to prevent stale raster tiles. `ornaments: false` removes artwork and motion, retaining the continuous palette background and the rings.
 

@@ -1,6 +1,6 @@
 {
   "name": "prismatic-pop-vertical",
-  "version": 2,
+  "version": 3,
   "items": [
     {
       "composition": "PrismaticPopLoop",

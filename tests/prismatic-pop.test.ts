@@ -95,6 +95,39 @@ test('Prismatic Pop: visible motifs move, with ribbon ends fixed off canvas and 
   }
 });
 
+test('Prismatic Pop: ribbons have no internal marks and polygons shake in small held poses', () => {
+  for (const look of PRISMATIC_POP_LOOKS) {
+    const props = prismaticPopSchema.parse({look});
+    const poses = (frame: number) => [...markup(props, frame).matchAll(/data-motion="polygon-shake" transform="translate\(([^)]+)\)"/g)]
+      .map((match) => match[1]!.split(' ').map(Number));
+    const start = poses(0);
+    assert.ok(start.length >= 2, `${look}: polygons must participate`);
+    assert.deepEqual(poses(-0.001), start, 'the seam holds its pose on both sides');
+    assert.deepEqual(poses(0.001), start);
+    assert.deepEqual(poses(480), start);
+    const samples = Array.from({length: 480}, (_, frame) => poses(frame));
+    for (const [index] of start.entries()) {
+      const keys = samples.map((sample) => sample[index]!.join(','));
+      assert.ok(new Set(keys).size >= 3, `${look}: shake must move`);
+      assert.ok(keys.filter((key) => key === '0,0').length > 380, 'short shakes leave long resting intervals');
+      const held = keys.slice(1).filter((key, frame) => key === keys[frame]).length;
+      assert.ok(held > 450, 'motion must hold poses instead of smoothly drifting');
+      for (const sample of samples) {
+        const [x, y] = sample[index]!;
+        assert.ok(Math.abs(x!) <= 2 && Math.abs(y!) <= 1, 'shake remains discreet');
+      }
+    }
+    assert.ok(samples.some((sample) => new Set(sample.map((pose) => pose.join(','))).size > 1), 'polygons are staggered');
+    for (const frame of [0, 45, 120, 315]) {
+      for (const [, ribbon] of markup(props, frame).matchAll(/<g data-motion="ribbon"[^>]*>(.*?)<\/g>/g)) {
+        assert.equal((ribbon!.match(/<path /g) ?? []).length, 2, 'ribbons contain only outline and solid color');
+        assert.doesNotMatch(ribbon!, /stroke-dash|<circle|<ellipse/);
+      }
+    }
+    assert.doesNotMatch(markup({...props, ornaments: false}, 45), /polygon-shake/);
+  }
+});
+
 test('Prismatic Pop: every look/layout keeps its rings fixed, plain removes art, and MP4 composites green', () => {
   for (const look of PRISMATIC_POP_LOOKS) for (const {layout} of STACKED_LAYOUT_VARIANTS) {
     const props = prismaticPopSchema.parse({look, layout, backgroundColor: '#00FF00'});

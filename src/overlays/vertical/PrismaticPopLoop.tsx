@@ -60,14 +60,20 @@ const Spark = ({x, y, size, color, turn = 0}: {x: number; y: number; size: numbe
     opacity={1 - breath * 0.2} fill={color} />;
 };
 
-const Ribbon = ({d, color, width = 26, flow = false}: {d: string; color: string; width?: number; flow?: boolean}) => {
-  const {phase} = useContext(Motion);
-  return <g data-motion="ribbon" fill="none" strokeLinejoin="round">
+const Ribbon = ({d, color, width = 26}: {d: string; color: string; width?: number}) => (
+  <g data-motion="ribbon" fill="none" strokeLinejoin="round">
     <path d={d} stroke={INK} strokeWidth={width + 10} />
     <path d={d} stroke={color} strokeWidth={width} />
-    {flow ? <path d={d} pathLength={100} stroke={PAPER} strokeWidth={width * 0.3}
-      strokeLinecap="round" strokeDasharray="3 17" strokeDashoffset={-phase * 100} /> : null}
-  </g>;
+  </g>
+);
+
+/** Two short, held shakes per loop; the rest pose spans the loop seam at every offset. */
+const Shake = ({offset = 0, children}: {offset?: 0 | 10 | 18; children: ReactNode}) => {
+  const {phase} = useContext(Motion);
+  const step = (Math.floor(phase * 64) + offset) % 32;
+  const poses = [[2, -1], [-2, 1], [1, -1], [-1, 0], [1, 1]] as const;
+  const [x, y] = poses[step - 4] ?? [0, 0];
+  return <g data-motion="polygon-shake" transform={`translate(${x} ${y})`}>{children}</g>;
 };
 
 /** Satellites stay attached to their own rail, including under its rotation. */
@@ -91,20 +97,20 @@ const ElectricCandy = ({prefix}: {prefix: string}) => {
     {/* Large asymmetrical plates, with the frame windows cutting their inner edges. */}
     <path d="M-80 -30 H720 L420 126 L680 174 L236 382 L-80 500Z" fill="#FF7050" />
     <path d="M-40 200 L493 -45 L620 -45 L209 297 L-40 414Z" fill="#2637E9" stroke={INK} strokeWidth={8} />
-    <path d="M440 -10 L661 -10 L528 96 L774 74 L528 230 L558 147 L354 192Z" fill="#FFE745" stroke={INK} strokeWidth={7} />
+    <Shake><path d="M440 -10 L661 -10 L528 96 L774 74 L528 230 L558 147 L354 192Z" fill="#FFE745" stroke={INK} strokeWidth={7} /></Shake>
     <path d="M780 -20 L1100 -20 L1100 635 L972 458 L1039 219 L745 306 L913 105Z" fill="#242BCF" stroke={INK} strokeWidth={8} />
     <path d="M998 338 L1100 288 L1100 877 L1011 947 L990 638 L1049 603Z" fill="#FFAFCD" stroke={INK} strokeWidth={7} />
-    <path d="M-40 485 L90 420 L79 720 L165 784 L53 842 L-40 776Z" fill="#FFE745" stroke={INK} strokeWidth={8} />
+    <Shake offset={10}><path d="M-40 485 L90 420 L79 720 L165 784 L53 842 L-40 776Z" fill="#FFE745" stroke={INK} strokeWidth={8} /></Shake>
     <path d="M-30 864 L87 924 L38 1268 L198 1334 L-30 1370Z" fill="#2736EC" />
     <path d="M1004 1010 L1110 940 L1110 1940 L751 1940 L817 1768 L960 1796 L858 1585 L1000 1460 L931 1334Z" fill="#FF513E" stroke={INK} strokeWidth={10} />
-    <path d="M818 1604 L992 1670 L1101 1605 L1101 1823 L902 1770Z" fill="#FFE745" stroke={INK} strokeWidth={8} />
+    <Shake offset={18}><path d="M818 1604 L992 1670 L1101 1605 L1101 1823 L902 1770Z" fill="#FFE745" stroke={INK} strokeWidth={8} /></Shake>
     <path d="M-30 1847 L445 1801 L609 1880 L850 1838 L975 1950 H-30Z" fill="#2637E9" stroke={INK} strokeWidth={8} />
     <path d="M20 1848 L447 1815 L600 1878 L337 1859 L90 1922Z" fill={PAPER} />
     <path d="M0 46 L330 0 L254 99 L0 230Z M1044 480 L1110 430 V810 L998 864Z M863 1340 L1080 1285 V1490 L940 1540Z"
       fill={`url(#${prefix}-dots)`} />
-    <Ribbon d={`M-80 102 C160 ${23 + 22 * a} 314 ${211 + 28 * b} 543 ${180 + 18 * a} S845 ${-46 + 20 * b} 1040 80 S${952 + 22 * a} ${364 + 18 * b} 1150 417`} color="#5BE8ED" width={28} flow />
-    <Ribbon d={`M1110 790 C${988 + 16 * a} 808 ${988 - 16 * a} 1120 1110 1208`} color="#5BE8ED" width={20} flow />
-    <Ribbon d={`M816 1960 C810 ${1850 + 12 * a} 985 ${1760 + 16 * b} 1120 1840`} color="#FFABD0" width={30} flow />
+    <Ribbon d={`M-80 102 C160 ${23 + 22 * a} 314 ${211 + 28 * b} 543 ${180 + 18 * a} S845 ${-46 + 20 * b} 1040 80 S${952 + 22 * a} ${364 + 18 * b} 1150 417`} color="#5BE8ED" width={28} />
+    <Ribbon d={`M1110 790 C${988 + 16 * a} 808 ${988 - 16 * a} 1120 1110 1208`} color="#5BE8ED" width={20} />
+    <Ribbon d={`M816 1960 C810 ${1850 + 12 * a} 985 ${1760 + 16 * b} 1120 1840`} color="#FFABD0" width={30} />
     <g stroke={PAPER} strokeWidth={5} fill="none">
       <ellipse cx={160} cy={234} rx={66} ry={117} transform="rotate(48 160 234)" />
       <path d="M20 541 L67 510 M18 558 L65 527 M1008 1391 L1049 1368 M1016 1410 L1057 1387" />
@@ -121,13 +127,13 @@ const NightSignal = ({prefix}: {prefix: string}) => (
     <path d="M-20 -20 H512 L324 159 L441 198 L120 407 L-20 320Z" fill="#33215A" />
     <path d="M574 -30 L1090 -30 V404 L955 514 L989 291 L768 352 L881 167 L591 237 L695 112 L500 118Z"
       fill="#FA46AA" stroke={INK} strokeWidth={9} />
-    <path d="M858 38 L1000 12 L932 130 L1075 106 L875 321 L920 186 L791 223Z" fill="#C8FF3C" stroke={INK} strokeWidth={8} />
+    <Shake><path d="M858 38 L1000 12 L932 130 L1075 106 L875 321 L920 186 L791 223Z" fill="#C8FF3C" stroke={INK} strokeWidth={8} /></Shake>
     <path d="M-20 317 L82 236 L48 598 L109 632 L34 758 L-20 725Z" fill="#C8FF3C" />
     <path d="M1016 491 L1100 435 V1296 L993 1388 L1020 1155 L970 1104 L1052 927 L989 827Z" fill="#352564" />
-    <path d="M-30 990 L79 892 L43 1058 L92 1124 L-30 1282Z" fill="#FD4DB3" />
+    <Shake offset={10}><path d="M-30 990 L79 892 L43 1058 L92 1124 L-30 1282Z" fill="#FD4DB3" /></Shake>
     <path d="M1003 1239 L1110 1133 V1925 H794 L874 1820 L806 1732 L995 1594 L888 1500 L1055 1404Z"
       fill="#C8FF3C" stroke={INK} strokeWidth={9} />
-    <path d="M861 1744 L1102 1535 V1655 L954 1783 L1104 1852 L1034 1938 L831 1814Z" fill="#2AE5EB" stroke={INK} strokeWidth={8} />
+    <Shake offset={18}><path d="M861 1744 L1102 1535 V1655 L954 1783 L1104 1852 L1034 1938 L831 1814Z" fill="#2AE5EB" stroke={INK} strokeWidth={8} /></Shake>
     <path d="M-20 1824 L250 1788 L433 1872 L689 1791 L876 1936 H-20Z" fill="#392066" />
     <path d="M-20 1879 L311 1835 L406 1888 L661 1830 L774 1935 H-20Z" fill="#FA46AA" />
     <path d="M0 105 L504 0 L308 227 L0 413Z M1009 602 L1100 541 V975 L994 1001Z M810 1835 L1080 1770 V1920 H810Z"
@@ -165,8 +171,8 @@ const SugarVoltage = ({prefix}: {prefix: string}) => {
     <Ribbon d={`M1110 660 C${970 + 22 * a} 720 ${970 - 22 * a} 966 1110 1040`} color="#4DE0E8" width={23} />
     <Ribbon d={`M1098 1376 C${970 + 18 * b} 1450 ${958 - 18 * b} 1710 1098 1790`} color="#353BDB" width={26} />
     <Ribbon d={`M-55 1910 C100 ${1778 + 18 * a} 215 ${1927 + 20 * b} 413 ${1869 + 12 * a} S670 ${1795 + 16 * b} 834 1970`} color="#4DE0E8" width={24} />
-    <path d="M49 1004 L83 1051 L49 1158 L11 1120Z" fill="#353BDB" />
-    <path d="M965 1370 L1051 1313 L1089 1376 L1005 1432Z" fill="#353BDB" />
+    <Shake><path d="M49 1004 L83 1051 L49 1158 L11 1120Z" fill="#353BDB" /></Shake>
+    <Shake offset={18}><path d="M965 1370 L1051 1313 L1089 1376 L1005 1432Z" fill="#353BDB" /></Shake>
     <g stroke="#353BDB" fill="none" strokeWidth={4}>
       <ellipse cx={167} cy={284} rx={47} ry={104} transform="rotate(38 167 284)" />
       <path d="M62 578 L62 646 M46 594 L78 625 M960 1169 L1039 1133 M970 1191 L1049 1155" />
