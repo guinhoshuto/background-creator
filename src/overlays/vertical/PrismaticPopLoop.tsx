@@ -67,12 +67,12 @@ const Ribbon = ({d, color, width = 26}: {d: string; color: string; width?: numbe
   </g>
 );
 
-/** Two short, held shakes per loop; the rest pose spans the loop seam at every offset. */
+/** A tiny circular translation keeps speed uniform, with no holds or seam discontinuity. */
 const Shake = ({offset = 0, children}: {offset?: 0 | 10 | 18; children: ReactNode}) => {
-  const {phase} = useContext(Motion);
-  const step = (Math.floor(phase * 64) + offset) % 32;
-  const poses = [[2, -1], [-2, 1], [1, -1], [-1, 0], [1, 1]] as const;
-  const [x, y] = poses[step - 4] ?? [0, 0];
+  const {angle} = useContext(Motion);
+  const local = angle * 8 + offset / 32 * TAU;
+  const x = 2 * Math.cos(local);
+  const y = 2 * Math.sin(local);
   return <g data-motion="polygon-shake" transform={`translate(${x} ${y})`}>{children}</g>;
 };
 

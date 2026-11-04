@@ -19,7 +19,7 @@ Bring bold color to your vertical stream with Prismatic Pop: a pop art overlay p
 Choose from three looks, each with four layouts. Animated and still options are included, along with a simpler version of every combination.
 
 ✦ THREE LOOKS
-- Electric Candy: coral red, electric blue, bright yellow and aqua, with solid-color flexing ribbons and subtly shaking geometric accents.
+- Electric Candy: coral red, electric blue, bright yellow and aqua, with solid-color flexing ribbons and geometric accents in subtle, continuous motion.
 - Night Signal: deep violet, hot pink, lime and cyan, with bright dots circling elliptical tracks.
 - Sugar Voltage: lavender, peach, pink and aqua, with rounded shapes and gently bending ribbon curls.
 
