@@ -3,7 +3,7 @@ import {useCurrentFrame, useVideoConfig} from 'remotion';
 import {OverlayCanvas} from '../shared/render';
 import {STACKED_LAYOUT_IDS} from './layouts';
 import {z} from 'zod';
-import {bandPath, getLiveFrameScene, holePath} from './LiveFrameLoop';
+import {bandPath, getLiveFrameScene} from './LiveFrameLoop';
 import {cornerRectPath} from './geometry';
 import {liveFrameLoopSchema, verticalBaseFields} from './schema';
 
@@ -31,9 +31,9 @@ const GlintMotion = createContext({glintOpacity: 1, glintScale: 1});
 const INK = '#121021';
 const PAPER = '#FFF8E9';
 const palettes = {
-  'electric-candy': {ground: '#FF443B', dark: '#1C162A', edge: '#FFE745', line: PAPER},
-  'night-signal': {ground: '#18102E', dark: '#151121', edge: '#C8FF3C', line: '#FF65B8'},
-  'sugar-voltage': {ground: '#EAE5FF', dark: '#232037', edge: '#FF93AF', line: '#F8F8FF'},
+  'electric-candy': {ground: '#FF443B', chat: '#B53248', edge: '#FFE745', line: PAPER},
+  'night-signal': {ground: '#18102E', chat: '#211838', edge: '#C8FF3C', line: '#FF65B8'},
+  'sugar-voltage': {ground: '#EAE5FF', chat: '#665984', edge: '#FF93AF', line: '#F8F8FF'},
 } as const;
 
 /** Intersect screen-minus-hole clips; a combined evenodd path would refill overlapping windows. */
@@ -155,23 +155,23 @@ export const PrismaticPopFrame = ({props, frame, durationInFrames}: {props: Pris
   const palette = palettes[props.look];
   const prefix = `prismatic-${props.look}`;
   const scene = getLiveFrameScene(liveFrameLoopSchema.parse({layout: props.layout, chatMode: props.chatMode}), frame, durationInFrames);
-  // Native comments stay on a solid dark field. This clip also prevents decorative strokes entering it.
-  const comments = {x: 0, y: 1290, width: 780, height: 485, radii: [0, 0, 0, 0] as const};
+  // The whole lower background settles into a readable palette tone, without a separate chat panel.
   const art = props.look === 'electric-candy' ? <ElectricCandy prefix={prefix} />
     : props.look === 'night-signal' ? <NightSignal prefix={prefix} /> : <SugarVoltage prefix={prefix} />;
   return (
     <OverlayCanvas key={frame} props={props} width={1080} height={1920} idPrefix={prefix}>
         <defs>
+          <linearGradient id={`${prefix}-ground`} x1={0} y1={1060} x2={0} y2={1360} gradientUnits="userSpaceOnUse">
+            <stop offset={0} stopColor={palette.ground} />
+            <stop offset={1} stopColor={palette.chat} />
+          </linearGradient>
           <pattern id={`${prefix}-dots`} width={15} height={15} patternUnits="userSpaceOnUse" patternTransform={`rotate(16) translate(${motion.dots} 0)`}>
             <circle cx={4} cy={4} r={3.1} fill={props.look === 'night-signal' ? '#8E59BD' : INK} />
           </pattern>
         </defs>
         <Cutouts holes={scene.holes} prefix={`${prefix}-windows`}>
-          <rect width={1080} height={1920} fill={palette.dark} />
-          <Cutouts holes={[holePath(comments)]} prefix={`${prefix}-comments`}>
-            <path d="M0 0 H1080 V1920 H0 V1775 H780 V1290 H0Z" fill={palette.ground} />
-            {props.ornaments ? <GlintMotion.Provider value={motion}>{art}</GlintMotion.Provider> : null}
-          </Cutouts>
+          <rect width={1080} height={1920} fill={`url(#${prefix}-ground)`} />
+          {props.ornaments ? <GlintMotion.Provider value={motion}>{art}</GlintMotion.Provider> : null}
           <g data-layer="window-rings">
             {scene.windows.map((window) => (
               <g key={window.id}>

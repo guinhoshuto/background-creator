@@ -6,13 +6,13 @@ Three owner-approved original vector looks: **Electric Candy**, **Night Signal**
 
 `PrismaticPopLoop` uses `STACKED_LAYOUT_VARIANTS`, the shared [four-variant standard](../vertical-overlays.md#standard-four-variant-delivery-matrix): arched and uniformly rounded rectangular windows, each with regular and compact spacing. Every look includes all four. Camera and game remain 860×484, on a 1080×1920 canvas at 60 fps. The chat field is open for native LIVE comments.
 
-The raw camera/game gap is 56 px or 40 px. The outer ink extends 19 px from each hole, leaving 18 px or 2 px of actual clearance. The rectangular camera takes the lower window's uniform 56 px corner radius. Window positions, rings, ribbons and filled artwork never move. Comments at x0–780/y1290–1775 remain on a uniform dark field. No art enters the transparent windows.
+The raw camera/game gap is 56 px or 40 px. The outer ink extends 19 px from each hole, leaving 18 px or 2 px of actual clearance. The rectangular camera takes the lower window's uniform 56 px corner radius. Window positions, rings, ribbons and filled artwork never move. Native comments use the open lower-left space: the full-width background gradually settles into a readable tone from the same palette, without a separate rectangle, outline or clipped edge around the chat. No art enters the transparent windows.
 
 Shapes are deliberately simple. Thick ribbons continue outside the canvas on both ends; do not introduce isolated cut ends or irregular hanging plates. All layout siblings need a visual check of corners, supports and the narrow gap.
 
 ## Animation and plain versions
 
-The loop is 8 seconds. Halftone moves one 15 px tile per cycle, and small glints breathe by at most 12% opacity and 3.5% scale. Seed and frame are the only inputs; the cycle closes in position and velocity. The SVG is recreated per frame to prevent stale raster tiles. `ornaments: false` removes artwork and motion, retaining palette, dark comment field and the rings.
+The loop is 8 seconds. Halftone moves one 15 px tile per cycle, and small glints breathe by at most 12% opacity and 3.5% scale. Seed and frame are the only inputs; the cycle closes in position and velocity. The SVG is recreated per frame to prevent stale raster tiles. `ornaments: false` removes artwork and motion, retaining the continuous palette background and the rings.
 
 ## Presets and pack
 
