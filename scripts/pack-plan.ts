@@ -9,7 +9,7 @@ import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
 import {exportProfileSchema, getCompositionMetadata, hasAlpha, outputFormatSchema, type ExportProfile, type OutputFormat} from '../src/settings';
 import {NAMED_SIZES, getSize, sizeTag, sizesForKind} from '../src/sizes';
-import {assertCanGoOn, assertCanStart} from './disk';
+import {RUN_MIN_FREE_BYTES, START_MIN_FREE_BYTES, assertCanGoOn, assertCanStart, gibibytes, waitForFloor, type DiskWait} from './disk';
 import {diskNeed} from './pack-estimate';
 import {expandSize} from './render-args';
 
@@ -568,12 +568,18 @@ export type PackRunEffects = {
 export const packCounter = (index: number, total: number) => `[${index + 1}/${total}]`;
 export const PACK_COUNTER_PATTERN = '\\[(\\d+)/(\\d+)\\]';
 
-export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effects, diskLabel, target = manifest.name}: {
+export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effects, diskLabel, target = manifest.name, diskWait}: {
   manifest: PackManifest; plan: readonly PlannedFile[]; fullPlan: readonly PlannedFile[]; overwrite: boolean;
   deps: PackDeps; effects: PackRunEffects; diskLabel: string;
   /** How the CLI named the pack (a name or a .json path), repeated in the next step it points to. */
   target?: string;
+  /** `--wait-disk`: below a disk floor the run waits for space (waitForFloor) instead of failing at once. */
+  diskWait?: DiskWait;
 }) => {
+  const keepFloor = async (assertFloor: (free: number) => void, waitingLine: (free: number) => string) => {
+    if (diskWait === undefined) assertFloor(await effects.freeBytes());
+    else await waitForFloor({assertFloor, waitingLine, freeBytes: effects.freeBytes, log: effects.log, diskWait});
+  };
   const packRoot = path.posix.join('out', 'packs', manifest.name);
   const manifestPath = path.posix.join(packRoot, 'manifest.json');
   const previous = await effects.readJson(manifestPath);
@@ -592,7 +598,10 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
   // Partial renders of an interrupted run are never valid output: gone before anything else, freeing their space.
   const swept = await effects.sweepScratch();
   if (swept.length > 0) effects.log(scratchText(swept.length, 'removed'));
-  assertCanStart({free: await effects.freeBytes(), where: diskLabel, then: PACK_RESUME});
+  await keepFloor(
+    (free) => assertCanStart({free, where: diskLabel, then: PACK_RESUME}),
+    (free) => `waiting for disk: ${gibibytes(free)} free, a render needs at least ${gibibytes(START_MIN_FREE_BYTES)} to start`,
+  );
   let rendered = 0;
   let skipped = 0;
   for (const [index, file] of plan.entries()) {
@@ -613,7 +622,11 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
       skipped += 1;
     } else {
       // Checked again per file, against what this file takes: one pack can take many gigabytes.
-      assertCanGoOn({free: await effects.freeBytes(), estimate: diskNeed(file), where: diskLabel, then: PACK_RESUME});
+      const need = diskNeed(file);
+      await keepFloor(
+        (free) => assertCanGoOn({free, estimate: need, where: diskLabel, then: PACK_RESUME}),
+        (free) => `waiting for disk: ${gibibytes(free)} free, next file needs ${gibibytes(need)} and ${gibibytes(RUN_MIN_FREE_BYTES)} must stay free`,
+      );
       effects.log(changed
         ? `${counter} ${file.output}: Warning: its props changed since it was rendered; rendering it again.`
         : `${counter} ${file.output}`);

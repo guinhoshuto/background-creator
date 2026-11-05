@@ -4,7 +4,9 @@ import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
+import {gibibytes, type DiskWait} from '../scripts/disk';
 import {resolveExport} from '../scripts/export';
+import {diskNeed} from '../scripts/pack-estimate';
 import {
   deliveryVersion, dryRunText, existingManifestFile, filterPlan, packFileEntry, packManifestSchema, packPropsHash, parsePackManifest, planPack,
   realPackDeps, runPack, scratchText, type PackAsset, type PackDeps, type PackManifest, type PlannedFile, type PackRunEffects,
@@ -343,6 +345,155 @@ test('pack: a execução exporta um por vez, move os sidecars para o manifesto e
   assert.equal(background.hole, null);
   assert.equal(background.frames, 480);
   assert.equal(background.alpha, false);
+});
+
+const GiB = 1024 ** 3;
+
+/** `--wait-disk` on a fake disk: `readings` are what freeBytes reads in turn, the last one repeated; sleeping only moves the clock. */
+const diskWaitRun = (readings: number[], initial: Record<string, unknown> = {}) => {
+  const run = fakeRun(initial);
+  const left = [...readings];
+  const sleeps: number[] = [];
+  const slotEvents: string[] = [];
+  let clock = 1_000_000;
+  const effects: PackRunEffects = {
+    ...run.effects,
+    freeBytes: async () => (left.length > 1 ? left.shift()! : left[0]!),
+  };
+  const diskWait: DiskWait = {
+    sleep: async (ms) => {
+      // A wait that never gives up fails here, instead of spinning without ever yielding to the test timeout.
+      if (sleeps.length >= 200) throw new Error('still waiting after 200 sleeps');
+      sleeps.push(ms);
+      clock += ms;
+    },
+    now: () => clock,
+    withoutSlot: async (wait) => {
+      slotEvents.push('given back');
+      await wait();
+      slotEvents.push('taken again');
+    },
+  };
+  const waitLines = () => run.logs.filter((line) => line.startsWith('waiting for disk:'));
+  return {...run, effects, diskWait, sleeps, slotEvents, waitLines};
+};
+
+const packFor = (plan: PlannedFile[]) => ({manifest: manifest([]), plan, fullPlan: plan, overwrite: false, deps: fakeDeps, diskLabel: 'out'});
+
+test('pack --wait-disk: a dip before a file logs one line, waits every 5 min without the slot, then the run completes', async () => {
+  const plan = samplePlan();
+  // Start, first file, then the second file reads 1 GiB on its check and on two polls; the third poll finds space.
+  const run = diskWaitRun([10 * GiB, 10 * GiB, 1 * GiB, 1 * GiB, 1 * GiB, 10 * GiB]);
+  const result = await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.deepEqual(run.exported, plan.map((file) => file.output));
+  assert.deepEqual([result.rendered, result.skipped], [4, 0]);
+  assert.equal(run.waitLines().length, 1, 'one line per wait, not one per retry');
+  assert.match(run.waitLines()[0]!, /^waiting for disk: 1\.0 GiB free, next file needs \d+\.\d GiB and 2\.0 GiB must stay free$/);
+  assert.deepEqual(run.sleeps, [300_000, 300_000, 300_000], 'a check every 5 min');
+  assert.deepEqual(run.slotEvents, ['given back', 'taken again']);
+  // The line comes after the first file and before the second, which still renders.
+  const at = run.logs.indexOf(run.waitLines()[0]!);
+  assert.ok(run.logs.slice(0, at).some((line) => line.startsWith('[1/4]')));
+  assert.ok(run.logs[at + 1]!.startsWith('[2/4]'), run.logs[at + 1]);
+});
+
+test('pack --wait-disk: above 2 GiB it still waits when the next file would leave less, and goes on at exactly enough', async () => {
+  const plan = samplePlan();
+  const need = diskNeed(plan[0]!);
+  assert.ok(need > 0);
+  const free = 2 * GiB + need;
+  const run = diskWaitRun([10 * GiB, free - 1, free, 10 * GiB]);
+  await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.deepEqual(run.waitLines(), [`waiting for disk: ${gibibytes(free - 1)} free, next file needs ${gibibytes(need)} and 2.0 GiB must stay free`]);
+  assert.equal(run.sleeps.length, 1);
+  assert.deepEqual(run.exported, plan.map((file) => file.output));
+});
+
+test('pack: without --wait-disk the same dip fails with the floor\'s message, sleeping nothing', async () => {
+  const plan = samplePlan();
+  const run = diskWaitRun([10 * GiB, 10 * GiB, 1 * GiB, 10 * GiB]);
+  await assert.rejects(
+    runPack({...packFor(plan), effects: run.effects}),
+    /^Error: Not enough free disk in out: 1\.0 GiB free, below the 2\.0 GiB a running render keeps\. Free space \(npm run clean -- --apply\) and run the same command again; finished files will be skipped\.$/,
+  );
+  assert.deepEqual(run.exported, [plan[0]!.output]);
+  assert.deepEqual(run.waitLines(), []);
+  assert.deepEqual(run.sleeps, []);
+  assert.deepEqual(run.slotEvents, []);
+});
+
+test('pack --wait-disk: with the floor holding it never waits nor touches the slot', async () => {
+  const plan = samplePlan();
+  const run = diskWaitRun([10 * GiB]);
+  await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.deepEqual(run.exported, plan.map((file) => file.output));
+  assert.deepEqual(run.waitLines(), []);
+  assert.deepEqual(run.sleeps, []);
+  assert.deepEqual(run.slotEvents, []);
+});
+
+test('pack --wait-disk: after 6 h it fails with the floor\'s message, leaving the slot given back', async () => {
+  const plan = samplePlan();
+  const run = diskWaitRun([10 * GiB, 10 * GiB, 1 * GiB]);
+  await assert.rejects(
+    runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait}),
+    /^Error: Not enough free disk in out: 1\.0 GiB free, below the 2\.0 GiB a running render keeps\./,
+  );
+  assert.equal(run.sleeps.length, 72, '6 h at one check every 5 min');
+  assert.equal(run.waitLines().length, 1);
+  assert.deepEqual(run.slotEvents, ['given back'], 'failing never queues for the slot first');
+  assert.deepEqual(run.exported, [plan[0]!.output]);
+});
+
+test('pack --wait-disk: space back on the very check of the ceiling goes on instead of failing', async () => {
+  const plan = samplePlan();
+  const low = Array.from({length: 72}, () => 1 * GiB);
+  const run = diskWaitRun([10 * GiB, 10 * GiB, ...low, 10 * GiB]);
+  await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.equal(run.sleeps.length, 72);
+  assert.deepEqual(run.exported, plan.map((file) => file.output));
+});
+
+test('pack --wait-disk: space gone again once the slot is back stays in the same wait, with no second line', async () => {
+  const plan = samplePlan();
+  // Second file: below, up during the wait, below again with the slot back, up again, and up with the slot back.
+  const run = diskWaitRun([10 * GiB, 10 * GiB, 1 * GiB, 10 * GiB, 1 * GiB, 10 * GiB, 10 * GiB]);
+  await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.equal(run.waitLines().length, 1);
+  assert.deepEqual(run.slotEvents, ['given back', 'taken again', 'given back', 'taken again']);
+  assert.deepEqual(run.exported, plan.map((file) => file.output));
+});
+
+test('pack --wait-disk: each dip is a wait of its own, with its line and its 6 h', async () => {
+  const plan = samplePlan();
+  const dip = Array.from({length: 60}, () => 1 * GiB);
+  const run = diskWaitRun([10 * GiB, 10 * GiB, ...dip, 10 * GiB, 10 * GiB, 10 * GiB, ...dip, 10 * GiB]);
+  await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.equal(run.waitLines().length, 2);
+  assert.equal(run.sleeps.length, 120, 'two waits of 5 h each, over the 6 h of one');
+  assert.deepEqual(run.exported, plan.map((file) => file.output));
+});
+
+test('pack --wait-disk: below the start floor it waits before the first file, with the start floor\'s line', async () => {
+  const plan = samplePlan();
+  const run = diskWaitRun([2.5 * GiB, 2.5 * GiB, 3 * GiB, 10 * GiB]);
+  await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.deepEqual(run.waitLines(), ['waiting for disk: 2.5 GiB free, a render needs at least 3.0 GiB to start']);
+  assert.ok(run.logs.indexOf(run.waitLines()[0]!) < run.logs.findIndex((line) => line.startsWith('[1/4]')));
+  assert.deepEqual(run.exported, plan.map((file) => file.output));
+});
+
+test('pack --wait-disk: files already rendered stay skipped, before and after the wait', async () => {
+  const plan = samplePlan();
+  const first = fakeRun();
+  await runPack({...packFor(plan), plan: plan.slice(0, 2), effects: first.effects});
+  // A skipped file reads no floor: the readings are the start, then the third file's.
+  const run = diskWaitRun([10 * GiB, 1 * GiB, 10 * GiB], Object.fromEntries(first.disk));
+  const result = await runPack({...packFor(plan), effects: run.effects, diskWait: run.diskWait});
+  assert.deepEqual(run.exported, plan.slice(2).map((file) => file.output));
+  assert.deepEqual([result.rendered, result.skipped], [2, 2]);
+  assert.equal(run.waitLines().length, 1);
+  assert.ok(run.logs.indexOf(run.waitLines()[0]!) > run.logs.findIndex((line) => line.startsWith('[2/4]')));
 });
 
 test('pack: arquivos prontos são pulados (retomável) e --overwrite os refaz', async () => {
