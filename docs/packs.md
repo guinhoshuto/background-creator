@@ -39,10 +39,11 @@ npm run render:pack -- neon
 npm run render:pack -- halloween --only borders/
 npm run render:pack -- halloween --only masks/
 npm run render:pack -- pastel --only chat-column --overwrite
+npm run render:pack -- neon --wait-disk
 npm run render:pack -- path/my-pack.json --dry-run
 ```
 
-`--dry-run` lists every planned file with its dimensions, FPS and frames (or the frame, for PNG), the actual motion speed and whether the file already exists, without rendering anything. `--only <text>` exports only the files whose path contains the text. `--overwrite` replaces finished files. A path ending in `.json` uses that manifest instead of `packs/<name>.json`. For a pack with ornaments, `npm run ornaments:report -- <pack>` lists, also without rendering, each file's motifs with their sizes and the room at their spot, and the motifs a small size drops. The result looks like this:
+`--dry-run` lists every planned file with its dimensions, FPS and frames (or the frame, for PNG), the actual motion speed and whether the file already exists, without rendering anything. `--only <text>` exports only the files whose path contains the text. `--overwrite` replaces finished files. A path ending in `.json` uses that manifest instead of `packs/<name>.json`. For a pack with ornaments, `npm run ornaments:report -- <pack>` lists, also without rendering, each file's motifs with their sizes and the room at their spot, and the motifs a small size drops. The result looks like this: `--wait-disk` makes a run that falls below the [disk floor](../README.md#known-pitfalls), at its start or before a file, wait for space instead of exiting: it writes one `waiting for disk: <free> free, next file needs <need> and 2.0 GiB must stay free` line to its log (standard output; a detached run redirects it to its progress log), gives the render slot back, reads the disk every 5 minutes and, with space again, takes the slot in its queue and goes on where it stopped. Each wait lasts up to 6 hours, then the run exits 1 with the usual message. `ship:pack` always passes it, so its line lands in that pack's step log (`.cache/ship-pack/<pack>-render-pack.log`).
 
 ```text
 out/packs/neon/

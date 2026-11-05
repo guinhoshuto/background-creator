@@ -39,6 +39,11 @@ export const freeBytes = (directory: string) => {
   return Number(stats.bavail) * Number(stats.bsize);
 };
 
+/** `render:pack --wait-disk`: how often a wait reads the disk again. */
+export const DISK_WAIT_POLL_MS = 5 * 60 * 1000;
+/** `render:pack --wait-disk`: how long one wait lasts before the run fails as it does without the flag. */
+export const DISK_WAIT_LIMIT_MS = 6 * 60 * 60 * 1000;
+
 /**
  * Before a job starts: at least START free and, when the job knows how much it writes, at least RUN
  * left after that. `then` tells how to get out (free space, resume).
@@ -63,4 +68,54 @@ export const assertCanGoOn = ({free, estimate = 0, where, then}: {free: number; 
   if (free - estimate < RUN_MIN_FREE_BYTES) {
     throw new Error(`Not enough free disk in ${where}: ${gibibytes(free)} free, the next file needs up to ${gibibytes(estimate)} and ${gibibytes(RUN_MIN_FREE_BYTES)} must stay free. ${then}`);
   }
+};
+
+/** What a wait for the disk floor needs from its run; injected, so the tests never sleep. */
+export type DiskWait = {
+  sleep: (ms: number) => Promise<void>;
+  now: () => number;
+  /**
+   * Runs `wait` holding nothing: gives the render slot back, and takes it again in its queue once `wait` has
+   * returned. A `wait` that throws leaves the slot given back.
+   */
+  withoutSlot: (wait: () => Promise<void>) => Promise<void>;
+};
+
+/**
+ * Returns once `assertFloor` (assertCanStart or assertCanGoOn, with its estimate) passes. Below the floor it says
+ * so once, however long this wait lasts, and reads the disk again every DISK_WAIT_POLL_MS without the render slot:
+ * `npm run clean -- --apply`, the way out of a full disk, is refused while a render holds the slot, and every other
+ * render would wait behind one that cannot go on. With the slot back the floor is read again, in the same wait,
+ * because another render may have written while this one queued. Past DISK_WAIT_LIMIT_MS, `assertFloor` throws what
+ * a run without the wait throws.
+ */
+export const waitForFloor = async ({assertFloor, waitingLine, freeBytes: readFree, log, diskWait}: {
+  assertFloor: (free: number) => void;
+  waitingLine: (free: number) => string;
+  freeBytes: () => Promise<number>;
+  log: (message: string) => void;
+  diskWait: DiskWait;
+}) => {
+  const holds = (free: number) => {
+    try {
+      assertFloor(free);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  let free = await readFree();
+  if (holds(free)) return;
+  log(waitingLine(free));
+  const deadline = diskWait.now() + DISK_WAIT_LIMIT_MS;
+  do {
+    await diskWait.withoutSlot(async () => {
+      do {
+        await diskWait.sleep(DISK_WAIT_POLL_MS);
+        free = await readFree();
+        if (diskWait.now() >= deadline) assertFloor(free);
+      } while (!holds(free));
+    });
+    free = await readFree();
+  } while (!holds(free));
 };

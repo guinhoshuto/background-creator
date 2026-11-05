@@ -1,11 +1,11 @@
 import {access, mkdir, readFile, rename, rm, stat, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
-import {freeBytes as diskFreeBytes, existingAncestor} from './disk';
+import {freeBytes as diskFreeBytes, existingAncestor, type DiskWait} from './disk';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
 import {estimateText} from './pack-estimate';
 import {dryRunText, existingManifestFile, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
-import {withRenderSlot} from './render-slot';
+import {acquireRenderSlot, currentCommand} from './render-slot';
 import {watchSignalLine} from './signal-line';
 
 const PACK_HELP_TEXT = `usage: npm run render:pack -- <name|file.json> [options]
@@ -19,6 +19,8 @@ Options:
                    and render time per variant and for the whole plan, without rendering
   --only <text>    exports only the files whose path contains the text
   --overwrite      replaces existing files (without it, finished files are skipped)
+  --wait-disk      below the disk floor, gives the render slot back and waits for space (a check every
+                   5 min, each wait up to 6 h) instead of exiting; one line in the log per wait
   -h, --help       shows this help`;
 
 const fromRoot = (relative: string) => path.join(projectRoot, relative);
@@ -41,6 +43,7 @@ const main = async () => {
       'dry-run': {type: 'boolean', default: false},
       only: {type: 'string'},
       overwrite: {type: 'boolean', default: false},
+      'wait-disk': {type: 'boolean', default: false},
       help: {type: 'boolean', short: 'h'},
     },
   });
@@ -73,43 +76,61 @@ const main = async () => {
   const statTarget = () => existingAncestor(packDirectory);
   // One bundle for the whole pack; exportAsset reuses its serveUrl for every file.
   let serveUrl: string | undefined;
-  // One slot for the whole pack, taken after --dry-run and --help have returned.
-  await withRenderSlot(() => runPack({
-    manifest, plan, fullPlan, overwrite: values.overwrite, deps: realPackDeps, target: positionals[0]!,
-    diskLabel: path.relative(process.cwd(), statTarget()) || '.',
-    effects: {
-      exists: (relative) => exists(fromRoot(relative)),
-      freeBytes: async () => diskFreeBytes(statTarget()),
-      exportFile: async (entry, overwrite) => {
-        serveUrl ??= await createBundle();
-        // The parsed props, every key spelled out: the Studio's saved defaults never leak into a pack.
-        await exportAsset({
-          compositionId: entry.composition, format: entry.format, props: entry.exportProps,
-          output: fromRoot(entry.output), overwrite, serveUrl, scratchDirectory,
-          ...(entry.frame === undefined ? {} : {frame: entry.frame}),
-          ...(entry.profile === undefined ? {} : {profile: entry.profile}),
-          onProgress: (message) => console.log(`  ${message}`),
-        });
-      },
-      readJson: async (relative) => {
-        const target = fromRoot(relative);
-        if (!await exists(target)) return null;
-        return JSON.parse(await readFile(target, 'utf8')) as unknown;
-      },
-      fileBytes: async (relative) => (await stat(fromRoot(relative))).size,
-      remove: (relative) => rm(fromRoot(relative), {force: true}),
-      writeManifest: async (relative, data) => {
-        const target = fromRoot(relative);
-        await mkdir(path.dirname(target), {recursive: true});
-        // Write-then-rename: an interrupted build never leaves a half-written manifest behind.
-        const temporary = `${target}.tmp`;
-        await writeFile(temporary, `${JSON.stringify(data, null, 2)}\n`);
-        await rename(temporary, target);
-      },
-      sweepScratch: () => removeScratchDirectories(scratchRoots),
-      log: (message) => console.log(message),
+  const takeSlot = () => acquireRenderSlot({command: currentCommand()});
+  // One slot for the whole pack, taken after --dry-run and --help have returned; --wait-disk lends it out while it waits.
+  let slot = await takeSlot();
+  const diskWait: DiskWait = {
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    now: Date.now,
+    withoutSlot: async (wait) => {
+      slot.release();
+      await wait();
+      // Meanwhile `npm run clean -- --apply` may have deleted .cache/bundle, or another render rewritten it.
+      serveUrl = undefined;
+      slot = await takeSlot();
     },
-  }));
+  };
+  try {
+    await runPack({
+      manifest, plan, fullPlan, overwrite: values.overwrite, deps: realPackDeps, target: positionals[0]!,
+      ...(values['wait-disk'] ? {diskWait} : {}),
+      diskLabel: path.relative(process.cwd(), statTarget()) || '.',
+      effects: {
+        exists: (relative) => exists(fromRoot(relative)),
+        freeBytes: async () => diskFreeBytes(statTarget()),
+        exportFile: async (entry, overwrite) => {
+          serveUrl ??= await createBundle();
+          // The parsed props, every key spelled out: the Studio's saved defaults never leak into a pack.
+          await exportAsset({
+            compositionId: entry.composition, format: entry.format, props: entry.exportProps,
+            output: fromRoot(entry.output), overwrite, serveUrl, scratchDirectory,
+            ...(entry.frame === undefined ? {} : {frame: entry.frame}),
+            ...(entry.profile === undefined ? {} : {profile: entry.profile}),
+            onProgress: (message) => console.log(`  ${message}`),
+          });
+        },
+        readJson: async (relative) => {
+          const target = fromRoot(relative);
+          if (!await exists(target)) return null;
+          return JSON.parse(await readFile(target, 'utf8')) as unknown;
+        },
+        fileBytes: async (relative) => (await stat(fromRoot(relative))).size,
+        remove: (relative) => rm(fromRoot(relative), {force: true}),
+        writeManifest: async (relative, data) => {
+          const target = fromRoot(relative);
+          await mkdir(path.dirname(target), {recursive: true});
+          // Write-then-rename: an interrupted build never leaves a half-written manifest behind.
+          const temporary = `${target}.tmp`;
+          await writeFile(temporary, `${JSON.stringify(data, null, 2)}\n`);
+          await rename(temporary, target);
+        },
+        sweepScratch: () => removeScratchDirectories(scratchRoots),
+        log: (message) => console.log(message),
+      },
+    });
+  } finally {
+    slot.release();
+  }
 };
 
 main().catch((error: unknown) => {
