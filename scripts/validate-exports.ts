@@ -8,7 +8,7 @@ import {getAsset, getOpenGlRenderer} from '../src/catalog';
 import {ASSET_KINDS, getKindPolicy} from '../src/kinds';
 import {hasAlpha, type OutputFormat} from '../src/settings';
 import {sizeProps} from '../src/sizes';
-import {FREE_SPACE_HINT, assertCanStart, freeBytes} from './disk';
+import {FREE_SPACE_HINT, assertCanStart, freeBytes, realWaitClock, startWaitingLine, waitForFloor} from './disk';
 import {createBundle, exportAsset, projectRoot, resolveExport} from './export';
 import {compositedRgbError} from './image-comparison';
 import {assertFullFfmpeg, ffmpegPath, ffprobePath, runProcess} from './process';
@@ -53,9 +53,27 @@ const main = async () => {
   for (const note of new Set(fixtures.flatMap((fixture) => fixture.notes))) console.log(note);
   await assertFullFfmpeg();
   // Arguments and tools are checked first: a typo never waits hours for the slot.
-  slot = await acquireRenderSlot({command: currentCommand()});
+  const takeSlot = () => acquireRenderSlot({command: currentCommand()});
+  slot = await takeSlot();
   // The same disk floor as every render, measured once the slot is held.
-  assertCanStart({free: freeBytes(destination), where: path.relative(process.cwd(), destination) || '.', then: FREE_SPACE_HINT});
+  const assertFloor = (free: number) => assertCanStart({free, where: path.relative(process.cwd(), destination) || '.', then: FREE_SPACE_HINT});
+  const readFree = async () => freeBytes(destination);
+  if (values['wait-disk']) {
+    // Before the bundle, so unlike render:pack this wait leaves nothing to rebuild.
+    await waitForFloor({
+      assertFloor, waitingLine: startWaitingLine, freeBytes: readFree, log: (message) => console.log(message),
+      diskWait: {
+        ...realWaitClock,
+        withoutSlot: async (wait) => {
+          slot?.release();
+          await wait();
+          slot = await takeSlot();
+        },
+      },
+    });
+  } else {
+    assertFloor(await readFree());
+  }
   await mkdir(destination, {recursive: true});
   const serveUrl = await createBundle();
   const report: Record<string, unknown>[] = [];

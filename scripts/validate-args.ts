@@ -26,6 +26,8 @@ Options:
   --duration <s>         sample length in seconds (default 0.4)
   --reuse-existing       checks files already in the output folder instead of rendering them
   --out <dir>            output folder (default ${DEFAULT_VALIDATION_OUT})
+  --wait-disk            below the disk floor at the start, gives the render slot back and waits for
+                         space (a check every 5 min, up to 6 h) instead of exiting; one line in the log
   -h, --help             shows this help`;
 
 /** `root` resolves a relative --out (and the default); an absolute --out stays as given. */
@@ -39,6 +41,7 @@ export const parseValidateArgs = (args: string[], root: string) => {
     props: {type: 'string'},
     presets: {type: 'boolean', default: false},
     out: {type: 'string'},
+    'wait-disk': {type: 'boolean', default: false},
     help: {type: 'boolean', short: 'h'},
   }});
   if (values.out !== undefined && values.out.trim() === '') throw new Error('Use --out <dir>: the folder for the samples and report.json.');
