@@ -90,7 +90,7 @@ test('a pack goes through render, validate, zip, upload under its sha8, and is r
   const w = world();
   const {code, shipped} = await shipPacks([KIT], options, w.effects);
   assert.equal(code, 0);
-  assert.deepEqual(w.calls, ['npm render:pack kit', 'npm validate:pack kit', 'npm zip:pack kit', `upload ${ZIP} ${KEY}`]);
+  assert.deepEqual(w.calls, ['npm render:pack kit --wait-disk', 'npm validate:pack kit', 'npm zip:pack kit', `upload ${ZIP} ${KEY}`]);
   assert.equal(shipped[0]!.url, 'https://cacare.co/packs/kit/abcdef01/kit-overlay-pack-v1.zip');
   assert.deepEqual(w.state.kit, {version: 1, sha256: SHA, key: KEY, url: shipped[0]!.url, bytes: 1000, shippedAt: '2026-10-04T12:00:00.000Z'});
   // Without --delete-local nothing local goes.
@@ -123,7 +123,7 @@ test('a failed step stops before the next one and before the next pack', async (
   const w = world({npmCodes: {'validate:pack': 1}});
   const {code} = await shipPacks([KIT, NEXT], options, w.effects);
   assert.equal(code, 1);
-  assert.deepEqual(w.calls, ['npm render:pack kit', 'npm validate:pack kit']);
+  assert.deepEqual(w.calls, ['npm render:pack kit --wait-disk', 'npm validate:pack kit']);
   assert(w.logs.some((line) => /FAILED kit: validate:pack kit failed \(exit 1\); see \.cache\/ship-pack\/kit-validate-pack\.log/.test(line)));
 });
 
@@ -164,7 +164,7 @@ test('a local zip other than the one shipped is built again', async () => {
   const w = world({state: {kit: {...SHIPPED_V1, sha256: OTHER_SHA}}});
   w.local.set(ZIP, {bytes: 1000, sha256: SHA});
   assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
-  assert(w.calls.includes('npm render:pack kit'));
+  assert(w.calls.includes('npm render:pack kit --wait-disk'));
   assert.equal(w.state.kit?.sha256, SHA);
 });
 
@@ -180,7 +180,7 @@ test('a raised version ships again, with nothing local left, under its own name'
   const w = world({state: {kit: SHIPPED_V1}, version: 2});
   w.effects.sha256 = async () => OTHER_SHA;
   assert.equal((await shipPacks([{name: 'kit', version: 2}], options, w.effects)).code, 0);
-  assert.deepEqual(w.calls, ['npm render:pack kit', 'npm validate:pack kit', 'npm zip:pack kit',
+  assert.deepEqual(w.calls, ['npm render:pack kit --wait-disk', 'npm validate:pack kit', 'npm zip:pack kit',
     'upload out/deliveries/kit-overlay-pack-v2.zip cf-r2:etsy/packs/kit/99999999/kit-overlay-pack-v2.zip']);
   assert.equal(w.state.kit?.version, 2);
 });
@@ -192,7 +192,7 @@ test('a record from before versions ships again as the manifest version (2026-10
   w.remote.set('cf-r2:etsy/packs/kit/abcdef01', [{name: 'kit-overlay-pack.zip', size: 1000}]);
   w.effects.sha256 = async () => OTHER_SHA;
   assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
-  assert(w.calls.includes('npm render:pack kit'));
+  assert(w.calls.includes('npm render:pack kit --wait-disk'));
   assert.equal(w.state.kit?.version, 1);
 });
 
@@ -229,7 +229,7 @@ test('a busy machine waits, logging each new reason once', async () => {
   assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
   assert.deepEqual(w.sleeps, [MACHINE_WAIT_MS, MACHINE_WAIT_MS, MACHINE_WAIT_MS]);
   assert.deepEqual(w.logs.filter((line) => line.startsWith('waiting')), ['waiting before kit: game open', 'waiting before kit: low disk']);
-  assert.equal(w.calls[0], 'npm render:pack kit');
+  assert.equal(w.calls[0], 'npm render:pack kit --wait-disk');
 });
 
 test('rclone: copyto with the bucket check off, and lsjson read without folders', () => {

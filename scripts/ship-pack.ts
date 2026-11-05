@@ -15,8 +15,8 @@ import {
 
 const SHIP_HELP_TEXT = `usage: npm run ship:pack -- <name> [<name>...] [options]
 
-Ships each pack in order: waits for the machine check, then render:pack (finished files are skipped),
-validate:pack and zip:pack; uploads the zip to <remote>/packs/<name>/<sha8>/<name>-overlay-pack-v<N>.zip
+Ships each pack in order: waits for the machine check, then render:pack --wait-disk (finished files are
+skipped; below the disk floor it waits, up to 6 h per wait, and says so in its step log), validate:pack and zip:pack; uploads the zip to <remote>/packs/<name>/<sha8>/<name>-overlay-pack-v<N>.zip
 with rclone, reads it back and compares name and size, then requests the public link (HEAD, following
 redirects, 30 s for the whole chain) and records it only when the final answer is 200 with the zip's size.
 The first failure, a failing link included, stops the chain and keeps every local file. Run it again to

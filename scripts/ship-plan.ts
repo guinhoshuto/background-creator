@@ -230,7 +230,8 @@ export const shipPack = async (pack: PackToShip, options: ShipOptions, effects: 
     await waitForMachine(effects, pack.name);
     effects.log(`${pack.name}: render:pack (v${pack.version})`);
     await effects.rendering(pack.name);
-    await step(effects, pack.name, 'render:pack');
+    // A chain runs unattended: a dip in free space waits for the disk instead of stopping it (BGC-41).
+    await step(effects, pack.name, 'render:pack', ['--wait-disk']);
     effects.log(`${pack.name}: validate:pack`);
     await step(effects, pack.name, 'validate:pack');
     effects.log(`${pack.name}: zip:pack`);
