@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {spawn, type ChildProcess} from 'node:child_process';
 import {EventEmitter} from 'node:events';
-import {existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, rmdirSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, rmdirSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -66,7 +66,7 @@ const packageScripts = () => (JSON.parse(readFileSync(path.join(root, 'package.j
 
 test('the scripts the issue named run as node --import tsx, never through the tsx CLI (BGC-39)', () => {
   const scripts = packageScripts();
-  const named = ['render', 'render:mp4', 'render:webm', 'render:gif', 'render:mov', 'render:png', 'render:pack', 'validate:pack', 'ship:pack', 'validate:exports', 'stills', 'qa:kit'];
+  const named = ['render', 'render:mp4', 'render:webm', 'render:gif', 'render:mov', 'render:png', 'render:pack', 'validate:pack', 'ship:pack', 'validate:exports', 'stills', 'qa:kit', 'mutate'];
   assert.deepEqual(named.filter((name) => !scripts[name]?.startsWith('node --import tsx scripts/')), []);
 });
 
@@ -81,15 +81,33 @@ type QueueProbe = {
   staged?: (name: string) => string[];
   /** It writes the signal line (render:pack, BGC-38). */
   signalLine?: boolean;
+  /** A folder of its fixture, deleted at the end. */
+  fixture?: (name: string) => string;
 };
 
 const review = path.join(root, 'out', 'review');
+// A plan's files must sit inside the checkout: here, in a folder git ignores, so a plan that skipped the queue touches nothing tracked.
+const mutateFixture = (name: string) => path.join(root, 'out', '.scratch', `${name}-mutate-${process.pid}`);
 
 const PROBES: QueueProbe[] = [
   {
     script: 'render:pack', signalLine: true,
     args: (scratch, name) => [path.join(scratch, `${name}.json`)],
     written: (_, name) => [path.join(root, 'out', 'packs', name), path.join(root, 'out', '.scratch', 'packs', name)],
+  },
+  {
+    script: 'mutate',
+    args: (scratch, name) => {
+      const folder = mutateFixture(name);
+      mkdirSync(folder, {recursive: true});
+      writeFileSync(path.join(folder, 'value.mjs'), 'export const value = 1;\n');
+      writeFileSync(path.join(folder, 'value.test.mjs'), "import test from 'node:test';\ntest('runs', () => {});\n");
+      const inRoot = (file: string) => path.relative(root, path.join(folder, file));
+      writeFileSync(path.join(scratch, 'plan.json'), JSON.stringify([{file: inRoot('value.mjs'), from: 'value = 1', to: 'value = 2', test: inRoot('value.test.mjs')}]));
+      return ['--plan', path.join(scratch, 'plan.json')];
+    },
+    written: () => [],
+    fixture: mutateFixture,
   },
   {script: 'render:png', args: (scratch) => ['ChatLoop', '--out', path.join(scratch, 'chat.png')], written: (scratch) => [path.join(scratch, 'chat.png')]},
   {
@@ -184,6 +202,7 @@ for (const probe of PROBES) {
       killQuietly(holder.pid, 'SIGKILL');
       await Promise.all([holder, child, sender].flatMap((proc) => (proc ? [exitOf(proc)] : [])));
       for (const folder of probe.staged?.(name) ?? []) rmSync(folder, {recursive: true, force: true});
+      if (probe.fixture) rmSync(probe.fixture(name), {recursive: true, force: true});
       for (const folder of missing) try { rmdirSync(folder); } catch { /* not empty, or never made */ }
       rmSync(scratch, {recursive: true, force: true});
     }

@@ -3,14 +3,19 @@
  * bounded runner, and puts the file back byte for byte. A mutation the test does not notice survived.
  * Ported from the se-dev-kit's scripts/mutate.mjs (BGC-27): a mutation undone by hand with git
  * checkout once took an uncommitted fix along.
+ *
+ * Every run, a plan or one mutation, waits for its turn in the render slot's queue and holds the slot until it ends
+ * (scripts/mutate.ts): neither a plan's size nor a free machine at the start bounds what a run holds. On 2026-11-04
+ * a plan of 20 mutations started on a machine the check called busy and ran beside the other jobs (issue #16).
  */
 import {execFileSync, spawn, type ChildProcess} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {existsSync, rmSync, writeFileSync} from 'node:fs';
 import {lstat, mkdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {dirname, isAbsolute, relative, resolve, sep} from 'node:path';
+import {RenderSlotError, slotDir} from './render-slot';
 
-export const EXIT = {killed: 0, survived: 1, usage: 2, restore: 3} as const;
+export const EXIT = {killed: 0, survived: 1, usage: 2, restore: 3, noTurn: 75} as const;
 export const DEFAULT_TIMEOUT_MS = 120_000;
 const KEYS = ['file', 'from', 'to', 'test', 'name', 'occurrences'];
 
@@ -32,10 +37,14 @@ sits in .cache/mutate/ while the file is mutated. The named test must be green b
 least one of its tests: --name (a plan's "name") is a --test-name-pattern, never a label, and one that matches
 no test is refused. A mutation is killed when the run is not green: a failure, a cancellation (a timeout),
 a crash or a hang.
+A plan that fails its checks is refused at once. Past them every run, a plan or one mutation, waits for its turn
+in the render slot's queue, up to 4 h, and holds the slot until it ends. It reads the files again with the slot in
+hand, so an edit made during the wait is what it judges and restores.
 A plan is a JSON array of {file, from, to, test, name?, occurrences?}, or {"mutations": [...]}: code with
 quotes, $ or backticks needs no shell quoting there.
 Never undo a mutation with git checkout or git restore: they take uncommitted work along.
-Exit codes: 0 all killed, 1 some survived, 2 usage or setup error, 3 a file could not be restored.`;
+Exit codes: 0 all killed, 1 some survived, 2 usage or setup error, 3 a file could not be restored, 75 no turn in
+the render slot's queue (no file was touched).`;
 
 export type Mutation = {file: string; from: string; to: string; test: string; name?: string; occurrences?: number};
 type Checked = Mutation & {occurrences: number};
@@ -260,14 +269,11 @@ function describe(result: TestRun) {
 export type MutationResult = Checked & {killed: boolean} & Omit<TestRun, 'output'>;
 
 /**
- * Runs each mutation in turn: every `from` is found and every named test is green before any file
- * changes; each file is backed up under .cache/mutate/, mutated, tested, and restored before the next.
- * Returns {code, results}; throws UsageError for a setup problem or a refusal and RestoreError when a
- * file stays changed.
+ * Every refusal that runs no test: the plan's shape, the live checkout, a backup left behind, a `from` that does not
+ * occur, a folder that is not a git checkout. Returns the checked plan, the bytes to restore and the hash of git diff.
+ * Throws UsageError.
  */
-export async function mutate(mutations: readonly unknown[], {
-  root, allowLiveCheckout = false, timeoutMs = DEFAULT_TIMEOUT_MS, log = console.log,
-}: {root: string; allowLiveCheckout?: boolean; timeoutMs?: number; log?: (line: string) => void}) {
+export async function checkPlan(mutations: readonly unknown[], {root, allowLiveCheckout = false}: {root: string; allowLiveCheckout?: boolean}) {
   usage(Array.isArray(mutations) && mutations.length > 0, 'There are no mutations to run.');
   const checked: Checked[] = [];
   for (const [index, raw] of mutations.entries()) checked.push(await checkMutation(raw, index, root));
@@ -289,7 +295,19 @@ export async function mutate(mutations: readonly unknown[], {
       throw new UsageError(`${file}: ${(error as Error).message}`);
     }
   }
-  const diff = gitDiff(root);
+  return {checked, originals, diff: gitDiff(root)};
+}
+
+/**
+ * Runs each mutation in turn: every `from` is found and every named test is green before any file
+ * changes; each file is backed up under .cache/mutate/, mutated, tested, and restored before the next.
+ * Returns {code, results}; throws UsageError for a setup problem or a refusal and RestoreError when a
+ * file stays changed.
+ */
+export async function mutate(mutations: readonly unknown[], {
+  root, allowLiveCheckout = false, timeoutMs = DEFAULT_TIMEOUT_MS, log = console.log,
+}: {root: string; allowLiveCheckout?: boolean; timeoutMs?: number; log?: (line: string) => void}) {
+  const {checked, originals, diff} = await checkPlan(mutations, {root, allowLiveCheckout});
   const results: MutationResult[] = [];
   const baselines = new Set<string>();
   for (const {test, name} of checked) {
@@ -328,6 +346,20 @@ export async function mutate(mutations: readonly unknown[], {
     throw new RestoreError('git diff changed during the run although every mutated file was restored: another process edited this checkout, or a test wrote to tracked files.');
   }
   return {code: results.some((result) => !result.killed) ? EXIT.survived : EXIT.killed, results};
+}
+
+/** The exit code and the message of a run that threw. */
+export function failure(error: unknown): {code: number; message: string} {
+  if (error instanceof RestoreError) return {code: EXIT.restore, message: `RESTORE FAILED: ${error.message}`};
+  // The wait gave up, or the disk is full: mutate takes the slot before it touches any file.
+  if (error instanceof RenderSlotError) return {code: EXIT.noTurn, message: error.message};
+  if (error instanceof UsageError) return {code: EXIT.usage, message: error.message};
+  // The Codex sandbox denies the mkdir of the slot (HAR-68): nothing ran, the write is not allowed.
+  const {code, path} = (error ?? {}) as NodeJS.ErrnoException;
+  if ((code === 'EPERM' || code === 'EACCES') && path?.startsWith(slotDir())) {
+    return {code: EXIT.usage, message: `No permission for the render slot (sandbox): run again with escalation. ${(error as Error).message}`};
+  }
+  return {code: EXIT.usage, message: error instanceof Error ? error.stack ?? error.message : String(error)};
 }
 
 export async function readPlan(path: string) {

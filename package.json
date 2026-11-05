@@ -23,7 +23,7 @@
     "test": "tsx --test tests/*.test.ts",
     "test:quick": "tsx --test tests/kinds.test.ts tests/settings.test.ts tests/sizes.test.ts tests/schema-descriptions.test.ts tests/backgrounds.test.ts tests/webgl.test.ts tests/wuthering-waves.test.ts tests/watercolor.test.ts",
     "test:kit": "tsx scripts/test-kit.ts",
-    "mutate": "tsx scripts/mutate.ts",
+    "mutate": "node --import tsx scripts/mutate.ts",
     "validate:exports": "node --import tsx scripts/validate-exports.ts",
     "stills": "node --import tsx scripts/stills.ts",
     "qa:kit": "node --import tsx scripts/qa-kit.ts",
