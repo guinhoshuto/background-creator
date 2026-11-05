@@ -95,7 +95,7 @@ test('Prismatic Pop: visible motifs move, with ribbon ends fixed off canvas and 
   }
 });
 
-test('Prismatic Pop: ribbons have no internal marks and polygons move continuously at uniform speed', () => {
+test('Prismatic Pop: ribbons have no internal marks and polygons move in rigid steps at a constant cadence', () => {
   for (const look of PRISMATIC_POP_LOOKS) {
     const props = prismaticPopSchema.parse({look});
     const poses = (frame: number) => [...markup(props, frame).matchAll(/data-motion="polygon-shake" transform="translate\(([^)]+)\)"/g)]
@@ -103,23 +103,18 @@ test('Prismatic Pop: ribbons have no internal marks and polygons move continuous
     const start = poses(0);
     assert.ok(start.length >= 2, `${look}: polygons must participate`);
     assert.deepEqual(poses(480), start);
-    const epsilon = 0.0001;
-    const before = poses(-epsilon);
-    const after = poses(epsilon);
     const samples = Array.from({length: 480}, (_, frame) => poses(frame));
     for (const [index] of start.entries()) {
       const distances = samples.map((sample, frame) => {
         const [x, y] = sample[index]!;
         const [nextX, nextY] = samples[(frame + 1) % samples.length]![index]!;
         assert.ok(Math.hypot(x!, y!) <= 2 + 1e-12, 'motion stays within a 2 px radius');
+        assert.ok(Number.isInteger(x) && Number.isInteger(y), 'poses remain crisp, without smooth drift');
         return Math.hypot(nextX! - x!, nextY! - y!);
       });
-      assert.ok(distances.every((distance) => distance > 0.05 && distance < 0.3), `${look}: every frame moves without a jump`);
-      assert.ok(Math.max(...distances) - Math.min(...distances) < 1e-10, 'speed stays uniform through the entire loop, including its seam');
-      for (const axis of [0, 1]) {
-        const incoming = (start[index]![axis]! - before[index]![axis]!) / epsilon;
-        const outgoing = (after[index]![axis]! - start[index]![axis]!) / epsilon;
-        assert.ok(Math.abs(incoming - outgoing) < 1e-5, 'velocity stays continuous at the seam');
+      for (const [frame, distance] of distances.entries()) {
+        const expected = (frame + 1) % 5 === 0 ? Math.SQRT2 : 0;
+        assert.ok(Math.abs(distance - expected) < 1e-12, `${look} frame ${frame}: identical steps every five frames, including the seam; no long rest`);
       }
     }
     assert.ok(samples.some((sample) => new Set(sample.map((pose) => pose.join(','))).size > 1), 'polygons are staggered');

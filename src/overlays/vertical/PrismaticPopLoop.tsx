@@ -67,12 +67,13 @@ const Ribbon = ({d, color, width = 26}: {d: string; color: string; width?: numbe
   </g>
 );
 
-/** A tiny circular translation keeps speed uniform, with no holds or seam discontinuity. */
+/** Small angular poses at a constant cadence: no easing, drift or long pauses. */
 const Shake = ({offset = 0, children}: {offset?: 0 | 10 | 18; children: ReactNode}) => {
-  const {angle} = useContext(Motion);
-  const local = angle * 8 + offset / 32 * TAU;
-  const x = 2 * Math.cos(local);
-  const y = 2 * Math.sin(local);
+  const {phase} = useContext(Motion);
+  // Absorb floating-point error at exact step boundaries (e.g. 31 becoming 30.999999999999996).
+  const step = (Math.floor(phase * 96 + 1e-9) + offset / 2) % 8;
+  const poses = [[0, -2], [1, -1], [2, 0], [1, 1], [0, 2], [-1, 1], [-2, 0], [-1, -1]] as const;
+  const [x, y] = poses[step]!;
   return <g data-motion="polygon-shake" transform={`translate(${x} ${y})`}>{children}</g>;
 };
 

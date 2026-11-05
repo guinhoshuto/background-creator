@@ -14,12 +14,12 @@ Shapes are deliberately simple. Thick ribbons continue outside the canvas on bot
 
 The loop is 8 seconds. The first version moved only one halftone tile and barely changed glints; the owner found it visually static. Version 3 refines the motion of each motif:
 
-- Electric Candy: anchored ribbons flex with solid, uninterrupted color; no marks travel inside them. Selected angular plates move continuously at uniform speed.
+- Electric Candy: anchored ribbons flex with solid, uninterrupted color; no marks travel inside them. Selected angular plates move in small, rigid steps at a constant cadence.
 - Night Signal: contrasting satellites follow the actual ellipses, making one complete orbit per loop; each rail keeps its own rotation and phase.
 - Sugar Voltage: the ribbon control points move in opposing smooth waves, bending the curls without translating the whole composition or exposing a cut end.
 - All looks: halftone advances four 15 px tiles per loop. Glints gently rock and breathe on staggered four-second cycles, between 0.78–1.08 scale and 0.8–1 opacity.
 
-Selected polygons in all three looks follow a tiny circular translation with a 2 px radius, at one revolution per second (eight per loop). Speed is constant, with no holds, discrete steps or easing; phase offsets keep neighbors out of sync. Position and velocity close at the loop seam. Windows, rings and the chat field stay fixed.
+Selected polygons in all three looks use eight angular poses within a 2 px radius, advancing one equal-distance step every five frames (12 steps per second at 60 fps). The cadence runs throughout the loop with no easing or long resting intervals. Phase offsets keep neighbors out of sync. The loop seam is an ordinary step, with the same timing and distance. Windows, rings and the chat field stay fixed.
 
 Ribbon endpoints remain fixed outside the canvas; only the internal control points flex (up to 28 px). Smooth sine waves and whole-turn linear motion close in position and velocity, driven only by frame and seed. No full-screen flashes or movement in the reading area. The SVG is recreated per frame to prevent stale raster tiles. `ornaments: false` removes artwork and motion, retaining the continuous palette background and the rings.
 
