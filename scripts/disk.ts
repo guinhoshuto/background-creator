@@ -39,9 +39,9 @@ export const freeBytes = (directory: string) => {
   return Number(stats.bavail) * Number(stats.bsize);
 };
 
-/** `render:pack --wait-disk`: how often a wait reads the disk again. */
+/** `--wait-disk` (render:pack, validate:exports): how often a wait reads the disk again. */
 export const DISK_WAIT_POLL_MS = 5 * 60 * 1000;
-/** `render:pack --wait-disk`: how long one wait lasts before the run fails as it does without the flag. */
+/** `--wait-disk` (render:pack, validate:exports): how long one wait lasts before the run fails as it does without the flag. */
 export const DISK_WAIT_LIMIT_MS = 6 * 60 * 60 * 1000;
 
 /**
@@ -80,6 +80,15 @@ export type DiskWait = {
    */
   withoutSlot: (wait: () => Promise<void>) => Promise<void>;
 };
+
+/** The clock of a real wait, read at each call: tests/helpers/fake-disk.ts shortens it under the real scripts. */
+export const realWaitClock: Pick<DiskWait, 'sleep' | 'now'> = {
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  now: () => Date.now(),
+};
+
+/** What a wait for assertCanStart's floor logs, once per wait. */
+export const startWaitingLine = (free: number) => `waiting for disk: ${gibibytes(free)} free, a render needs at least ${gibibytes(START_MIN_FREE_BYTES)} to start`;
 
 /**
  * Returns once `assertFloor` (assertCanStart or assertCanGoOn, with its estimate) passes. Below the floor it says

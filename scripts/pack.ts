@@ -1,7 +1,7 @@
 import {access, mkdir, readFile, rename, rm, stat, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
-import {freeBytes as diskFreeBytes, existingAncestor, type DiskWait} from './disk';
+import {freeBytes as diskFreeBytes, existingAncestor, realWaitClock, type DiskWait} from './disk';
 import {createBundle, exportAsset, findScratchDirectories, projectRoot, removeScratchDirectories} from './export';
 import {estimateText} from './pack-estimate';
 import {dryRunText, existingManifestFile, filterPlan, parsePackManifest, planPack, realPackDeps, runPack, scratchText} from './pack-plan';
@@ -80,8 +80,7 @@ const main = async () => {
   // One slot for the whole pack, taken after --dry-run and --help have returned; --wait-disk lends it out while it waits.
   let slot = await takeSlot();
   const diskWait: DiskWait = {
-    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-    now: Date.now,
+    ...realWaitClock,
     withoutSlot: async (wait) => {
       slot.release();
       await wait();

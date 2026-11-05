@@ -9,7 +9,7 @@ import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
 import {exportProfileSchema, getCompositionMetadata, hasAlpha, outputFormatSchema, type ExportProfile, type OutputFormat} from '../src/settings';
 import {NAMED_SIZES, getSize, sizeTag, sizesForKind} from '../src/sizes';
-import {RUN_MIN_FREE_BYTES, START_MIN_FREE_BYTES, assertCanGoOn, assertCanStart, gibibytes, waitForFloor, type DiskWait} from './disk';
+import {RUN_MIN_FREE_BYTES, assertCanGoOn, assertCanStart, gibibytes, startWaitingLine, waitForFloor, type DiskWait} from './disk';
 import {diskNeed} from './pack-estimate';
 import {expandSize} from './render-args';
 
@@ -600,7 +600,7 @@ export const runPack = async ({manifest, plan, fullPlan, overwrite, deps, effect
   if (swept.length > 0) effects.log(scratchText(swept.length, 'removed'));
   await keepFloor(
     (free) => assertCanStart({free, where: diskLabel, then: PACK_RESUME}),
-    (free) => `waiting for disk: ${gibibytes(free)} free, a render needs at least ${gibibytes(START_MIN_FREE_BYTES)} to start`,
+    startWaitingLine,
   );
   let rendered = 0;
   let skipped = 0;
