@@ -2,7 +2,7 @@
 // the webpack cache). What the buyer gets (out/packs, out/deliveries) is never on the list, with any flag.
 import {existsSync, lstatSync, readdirSync, realpathSync, rmSync} from 'node:fs';
 import path from 'node:path';
-import {acquireRenderSlot, type SlotHandle} from './render-slot';
+import {acquireRenderSlot, type SlotHandle, type SlotOptions} from './render-slot';
 
 /** Relative to the repo root, with forward slashes. */
 export const WEBPACK_CACHE = 'node_modules/.cache/webpack';
@@ -91,20 +91,30 @@ export type CleanEffects = {
   list: (root: string) => string[];
   size: (target: string) => number;
   remove: (target: string) => void;
-  /** Takes the render slot without waiting; throws when a render holds it. */
+  /** Takes the render slot, waiting for its turn; throws when no turn came or the slot cannot be written. */
   takeSlot: () => Promise<SlotHandle>;
 };
+
+/**
+ * The slot of `clean --apply`: it waits for its turn in the queue, up to the usual limit (4 hours), and says once
+ * that it waits and for whom. Never refused for a render that holds it: on 2026-11-03, with the disk below the
+ * floor, the cleanup refused because another project's job held the slot, exactly when the disk needed it (issue
+ * #12). Never through `render-slot run` either: run's machine check finds the disk below the floor and gives the
+ * slot back every 20 s, so the job that frees the disk would wait for the disk. `options` are the tests' slot.
+ */
+export const takeCleanSlot = (options: Partial<SlotOptions> = {}) => acquireRenderSlot({command: 'npm run clean -- --apply', ...options});
 
 const realEffects: CleanEffects = {
   list: listCandidates,
   size: diskBytes,
   remove: (target) => rmSync(target, {recursive: true, force: true}),
-  takeSlot: () => acquireRenderSlot({command: 'npm run clean -- --apply', wait: false}),
+  takeSlot: () => takeCleanSlot(),
 };
 
 /**
  * Lists what clean would delete; deletes it only with `apply`, holding the render slot from before
- * the listing until the last delete, so no render starts on a bundle or cache being deleted.
+ * the listing until the last delete, so no render starts on a bundle or cache being deleted. With
+ * `apply` it waits for the slot in its queue; when no turn comes it throws and deletes nothing.
  */
 export const runClean = async (
   {root, review, apply}: {root: string; review: boolean; apply: boolean},
@@ -122,7 +132,8 @@ export const runClean = async (
       if (code === 'EPERM' || code === 'EACCES') {
         throw new Error(`No permission for the render slot (sandbox): run again with escalation. ${detail}`);
       }
-      throw new Error(`Refusing to delete while a render runs. ${detail}`);
+      // The wait gave up (RENDER_SLOT_TIMEOUT, its message says who held the slot), or the slot could not be written.
+      throw new Error(`Nothing deleted: ${detail}`);
     }
   }
   try {

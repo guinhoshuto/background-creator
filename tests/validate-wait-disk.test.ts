@@ -83,7 +83,7 @@ test('validate:exports --wait-disk: logs the wait once, leaves the slot free for
   await run.until('the waiting line', () => run.waitLines().length > 0);
   assert.match(run.waitLines()[0]!, WAIT_LINE);
   await run.until('the slot given back', () => renderSlotHolder(run.slotDir) === undefined);
-  // What `npm run clean -- --apply` does, the way out of a full disk: it is refused while a render holds the slot.
+  // What `npm run clean -- --apply` does, the way out of a full disk: it takes the slot, at once since the run left it free.
   const slot = await acquireRenderSlot({dir: run.slotDir, command: 'npm run clean -- --apply', wait: false, repo: 'test', log: () => undefined});
   // Several polls go by: still waiting, with one line.
   await pause(300);

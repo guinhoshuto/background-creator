@@ -66,7 +66,7 @@ const packageScripts = () => (JSON.parse(readFileSync(path.join(root, 'package.j
 
 test('the scripts the issue named run as node --import tsx, never through the tsx CLI (BGC-39)', () => {
   const scripts = packageScripts();
-  const named = ['render', 'render:mp4', 'render:webm', 'render:gif', 'render:mov', 'render:png', 'render:pack', 'validate:pack', 'ship:pack', 'validate:exports', 'stills', 'qa:kit', 'mutate'];
+  const named = ['render', 'render:mp4', 'render:webm', 'render:gif', 'render:mov', 'render:png', 'render:pack', 'validate:pack', 'ship:pack', 'validate:exports', 'stills', 'qa:kit', 'mutate', 'clean'];
   assert.deepEqual(named.filter((name) => !scripts[name]?.startsWith('node --import tsx scripts/')), []);
 });
 
@@ -110,6 +110,8 @@ const PROBES: QueueProbe[] = [
     fixture: mutateFixture,
   },
   {script: 'render:png', args: (scratch) => ['ChatLoop', '--out', path.join(scratch, 'chat.png')], written: (scratch) => [path.join(scratch, 'chat.png')]},
+  // clean --apply waits for the slot since issue #12; it deletes only what regenerates, so it writes nothing here.
+  {script: 'clean', args: () => ['--apply'], written: () => []},
   {
     script: 'validate:exports',
     args: (scratch) => ['--composition', 'ChatLoop', '--out', path.join(scratch, 'validation')],

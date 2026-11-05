@@ -70,7 +70,7 @@ test('render:pack without --wait-disk: below the floor it exits 1 with the floor
 test('render:pack --wait-disk: logs the wait once, leaves the slot free for it, and goes on when space returns', async (t) => {
   const run = await packRun(t, 'bgc-wait-disk-on', ['--wait-disk']);
   await run.lineSeen(WAIT_LINE);
-  // What `npm run clean -- --apply` does, the way out of a full disk: it is refused while a render holds the slot.
+  // What `npm run clean -- --apply` does, the way out of a full disk: it takes the slot, at once since the run left it free.
   const slot = await acquireRenderSlot({dir: run.slotDir, command: 'npm run clean -- --apply', wait: false, repo: 'test', log: () => undefined});
   // Several polls go by: still one line.
   await new Promise((resolve) => setTimeout(resolve, 300));

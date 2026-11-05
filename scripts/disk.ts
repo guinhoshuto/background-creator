@@ -93,8 +93,8 @@ export const startWaitingLine = (free: number) => `waiting for disk: ${gibibytes
 /**
  * Returns once `assertFloor` (assertCanStart or assertCanGoOn, with its estimate) passes. Below the floor it says
  * so once, however long this wait lasts, and reads the disk again every DISK_WAIT_POLL_MS without the render slot:
- * `npm run clean -- --apply`, the way out of a full disk, is refused while a render holds the slot, and every other
- * render would wait behind one that cannot go on. With the slot back the floor is read again, in the same wait,
+ * `npm run clean -- --apply`, the way out of a full disk, waits for the slot, and would wait behind a render that
+ * cannot go on, as every other render would. With the slot back the floor is read again, in the same wait,
  * because another render may have written while this one queued. Past DISK_WAIT_LIMIT_MS, `assertFloor` throws what
  * a run without the wait throws.
  */

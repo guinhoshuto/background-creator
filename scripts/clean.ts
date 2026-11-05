@@ -5,9 +5,12 @@ import {runClean} from './clean-plan';
 const HELP = `Usage: npm run clean -- [--apply] [--review]
 
 Lists what it would delete, with sizes: out/.scratch, old bundles in .cache and node_modules/.cache/webpack.
-  --apply   delete them (refused while a render holds the render slot)
+  --apply   delete them, holding the render slot: it waits for its turn in the slot's queue
+            (up to 4 hours), so no render starts on what it deletes
   --review  also out/review (the owner's review boards)
-out/packs and out/deliveries are never deleted.`;
+out/packs and out/deliveries are never deleted.
+Run it as is, never through render-slot run: run's machine check waits while the disk is
+below the floor, and this is what frees the disk.`;
 
 const args = process.argv.slice(2);
 if (args.includes('--help')) {

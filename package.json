@@ -27,7 +27,7 @@
     "validate:exports": "node --import tsx scripts/validate-exports.ts",
     "stills": "node --import tsx scripts/stills.ts",
     "qa:kit": "node --import tsx scripts/qa-kit.ts",
-    "clean": "tsx scripts/clean.ts",
+    "clean": "node --import tsx scripts/clean.ts",
     "ornaments:report": "tsx scripts/ornaments-report.ts",
     "build:tokyo": "node ~/obsidian/AI/scripts/render-slot.ts run -- /Volumes/Sandisk/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/create-tokyo-city.py -- --output-dir public/tokyo/organic",
     "preview:tokyo": "tsx scripts/tokyo-preview.ts",
