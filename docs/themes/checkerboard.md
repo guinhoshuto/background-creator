@@ -42,3 +42,12 @@ npm run render:webm -- CheckerboardLoop --props presets/checkerboard-alpha.json
 ```
 
 Switch `render:mp4` to `render:webm` or `render:gif` for the other formats.
+
+## Pack
+
+`checkered-backgrounds` (`packs/checkered-backgrounds.json`) sells the print alone, in 20 two-colour palettes (the `presets/checker-club-<id>.json` files, with `<id>` as the pack's `variant`): six soft light ones, three soft dark ones, five bold ones and six kawaii ones. Each is a 12 s loop, 1920×1080 at 60 fps, as MP4, WebM and a PNG still (60 files), compressed with the `delivery` profile, with no transparent version. The kawaii palettes borrow only colours: no name, title, tag, file or image cites a character or a brand. It builds and ships like every pack ([Packs](../packs.md)):
+
+```sh
+npm run render:pack -- checkered-backgrounds --dry-run
+npm run ship:pack -- checkered-backgrounds
+```

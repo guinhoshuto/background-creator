@@ -1,0 +1,207 @@
+{
+  "name": "checkered-backgrounds",
+  "version": 1,
+  "profile": "delivery",
+  "items": [
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-strawberry-milk",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "strawberry-milk"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-matcha-latte",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "matcha-latte"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-lavender-haze",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "lavender-haze"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-butter-toast",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "butter-toast"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-mint-soda",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "mint-soda"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-peach-sunset",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "peach-sunset"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-midnight",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "midnight"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-cocoa",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "cocoa"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grape-soda",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grape-soda"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-ink-and-cream",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "ink-and-cream"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-cherry-cola",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "cherry-cola"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-electric-lime",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "electric-lime"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-cotton-candy",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "cotton-candy"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-cobalt-tile",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "cobalt-tile"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-punk-bunny",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "punk-bunny"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-gothic-candy",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "gothic-candy"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-pink-bonnet",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "pink-bonnet"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-cloud-puppy",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "cloud-puppy"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-pudding-cup",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "pudding-cup"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-pond-frog",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "pond-frog"
+    }
+  ]
+}
