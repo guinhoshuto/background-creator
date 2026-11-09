@@ -1,0 +1,12 @@
+{
+  "durationSeconds": 12,
+  "seed": 24,
+  "transparent": false,
+  "backgroundColor": "#FFFFFF",
+  "outputFormat": "webm",
+  "direction": "up",
+  "angle": 0,
+  "squareColor": "#A9DBFF",
+  "squareSize": 100,
+  "speed": 24
+}
