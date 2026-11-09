@@ -193,7 +193,7 @@ export const RemotionRoot = () => (
         defaultProps={{
           durationSeconds: 10, seed: 23, transparent: false, backgroundColor: '#5A0F18',
           colors: ['#9E1A26', '#C42A36'], outputFormat: 'webm' as const,
-          rayCount: 20, rayWidth: 0.5, swirl: 0.5, spin: 3, coreFade: 0.7, coreShade: 0.6,
+          rayCount: 20, rayWidth: 0.5, swirl: 0.5, spin: 2, coreFade: 0.7, coreShade: 0.6,
         }}
         {...getCompositionMetadata(sunburst.defaultProps)}
         calculateMetadata={({props}: {props: typeof sunburst.defaultProps}) => metadataFor(sunburst.id, sunburst.schema.parse(props))}

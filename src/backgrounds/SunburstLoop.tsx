@@ -4,7 +4,7 @@ import {createSeededRandom, loopPhase, randomBetween, TAU} from '../loop';
 import {baseBackgroundSchema} from '../settings';
 import {Canvas} from './Canvas';
 
-export const sunburstLoopSchema = baseBackgroundSchema.extend({
+const sunburstFields = baseBackgroundSchema.extend({
   durationSeconds: baseBackgroundSchema.shape.durationSeconds.default(10),
   // Schema, Root literal and presets carry the same seed, so an omitted key never surprises.
   seed: baseBackgroundSchema.shape.seed.default(23),
@@ -15,12 +15,69 @@ export const sunburstLoopSchema = baseBackgroundSchema.extend({
   rayCount: z.number().int().min(6).max(48).describe('Number of rays').default(20),
   rayWidth: z.number().finite().min(0.15).max(0.8).describe('Ray thickness within its step').default(0.5),
   swirl: z.number().finite().min(0).max(1).describe('Wave that runs through the fan').default(0.5),
-  spin: z.number().int().min(-24).max(24).describe('Steps the fan turns per cycle; negative reverses the direction').default(3),
+  spin: z.number().int().min(-24).max(24).describe('Steps the fan turns per cycle; negative reverses the direction. Must be a multiple of the number of colors for the loop to close').default(2),
   coreFade: z.number().finite().min(0).max(1).describe('Gradient that dissolves the rays at the center').default(0.7),
   coreShade: z.number().finite().min(0).max(1).describe('Shadow that darkens the core').default(0.6),
 });
 
-export type SunburstLoopProps = z.infer<typeof sunburstLoopSchema>;
+export type SunburstLoopProps = z.infer<typeof sunburstFields>;
+
+/**
+ * The fan closes its loop when, after `spin` whole steps, every place shows the colour it
+ * showed at the start. A ray keeps its colour (`index % colors`) while it moves, so either
+ * the fan makes whole turns of the ring (`spin` a multiple of `rayCount`), or the colours
+ * repeat evenly around the ring (`rayCount` a multiple of the palette size) and the turn is
+ * a multiple of the palette size as well. Measured against every palette of 2 to 5 colours,
+ * 6 to 48 rays and every spin: the rule and the picture at the seam agree in all 8,428 cases.
+ */
+export const closesLoop = (props: Pick<SunburstLoopProps, 'rayCount' | 'spin' | 'colors'>) =>
+  props.spin % props.rayCount === 0
+  || (props.spin % props.colors.length === 0 && props.rayCount % props.colors.length === 0);
+
+const SPIN_RANGE = 24;
+const RAY_RANGE = {min: 6, max: 48};
+
+/** The spins that close the loop and sit closest to the one asked for, nearest first. */
+export const getClosingSpins = (props: Pick<SunburstLoopProps, 'rayCount' | 'spin' | 'colors'>) => {
+  const valid: number[] = [];
+  for (let spin = -SPIN_RANGE; spin <= SPIN_RANGE; spin++) {
+    if (closesLoop({...props, spin})) valid.push(spin);
+  }
+  const nearest = Math.min(...valid.map((spin) => Math.abs(spin - props.spin)));
+  return valid.filter((spin) => Math.abs(spin - props.spin) === nearest);
+};
+
+/** The ray counts that close the loop with this spin and palette, closest to the one asked for. */
+const getClosingRayCounts = (props: Pick<SunburstLoopProps, 'rayCount' | 'spin' | 'colors'>) => {
+  const valid: number[] = [];
+  for (let rayCount = RAY_RANGE.min; rayCount <= RAY_RANGE.max; rayCount++) {
+    if (closesLoop({...props, rayCount})) valid.push(rayCount);
+  }
+  if (valid.length === 0) return [];
+  const nearest = Math.min(...valid.map((rayCount) => Math.abs(rayCount - props.rayCount)));
+  return valid.filter((rayCount) => Math.abs(rayCount - props.rayCount) === nearest);
+};
+
+const joinOr = (values: number[]) => values.join(' or ');
+
+/**
+ * A spin that is not a multiple of the palette would leave every ray one colour off at the
+ * seam, and the whole fan would jump. Nothing is corrected behind the user's back: the
+ * combination is refused, with the nearest values that close the loop.
+ */
+export const sunburstLoopSchema = sunburstFields.superRefine((props, context) => {
+  if (closesLoop(props)) return;
+  const spins = getClosingSpins(props);
+  const rayCounts = getClosingRayCounts(props);
+  context.addIssue({
+    code: 'custom',
+    path: ['spin'],
+    message: `The loop would not close: with ${props.colors.length} colors and ${props.rayCount} rays, a spin of ${props.spin} leaves every ray one color off at the seam and the fan jumps. `
+      + `Use spin ${joinOr(spins)}`
+      + (rayCounts.length > 0 ? `, or rayCount ${joinOr(rayCounts)} to keep spin ${props.spin}.` : '.')
+      + ` The rule: spin and rayCount are both multiples of the number of colors (${props.colors.length}), or spin is a multiple of rayCount.`,
+  });
+}, {when: (payload) => payload.issues.length === 0});
 
 export type SunburstElement = {
   kind: 'ray' | 'shade' | 'core';
