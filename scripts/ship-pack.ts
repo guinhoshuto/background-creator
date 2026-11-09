@@ -138,7 +138,9 @@ const watchSignals = (startParent: {pid: number; command: string}) => {
 
 const effects: ShipEffects = {
   npm: (script, args, logName) => run('npm', ['run', '-s', script, '--', ...args], path.join(LOG_DIRECTORY, logName)),
-  machine: () => machineVerdict(process.pid),
+  // Outside the slot only: the render waits for the slot in its queue; waiting for the whole machine here would
+  // starve behind a holder that cedes its turn (a mutation chain) and never reach the queue.
+  machine: () => machineVerdict(process.pid, undefined, {outsideSlot: true}),
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   localSize: async (relative) => {
     try {
