@@ -1,0 +1,16 @@
+{
+  "durationSeconds": 12,
+  "seed": 38,
+  "transparent": false,
+  "backgroundColor": "#0B0420",
+  "outputFormat": "webm",
+  "direction": "down-right",
+  "angle": 0,
+  "squareColor": "#FF4FD8",
+  "squareSize": 96,
+  "speed": 26,
+  "style": "outline",
+  "lineWidth": 3,
+  "dashLength": 14,
+  "dashGap": 10
+}
