@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {resolveExport} from '../scripts/export';
 import {
-  CENTER_X, CENTER_Y, RAY_LENGTH, getMaxHalfWidth, getRayField, getSunburstScene, sunburstLoopSchema,
+  CENTER_X, CENTER_Y, RAY_LENGTH, closesLoop, getClosingSpins, getMaxHalfWidth, getRayField, getSunburstScene, sunburstLoopSchema,
   type SunburstLoopProps,
 } from '../src/backgrounds/SunburstLoop';
 import {createSeededRandom, randomBetween, TAU} from '../src/loop';
@@ -34,7 +34,7 @@ test('Sunburst: os valores iniciais descrevem dez segundos de leque vermelho', (
   assert.equal(props.rayCount, 20);
   assert.equal(props.rayWidth, 0.5);
   assert.equal(props.swirl, 0.5);
-  assert.equal(props.spin, 3);
+  assert.equal(props.spin, 2);
   assert.equal(props.coreFade, 0.7);
   assert.equal(props.coreShade, 0.6);
   assert.equal(props.backgroundColor, '#5A0F18');
@@ -72,7 +72,7 @@ test('Sunburst: os raios nunca se encostam e sempre ultrapassam os cantos do qua
     {rayCount: 6, rayWidth: 0.8, swirl: 1, spin: 24},
     {rayCount: 20, rayWidth: 0.8, swirl: 1, spin: 0},
     {rayCount: 48, rayWidth: 0.8, swirl: 1, spin: -24},
-    {rayCount: 47, rayWidth: 0.15, swirl: 0, spin: 1},
+    {rayCount: 46, rayWidth: 0.15, swirl: 0, spin: 2},
   ]) {
     const props = sunburstLoopSchema.parse({...extreme, seed: 2026});
     const step = 360 / props.rayCount;
@@ -98,7 +98,7 @@ test('Sunburst: os raios nunca se encostam e sempre ultrapassam os cantos do qua
 });
 
 test('Sunburst: o leque gira para um lado só, com velocidade constante', () => {
-  for (const spin of [3, 1, -2, 24]) {
+  for (const spin of [4, 2, -2, 24]) {
     const props = sunburstLoopSchema.parse({spin, rayCount: 20});
     const step = 360 / props.rayCount;
     const leadAngle = (frame: number) =>
@@ -123,7 +123,7 @@ test('Sunburst: o leque gira para um lado só, com velocidade constante', () => 
 
 test('Sunburst: na emenda a imagem continua, mesmo com o raio trocando de lugar', () => {
   const normalizedStep = 1e-6;
-  for (const spin of [3, -2]) {
+  for (const spin of [4, -2]) {
     for (const seed of [23, -7]) {
       const props = sunburstLoopSchema.parse({spin, seed});
       const waveOffset = getWaveOffset(props);
@@ -166,7 +166,7 @@ test('Sunburst: com os controles de movimento em zero a cena continua avançando
 });
 
 test('Sunburst: calcular frames não altera os parâmetros nem resultados anteriores', () => {
-  const props = sunburstLoopSchema.parse({seed: -2026, rayCount: 33});
+  const props = sunburstLoopSchema.parse({seed: -2026, rayCount: 34});
   const originalProps = structuredClone(props);
   const firstScene = getSunburstScene(props, 173, 600);
   const originalScene = structuredClone(firstScene);
@@ -211,5 +211,77 @@ test('Sunburst: o export mantém a regra de alpha e a duração compartilhadas c
       assert.equal(metadata.durationInFrames, format === 'gif' ? 500 : 600);
       assert.equal(hasTransparentBackground(resolved.props), format === 'webm' && transparent);
     }
+  }
+});
+
+/**
+ * The picture a fan shows at one instant: for each place around the ring, the colour and the
+ * shape of the ray standing there. The frame just before the seam stands in for "frame N",
+ * which the loop wraps back to 0.
+ */
+const pictureAt = (props: SunburstLoopProps, frame: number) =>
+  getSunburstScene(props, frame, 600)
+    .filter(({kind}) => kind === 'ray')
+    .map(({angle, variant, halfWidth, opacity}) => ({angle: ((angle % 360) + 360) % 360, variant, halfWidth, opacity}))
+    .sort((a, b) => a.angle - b.angle);
+
+const picturesMatch = (props: SunburstLoopProps) => {
+  const start = pictureAt(props, 0);
+  const end = pictureAt(props, 600 * (1 - 1e-9));
+  return start.every((place, index) => {
+    const other = end[index]!;
+    const gap = Math.abs(place.angle - other.angle);
+    return Math.min(gap, 360 - gap) < 1e-4 && place.variant === other.variant
+      && Math.abs(place.halfWidth - other.halfWidth) < 1e-4 && Math.abs(place.opacity - other.opacity) < 1e-4;
+  });
+};
+
+const PALETTE = ['#111111', '#222222', '#333333', '#444444', '#555555'];
+
+test('Sunburst: a emenda fecha exatamente quando a regra do schema diz que fecha', () => {
+  // The seam of the picture, measured on the scene, agrees with the rule the schema enforces.
+  for (const colorCount of [2, 3, 4, 5]) {
+    for (const rayCount of [6, 7, 12, 15, 20, 21, 24, 30, 46, 48]) {
+      for (const spin of [-24, -7, -6, -4, -3, -2, 0, 1, 2, 3, 4, 5, 6, 7, 12, 15, 20, 24]) {
+        const input = {colors: PALETTE.slice(0, colorCount), rayCount, spin};
+        const parsed = sunburstLoopSchema.safeParse(input);
+        // Spin zero always parses; the scene is then driven with the spin under test.
+        const closes = picturesMatch({...sunburstLoopSchema.parse({colors: input.colors, rayCount, spin: 0}), spin});
+        assert.equal(closesLoop(input), closes, `${colorCount} cores, ${rayCount} raios, spin ${spin}: regra contra imagem`);
+        assert.equal(parsed.success, closes, `${colorCount} cores, ${rayCount} raios, spin ${spin}: schema contra imagem`);
+      }
+    }
+  }
+});
+
+test('Sunburst: o schema recusa o spin que não fecha o loop e diz os valores válidos mais próximos', () => {
+  // The old default: 3 steps over 2 colours swaps the colours of every ray at the seam.
+  const refused = sunburstLoopSchema.safeParse({spin: 3});
+  assert.equal(refused.success, false);
+  const issue = refused.error!.issues[0]!;
+  assert.deepEqual(issue.path, ['spin']);
+  assert.match(issue.message, /loop would not close/);
+  assert.match(issue.message, /Use spin 2 or 4/);
+  assert.deepEqual(getClosingSpins({colors: PALETTE.slice(0, 2), rayCount: 20, spin: 3}), [2, 4]);
+  // Three colours: the nearest multiples of three, and the ray count that would keep spin 3.
+  const three = sunburstLoopSchema.safeParse({colors: PALETTE.slice(0, 3), rayCount: 20, spin: 3});
+  assert.equal(three.success, false);
+  assert.match(three.error!.issues[0]!.message, /Use spin 0, or rayCount 21 to keep spin 3/);
+  // A ray count off the palette refuses every spin but the whole turns, and says so.
+  assert.deepEqual(getClosingSpins({colors: PALETTE.slice(0, 2), rayCount: 21, spin: 3}), [0]);
+  // The refusal never rewrites the input.
+  const input = {spin: 3};
+  sunburstLoopSchema.safeParse(input);
+  assert.deepEqual(input, {spin: 3});
+});
+
+test('Sunburst: o spin que fecha o loop é aceito, inclusive as voltas inteiras do anel', () => {
+  for (const input of [
+    {spin: 2}, {spin: -4}, {spin: 0}, {spin: 24},
+    {colors: PALETTE.slice(0, 3), rayCount: 24, spin: 3},
+    {colors: PALETTE.slice(0, 5), rayCount: 30, spin: 5},
+    {rayCount: 7, spin: 7},
+  ]) {
+    assert.equal(sunburstLoopSchema.safeParse(input).success, true, JSON.stringify(input));
   }
 });

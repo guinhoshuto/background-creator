@@ -1,0 +1,187 @@
+{
+  "name": "sunburst-backgrounds",
+  "version": 1,
+  "profile": "delivery",
+  "items": [
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-shoujo-pink",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "shoujo-pink"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-lemonade",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "lemonade"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-sky-day",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "sky-day"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-lavender-dream",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "lavender-dream"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-mint-fizz",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "mint-fizz"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-retro-sunset",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "retro-sunset"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-comic-pop",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "comic-pop"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-victory-gold",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "victory-gold"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-rainbow-pop",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "rainbow-pop"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-manga-mono",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "manga-mono"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-midnight-neon",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "midnight-neon"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-punk-bunny",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "punk-bunny"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-gothic-candy",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "gothic-candy"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-pink-bonnet",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "pink-bonnet"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-cloud-puppy",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "cloud-puppy"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-pudding-cup",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "pudding-cup"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-pond-frog",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "pond-frog"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sunburst-pop-red-bow",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "red-bow"
+    }
+  ]
+}

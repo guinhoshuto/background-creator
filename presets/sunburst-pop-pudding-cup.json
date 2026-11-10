@@ -1,0 +1,17 @@
+{
+  "durationSeconds": 12,
+  "seed": 124,
+  "transparent": false,
+  "backgroundColor": "#FFE07A",
+  "colors": [
+    "#FFF0B0",
+    "#C99560"
+  ],
+  "outputFormat": "webm",
+  "rayCount": 20,
+  "rayWidth": 0.5,
+  "swirl": 0.45,
+  "spin": 2,
+  "coreFade": 0.7,
+  "coreShade": 0.2
+}
