@@ -892,7 +892,11 @@ test('packs: todo manifesto real tem versão, e zip e ship recusam um sem ela', 
 test('packs: cada arquivo exporta todas as props do schema, sem herdar os defaults salvos no Studio', () => {
   for (const name of [...PACKS, ...BACKGROUND_PACKS]) {
     for (const file of planPack(parsePackManifest(readPack(name)), realPackDeps)) {
-      const keys = Object.keys(getAsset(file.composition).defaultProps).sort();
+      // Optional props with no default (the checkerboard outline style) are exported when the preset sets them.
+      const keys = [...new Set([
+        ...Object.keys(getAsset(file.composition).defaultProps),
+        ...Object.keys(file.exportProps).filter((key) => (file.props as Record<string, unknown>)[key] !== undefined),
+      ])].sort();
       assert.deepEqual(Object.keys(file.exportProps).sort(), keys, file.output);
       assert.deepEqual(file.exportProps, realPackDeps.getAsset(file.composition).parse(file.props), file.output);
       // Every key is requested, so selectComposition has nothing left to take from Root.tsx.
