@@ -2,13 +2,13 @@
   "durationSeconds": 12,
   "seed": 35,
   "transparent": false,
-  "backgroundColor": "#143A7A",
+  "backgroundColor": "#1F4C92",
   "outputFormat": "webm",
   "direction": "up",
   "angle": 0,
-  "squareColor": "#8FB8FF",
-  "squareSize": 64,
+  "squareColor": "#163A73",
+  "squareSize": 80,
   "speed": 22,
   "style": "outline",
-  "lineWidth": 2
+  "lineWidth": 6
 }

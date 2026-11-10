@@ -2,15 +2,13 @@
   "durationSeconds": 12,
   "seed": 40,
   "transparent": false,
-  "backgroundColor": "#101010",
+  "backgroundColor": "#C6F53F",
   "outputFormat": "webm",
   "direction": "up-left",
   "angle": 0,
-  "squareColor": "#C8FF3C",
+  "squareColor": "#A5D52B",
   "squareSize": 72,
   "speed": 26,
   "style": "outline",
-  "lineWidth": 2,
-  "dashLength": 6,
-  "dashGap": 8
+  "lineWidth": 6
 }
