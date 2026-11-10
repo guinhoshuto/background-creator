@@ -24,6 +24,17 @@ const checkerboardFields = baseBackgroundSchema.omit({colors: true}).extend({
   speed: z.number().finite().min(0).max(960)
     .describe('Speed in pixels per second, rounded to a whole number of pattern steps per cycle (at least one); 0 holds the board still')
     .default(40),
+  style: z.enum(['fill', 'outline'])
+    .describe('fill (default) paints the squares; outline draws only the grid lines, in squareColor, over backgroundColor')
+    .optional(),
+  // Optional, not defaulted: a board saved before the outline mode keeps its exact props.
+  lineWidth: z.number().finite().min(1).max(24).describe('Outline only: width of the grid lines, in pixels (default 2)').optional(),
+  dashLength: z.number().finite().min(0).max(120)
+    .describe('Outline only: length of each dash, in pixels; 0 or unset draws solid lines')
+    .optional(),
+  dashGap: z.number().finite().min(0).max(120)
+    .describe('Outline only: gap between dashes, in pixels; 0 or unset uses the dash length')
+    .optional(),
 });
 
 export type CheckerboardLoopProps = z.infer<typeof checkerboardFields>;
@@ -209,7 +220,18 @@ export const CheckerboardFrame = ({props, frame, durationInFrames}: {
       <svg width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
         {/* One path for the whole board: squares only meet at their corners, so none overlap,
             and thousands of small squares stay cheap to draw. */}
-        <path d={squares.map(squarePath).join('')} fill={props.squareColor} />
+        {props.style === 'outline'
+          // Every edge of the board lies between a square and the background, so tracing the
+          // squares draws each grid line exactly once. A dash pattern restarts at each square's
+          // first corner, so it rides with its square and the loop closes as the fill does.
+          ? <path
+              d={squares.map(squarePath).join('')}
+              fill="none"
+              stroke={props.squareColor}
+              strokeWidth={props.lineWidth ?? 2}
+              strokeDasharray={(props.dashLength ?? 0) > 0 ? `${props.dashLength} ${(props.dashGap ?? 0) > 0 ? props.dashGap : props.dashLength}` : undefined}
+            />
+          : <path d={squares.map(squarePath).join('')} fill={props.squareColor} />}
       </svg>
     </Canvas>
   );

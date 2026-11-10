@@ -515,3 +515,22 @@ test('Xadrez: o export mantém a regra de alpha e a duração compartilhadas com
   // The shared palette is not a control here; a stray `colors` key is a typo, not a no-op.
   assert.throws(() => resolveExport({compositionId: 'CheckerboardLoop', format: 'mp4', props: {colors: ['#FFFFFF', '#000000']}}));
 });
+
+test('Xadrez: o modo outline desenha só as linhas, com espessura e tracejado, e o fill segue igual', () => {
+  const durationInFrames = 480;
+  const render = (overrides: Partial<CheckerboardLoopProps>) => renderToStaticMarkup(createElement(CheckerboardFrame, {
+    props: checkerboardLoopSchema.parse({durationSeconds: 8, ...overrides}), frame: 37, durationInFrames,
+  }));
+  const fill = render({});
+  assert.match(fill, /<path d="M[^"]+" fill="#222C57"><\/path>/);
+  assert.doesNotMatch(fill, /stroke/);
+  const solid = render({style: 'outline', lineWidth: 3, squareColor: '#FF0000'});
+  assert.match(solid, /fill="none" stroke="#FF0000" stroke-width="3"/);
+  assert.doesNotMatch(solid, /stroke-dasharray/);
+  assert.match(render({style: 'outline', dashLength: 12}), /stroke-dasharray="12 12"/);
+  assert.match(render({style: 'outline', dashLength: 12, dashGap: 6}), /stroke-dasharray="12 6"/);
+  // The same squares are traced in both modes: the outline path is the fill path.
+  const d = (markup: string) => markup.match(/ d="([^"]+)"/)?.[1];
+  assert.equal(d(render({style: 'outline'})), d(fill));
+  assert.throws(() => checkerboardLoopSchema.parse({style: 'outline', lineWidth: 0}));
+});
