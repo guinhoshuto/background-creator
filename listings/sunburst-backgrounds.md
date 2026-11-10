@@ -18,27 +18,13 @@ sunburst background, anime background, retro background, kawaii background, mang
 
 ✦ WHAT YOU GET
 Soft
-- Shoujo Pink: rosy pink
-- Lemonade: sunny yellow
-- Sky Day: clear sky blue
-- Lavender Dream: dreamy lilac
-- Mint Fizz: fresh mint green
+- Rosy pink, sunny yellow, clear sky blue, dreamy lilac and fresh mint green
 Retro & Pop
-- Retro Sunset: burnt orange and gold
-- Comic Pop: red and yellow
-- Victory Gold: deep gold
-- Rainbow Pop: five rainbow colors on navy
+- Burnt orange and gold, red and yellow, deep gold, five rainbow colors on navy
 Bold & Dark
-- Manga Mono: black and white
-- Midnight Neon: neon pink on deep violet
-- Punk Bunny: lilac and pink on dark plum
+- Black and white, neon pink on deep violet, lilac and pink on dark plum
 Kawaii
-- Gothic Candy: hot pink and lilac
-- Pink Bonnet: bubblegum pink on white
-- Cloud Puppy: baby blue on white
-- Pudding Cup: custard yellow and caramel
-- Pond Frog: leaf green on white
-- Red Bow: ribbon red on blush pink
+- Hot pink and lilac, bubblegum pink on white, baby blue on white, custard yellow and caramel, leaf green on white, ribbon red on blush pink
 ✦ THE FILES
 - Every color as .mp4 and .webm (animated, 12 s loop) and .png (still)
 - 54 files, 1920×1080, 60 fps
