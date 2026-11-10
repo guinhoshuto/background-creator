@@ -1,6 +1,6 @@
 {
   "name": "checkered-backgrounds",
-  "version": 1,
+  "version": 2,
   "profile": "delivery",
   "items": [
     {
@@ -95,6 +95,16 @@
     },
     {
       "composition": "CheckerboardLoop",
+      "preset": "checker-club-onyx",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "onyx"
+    },
+    {
+      "composition": "CheckerboardLoop",
       "preset": "checker-club-ink-and-cream",
       "formats": [
         "mp4",
@@ -142,6 +152,16 @@
         "png"
       ],
       "variant": "cobalt-tile"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-ruby",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "ruby"
     },
     {
       "composition": "CheckerboardLoop",
@@ -202,6 +222,86 @@
         "png"
       ],
       "variant": "pond-frog"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-ink",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-ink"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-paper",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-paper"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-blueprint",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-blueprint"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-pink",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-pink"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-red",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-red"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-violet",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-violet"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-mint",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-mint"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "checker-club-grid-lime",
+      "formats": [
+        "mp4",
+        "webm",
+        "png"
+      ],
+      "variant": "grid-lime"
     }
   ]
 }
