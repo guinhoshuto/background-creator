@@ -1,24 +1,24 @@
 ---
-pack: sunburst-backgrounds
+pack: burst-backgrounds
 price: US$ 5.00
-caption: SB
+caption: BB
 ---
 
 ## Title
 
-Animated Sunburst Stream Background Pack, 18 Looping Backgrounds, Retro Anime Manga Kawaii Y2K, OBS Twitch VTuber
+Burst Backgrounds, 18 Animated Stream Backgrounds, Anime Manga Comic Radial Rays, Retro Kawaii Y2K Loops, OBS Twitch VTuber
 
 ## Tags
 
-sunburst background, anime background, retro background, kawaii background, manga background, y2k background, stream background, vtuber background, obs background, twitch background, animated background, looping background, pastel background
+burst background, anime burst, radial background, rays background, comic background, anime background, manga background, kawaii background, retro background, stream background, vtuber background, twitch background, animated background
 
 ## Description
 
-18 animated sunburst backgrounds for your stream, in one pack: soft pastels, retro and pop colors, bold dark contrast and sweet kawaii palettes. Slow rays turn around a glowing center, with a gentle wave running through them, and loop seamlessly. 1920×1080 at 60 fps, with nothing on top, so your camera, game and title sit on it without a fight.
+18 animated burst backgrounds for your stream, in one pack: soft pastels, retro and pop colors, bold dark contrast and sweet kawaii palettes. Slow rays turn around a glowing center, with a gentle wave running through them, and loop seamlessly. 1920×1080 at 60 fps, with nothing on top, so your camera, game and title sit on it without a fight.
 
 ✦ WHAT YOU GET
 Soft
-- Rosy pink, sunny yellow, clear sky blue, dreamy lilac and fresh mint green
+- Rosy pink, bright yellow, clear sky blue, dreamy lilac and fresh mint green
 Retro & Pop
 - Burnt orange and gold, red and yellow, deep gold, five rainbow colors on navy
 Bold & Dark

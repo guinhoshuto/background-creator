@@ -1,187 +1,187 @@
 {
-  "name": "sunburst-backgrounds",
+  "name": "burst-backgrounds",
   "version": 1,
   "profile": "delivery",
   "items": [
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-shoujo-pink",
+      "preset": "burst-01-soft-pink",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "shoujo-pink"
+      "variant": "01-soft-pink"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-lemonade",
+      "preset": "burst-02-bright-yellow",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "lemonade"
+      "variant": "02-bright-yellow"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-sky-day",
+      "preset": "burst-03-sky-blue",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "sky-day"
+      "variant": "03-sky-blue"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-lavender-dream",
+      "preset": "burst-04-lilac",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "lavender-dream"
+      "variant": "04-lilac"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-mint-fizz",
+      "preset": "burst-05-mint-green",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "mint-fizz"
+      "variant": "05-mint-green"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-retro-sunset",
+      "preset": "burst-06-orange-and-gold",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "retro-sunset"
+      "variant": "06-orange-and-gold"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-comic-pop",
+      "preset": "burst-07-red-and-yellow",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "comic-pop"
+      "variant": "07-red-and-yellow"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-victory-gold",
+      "preset": "burst-08-deep-gold",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "victory-gold"
+      "variant": "08-deep-gold"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-rainbow-pop",
+      "preset": "burst-09-multicolor-on-navy",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "rainbow-pop"
+      "variant": "09-multicolor-on-navy"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-manga-mono",
+      "preset": "burst-10-black-and-white",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "manga-mono"
+      "variant": "10-black-and-white"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-midnight-neon",
+      "preset": "burst-11-neon-on-violet",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "midnight-neon"
+      "variant": "11-neon-on-violet"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-punk-bunny",
+      "preset": "burst-12-pink-on-plum",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "punk-bunny"
+      "variant": "12-pink-on-plum"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-gothic-candy",
+      "preset": "burst-13-hot-pink-and-lilac",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "gothic-candy"
+      "variant": "13-hot-pink-and-lilac"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-pink-bonnet",
+      "preset": "burst-14-bubblegum-pink",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "pink-bonnet"
+      "variant": "14-bubblegum-pink"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-cloud-puppy",
+      "preset": "burst-15-baby-blue",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "cloud-puppy"
+      "variant": "15-baby-blue"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-pudding-cup",
+      "preset": "burst-16-custard-yellow",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "pudding-cup"
+      "variant": "16-custard-yellow"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-pond-frog",
+      "preset": "burst-17-leaf-green",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "pond-frog"
+      "variant": "17-leaf-green"
     },
     {
       "composition": "SunburstLoop",
-      "preset": "sunburst-pop-red-bow",
+      "preset": "burst-18-red-on-blush",
       "formats": [
         "mp4",
         "webm",
         "png"
       ],
-      "variant": "red-bow"
+      "variant": "18-red-on-blush"
     }
   ]
 }

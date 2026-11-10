@@ -71,7 +71,7 @@ A parameter file may hold only the options you want to change; the others keep t
 - `sunburst-sand.json`: wide sand rays over cream, at a slower pace.
 - `sunburst-ocean.json`: thin blue rays over night blue, with a tighter core.
 - `sunburst-moss.json`: moss green over dark green, in the longest cycle.
-- `sunburst-pop-<id>.json` (18 files): the palettes of the `sunburst-backgrounds` pack (`packs/sunburst-backgrounds.json`, `<id>` as the pack's `variant`): five soft, four retro and pop, three bold and dark, and six kawaii, all in a 12-second loop. Each one keeps `spin` a multiple of its number of colors, so the loop closes.
+- `burst-NN-<color>.json` (18 files, `SunburstLoop`): the palettes of the `burst-backgrounds` pack (`packs/burst-backgrounds.json`, `NN-<color>` as the pack's `variant`, `NN` its order in the pack): five soft, four retro and pop, three bold and dark, and six kawaii, all in a 12-second loop. Each one keeps `spin` a multiple of its number of colors, so the loop closes.
 - `vaporwave-horizon.json`: neon horizon for streams, with the sun on the right edge behind the palms and a dark center for titles, camera and game.
 - `vaporwave-classic.json`: the vaporwave postcard, with the sun half set in the middle of the horizon, three palms per side, four solids and a stronger plate behind the content.
 - `vaporwave-alpha.json`: transparent WebM to lay over the game, with one palm per side and no solids, to leave the corners free for the HUD, translucent mountains, the grid dissolving before the horizon and near the bottom edge, and a clean center.
