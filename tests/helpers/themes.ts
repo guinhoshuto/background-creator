@@ -6,6 +6,11 @@ import type {OrnamentSetId} from '../../src/overlays/shared';
  * no ornaments nor lightning; each kit theme wears one ornament set (KIT_SETS), whatever its name.
  */
 
+/** Full-screen portrait themes have their own delivery contract, without horizontal kit sizes. */
+export const VERTICAL_THEMES = [
+  'sakura-watercolor-vertical', 'sakura-moonlit-vertical', 'sakura-botanical-vertical', 'sakura-relief-vertical',
+] as const;
+
 export const CLASSIC_THEMES = ['neon', 'pastel', 'glass', 'halloween'] as const;
 export const KIT_THEMES = [
   'halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior', 'halloween-cobweb', 'vaporwave-horizon',
@@ -79,7 +84,7 @@ export const BACKGROUND_PACK_KITS: Readonly<Record<string, readonly KitTheme[]>>
 
 /**
  * packs/*.json `files` (the names in packs/) must hold, sorted: every theme's pack, exactly, and the background
- * packs among them (BACKGROUND_PACK_FILE); any other file is unexpected.
+ * packs among them (BACKGROUND_PACK_FILE), plus the explicit vertical themes; any other file is unexpected.
  */
 export const expectedPackFiles = (files: readonly string[]): string[] =>
-  [...new Set([...OVERLAY_THEMES.map((name) => `${name}.json`), ...files.filter((file) => BACKGROUND_PACK_FILE.test(file))])].sort();
+  [...new Set([...[...OVERLAY_THEMES, ...VERTICAL_THEMES].map((name) => `${name}.json`), ...files.filter((file) => BACKGROUND_PACK_FILE.test(file))])].sort();

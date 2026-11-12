@@ -16,7 +16,7 @@ import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {maskGroupsOf} from './helpers/masks';
-import {BACKGROUND_PACK_KITS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, KIT_THEMES, OVERLAY_THEMES, VERTICAL_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -725,7 +725,7 @@ test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed 
 });
 
 test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', () => {
-  // Every theme's pack, exactly, and nothing else but background packs.
+  // Every horizontal/vertical theme's pack, exactly, plus standalone background packs.
   assert.deepEqual(PACK_FILES, expectedPackFiles(PACK_FILES));
   const ids = (kind: AssetKind) => sizesForKind(kind).map((size) => size.id);
   const screens = new Set(sizesForKind('border').filter((size) => size.props?.fit === 'screen').map((size) => size.id));
@@ -866,12 +866,13 @@ test('packs: todo pack só de fundos traz só fundos, em 1920×1080, na pasta ba
 });
 
 test('packs: um pack só de fundos novo (background-*, series-*) passa sem entrar em lista nenhuma', () => {
-  const files = [...OVERLAY_THEMES.map((name) => `${name}.json`), 'background-flow.json', 'series-pastel-webgl.json', 'halloween-backgrounds.json'].sort();
+  const files = [...[...OVERLAY_THEMES, ...VERTICAL_THEMES].map((name) => `${name}.json`), 'background-flow.json', 'series-pastel-webgl.json', 'halloween-backgrounds.json'].sort();
   assert.deepEqual(expectedPackFiles(files), files);
   assert.deepEqual(backgroundPacksIn(files), ['background-flow', 'halloween-backgrounds', 'series-pastel-webgl']);
   // Any other name is unexpected, and every theme's pack stays mandatory.
   assert.deepEqual(expectedPackFiles([...files, 'flow.json', 'backgrounds-flow.json', 'serie-pastel.json']), files);
   assert.deepEqual(expectedPackFiles(files.filter((file) => file !== 'neon.json')), files);
+  assert.deepEqual(expectedPackFiles(files.filter((file) => file !== 'sakura-watercolor-vertical.json')), files);
   // A standalone background with mp4 keeps what every background pack keeps (BGC-9).
   checkBackgroundPack(parsePackManifest({name: 'background-flow', version: 1, profile: 'delivery', items: [
     {composition: 'WebGLLoop', preset: 'webgl-flow', formats: ['mp4', 'webm', 'png']},
@@ -880,7 +881,7 @@ test('packs: um pack só de fundos novo (background-*, series-*) passa sem entra
 
 test('packs: todo manifesto real tem versão, e zip e ship recusam um sem ela', () => {
   // The version names the delivery zip (<pack>-overlay-pack-v<N>.zip), decided 2026-10-07.
-  for (const name of [...PACKS, ...BACKGROUND_PACKS]) {
+  for (const name of [...PACKS, ...BACKGROUND_PACKS, ...VERTICAL_THEMES]) {
     const version = deliveryVersion(parsePackManifest(readPack(name)));
     assert.ok(Number.isInteger(version) && version >= 1, name);
   }
@@ -890,7 +891,7 @@ test('packs: todo manifesto real tem versão, e zip e ship recusam um sem ela', 
 });
 
 test('packs: cada arquivo exporta todas as props do schema, sem herdar os defaults salvos no Studio', () => {
-  for (const name of [...PACKS, ...BACKGROUND_PACKS]) {
+  for (const name of [...PACKS, ...BACKGROUND_PACKS, ...VERTICAL_THEMES]) {
     for (const file of planPack(parsePackManifest(readPack(name)), realPackDeps)) {
       // Optional props with no default (the checkerboard outline style) are exported when the preset sets them.
       const keys = [...new Set([

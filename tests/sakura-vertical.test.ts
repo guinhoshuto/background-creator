@@ -5,6 +5,8 @@ import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {SakuraFrame, SAKURA_STYLES, SAKURA_CLEAR_WINDOW, SAKURA_HOLE, sakuraFrameSchema, sakuraMotion} from '../src/overlays/vertical/SakuraFrameLoop';
 import {hasAlpha} from '../src/settings';
+import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
+import {VERTICAL_THEMES} from './helpers/themes';
 
 const markup=(style:typeof SAKURA_STYLES[number],frame:number,patch={})=>renderToStaticMarkup(createElement(SakuraFrame,{props:sakuraFrameSchema.parse({style,...patch}),frame,durationInFrames:480}));
 
@@ -51,4 +53,31 @@ test('the guide is separate and stable; optional labels are escaped',()=>{
   assert.equal(sakuraFrameSchema.safeParse({motion:Infinity}).success,false);
   assert.equal(sakuraFrameSchema.safeParse({petals:13}).success,false);
   assert.equal(sakuraFrameSchema.safeParse({style:'unknown'}).success,false);
+});
+
+
+test('sakura packs ship every approved style in three media formats and a separate placement guide',()=>{
+  assert.deepEqual([...VERTICAL_THEMES].sort(),SAKURA_STYLES.map((style)=>`sakura-${style}-vertical`).sort());
+  for(const style of SAKURA_STYLES){
+    const name=`sakura-${style}-vertical`;
+    const manifest=parsePackManifest(JSON.parse(readFileSync(new URL(`../packs/${name}.json`,import.meta.url),'utf8')));
+    assert.equal(manifest.name,name);
+    const plan=planPack(manifest,realPackDeps);
+    assert.equal(plan.length,4);
+    assert.equal(new Set(plan.map((file)=>file.output)).size,4);
+    assert.deepEqual(plan.map((file)=>file.format).sort(),['mp4','png','png','webm']);
+    const guide=plan.filter((file)=>file.variant==='safe-zone');
+    assert.equal(guide.length,1);
+    assert.equal(guide[0]!.format,'png');
+    assert.equal(guide[0]!.exportProps.safeZones,true);
+    for(const file of plan){
+      assert.equal(file.composition,'SakuraFrameLoop');
+      assert.equal(file.exportProps.style,style);
+      assert.deepEqual(file.canvas,{width:1080,height:1920});
+      assert.equal(file.fps,60);
+      assert.equal(file.exportProps.backgroundColor,'#00FF00');
+      assert.equal(hasAlpha({transparent:file.exportProps.transparent===true,outputFormat:file.format}),file.format!=='mp4');
+      if(file.variant!=='safe-zone')assert.equal(file.exportProps.safeZones,false);
+    }
+  }
 });
