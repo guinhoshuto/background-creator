@@ -1,0 +1,26 @@
+{
+  "name": "sakura-botanical-vertical",
+  "version": 1,
+  "items": [
+    {
+      "composition": "SakuraFrameLoop",
+      "preset": "vertical-sakura-botanical",
+      "formats": [
+        "webm",
+        "mp4",
+        "png"
+      ]
+    },
+    {
+      "composition": "SakuraFrameLoop",
+      "preset": "vertical-sakura-botanical",
+      "formats": [
+        "png"
+      ],
+      "variant": "safe-zone",
+      "props": {
+        "safeZones": true
+      }
+    }
+  ]
+}

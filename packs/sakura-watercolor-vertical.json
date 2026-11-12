@@ -1,0 +1,26 @@
+{
+  "name": "sakura-watercolor-vertical",
+  "version": 1,
+  "items": [
+    {
+      "composition": "SakuraFrameLoop",
+      "preset": "vertical-sakura-watercolor",
+      "formats": [
+        "webm",
+        "mp4",
+        "png"
+      ]
+    },
+    {
+      "composition": "SakuraFrameLoop",
+      "preset": "vertical-sakura-watercolor",
+      "formats": [
+        "png"
+      ],
+      "variant": "safe-zone",
+      "props": {
+        "safeZones": true
+      }
+    }
+  ]
+}

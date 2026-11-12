@@ -1,0 +1,12 @@
+{
+  "durationSeconds": 8,
+  "seed": 1,
+  "transparent": true,
+  "backgroundColor": "#00FF00",
+  "outputFormat": "webm",
+  "style": "watercolor",
+  "motion": 0.6,
+  "petals": 6,
+  "label": "",
+  "safeZones": false
+}

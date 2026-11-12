@@ -30,6 +30,7 @@ const chat = overlayCatalog.ChatLoop;
 const block = overlayCatalog.BlockLoop;
 const border = overlayCatalog.BorderLoop;
 const liveFrame = overlayCatalog.LiveFrameLoop;
+const sakuraFrame = overlayCatalog.SakuraFrameLoop;
 const safeZoneGuide = overlayCatalog.SafeZoneGuide;
 const liveUiMock = overlayCatalog.LiveUiMock;
 const feedUiMock = overlayCatalog.FeedUiMock;
@@ -314,6 +315,14 @@ export const RemotionRoot = () => (
         defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"layout":"three-blocks" as const,"chatMode":"open" as const,"fill":"solid" as const,"fillColors":["#3A3548"],"fillOpacity":1,"fillScale":32,"fillSpeed":16,"fillAngle":45,"fillRise":false,"fillLight":0,"ring":true,"ringColor":"#E9E2EC","ringLineColor":"#FFFFFF","panelColor":"#2A2438","panelOpacity":1}}
         {...getCompositionMetadata(liveFrame.defaultProps, vertical)}
         calculateMetadata={({props}: {props: typeof liveFrame.defaultProps}) => ({...metadataFor(liveFrame.id, liveFrame.schema.parse(props)), ...vertical})}
+      />
+      <Composition
+        id="SakuraFrameLoop"
+        component={sakuraFrame.component}
+        schema={sakuraFrame.schema}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"style":"watercolor" as const,"motion":0.6,"petals":6,"label":"","safeZones":false}}
+        {...getCompositionMetadata(sakuraFrame.defaultProps, vertical)}
+        calculateMetadata={({props}: {props: typeof sakuraFrame.defaultProps}) => ({...metadataFor(sakuraFrame.id, sakuraFrame.schema.parse(props)), ...vertical})}
       />
       <Composition
         id="SafeZoneGuide"

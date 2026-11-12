@@ -18,6 +18,7 @@ import {GalaxyLoop, galaxyLoopSchema} from './backgrounds/GalaxyLoop';
 import {TokyoFutureLoop, tokyoFutureLoopSchema} from './backgrounds/TokyoFutureLoop';
 import {WildfireSmokeLoop, wildfireSmokeLoopSchema} from './backgrounds/WildfireSmokeLoop';
 import {WutheringWavesLoop, wutheringWavesLoopSchema} from './backgrounds/WutheringWavesLoop';
+import {sakuraFrameCatalogEntry} from './overlays/vertical/SakuraFrameLoop';
 import type {AssetKind} from './kinds';
 import {blockCatalogEntry} from './overlays/block';
 import {borderCatalogEntry} from './overlays/border';
@@ -215,6 +216,7 @@ export const overlayCatalog = {
   BlockLoop: blockCatalogEntry,
   BorderLoop: borderCatalogEntry,
   LiveFrameLoop: liveFrameCatalogEntry,
+  SakuraFrameLoop: sakuraFrameCatalogEntry,
   SafeZoneGuide: safeZoneGuideCatalogEntry,
   LiveUiMock: liveUiMockCatalogEntry,
   FeedUiMock: feedUiMockCatalogEntry,
