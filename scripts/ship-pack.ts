@@ -33,6 +33,7 @@ the log; the running step gets the same signal, and the run ends with 128 + the 
 Packs shipped before ship:pack existed are not in state.json.
 
 Options:
+  --local-only       render, validate and zip locally; never access R2 or change shipping state
   --delete-local     after a checked upload, deletes out/deliveries/<name>-overlay-pack-v<N>.zip and out/packs/<name>/
   --remote <remote>  rclone remote and bucket (default ${DEFAULT_REMOTE})
   --dry-run          says what each pack would do, running nothing
@@ -184,12 +185,14 @@ const main = async () => {
     args: process.argv.slice(2), allowPositionals: true,
     options: {
       'delete-local': {type: 'boolean', default: false},
+      'local-only': {type: 'boolean', default: false},
       remote: {type: 'string', default: DEFAULT_REMOTE},
       'dry-run': {type: 'boolean', default: false},
       help: {type: 'boolean', short: 'h'},
     },
   });
   if (values.help) {console.log(SHIP_HELP_TEXT); return;}
+  if (values['local-only'] && values['delete-local']) throw new Error('--local-only cannot be combined with --delete-local.');
   if (positionals.length === 0) throw new Error('Name at least one pack: npm run ship:pack -- <name> [<name>...]. Use --help.');
   if (new Set(positionals).size !== positionals.length) throw new Error('A pack is named twice.');
   if (positionals.some((name) => name.endsWith('.json'))) throw new Error('ship:pack takes pack names from packs/, not files: the name is part of the R2 key.');
@@ -200,10 +203,14 @@ const main = async () => {
   }));
   const packs = toShip.map((pack) => pack.name);
   await mkdir(LOG_DIRECTORY, {recursive: true});
-  const state = await effects.readState();
+  const state = values['local-only'] ? {} : await effects.readState();
   if (values['dry-run']) {
     // The run's own decision, so the dry run never promises a render the run would skip.
     for (const pack of toShip) {
+      if (values['local-only']) {
+        console.log(`${pack.name} v${pack.version}: would run render:pack, validate:pack and zip:pack locally to ${zipPathOf(pack)}; no upload or shipping-state change`);
+        continue;
+      }
       const {action, shipped} = await decideShip(pack, state, effects);
       const before = shipped ? `v${shipped.version ?? '?'} shipped before (${shipped.url})` : 'not shipped yet';
       const then = values['delete-local'] ? ' and delete the local zip and pack folder' : '';
@@ -218,8 +225,8 @@ const main = async () => {
   watchSignals({pid: process.ppid, command: commandOf(process.ppid)});
   effects.rendering = (pack) => watchRun(packs, pack);
   await watchRun(packs, packs[0]!);
-  log(`start ship:pack ${packs.join(' ')}${values['delete-local'] ? ' --delete-local' : ''}`);
-  const {code} = await shipPacks(toShip, {remote: values.remote, deleteLocal: values['delete-local']}, effects);
+  log(`start ship:pack ${packs.join(' ')}${values['delete-local'] ? ' --delete-local' : ''}${values['local-only'] ? ' --local-only' : ''}`);
+  const {code} = await shipPacks(toShip, {remote: values.remote, deleteLocal: values['delete-local'], localOnly: values['local-only']}, effects);
   process.exitCode = code;
   await finish(code);
 };

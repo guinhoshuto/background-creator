@@ -47,7 +47,7 @@ export type ShipEffects = {
   rendering: (pack: string) => Promise<void>;
 };
 
-export type ShipOptions = {remote: string; deleteLocal: boolean};
+export type ShipOptions = {remote: string; deleteLocal: boolean; localOnly?: boolean};
 
 export class ShipError extends Error {}
 
@@ -219,7 +219,10 @@ export const linkProblem = (url: string, answer: LinkAnswer, bytes: number): str
 export const shipPack = async (pack: PackToShip, options: ShipOptions, effects: ShipEffects) => {
   const zip = zipPathOf(pack);
   const folder = packFolderOf(pack.name);
-  const {action, shipped} = await decideShip(pack, await effects.readState(), effects);
+  if (options.localOnly && options.deleteLocal) throw new ShipError('--local-only cannot be combined with --delete-local.');
+  const {action, shipped}: ShipDecision = options.localOnly
+    ? {action: 'build'}
+    : await decideShip(pack, await effects.readState(), effects);
   if (action === 'skip') {
     effects.log(`${pack.name}: v${pack.version} already shipped (${shipped!.url}) and nothing local is left; skipped`);
     return shipped!;
@@ -240,6 +243,10 @@ export const shipPack = async (pack: PackToShip, options: ShipOptions, effects: 
   const bytes = await effects.localSize(zip);
   if (bytes === null) throw new ShipError(`${zip} is missing after zip:pack.`);
   const sha256 = await effects.sha256(zip);
+  if (options.localOnly) {
+    effects.log(`${pack.name}: built locally ${zip} (${bytes} B, sha256 ${sha256}); not uploaded`);
+    return null;
+  }
   const key = await uploadChecked(effects, {pack, zip, sha256, bytes, remote: options.remote});
   const url = publicUrlOf(pack, sha256);
   const answer = await effects.publicHead(url);
@@ -263,7 +270,8 @@ export const shipPacks = async (packs: readonly PackToShip[], options: ShipOptio
   const shipped: ShippedPack[] = [];
   for (const [index, pack] of packs.entries()) {
     try {
-      shipped.push(await shipPack(pack, options, effects));
+      const record = await shipPack(pack, options, effects);
+      if (record !== null) shipped.push(record);
     } catch (error) {
       // Any failure, ours or rclone's, ends in the log: a detached run has nobody watching its stderr.
       effects.log(`FAILED ${pack.name}: ${error instanceof Error ? error.message : String(error)}`);
@@ -272,7 +280,9 @@ export const shipPacks = async (packs: readonly PackToShip[], options: ShipOptio
       return {code: 1, shipped};
     }
   }
-  effects.log(`done: ${shipped.map((record) => record.url).join(' ')}`);
+  effects.log(options.localOnly
+    ? `done locally: ${packs.map(zipPathOf).join(' ')}`
+    : `done: ${shipped.map((record) => record.url).join(' ')}`);
   return {code: 0, shipped};
 };
 

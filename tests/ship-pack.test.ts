@@ -244,10 +244,11 @@ test('the command refuses before any step: --help lists the options, files and u
   const cli = (...args: string[]) => spawnSync('npx', ['tsx', 'scripts/ship-pack.ts', ...args], {cwd: root, encoding: 'utf8'});
   const help = cli('--help');
   assert.equal(help.status, 0);
-  for (const option of ['--delete-local', '--remote', '--dry-run']) assert.match(help.stdout, new RegExp(`^  ${option}\\b`, 'm'));
+  for (const option of ['--delete-local', '--remote', '--dry-run', '--local-only']) assert.match(help.stdout, new RegExp(`^  ${option}\\b`, 'm'));
   assert.match(cli('packs/x.json').stderr, /not files/);
   assert.match(cli('no-such-pack').stderr, /Unknown pack: no-such-pack/);
   assert.match(cli().stderr, /Name at least one pack/);
+  assert.match(cli('--local-only', '--delete-local').stderr, /cannot be combined/);
 });
 
 /** The 2026-11-01 outage: a redirect rule sent every link to a host that answered 404. */
@@ -410,6 +411,56 @@ test('kill -TERM from outside: the run logs the signal with the sender and ends 
       if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
       await exited;
     }
+  } finally {
+    rmSync(scratch, {recursive: true, force: true});
+  }
+});
+
+
+test('local-only builds every pack without remote access, shipping state or deletion', async () => {
+  const w = world({state: {kit: SHIPPED_V1}});
+  w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  const forbidden = async (): Promise<never> => {throw new Error('local-only crossed the publishing boundary');};
+  for (const key of ['remoteList', 'remoteTree', 'upload', 'publicHead', 'removeLocal', 'readState', 'writeState'] as const) {
+    w.effects[key] = forbidden;
+  }
+  const result = await shipPacks([KIT, NEXT], {...options, localOnly: true}, w.effects);
+  assert.deepEqual(result, {code: 0, shipped: []});
+  assert.deepEqual(w.calls, [
+    'npm render:pack kit --wait-disk', 'npm validate:pack kit', 'npm zip:pack kit',
+    'npm render:pack next --wait-disk', 'npm validate:pack next', 'npm zip:pack next',
+  ]);
+  assert(w.local.has(ZIP) && w.local.has('out/deliveries/next-overlay-pack-v1.zip'));
+  assert.deepEqual(w.state, {kit: SHIPPED_V1});
+  assert(w.logs.some((line) => line.startsWith('done locally:')));
+});
+
+test('local-only stops the chain at each failing build step and refuses deletion', async () => {
+  const steps = ['render:pack', 'validate:pack', 'zip:pack'];
+  for (const [index, script] of steps.entries()) {
+    const w = world({npmCodes: {[script]: 7}});
+    assert.equal((await shipPacks([KIT, NEXT], {...options, localOnly: true}, w.effects)).code, 1);
+    assert.equal(w.calls.length, index + 1);
+    assert(!w.calls.some((call) => call.includes(' next') || call.startsWith('upload')));
+    assert.equal(w.local.has(ZIP), false);
+  }
+  const w = world();
+  assert.equal((await shipPacks([KIT], {...options, localOnly: true, deleteLocal: true}, w.effects)).code, 1);
+  assert.deepEqual(w.calls, []);
+});
+
+
+test('local-only CLI dry run ignores shipping state and names only local steps', () => {
+  const scratch = mkdtempSync(path.join(os.tmpdir(), 'ship-local-dry-'));
+  try {
+    writeFileSync(path.join(scratch, 'state.json'), 'unreadable shipping state');
+    const result = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/ship-pack.ts', 'halloween-cobweb', '--local-only', '--dry-run'], {
+      cwd: root, encoding: 'utf8', env: {...process.env, SHIP_PACK_LOG_DIR: scratch},
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /would run render:pack, validate:pack and zip:pack locally/);
+    assert.match(result.stdout, /no upload or shipping-state change/);
+    assert.equal(readFileSync(path.join(scratch, 'state.json'), 'utf8'), 'unreadable shipping state');
   } finally {
     rmSync(scratch, {recursive: true, force: true});
   }
