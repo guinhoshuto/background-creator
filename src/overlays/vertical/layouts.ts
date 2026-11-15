@@ -91,3 +91,13 @@ export const panelOf = (layout: VerticalLayout, chatMode: ChatMode): LayoutWindo
 /** Every layout with every chat mode it accepts, in table order. */
 export const layoutModes = (): {layout: VerticalLayout; chatMode: ChatMode}[] =>
   VERTICAL_LAYOUT_IDS.flatMap((id) => VERTICAL_LAYOUTS[id].chatModes.map((chatMode) => ({layout: VERTICAL_LAYOUTS[id], chatMode})));
+
+/**
+ * Layouts the owner discarded for every theme on 2026-11-13. Their code stays, so they still
+ * render, but they go into no new proposal or pack unless the owner asks for one by name:
+ * `planPack` refuses an item on one of them unless the manifest names it in `discardedLayouts`.
+ */
+export const DISCARDED_LAYOUT_IDS = ['single-rect', 'phone-game-bubble'] as const satisfies readonly VerticalLayoutId[];
+export type DiscardedLayoutId = (typeof DISCARDED_LAYOUT_IDS)[number];
+
+export const isDiscardedLayout = (id: string): id is DiscardedLayoutId => (DISCARDED_LAYOUT_IDS as readonly string[]).includes(id);

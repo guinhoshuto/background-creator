@@ -52,6 +52,8 @@ The spec's §4.2 layouts as data in `src/overlays/vertical/layouts.ts`: each win
 | `three-blocks` (default) | PC gameplay | `camera` (110, 260) 860×484 `[200, 200, 56, 56]`; `game` (110, 800) 860×484, 56; `chat` (110, 1340) 860×420 `[56, 56, 200, 200]` | `window`, `panel`, `open` |
 | `phone-game-bubble` | Mobile gameplay | `game` (160, 260) 760×1352, 56; `camera` (60, 1360) 300×300, 150: a round bubble over the game | `open` |
 
+**Discarded: `single-rect` and `phone-game-bubble`** (owner, 2026-11-13, for every theme). They go into no new proposal, direction sheet or pack unless the owner asks for one by name. Their code stays, so they still render, and the tables in this file keep describing them. The planner refuses a pack item on either one (from its props or its preset), with the reason and the way out, unless the manifest names it: `"discardedLayouts": ["single-rect"]`, only after the owner's request for that layout; a name there that no item uses is refused too. The list is `DISCARDED_LAYOUT_IDS` in `layouts.ts`, pinned in `tests/vertical-layouts.test.ts`.
+
 Chat modes (`chatMode`, default `open`):
 
 - `window`: the chat block is a transparent window too, for a chat widget placed behind it (multistream).

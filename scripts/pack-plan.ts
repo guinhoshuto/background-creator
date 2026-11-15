@@ -7,6 +7,7 @@ import {getAsset, getLayoutOf, getMaskOf, getMotionOf, isQaOnly} from '../src/ca
 import {ASSET_KINDS, getKindPolicy, kindPolicies, type AssetKind} from '../src/kinds';
 import type {AssetLayout, Rect} from '../src/overlays/shared/box';
 import type {AssetMotion} from '../src/overlays/shared/motion';
+import {DISCARDED_LAYOUT_IDS, VERTICAL_LAYOUT_IDS, isDiscardedLayout} from '../src/overlays/vertical/layouts';
 import {exportProfileSchema, getCompositionMetadata, hasAlpha, outputFormatSchema, type ExportProfile, type OutputFormat} from '../src/settings';
 import {NAMED_SIZES, getSize, sizeTag, sizesForKind} from '../src/sizes';
 import {RUN_MIN_FREE_BYTES, assertCanGoOn, assertCanStart, gibibytes, startWaitingLine, waitForFloor, type DiskWait} from './disk';
@@ -51,6 +52,10 @@ export const packManifestSchema = z.object({
     .describe('Version of the delivery, in the zip name (<pack>-overlay-pack-v<N>.zip); raise it whenever the zip content changes'),
   profile: exportProfileSchema.optional()
     .describe('How hard WebM and MP4 are compressed: master (default, near lossless) or delivery (smaller files)'),
+  discardedLayouts: z.array(z.enum(DISCARDED_LAYOUT_IDS, {
+    error: `discardedLayouts names only discarded vertical layouts: ${DISCARDED_LAYOUT_IDS.join(', ')}.`,
+  })).min(1).optional()
+    .describe('Discarded vertical layouts this pack ships anyway, only when the owner asked for them by name'),
   items: z.array(packItemSchema).min(1).describe('What the pack exports, in order'),
 }).strict();
 
@@ -247,6 +252,12 @@ const itemSizePatch = (asset: PackAsset, sizeId: string) => {
   return expandSize(asset.kind, sizeId);
 };
 
+/** Why a discarded vertical layout is refused, and the two ways out: a kept layout or the owner's request by name. */
+const discardedLayoutRefusal = (layout: string) => {
+  const kept = VERTICAL_LAYOUT_IDS.filter((id) => !isDiscardedLayout(id));
+  return `the layout ${layout} was discarded by the owner on 2026-11-13, for every theme, and stays out of new packs (docs/vertical-overlays.md): use another layout (${kept.join(', ')}), or, only when the owner asked for ${layout} by name, add "discardedLayouts": ["${layout}"] to the pack.`;
+};
+
 /**
  * Expands a pack manifest into the ordered list of files to export: items in manifest order,
  * sizes in item order, formats in item order. Props merge as preset < item props < size < format,
@@ -267,6 +278,9 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
   const planned: PlannedFile[] = [];
   const seen = new Map<string, string>();
   const masks = new Map<string, MaskRequest>();
+  // The discarded vertical layouts the manifest opts into, and the ones its items actually use.
+  const optedIn = new Set<string>(manifest.discardedLayouts ?? []);
+  const usedDiscarded = new Set<string>();
   const packRoot = path.posix.join('out', 'packs', manifest.name);
   const names = new Map<string, {name: string; where: string}>();
   // The buyer rule at plan time: --dry-run and render:pack refuse a bad name before any render (zip:pack checks again).
@@ -310,6 +324,11 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
         const props = {...preset, ...item.props, ...sizePatch, ...bleed, outputFormat: format};
         const parsed = withContext(() => asset.parse(props));
         if (parsed.guides === true) throw new Error(`${where}: turn guides off to export.`);
+        // The parsed layout, so a preset's counts as much as the item's props.
+        if (asset.kind === 'vertical' && typeof parsed.layout === 'string' && isDiscardedLayout(parsed.layout)) {
+          if (!optedIn.has(parsed.layout)) throw new Error(`${where}: ${discardedLayoutRefusal(parsed.layout)}`);
+          usedDiscarded.add(parsed.layout);
+        }
         const layout = asset.layout?.(parsed) ?? null;
         const canvas = layout?.canvas ?? policy.fixedSize;
         if (!canvas) throw new Error(`${where}: the composition does not report the file size.`);
@@ -358,6 +377,11 @@ export const planPack = (manifest: PackManifest, deps: PackDeps): PlannedFile[] 
       }
     }
   });
+  // An opt-in no item uses would let a later item on that layout in unasked.
+  const unused = [...optedIn].filter((layout) => !usedDiscarded.has(layout));
+  if (unused.length > 0) {
+    throw new Error(`"discardedLayouts" names ${unused.join(', ')}, which no item uses: remove ${unused.length > 1 ? 'them' : 'it'}, so the opt-in covers only what the pack ships.`);
+  }
   if (masks.size === 0) return planned;
 
   // The name: the shortest size id of the shape (the first one on a tie); the drawing: the widest.
