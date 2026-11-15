@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {planPack, realPackDeps} from '../scripts/pack-plan';
+import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
 import {isQaOnly, overlayCatalog} from '../src/catalog';
 import {
-  FACE_BAND, LIVE_COMMENTS_CLEAR, LiveFrameFrame, RING_WIDTH, VERTICAL_CANVAS, VERTICAL_LAYOUTS, VERTICAL_LAYOUT_IDS,
+  DISCARDED_LAYOUT_IDS, FACE_BAND, LIVE_COMMENTS_CLEAR, isDiscardedLayout, LiveFrameFrame, RING_WIDTH, VERTICAL_CANVAS, VERTICAL_LAYOUTS, VERTICAL_LAYOUT_IDS,
   centerOf, cornerRectSdf, getLiveFrameScene, holePath, layoutModes, liveFrameLoopSchema, minDistanceOver,
   offsetCornerRect, rectInside, type LiveFrameLoopProps, type LiveFrameScene,
 } from '../src/overlays/vertical';
@@ -190,5 +190,50 @@ test('vertical mocks: the UI mocks are QA only, and the pack planner refuses the
       () => planPack({name: 'test-vertical', items: [{composition, formats: ['png']}]} as never, realPackDeps),
       new RegExp(`${composition} is a QA mock of an app's interface and never ships in a pack`),
     );
+  }
+});
+
+test('vertical packs: a discarded layout is refused unless the manifest names it in discardedLayouts', () => {
+  // The owner discarded both for every theme on 2026-11-13; their code stays, behind the opt-in.
+  assert.deepEqual([...DISCARDED_LAYOUT_IDS], ['single-rect', 'phone-game-bubble']);
+  const plan = (manifest: Record<string, unknown>, deps = realPackDeps) => planPack(parsePackManifest({name: 'test-vertical', ...manifest}), deps);
+  const itemOn = (composition: string, layout: string) => ({composition, variant: layout, props: {layout}, formats: ['png']});
+  // The way out lists every kept layout, so it grows with the layouts (the stacked siblings on their branch).
+  const kept = VERTICAL_LAYOUT_IDS.filter((id) => !isDiscardedLayout(id));
+  assert.ok(kept.includes('single-stadium') && kept.includes('three-blocks'));
+  for (const layout of DISCARDED_LAYOUT_IDS) {
+    for (const composition of ['LiveFrameLoop', 'SafeZoneGuide']) {
+      const items = [itemOn(composition, layout)];
+      assert.throws(() => plan({items}), (error: Error) => {
+        assert.match(error.message, new RegExp(`^Item 1 \\(${composition}\\): the layout ${layout} was discarded by the owner on 2026-11-13`));
+        assert.ok(error.message.includes(`use another layout (${kept.join(', ')})`), error.message);
+        assert.match(error.message, new RegExp(`only when the owner asked for ${layout} by name, add "discardedLayouts": \\["${layout}"\\] to the pack`));
+        return true;
+      });
+      assert.deepEqual(plan({discardedLayouts: [layout], items}).map((file) => file.exportProps.layout), [layout]);
+    }
+    // A preset's layout counts as much as the item's props.
+    const fromPreset = {...realPackDeps, readPreset: () => ({layout})};
+    const presetItems = [{composition: 'LiveFrameLoop', preset: 'vertical-test', variant: layout, formats: ['png']}];
+    assert.throws(() => plan({items: presetItems}, fromPreset), new RegExp(`the layout ${layout} was discarded`));
+    assert.equal(plan({discardedLayouts: [layout], items: presetItems}, fromPreset).length, 1);
+  }
+  // The opt-in is by name: naming one leaves the other refused.
+  assert.throws(
+    () => plan({discardedLayouts: ['single-rect'], items: [itemOn('LiveFrameLoop', 'single-rect'), itemOn('LiveFrameLoop', 'phone-game-bubble')]}),
+    /^Error: Item 2 \(LiveFrameLoop\): the layout phone-game-bubble was discarded/,
+  );
+  // An opt-in no item uses, or one naming a kept layout, is refused.
+  assert.throws(
+    () => plan({discardedLayouts: ['single-rect', 'phone-game-bubble'], items: [itemOn('LiveFrameLoop', 'single-rect')]}),
+    /"discardedLayouts" names phone-game-bubble, which no item uses: remove it/,
+  );
+  assert.throws(
+    () => plan({discardedLayouts: ['three-blocks'], items: [itemOn('LiveFrameLoop', 'three-blocks')]}),
+    /discardedLayouts\.0: discardedLayouts names only discarded vertical layouts: single-rect, phone-game-bubble\./,
+  );
+  // Every kept layout plans with no opt-in.
+  for (const layout of kept) {
+    assert.equal(plan({items: [itemOn('LiveFrameLoop', layout)]}).length, 1, layout);
   }
 });
