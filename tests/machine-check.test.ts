@@ -6,7 +6,7 @@ import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {MACHINE_CHECK_ENV, machineCheckScript, machineVerdict, parseVerdict} from '../scripts/machine-check';
-import {COPY_PATH, RECORD_PATH, WRITE_COMMAND, checkCopy, parseRecord, sha256} from '../scripts/render-slot-copy';
+import {COPY_PATH, RECORD_PATH, REFRESH_COMMAND, WRITE_COMMAND, checkCopy, parseRecord, sha256} from '../scripts/render-slot-copy';
 import {HEAVY_PATTERNS, WRAPPERS, busyOutsideSlot, busyProcesses} from '../scripts/render-turn';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -123,20 +123,28 @@ const fixture = (t: {after: (fn: () => void) => void}, copy: string, recordText:
   return checkCopy({root: repo, vault: vaultDir});
 };
 
-test('a copy equal to the source passes, with its record or without one', (t) => {
+test('a copy equal to the source with its record passes without a note', (t) => {
   assert.deepEqual(fixture(t, SOURCE, record(SOURCE)), {state: 'same'});
-  assert.deepEqual(fixture(t, SOURCE, null), {state: 'same'});
   assert.deepEqual(fixture(t, SOURCE, record(SOURCE).trimEnd()), {state: 'same'}, 'a record without its trailing newline');
 });
 
-test('a copy equal to the source with a stale or malformed record passes with a note naming --write', (t) => {
-  for (const recordText of [record(STALE), 'not a record\n']) {
+test('a copy equal to the source with a missing, stale or malformed record passes with a note naming --write', (t) => {
+  for (const [recordText, key] of [[null, 'is missing'], [record(STALE), 'records '], ['not a record\n', 'is not one']] as const) {
     const verdict = fixture(t, SOURCE, recordText);
     assert.equal(verdict.state, 'same');
     assert.ok(verdict.state === 'same' && verdict.note, `no note for ${JSON.stringify(recordText)}`);
-    assert.ok(verdict.note.includes(RECORD_PATH) && verdict.note.includes('NOT COVERED'), verdict.note);
-    assert.ok(verdict.note.endsWith(WRITE_COMMAND), verdict.note);
+    assert.ok(verdict.note.startsWith(`${RECORD_PATH} ${key}`) && verdict.note.includes('NOT COVERED'), verdict.note);
+    assert.ok(verdict.note.includes(WRITE_COMMAND) && verdict.note.includes(REFRESH_COMMAND), verdict.note);
   }
+});
+
+test('the refresh command writes the record the check reads', (t) => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'render-slot-copy-test-'));
+  t.after(() => rmSync(dir, {recursive: true, force: true}));
+  mkdirSync(path.join(dir, 'scripts'));
+  writeFileSync(path.join(dir, COPY_PATH), SOURCE);
+  execFileSync('/bin/zsh', ['-c', REFRESH_COMMAND], {cwd: dir});
+  assert.equal(parseRecord(readFileSync(path.join(dir, RECORD_PATH), 'utf8')), sha256(Buffer.from(SOURCE)));
 });
 
 test('a copy behind the source, matching its record, is NOT COVERED and names --write', (t) => {
@@ -145,11 +153,13 @@ test('a copy behind the source, matching its record, is NOT COVERED and names --
   assert.ok(verdict.state === 'behind' && verdict.message.startsWith('NOT COVERED: '), JSON.stringify(verdict));
   assert.ok(verdict.message.includes(WRITE_COMMAND), verdict.message);
   assert.ok(verdict.message.includes(sha256(Buffer.from(STALE)).slice(0, 8)), verdict.message);
+  assert.ok(verdict.message.includes(sha256(Buffer.from(SOURCE)).slice(0, 8)), verdict.message);
 });
 
 test('a copy that differs from the source fails: edited by hand, without a record, or with a malformed one', (t) => {
   const cases: [string, string, string | null, string][] = [
     ['by hand', `${STALE}// edited\n`, record(STALE), 'matches neither'],
+    ['by hand, the cause named', `${STALE}// edited\n`, record(STALE), 'edited by hand, or synced without its record'],
     ['no record', STALE, null, 'is missing'],
     ['malformed record', STALE, `${sha256(Buffer.from(STALE))}  other.ts\n`, 'is not one'],
   ];
