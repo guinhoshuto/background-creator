@@ -83,6 +83,7 @@ export type TitleButtonElement = {
 };
 
 /** A flat rect of a title bar: the bar itself, or the line under it. */
+/** `opacity` is always 1: no layer reads it; the scene scans require it of every element. */
 export type TitleBarElement = {
   type: 'title-bar' | 'title-line'; x: number; y: number; width: number; height: number; color: string; opacity: number;
 };

@@ -111,6 +111,7 @@ export const refineSideHole = (
 };
 
 /** The side as one still element of the scene: its depth, its flat colour and the colour of its line. */
+/** `opacity` is always 1: no layer reads it; the scene scans require it of every element. */
 export type SideElement = {type: 'side'; depth: number; color: string; line: string; opacity: number};
 
 /** One element while the side is on, none at depth 0; the line wears the first outline colour. */

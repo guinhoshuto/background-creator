@@ -23,7 +23,7 @@ export const ornamentFields = () => ({
     .describe('Ornament colors: fog or silk (cool), moonlight (light) and warm light (candles, pumpkins, lanterns); the third is optional and falls back to the first')
     .default([...ORNAMENT_DEFAULT_COLORS]),
   ornamentSize: z.number().finite().min(ORNAMENT_SIZE_RANGE.min).max(ORNAMENT_SIZE_RANGE.max)
-    .describe('Size of the main ornament, in fixed px (it does not follow the box): moon diameter, bat wingspan, candelabra height to the flame tip, web radius, palm height the pitch of the terminal squares (each half as wide) or the height of the sticker star, line included; the others follow up to a cap or have a fixed size. Capped at the free space of its slot (bleed, padding, band)')
+    .describe('Size of the main ornament, in fixed px (it does not follow the box): moon diameter, bat wingspan, candelabra height to the flame tip, web radius, palm height, the pitch of the terminal squares (each half as wide) or the height of the sticker star, line included; the others follow up to a cap or have a fixed size. Capped at the free space of its slot (bleed, padding, band)')
     .default(ORNAMENT_SIZE_RANGE.default),
   ornamentScale: z.number().finite().min(ORNAMENT_SCALE_RANGE.min).max(ORNAMENT_SCALE_RANGE.max)
     .describe('Scale of all ornaments together (sizes, caps, strokes and spacing), from 1 to 4, for large borders; free space is measured at the same scale too, so larger ornaments need proportionally more bleed (or padding, or band)')

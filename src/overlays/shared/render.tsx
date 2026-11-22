@@ -458,6 +458,7 @@ const openSidesClip = (track: RoundRect, elements: readonly (StrokeElement | Glo
  * band is on, none while it is off. It never moves, and it is not part of the stroke: the glow
  * blurs the outline alone.
  */
+/** `opacity` is always 1: no layer reads it; the scene scans require it of every element. */
 export type MarginElement = {type: 'margin'; color: string; opacity: number};
 
 export const buildMarginScene = (style: {strokeMargin: number; strokeMarginColor: string}): MarginElement[] => {
