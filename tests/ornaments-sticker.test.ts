@@ -18,6 +18,9 @@ import {getSize, NAMED_SIZES, sizeProps} from '../src/sizes';
 import {framesOf, ORNAMENT_KINDS, type OrnamentKindName, type OrnamentProps} from './helpers/ornament-kinds';
 import {REFUSAL} from './helpers/ornament-harness';
 import {borderLoopSchema} from '../src/overlays/border';
+import {blockLoopSchema} from '../src/overlays/block';
+import {chatLoopSchema} from '../src/overlays/chat';
+import {readFileSync} from 'node:fs';
 
 /**
  * The 'sticker' set (Sticker Pop, D-03) before it is registered: placed and built directly on the
@@ -503,4 +506,17 @@ test('sticker: sem lugar para a estrela, a moldura recusa com a frase que o harn
   const issues = result.error!.issues.map((issue) => [issue.path.join('.'), issue.message]);
   assert.deepEqual(issues, [['ornaments', 'The "sticker" ornaments do not fit this size: increase bleed or radius or use ornaments none.']]);
   assert.match(issues[0]![1]!, REFUSAL);
+});
+
+// The approved mock draws a solid indigo line: no light core (BlockLoop's default strokeCore is 0.9) and a header line as
+// dark as the outline (ChatLoop's default headerLineOpacity is 0.9). Read from the kit's own preset files.
+// Dies with: `"strokeCore": 0,` removed from presets/block-sticker-pop.json; `"headerLineOpacity": 1,` removed from
+// presets/chat-sticker-pop.json.
+test('sticker: os presets do kit desenham a linha índigo cheia, sem núcleo claro e com o divisor do chat opaco', () => {
+  const preset = (kind: string) => JSON.parse(readFileSync(`presets/${kind}-sticker-pop.json`, 'utf8')) as Record<string, unknown>;
+  const chat = chatLoopSchema.parse(preset('chat'));
+  const block = blockLoopSchema.parse(preset('block'));
+  const border = borderLoopSchema.parse(preset('border'));
+  for (const [kind, props] of [['chat', chat], ['block', block], ['border', border]] as const) assert.equal(props.strokeCore, 0, kind);
+  assert.equal(chat.headerLineOpacity, 1);
 });
