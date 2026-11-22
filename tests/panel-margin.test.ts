@@ -173,7 +173,7 @@ test('margin order: the band comes after the fill and before the rim light and t
 });
 
 test('margin still: the same band on every frame, outside the stroke elements', () => {
-  const band = [{type: 'margin', color: '#F6E2E4'}];
+  const band = [{type: 'margin', color: '#F6E2E4', opacity: 1}];
   const input = {...ON, rimLight: 0.5};
   for (const frame of [0, 200]) {
     const chatLayers = getChatLayers(chat(input), frame, 480);

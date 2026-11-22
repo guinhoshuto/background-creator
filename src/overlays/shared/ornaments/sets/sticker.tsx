@@ -52,16 +52,7 @@ const MOTIF_OF: Record<StickerOrnamentElement['type'], StickerMotif> = {
   'sticker-star': 'star', 'sticker-sparkle': 'sparkle', 'sticker-bolt': 'bolt',
 };
 
-/**
- * The set, typed by hand until 'sticker' joins ORNAMENT_CHOICES (types.ts) with its kit: then it
- * is an OrnamentSet<StickerOrnamentElement> like the others.
- */
-type StickerSet = Omit<OrnamentSet<StickerOrnamentElement>, 'name' | 'place'> & {
-  name: 'sticker';
-  place: (...args: Parameters<OrnamentSet['place']>) => StickerPlacement[];
-};
-
-const set: StickerSet = {
+const set: OrnamentSet<StickerOrnamentElement> = {
   name: 'sticker',
   seedOffset: 100,
   minExtent: STICKER_MIN_EXTENT,

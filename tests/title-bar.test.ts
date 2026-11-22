@@ -452,7 +452,7 @@ test('title off: the defaults draw no row, no bar, no line and no id', () => {
 
 test('title still: the same row on every frame, listed by place, outside the stroke elements', () => {
   const row = (xs: readonly number[], y: number, size: number) =>
-    xs.map((x, index) => ({type: 'title-button', index, x, y, size, color: COLORS[index], line: '#4A3A69'}));
+    xs.map((x, index) => ({type: 'title-button', index, x, y, size, color: COLORS[index], line: '#4A3A69', opacity: 1}));
   const types = (scene: readonly {type: string}[]) => scene.map((element) => element.type);
   for (const frame of [0, 200]) {
     const chatProps = chat({...CHAT_ON, strokeMargin: 3, headerOpacity: 0.5});
@@ -465,7 +465,7 @@ test('title still: the same row on every frame, listed by place, outside the str
 
     const blockProps = block({...BLOCK_ON, strokeMargin: 3});
     const blockLayers = getBlockLayers(blockProps, frame, 480);
-    assert.deepEqual(blockLayers.accentLine, [{type: 'title-line', x: 41, y: 65, width: 622, height: 6, color: '#4A3A69'}]);
+    assert.deepEqual(blockLayers.accentLine, [{type: 'title-line', x: 41, y: 65, width: 622, height: 6, color: '#4A3A69', opacity: 1}]);
     assert.deepEqual(blockLayers.titleButtons, row([585, 608, 631], 44, 18));
     for (const element of [...blockLayers.stroke, ...blockLayers.glow]) assert.notEqual(element.type, 'title-button');
     const blockTypes = types(getBlockScene(blockProps, frame, 480));
@@ -475,8 +475,8 @@ test('title still: the same row on every frame, listed by place, outside the str
     const borderProps = border({...FRAME_ON, rimLight: 0.5});
     const parts = getBorderSceneParts(borderProps, frame, 480);
     assert.deepEqual(parts.titleBar, [
-      {type: 'title-bar', x: 42, y: 12, width: 652, height: 30, color: '#F74CA9'},
-      {type: 'title-line', x: 42, y: 39, width: 652, height: 6, color: '#4A3A69'},
+      {type: 'title-bar', x: 42, y: 12, width: 652, height: 30, color: '#F74CA9', opacity: 1},
+      {type: 'title-line', x: 42, y: 39, width: 652, height: 6, color: '#4A3A69', opacity: 1},
     ]);
     assert.deepEqual(parts.titleButtons, row([613, 636, 659], 18, 18));
     for (const element of [...parts.stroke, ...parts.glow]) assert.notEqual(element.type, 'title-button');

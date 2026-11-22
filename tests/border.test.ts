@@ -433,7 +433,9 @@ test('Borda: a moldura nunca passa do próprio contorno; até raio (1 + √2)·e
       const thickness = Number(presetOf(theme).thickness);
       const limit = (1 + Math.SQRT2) * thickness;
       for (const radius of [0, 16, Math.floor(limit), Math.ceil(limit) + 1, 200]) {
-        const props = parse({...presetOf(theme), ...sizeProps(size), radius});
+        // The band and the matte alone: a preset's title bar (sticker-pop) refuses the larger radii, which push its
+        // buttons off the bar, and its own clip and limits are tests/title-bar.test.ts's.
+        const props = parse({...presetOf(theme), ...sizeProps(size), radius, titleBarHeight: 0, titleButtonSize: 0});
         const {layout, band} = getBorderGeometry(props);
         const label = `${theme} ${size.id} r${radius}`;
         // The matte and the fill share one clip, and it is the band ring alone: nothing of the

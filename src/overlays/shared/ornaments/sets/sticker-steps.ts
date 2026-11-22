@@ -12,10 +12,12 @@
  *     pose for 8 and 7 frames in turn, across the seam as well, and the table moves on to the same
  *     successor it always does.
  *
- * A fractional frame t is the straight blend of the poses of the whole frames floor(t) and
- * floor(t) + 1. This is not fract() easing: the whole frames, the only ones a render draws, keep
- * their pure pose; between two of them the value only moves along the straight line, so a field
- * never jumps between neighbouring half frames (the ornament harness checks exactly that).
+ * A fractional frame t blends the poses of the whole frames floor(t) and floor(t) + 1 along a
+ * smoothstep. This is not fract() easing: the whole frames, the only ones a render draws, keep
+ * their pure pose; between two of them the value moves smoothly from one to the other, so a field
+ * never jumps between neighbouring half frames (the ornament harness checks exactly that), the half
+ * frame is the exact mean, and every whole frame has speed 0 on both sides, the seam included (frame N
+ * is always a step, so a straight blend moved on one side of the seam and stood still on the other).
  */
 
 /** Poses a second, as drawn. */
@@ -60,7 +62,7 @@ const poseOf = (motif: StickerMotif, step: number, offset: number, mirror: boole
 };
 
 /**
- * A motif's pose at any real frame: the pure pose on whole frames, the straight blend of the two
+ * A motif's pose at any real frame: the pure pose on whole frames, the smoothstep blend of the two
  * neighbouring whole frames' poses in between (see the header).
  */
 export const stickerPoseAt = (
@@ -72,5 +74,6 @@ export const stickerPoseAt = (
   const from = poseOf(motif, stepAt(whole, durationInFrames, steps), offset, mirror);
   if (blend === 0) return from;
   const to = poseOf(motif, stepAt(whole + 1, durationInFrames, steps), offset, mirror);
-  return {turn: from.turn + (to.turn - from.turn) * blend, scale: from.scale + (to.scale - from.scale) * blend};
+  const ease = blend * blend * (3 - 2 * blend);
+  return {turn: from.turn + (to.turn - from.turn) * ease, scale: from.scale + (to.scale - from.scale) * ease};
 };

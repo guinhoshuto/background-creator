@@ -78,20 +78,24 @@ export const refineTitleButtons = (
 };
 
 /** One button: its box, its place in the row (0 minimize, 1 maximize, 2 close), its fill and the line color. */
-export type TitleButtonElement = {type: 'title-button'; index: number; x: number; y: number; size: number; color: string; line: string};
+export type TitleButtonElement = {
+  type: 'title-button'; index: number; x: number; y: number; size: number; color: string; line: string; opacity: number;
+};
 
 /** A flat rect of a title bar: the bar itself, or the line under it. */
-export type TitleBarElement = {type: 'title-bar' | 'title-line'; x: number; y: number; width: number; height: number; color: string};
+export type TitleBarElement = {
+  type: 'title-bar' | 'title-line'; x: number; y: number; width: number; height: number; color: string; opacity: number;
+};
 
 /** The buttons of a row, filled left to right with `titleButtonColors`, outlined in the first outline color. */
 export const buildTitleButtonScene = (
   row: readonly Rect[], style: {titleButtonColors: readonly string[]; strokeColors: readonly string[]},
 ): TitleButtonElement[] => row.map((button, index) => ({
-  type: 'title-button', index, x: button.x, y: button.y, size: button.width, color: style.titleButtonColors[index]!, line: style.strokeColors[0]!,
+  type: 'title-button', index, x: button.x, y: button.y, size: button.width, color: style.titleButtonColors[index]!, line: style.strokeColors[0]!, opacity: 1,
 }));
 
 export const titleBarElement = (type: TitleBarElement['type'], rect: Rect, color: string): TitleBarElement =>
-  ({type, x: rect.x, y: rect.y, width: rect.width, height: rect.height, color});
+  ({type, x: rect.x, y: rect.y, width: rect.width, height: rect.height, color, opacity: 1});
 
 const glyphOf = (element: TitleButtonElement): ReactElement => {
   const f = svgNumber;

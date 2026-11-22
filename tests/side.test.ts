@@ -177,7 +177,7 @@ test('side off: the defaults draw no side and no id, whatever the depth color', 
 });
 
 test('side still: one element on every frame, listed right after the halo, before the back ornaments and the fill', () => {
-  const element = {type: 'side', depth: 8, color: CORAL, line: INK};
+  const element = {type: 'side', depth: 8, color: CORAL, line: INK, opacity: 1};
   const dressed = {ornaments: 'horizon', halo: 8};
   const chatProps = chat({...CHAT_ON, ...dressed});
   const blockProps = block({...BLOCK_ON, ...dressed});

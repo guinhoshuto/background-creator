@@ -458,11 +458,11 @@ const openSidesClip = (track: RoundRect, elements: readonly (StrokeElement | Glo
  * band is on, none while it is off. It never moves, and it is not part of the stroke: the glow
  * blurs the outline alone.
  */
-export type MarginElement = {type: 'margin'; color: string};
+export type MarginElement = {type: 'margin'; color: string; opacity: number};
 
 export const buildMarginScene = (style: {strokeMargin: number; strokeMarginColor: string}): MarginElement[] => {
   if (!(style.strokeMargin > 0)) return [];
-  return [{type: 'margin', color: style.strokeMarginColor}];
+  return [{type: 'margin', color: style.strokeMarginColor, opacity: 1}];
 };
 
 /**

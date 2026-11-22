@@ -9,7 +9,7 @@ import type {OrnamentSetId} from '../../src/overlays/shared';
 export const CLASSIC_THEMES = ['neon', 'pastel', 'glass', 'halloween'] as const;
 export const KIT_THEMES = [
   'halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior', 'halloween-cobweb', 'vaporwave-horizon',
-  'sand-terminal',
+  'sand-terminal', 'sticker-pop',
 ] as const;
 export type ClassicTheme = (typeof CLASSIC_THEMES)[number];
 export type KitTheme = (typeof KIT_THEMES)[number];
@@ -23,6 +23,7 @@ export const KIT_SETS: Readonly<Record<KitTheme, OrnamentSetId>> = {
   'halloween-cobweb': 'cobweb',
   'vaporwave-horizon': 'horizon',
   'sand-terminal': 'terminal',
+  'sticker-pop': 'sticker',
 };
 
 /** The kit theme that wears `set`; a set without its kit fails here, before any harness runs. */
@@ -55,9 +56,12 @@ export const isStaticOnly = (pack: string, composition: string): boolean =>
 
 /**
  * Chat presets whose outline is not the kind's 2–3 px: the exact weight, per theme, each with its
- * owner and date. Empty until a theme asks for one; a new line needs the owner's yes.
+ * owner and date; a new line needs the owner's yes.
  */
-export const CHAT_STROKE_WIDTHS: Readonly<Partial<Record<KitTheme, number>>> = {};
+export const CHAT_STROKE_WIDTHS: Readonly<Partial<Record<KitTheme, number>>> = {
+  // Sticker Pop's 6 px ink line, the same as its block and frames (owner, 2026-11-21).
+  'sticker-pop': 6,
+};
 
 /** The kind's stroke weight: 2–3 px, or exactly the weight the theme's exception names. */
 export const chatStrokeWidthFits = (width: number, exact?: number): boolean =>
