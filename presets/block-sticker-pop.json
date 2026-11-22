@@ -8,7 +8,7 @@
   "paddingX": 28,
   "paddingY": 12,
   "fill": "gradient",
-  "fillColors": ["#F74CA9", "#EF6AA0"],
+  "fillColors": ["#EF6AA0", "#F74CA9"],
   "fillOpacity": 1,
   "fillSpeed": 16,
   "fillAngle": 90,

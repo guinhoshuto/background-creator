@@ -524,7 +524,7 @@ test('sticker: os presets do kit desenham a linha índigo cheia, sem núcleo cla
 // The owner's checkpoint (2026-11-22): the labels carry a 24 px star and sparkle (36 covered the label's corner), and the
 // block's gradient runs top to bottom like the approved mock's (strong pink on top), still moving for the speed rule.
 // Dies with: `"props": {"ornamentSize": 24}` → `"props": {"ornamentSize": 36}` in packs/sticker-pop.json; `"fillAngle": 90,`
-// removed from presets/block-sticker-pop.json.
+// removed from presets/block-sticker-pop.json; the two fill colours swapped back.
 test('sticker: no checkpoint do dono, etiquetas com enfeite de 24 px e o degradê da caixa de cima para baixo', () => {
   const pack = JSON.parse(readFileSync('packs/sticker-pop.json', 'utf8')) as {items: {preset: string; sizes?: string[]; variant?: string; props?: Record<string, unknown>}[]};
   const blocks = pack.items.filter((item) => item.preset === 'block-sticker-pop' && item.variant === undefined);
@@ -532,5 +532,7 @@ test('sticker: no checkpoint do dono, etiquetas com enfeite de 24 px e o degrad�
   assert.deepEqual(sized.map((item) => [item.sizes, item.props]), [[['label-sm', 'label'], {ornamentSize: 24}]]);
   const block = blockLoopSchema.parse(JSON.parse(readFileSync('presets/block-sticker-pop.json', 'utf8')));
   assert.equal(block.fillAngle, 90);
+  // Salmon first: frame 0, the pack's PNG, then shows the strong pink on top, as the mock does.
+  assert.deepEqual(block.fillColors, ['#EF6AA0', '#F74CA9']);
   assert.ok(block.fillSpeed > 0, 'the gradient still moves');
 });
