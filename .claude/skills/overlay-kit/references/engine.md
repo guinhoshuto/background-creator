@@ -108,7 +108,7 @@ A new set adds an enum value, not a field: the `Root.tsx` literals and `ROOT_DEF
 
 The contract is in `docs/kits-halloween.md` §2.4 and `types.ts:OrnamentBase`; checked by the harness. Easy to miss:
 
-- `set.seedOffset`: taken 0, 20, 40, 60, 80 (`types.ts:OrnamentSet`); the stream is seed + `ORNAMENT_SEED` (503) + offset (`place.ts:ornamentRandom`). Other streams: fill +101, stroke +211, glow/halo +307, corners/accent +401, lightning +509.
+- `set.seedOffset`: taken 0, 20, 40, 60, 80, 120 (`types.ts:OrnamentSet`; 120 is `terminal`); the stream is seed + `ORNAMENT_SEED` (503) + offset (`place.ts:ornamentRandom`). Other streams: fill +101, stroke +211, glow/halo +307, corners/accent +401, lightning +509.
 - Draw every element's random values whether used or not, so one motif never shifts another (`sets/midnight.tsx`, `build`).
 - Rhythms in Hz from the background, turned into whole cycles with `harmonics(hz, durationSeconds)`; time from `motion.ts:cycleOf`. `build` must accept fractional frames; a field may not jump between neighbouring half frames by more than 0.02 + 0.25·|Δ| (`ornament-harness.ts`).
 - Frame 0 is the hero pose: the pack PNGs are frame 0.
@@ -132,7 +132,7 @@ The harness requires a kit preset to place its hero at every named size of every
 
 - All kinds: strict parse alone and merged with every size's props; no `width`, `height`, `bleed`, `fit` or `guides` (`overlay-registry.test.ts`, "cada preset de tema…"). The preset never fixes a size.
 - Duration and seed come from the background: each overlay preset's `durationSeconds` and `seed` equal the pack background's parsed values (`pack.test.ts`, "cada kit traz o seu fundo…").
-- Chat: `strokeWidth` 2–3; a header (`layout.header` non-null, so `headerHeight` > 0); `glow` > 0, since the render test expects `<filter id="chat-stroke-glow"` for every preset (`tests/chat.test.ts`).
+- Chat: `strokeWidth` 2–3; a header (`layout.header` non-null, so `headerHeight` > 0); `glow` > 0, since the render test expects `<filter id="chat-stroke-glow"` for every preset (`tests/chat.test.ts`). The header keep-out spans the band's whole width minus `padding` (`ChatLoop.tsx:getChatLayout`), so a row of motifs beside the title (window buttons) is not a set's job: it needs a new chat field.
 - Block: frame 0 ≠ frame 200 (`block.test.ts`, "presets dos oito temas…") and frame N−1 ≠ frame 0 at every size ("o ciclo fecha em todos os tamanhos…"); legibility ≤ 0.2 over the text at every size.
 - Border: sets `thickness` (read as a number in `border.test.ts`, "a moldura nunca passa do próprio contorno…"); kit presets use `corners: "none"` (harness).
 - Kit presets set `ornaments` to their set (harness).
