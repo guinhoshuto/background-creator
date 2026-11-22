@@ -1,0 +1,11 @@
+{
+  "durationSeconds": 12,
+  "seed": 23,
+  "backgroundColor": "#F5A09E",
+  "colors": ["#F74CA9", "#EF6AA0", "#F5A09E"],
+  "stageMid": 0.45,
+  "stickerColors": ["#F4A66C", "#F6E2E4", "#E9BA67", "#9AC7F2", "#EE9DE6"],
+  "ink": "#4A3A69",
+  "rim": 4,
+  "backdrop": "stage"
+}

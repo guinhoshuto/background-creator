@@ -11,6 +11,7 @@ import {DotGridLoop, dotGridLoopSchema} from './backgrounds/DotGridLoop';
 import {CheckerboardLoop, checkerboardLoopSchema} from './backgrounds/CheckerboardLoop';
 import {TerminalGridLoop, terminalGridLoopSchema} from './backgrounds/TerminalGridLoop';
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
+import {StickerStageLoop, stickerStageLoopSchema} from './backgrounds/StickerStageLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
 import {WatercolorLoop, watercolorLoopSchema} from './backgrounds/WatercolorLoop';
@@ -86,6 +87,13 @@ export const backgroundCatalog = {
     component: SunburstLoop,
     schema: sunburstLoopSchema,
     defaultProps: sunburstLoopSchema.parse({}),
+  },
+  StickerStageLoop: {
+    id: 'StickerStageLoop',
+    kind: 'background',
+    component: StickerStageLoop,
+    schema: stickerStageLoopSchema,
+    defaultProps: stickerStageLoopSchema.parse({}),
   },
   VaporwaveLoop: {
     id: 'VaporwaveLoop',

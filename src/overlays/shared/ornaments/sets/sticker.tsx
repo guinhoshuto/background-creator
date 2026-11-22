@@ -2,7 +2,7 @@ import {svgNumber} from '../../geometry';
 import {ornamentPalette} from '../draw';
 import {ornamentRandom} from '../place';
 import type {OrnamentBase, OrnamentSet} from '../types';
-import {lineOf, MOTIF_TILT, motifPath, reachOf, shapeHeight} from './sticker-motifs';
+import {lineOf, MOTIF_TILT, motifPath, reachOf} from './sticker-motifs';
 import {placeSticker, STICKER_MIN_EXTENT, STICKER_RIM, type StickerPlacement} from './sticker-place';
 import {STICKER_POSES, stickerPoseAt, type StickerMotif} from './sticker-steps';
 
@@ -48,6 +48,46 @@ type SparkleElement = OrnamentBase & Fields & {type: 'sticker-sparkle'};
 type BoltElement = OrnamentBase & Fields & {type: 'sticker-bolt'};
 export type StickerOrnamentElement = StarElement | SparkleElement | BoltElement;
 
+/** What a sticker glyph needs: the motif, its whole height at rest and its line and rim in px, the pose, the colours and its centre. */
+export type StickerGlyphProps = {
+  motif: StickerMotif;
+  /** The whole height at rest, line and rim included. */
+  size: number;
+  line: number;
+  rim: number;
+  /** The tilt plus the pose's turn, in degrees. */
+  angle: number;
+  /** The pose's scale of the shape (the line and the rim keep their px). */
+  scale: number;
+  fill: string;
+  ink: string;
+  rimColor: string;
+  x: number;
+  y: number;
+};
+
+/** The height of the line's path of a glyph at rest: its whole height less the line and the rim on both sides. */
+export const glyphHeight = (size: number, line: number, rim: number) => size - line - 2 * rim;
+
+/**
+ * One sticker: the cream rim under the line (a stroke of line + 2·rim round the shape, only when
+ * the rim is above 0), then the fill inside the ink line with round joins. The set's render and
+ * the StickerStageLoop background both draw it; the line is a parameter (the kit's lineOf, the
+ * stage's own steps).
+ */
+export const StickerGlyph = ({motif, size, line, rim, angle, scale, fill, ink, rimColor, x, y}: StickerGlyphProps) => {
+  const d = motifPath(motif, glyphHeight(size, line, rim) * scale);
+  const n = svgNumber;
+  return (
+    <g transform={`translate(${n(x)} ${n(y)}) rotate(${n(angle)})`}>
+      {rim > 0 ? (
+        <path d={d} fill={rimColor} stroke={rimColor} strokeWidth={n(line + 2 * rim)} strokeLinejoin="round" />
+      ) : null}
+      <path d={d} fill={fill} stroke={ink} strokeWidth={n(line)} strokeLinejoin="round" />
+    </g>
+  );
+};
+
 const MOTIF_OF: Record<StickerOrnamentElement['type'], StickerMotif> = {
   'sticker-star': 'star', 'sticker-sparkle': 'sparkle', 'sticker-bolt': 'bolt',
 };
@@ -82,16 +122,12 @@ const set: OrnamentSet<StickerOrnamentElement> = {
     });
   },
   render(element, key) {
-    const motif = MOTIF_OF[element.type];
-    const d = motifPath(motif, shapeHeight(element.size, element.rim) * element.scale);
-    const n = svgNumber;
     return (
-      <g key={key} transform={`translate(${n(element.x)} ${n(element.y)}) rotate(${n(element.angle)})`}>
-        {element.rim > 0 ? (
-          <path d={d} fill={element.rimColor} stroke={element.rimColor} strokeWidth={n(element.line + 2 * element.rim)} strokeLinejoin="round" />
-        ) : null}
-        <path d={d} fill={element.fill} stroke={element.ink} strokeWidth={n(element.line)} strokeLinejoin="round" />
-      </g>
+      <StickerGlyph
+        key={key} motif={MOTIF_OF[element.type]} size={element.size} line={element.line} rim={element.rim}
+        angle={element.angle} scale={element.scale} fill={element.fill} ink={element.ink} rimColor={element.rimColor}
+        x={element.x} y={element.y}
+      />
     );
   },
 };
