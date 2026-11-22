@@ -164,7 +164,7 @@ The harness requires a kit preset to place its hero at every named size of every
 
 ## 13. Kit pack rules (`tests/pack.test.ts`)
 
-- Exactly one background item (no `sizes`), of kind background, with an existing preset.
+- Exactly one background item (no `sizes`, no `variant`), of kind background, with an existing preset, save the named exception: a kit in `KIT_BACKGROUND_VARIANTS` (`tests/helpers/themes.ts`, with owner and date) ships exactly those variants, in that order. Every background matches the overlay presets' `durationSeconds` and `seed`.
 - With ornaments: `chat-<theme>` on every chat size (in table order), `block-<theme>` on every block size but `twitch-panel`, `border-<theme>` on every border size but the two screens.
 - `plain` twins of every size (screens included, `twitch-panel` excluded), props exactly `{"ornaments": "none"}`.
 - Formats `["webm", "png"]`, or `["png"]` for compositions in `STATIC_ONLY`; `version` an integer ≥ 1.

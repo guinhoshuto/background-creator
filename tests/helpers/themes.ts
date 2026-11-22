@@ -63,6 +63,16 @@ export const CHAT_STROKE_WIDTHS: Readonly<Partial<Record<KitTheme, number>>> = {
   'sticker-pop': 6,
 };
 
+/**
+ * Kits that ship more than their one background: the exact variants, in pack order (the first is the
+ * one `qa:kit` and the mockup video use), each list with its owner and date; a new line needs the
+ * owner's yes. A kit outside this list ships exactly one background, without a variant.
+ */
+export const KIT_BACKGROUND_VARIANTS: Readonly<Partial<Record<KitTheme, readonly string[]>>> = {
+  // Sticker Pop's paper sunburst, pink sunburst, pink sticker stage, paper with stickers and cream grid (owner, 2026-11-22).
+  'sticker-pop': ['paper-burst', 'pink-burst', 'pink-stage', 'paper-stickers', 'cream-grid'],
+};
+
 /** The kind's stroke weight: 2–3 px, or exactly the weight the theme's exception names. */
 export const chatStrokeWidthFits = (width: number, exact?: number): boolean =>
   (exact === undefined ? width >= 2 && width <= 3 : width === exact);

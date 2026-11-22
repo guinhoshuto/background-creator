@@ -60,6 +60,7 @@ Backgrounds, one doc each:
 | [Dots: moving pattern](docs/themes/dots.md) | `DotGridLoop` |
 | [Terminal grid: sand screen](docs/themes/terminal-grid.md) | `TerminalGridLoop` |
 | [Checkerboard: moving board](docs/themes/checkerboard.md) | `CheckerboardLoop` |
+| [Sticker Pop: paper stickers](docs/themes/sticker-pop.md) | `StickerStageLoop` |
 | [WebGL: shader experiments](docs/themes/webgl.md) | `WebGLLoop` |
 | [Wildfire smoke: backlit plumes](docs/themes/wildfire-smoke.md) | `WildfireSmokeLoop` |
 

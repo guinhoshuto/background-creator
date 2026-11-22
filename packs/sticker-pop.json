@@ -6,7 +6,32 @@
     {
       "composition": "SunburstLoop",
       "preset": "sticker-pop",
-      "formats": ["webm", "png"]
+      "formats": ["webm", "png"],
+      "variant": "paper-burst"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sticker-pop-pink-burst",
+      "formats": ["webm", "png"],
+      "variant": "pink-burst"
+    },
+    {
+      "composition": "StickerStageLoop",
+      "preset": "sticker-pop-pink-stage",
+      "formats": ["webm", "png"],
+      "variant": "pink-stage"
+    },
+    {
+      "composition": "StickerStageLoop",
+      "preset": "sticker-pop-paper-stickers",
+      "formats": ["webm", "png"],
+      "variant": "paper-stickers"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "sticker-pop-cream-grid",
+      "formats": ["webm", "png"],
+      "variant": "cream-grid"
     },
     {
       "composition": "ChatLoop",

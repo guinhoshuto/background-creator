@@ -16,7 +16,7 @@ import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {maskGroupsOf} from './helpers/masks';
-import {BACKGROUND_PACK_KITS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly, type KitTheme} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -707,19 +707,27 @@ const readPack = (name: string): unknown => JSON.parse(readFileSync(path.join(ro
 
 const presetJson = (name: string): Record<string, unknown> => JSON.parse(readFileSync(path.join(root, 'presets', `${name}.json`), 'utf8'));
 
+// Dies with (.cache/illustration-inspired-overlay/mutations-bg-f3.json): the sticker-pop variant cream-grid
+// → cream, its first two backgrounds swapped, its paper-stickers item left out, seed 23 → 24 in
+// sticker-pop-cream-grid.json (the last background), and "variant": "night" on halloween-cobweb's background.
 test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed dele', () => {
   for (const theme of KIT_THEMES) {
     const pack = parsePackManifest(readPack(theme));
-    // The kit's background is its one item without sizes.
+    // The kit's backgrounds are its items without sizes: one without a variant, or exactly the variants
+    // its named exception lists, in that order.
     const backgrounds = pack.items.filter((item) => item.sizes === undefined);
-    assert.equal(backgrounds.length, 1, theme);
-    const {composition, preset} = backgrounds[0]!;
-    assert.equal(getAsset(composition).kind, 'background', theme);
-    assert.ok(preset, theme);
-    const background = getAsset(composition).schema.parse(presetJson(preset)) as {durationSeconds: number; seed: number};
-    for (const kind of ['chat', 'block', 'border'] as const satisfies readonly AssetKind[]) {
-      const overlay = presetJson(`${kind}-${theme}`);
-      assert.deepEqual([overlay.durationSeconds, overlay.seed], [background.durationSeconds, background.seed], `${kind}-${theme}`);
+    const variants = KIT_BACKGROUND_VARIANTS[theme];
+    assert.deepEqual(backgrounds.map((item) => item.variant), variants ?? [undefined], theme);
+    // Every background loops with the overlays (the same duration and seed), so they meet in OBS.
+    for (const {composition, preset, variant} of backgrounds) {
+      const label = `${theme}/${variant ?? composition}`;
+      assert.equal(getAsset(composition).kind, 'background', label);
+      assert.ok(preset, label);
+      const background = getAsset(composition).schema.parse(presetJson(preset)) as {durationSeconds: number; seed: number};
+      for (const kind of ['chat', 'block', 'border'] as const satisfies readonly AssetKind[]) {
+        const overlay = presetJson(`${kind}-${theme}`);
+        assert.deepEqual([overlay.durationSeconds, overlay.seed], [background.durationSeconds, background.seed], `${label}: ${kind}-${theme}`);
+      }
     }
   }
 });
@@ -775,8 +783,9 @@ test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', 
     const backgrounds = pack.items.filter((item) => item.sizes === undefined);
     assert.ok(backgrounds.length >= 1, `${name}: o pack traz o fundo do tema`);
     // With two or more backgrounds, each carries its look as its variant, or they would share a name.
+    // Dies with (mutations-bg-f3.json): the sticker-pop variant cream-grid → cream, its first two backgrounds swapped.
     assert.deepEqual(backgrounds.map((item) => item.variant),
-      name === 'halloween' ? ['midnight', 'haunted-mansion', 'cobweb'] : backgrounds.map(() => undefined), name);
+      name === 'halloween' ? ['midnight', 'haunted-mansion', 'cobweb'] : KIT_BACKGROUND_VARIANTS[name as KitTheme] ?? backgrounds.map(() => undefined), name);
     for (const item of backgrounds) {
       assert.equal(assetCatalog[item.composition as keyof typeof assetCatalog]?.kind, 'background', item.composition);
       assert.ok(existsSync(path.join(root, 'presets', `${item.preset}.json`)), `${item.preset}.json`);
