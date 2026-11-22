@@ -16,7 +16,7 @@ import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {maskGroupsOf} from './helpers/masks';
-import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly, type KitTheme} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly, type KitTheme} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -707,15 +707,20 @@ const readPack = (name: string): unknown => JSON.parse(readFileSync(path.join(ro
 
 const presetJson = (name: string): Record<string, unknown> => JSON.parse(readFileSync(path.join(root, 'presets', `${name}.json`), 'utf8'));
 
+/** An item is a background by its composition's kind, since a fixed-size sticker has no sizes either. */
+const isBackground = (item: {composition: string}) => getAsset(item.composition).kind === 'background';
+const isSticker = (item: {composition: string}) => getAsset(item.composition).kind === 'sticker';
+
 // Dies with (.cache/illustration-inspired-overlay/mutations-bg-f3.json): the sticker-pop variant cream-grid
 // → cream, its first two backgrounds swapped, its paper-stickers item left out, seed 23 → 24 in
 // sticker-pop-cream-grid.json (the last background), and "variant": "night" on halloween-cobweb's background.
+// Dies with (mutations-stickers-f2.json): F2-6, durationSeconds 12 → 10 in sticker-pop-sticker.json.
 test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed dele', () => {
   for (const theme of KIT_THEMES) {
     const pack = parsePackManifest(readPack(theme));
-    // The kit's backgrounds are its items without sizes: one without a variant, or exactly the variants
-    // its named exception lists, in that order.
-    const backgrounds = pack.items.filter((item) => item.sizes === undefined);
+    // The kit's backgrounds are its items of the background kind: one without a variant, or exactly the
+    // variants its named exception lists, in that order.
+    const backgrounds = pack.items.filter(isBackground);
     const variants = KIT_BACKGROUND_VARIANTS[theme];
     assert.deepEqual(backgrounds.map((item) => item.variant), variants ?? [undefined], theme);
     // Every background loops with the overlays (the same duration and seed), so they meet in OBS.
@@ -729,6 +734,36 @@ test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed 
         assert.deepEqual([overlay.durationSeconds, overlay.seed], [background.durationSeconds, background.seed], `${label}: ${kind}-${theme}`);
       }
     }
+    // A sticker has no seed (frame 0 is its rest pose), but it loops with the kit's overlays too.
+    for (const {composition, preset, variant} of pack.items.filter(isSticker)) {
+      const sticker = getAsset(composition).schema.parse(presetJson(preset!)) as {durationSeconds: number};
+      assert.equal(sticker.durationSeconds, presetJson(`chat-${theme}`).durationSeconds, `${theme}/${variant}`);
+    }
+  }
+});
+
+// Dies with (mutations-stickers-f2.json): F2-2, the variant bolt-pink → bolt-rose; F2-3, the star-blue fill
+// #9AC7F2 → #9AC7F3; F2-5, the star-orange preset sticker-pop-sticker → sticker-pop.
+test('packs: o kit sticker-pop traz os adesivos de KIT_STICKERS em stickers/', () => {
+  // The stage's palette, by the colour name each file carries: its five stickerColors, then the accent pink.
+  const stage = getAsset('StickerStageLoop').schema.parse({}) as {stickerColors: string[]; accentColor: string};
+  const palette = Object.fromEntries(['orange', 'cream', 'yellow', 'blue', 'lilac'].map((name, index) => [name, stage.stickerColors[index]!]));
+  palette.pink = stage.accentColor;
+  for (const theme of KIT_THEMES) {
+    const pack = parsePackManifest(readPack(theme));
+    const stickers = pack.items.filter(isSticker);
+    // A kit outside the named exception ships none; one inside ships exactly its variants, in that order.
+    assert.deepEqual(stickers.map((item) => item.variant), KIT_STICKERS[theme] ?? [], theme);
+    for (const item of stickers) {
+      const [motif, colour] = item.variant!.split('-') as [string, string];
+      assert.equal(item.preset, `${theme}-sticker`, item.variant);
+      assert.deepEqual(item.formats, ['webm', 'png'], item.variant);
+      assert.deepEqual(item.props, {motif, fill: palette[colour]}, item.variant);
+    }
+    // Each lands in the kind's folder, named motif first: stickers/<pack>-sticker-<motif>-<colour>.<ext>.
+    const files = planPack(pack, realPackDeps).filter((file) => file.kind === 'sticker').map((file) => file.output);
+    assert.deepEqual(files, stickers.flatMap((item) => ['webm', 'png'].map((format) =>
+      `out/packs/${theme}/stickers/${theme}-sticker-${item.variant}.${format}`)), theme);
   }
 });
 
@@ -780,7 +815,7 @@ test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', 
       const still = isStaticOnly(name, item.composition);
       assert.deepEqual(item.formats, still ? ['png'] : ['webm', 'png'], `${name}/${item.composition}: mov é opcional`);
     }
-    const backgrounds = pack.items.filter((item) => item.sizes === undefined);
+    const backgrounds = pack.items.filter(isBackground);
     assert.ok(backgrounds.length >= 1, `${name}: o pack traz o fundo do tema`);
     // With two or more backgrounds, each carries its look as its variant, or they would share a name.
     // Dies with (mutations-bg-f3.json): the sticker-pop variant cream-grid → cream, its first two backgrounds swapped.
@@ -797,8 +832,9 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
   for (const name of PACKS) {
     const pack = parsePackManifest(readPack(name));
     const plan = planPack(pack, realPackDeps);
-    const backgrounds = pack.items.filter((item) => item.sizes === undefined).length;
-    // Each sized item × its sizes × its formats, plus each background × its formats, plus the OBS
+    const backgrounds = pack.items.filter(isBackground).length;
+    const stickers = KIT_STICKERS[name as KitTheme]?.length ?? 0;
+    // Each sized item × its sizes × its formats, plus each background and each sticker × its formats, plus the OBS
     // masks of the nine window sizes, one per shape (maskGroupsOf: seven with rounded corners,
     // since the three round webcams share one disc; the two screen frames have none). The kits
     // hold every size twice (with ornaments, screens excepted, and plain), sharing the masks, and
@@ -806,7 +842,7 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     const kit = (KIT_THEMES as readonly string[]).includes(name);
     const sizes = kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1;
     const stills = droppedWebms(name);
-    assert.equal(plan.length, 2 * backgrounds + 2 * sizes - stills + maskGroupsOf(name).masks.length, name);
+    assert.equal(plan.length, 2 * backgrounds + 2 * stickers + 2 * sizes - stills + maskGroupsOf(name).masks.length, name);
     assert.equal(new Set(plan.map((file) => file.output)).size, plan.length);
     for (const file of plan) {
       assert.ok(file.output.startsWith(`out/packs/${name}/`), file.output);
@@ -1038,7 +1074,7 @@ test('packs: OBS estica a máscara, então só a forma em proporção decide que
 });
 
 test('every real pack plans only buyer-rule names', () => {
-  const folders = new Set(['backgrounds', 'chat', 'text-boxes', 'twitch-panels', 'borders', 'masks']);
+  const folders = new Set(['backgrounds', 'chat', 'text-boxes', 'twitch-panels', 'borders', 'stickers', 'masks']);
   let longest = '';
   for (const name of PACKS) {
     const plan = planPack(parsePackManifest(readPack(name)), realPackDeps);
@@ -1052,7 +1088,9 @@ test('every real pack plans only buyer-rule names', () => {
       assert.match(base!, /^[a-z0-9]+(-[a-z0-9]+)*\.(webm|png|gif|mov|mp4)$/, relative);
       const variant = file.variant === undefined ? '' : `-${file.variant}`;
       const expected = file.role === 'mask' ? `${name}-${file.size}-mask.png`
-        : file.kind === 'background' ? `${name}-background${variant}.${file.format}` : `${name}-${file.size}${variant}.${file.format}`;
+        : file.kind === 'background' ? `${name}-background${variant}.${file.format}`
+        // A sticker takes no --size: its piece is the kind's one named size, sticker.
+          : file.kind === 'sticker' ? `${name}-sticker${variant}.${file.format}` : `${name}-${file.size}${variant}.${file.format}`;
       assert.equal(base, expected, relative);
       assert.equal(folder, file.role === 'mask' ? 'masks' : file.size === 'twitch-panel' ? 'twitch-panels' : file.folder, relative);
       assert.ok(!basenames.has(base!), `${name}: ${base} twice`);

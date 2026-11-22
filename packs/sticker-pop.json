@@ -95,6 +95,132 @@
       "formats": ["webm", "png"],
       "props": {"ornaments": "none"},
       "variant": "plain"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#F4A66C"},
+      "formats": ["webm", "png"],
+      "variant": "star-orange"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#F6E2E4"},
+      "formats": ["webm", "png"],
+      "variant": "star-cream"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#E9BA67"},
+      "formats": ["webm", "png"],
+      "variant": "star-yellow"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#9AC7F2"},
+      "formats": ["webm", "png"],
+      "variant": "star-blue"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#EE9DE6"},
+      "formats": ["webm", "png"],
+      "variant": "star-lilac"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#F74CA9"},
+      "formats": ["webm", "png"],
+      "variant": "star-pink"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#F4A66C"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-orange"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#F6E2E4"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-cream"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#E9BA67"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-yellow"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#9AC7F2"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-blue"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#EE9DE6"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-lilac"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#F74CA9"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-pink"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#F4A66C"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-orange"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#F6E2E4"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-cream"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#E9BA67"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-yellow"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#9AC7F2"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-blue"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#EE9DE6"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-lilac"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#F74CA9"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-pink"
     }
   ]
 }

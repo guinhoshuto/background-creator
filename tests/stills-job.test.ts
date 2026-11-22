@@ -153,6 +153,20 @@ test('qa:kit: the Halloween night pack becomes one job with sheets and mockups',
   assert.deepEqual(backgrounds, ['bg-HalloweenLoop-midnight-0', 'bg-HauntedMansionLoop-haunted-mansion-0', 'bg-CobwebLoop-cobweb-0']);
 });
 
+// Dies with (mutations-stickers-f2.json): F2-7, the sheet-sticker line left out of SHEETS.
+test('qa:kit: the sticker-pop stickers get their own sheet, six a row on the checker, and never the kit background', () => {
+  const manifest = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/sticker-pop.json'), 'utf8')));
+  const job = parseJob(buildKitJob(planPack(manifest, realPackDeps), {frames: [0]}));
+  const sheet = job.sheets!.find((entry) => entry.out === 'sheet-sticker-0.png')!;
+  assert.ok(sheet, 'sheet-sticker-0.png');
+  // One still per sticker, motif × colour in pack order, three rows of six.
+  assert.equal(sheet.names.length, 18);
+  assert.deepEqual(sheet.names.slice(0, 2), ['sticker-star-orange-0', 'sticker-star-cream-0']);
+  assert.deepEqual([sheet.cols, sheet.width, sheet.bg], [6, 200, 'checker']);
+  // The mockups still sit on the first background, not on a sticker.
+  assert.ok(job.mockups!.every((mockup) => mockup.base.startsWith('bg-SunburstLoop')), 'mockup base');
+});
+
 test('a sequence passes only while every frame stays within its tolerance', () => {
   const frames = (...maxes: number[]) => maxes.map((max, frame) => ({frame, sameSize: true, max}));
   assert.equal(sequenceVerdict(frames(0, 0, 0), 0).ok, true);

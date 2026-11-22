@@ -73,6 +73,17 @@ export const KIT_BACKGROUND_VARIANTS: Readonly<Partial<Record<KitTheme, readonly
   'sticker-pop': ['paper-burst', 'pink-burst', 'pink-stage', 'paper-stickers', 'cream-grid'],
 };
 
+/**
+ * Kits that ship loose animated stickers (StickerLoop, the `sticker` kind): the exact variants, in pack
+ * order (motif × colour), each list with its owner and date; a new line needs the owner's yes. A kit
+ * outside this list ships no sticker.
+ */
+export const KIT_STICKERS: Readonly<Partial<Record<KitTheme, readonly string[]>>> = {
+  // Sticker Pop's star, sparkle and bolt in the stage's six colours, 256 px on a 304 px square (owner, 2026-11-22).
+  'sticker-pop': ['star', 'sparkle', 'bolt'].flatMap((motif) =>
+    ['orange', 'cream', 'yellow', 'blue', 'lilac', 'pink'].map((colour) => `${motif}-${colour}`)),
+};
+
 /** The kind's stroke weight: 2–3 px, or exactly the weight the theme's exception names. */
 export const chatStrokeWidthFits = (width: number, exact?: number): boolean =>
   (exact === undefined ? width >= 2 && width <= 3 : width === exact);

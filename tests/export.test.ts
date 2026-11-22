@@ -250,11 +250,21 @@ test('CLI: --size expande o tamanho do catálogo e recusa tamanhos de outro tipo
   }
 });
 
+// Dies with (mutations-stickers-f2.json): F2-8, the seed check in buildExportOptions turned off.
+test('CLI: --seed numa composição sem seed é recusado com a saída', () => {
+  assert.throws(() => buildExportOptions(cli('StickerLoop', '--seed', '7')),
+    {message: 'StickerLoop has no seed: frame 0 is the rest pose; drop --seed.'});
+  // Without the flag the sticker still parses, and a composition with a seed keeps taking it.
+  assert.equal(buildExportOptions(cli('StickerLoop')).props?.seed, undefined);
+  assert.equal(buildExportOptions(cli('GradientLoop', '--seed', '7')).props?.seed, 7);
+});
+
 test('CLI: --list agrupa por tipo com cabeçalhos em inglês', () => {
   const text = listText();
   const headers = text.split('\n').filter((line) => /^\S/.test(line));
-  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders (border):', 'Vertical overlays (vertical):']);
+  assert.deepEqual(headers, ['Backgrounds (background):', 'Chat backgrounds (chat):', 'Text boxes (block):', 'Borders (border):', 'Vertical overlays (vertical):', 'Stickers (sticker):']);
   assert.match(text, /^ {2}GradientLoop$/m);
+  assert.match(text, /^ {2}StickerLoop$/m);
   assert.match(text, /^ {2}LiveFrameLoop$/m);
   assert.match(text, /^ {2}Fixed size: 1080×1920; files tagged live-frame\.$/m);
   assert.match(text, /webcam-16x9: box 640×360, file 736×456; standard camera/);
