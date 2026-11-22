@@ -267,12 +267,14 @@ const refineChatTitleButtons = (props: ChatLoopProps, layout: ChatLayout, contex
 
 /**
  * What the stroke layer's glow blurs: the stroke band and the divider, which is drawn inside that
- * layer (see Dividers) at DIVIDER_OPACITY. The divider's clip to the rounded inside is ignored:
+ * layer (see Dividers) at headerLineOpacity. The divider's clip to the rounded inside is ignored:
  * a little more light, never less.
  */
-export const chatGlowSources = (layout: ChatLayout, footerLineOpacity = DIVIDER_OPACITY): GlowSource[] => [
+export const chatGlowSources = (
+  layout: ChatLayout, footerLineOpacity = DIVIDER_OPACITY, headerLineOpacity = DIVIDER_OPACITY,
+): GlowSource[] => [
   {outer: layout.shape, inner: layout.inner},
-  ...(layout.divider ? [{outer: {...layout.divider, radius: 0}, opacity: DIVIDER_OPACITY}] : []),
+  ...(layout.divider ? [{outer: {...layout.divider, radius: 0}, opacity: headerLineOpacity}] : []),
   ...(layout.footerDivider ? [{outer: {...layout.footerDivider, radius: 0}, opacity: footerLineOpacity}] : []),
 ];
 
@@ -282,7 +284,7 @@ export const chatGlowSources = (layout: ChatLayout, footerLineOpacity = DIVIDER_
  */
 const refineLegibility = (props: ChatLoopProps, layout: ChatLayout, context: z.RefinementCtx) => {
   if (!(props.glow > 0)) return;
-  const sources = chatGlowSources(layout, props.footerLineOpacity);
+  const sources = chatGlowSources(layout, props.footerLineOpacity, props.headerLineOpacity);
   const areas: [Rect | null, string, string][] = [
     [layout.content, 'messages', layout.divider ? 'increase padding, or reduce glow or headerLineWidth' : 'increase padding or reduce glow'],
     [layout.header, 'title', layout.divider ? 'increase headerHeight and padding, or reduce glow or headerLineWidth' : 'increase headerHeight and padding, or reduce glow'],

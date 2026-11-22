@@ -5,7 +5,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {BlockFrame, blockLoopSchema, getBlockLayers, getBlockLayout, getBlockScene} from '../src/overlays/block/BlockLoop';
 import {BorderFrame} from '../src/overlays/border/BorderLoop';
 import {borderLoopSchema, getBorderGeometry, getBorderScene, getBorderSceneParts} from '../src/overlays/border/scene';
-import {ChatFrame, chatLoopSchema, getChatLayers, getChatLayout, getChatScene} from '../src/overlays/chat/ChatLoop';
+import {ChatFrame, chatGlowSources, chatLoopSchema, getChatLayers, getChatLayout, getChatScene} from '../src/overlays/chat/ChatLoop';
 import {offsetRoundRect, roundRectSdf} from '../src/overlays/shared/geometry';
 import {growTop, layoutFrame, layoutPanel} from '../src/overlays/shared/layout';
 import {titleButtonRow, titleButtonRowBox, titleButtonSquare, titleButtonsFit} from '../src/overlays/shared/title-buttons';
@@ -68,6 +68,11 @@ const accepted = (schema: Schema, input: object, label: string) => {
 const corners = (rect: {x: number; y: number; width: number; height: number}) =>
   [[rect.x, rect.y], [rect.x + rect.width, rect.y], [rect.x, rect.y + rect.height], [rect.x + rect.width, rect.y + rect.height]] as const;
 
+/** How a title layer opens in the markup: its clip, with the path `d`, and the group that uses that clip. */
+const titleLayer = (prefix: string, d: string) =>
+  `<g id="${prefix}-title"><defs><clipPath id="${prefix}-title-clip" clipPathUnits="userSpaceOnUse"><path d="${d}"></path></clipPath></defs>`
+  + `<g clip-path="url(#${prefix}-title-clip)">`;
+
 test('title row: three buttons end at the right, 86 px wide at 24 and 7', () => {
   const row = titleButtonRow({right: 382, cy: 27, size: 24, gap: 7});
   assert.deepEqual(row.map((button) => button.x), [296, 327, 358]);
@@ -103,13 +108,38 @@ test('title fit: the rows of the mock fit, a row in a round corner or wider than
   refusal(chatLoopSchema, {...base, radius: 24, titleButtonInset: 0}, 'titleButtonInset', message, 'chat');
   accepted(chatLoopSchema, {...base, radius: 24, titleButtonInset: 12}, 'chat: inset 12');
   accepted(chatLoopSchema, {...base, radius: 12, titleButtonInset: 0}, 'chat: radius 12');
+  // The chat measures from the header's own band: with open sides it reaches the panel's sides, 6 px past the inside
+  // of the line, so a row with no inset fits there (the inside of the line alone would refuse it).
+  const open = {...base, strokeSides: 'top-bottom', titleButtonInset: 0};
+  accepted(chatLoopSchema, open, 'chat: open sides');
+  const openLayout = getChatLayout(chatLoopSchema.parse(open));
+  assert.equal(titleButtonsFit(titleButtonRowBox(openLayout.titleButtons), openLayout.bandArea), true);
+  assert.equal(titleButtonsFit(titleButtonRowBox(openLayout.titleButtons), openLayout.inner), false);
   // Wider than the bar: in the 320 px Twitch panel a row pushed 256 px in leaves by the left.
   const panel = {...BLOCK_ON, ...sizeProps(getSize('twitch-panel'))};
   refusal(blockLoopSchema, {...panel, titleButtonGap: 64, titleButtonInset: 256}, 'titleButtonInset', message, 'block');
   accepted(blockLoopSchema, panel, 'block');
+  // The block measures from the inside of its line: with no inset the last button pokes through that corner (radius 6)
+  // while still inside the line's middle (radius 9) and the box's outline (radius 12), which would both take it.
+  const card = {...BLOCK_ON, ...sizeProps(getSize('card'))};
+  refusal(blockLoopSchema, {...card, titleButtonInset: 0}, 'titleButtonInset', message, 'block: inside of the line');
+  accepted(blockLoopSchema, {...card, titleButtonInset: 1}, 'block: inset 1');
+  const cardLayout = getBlockLayout(blockLoopSchema.parse(card));
+  const cardRow = titleButtonRowBox(cardLayout.titleButtons.map((button) => ({...button, x: button.x + 14})));
+  assert.deepEqual([cardLayout.inner, cardLayout.track, cardLayout.shape].map((inside) => titleButtonsFit(cardRow, inside)), [false, true, true]);
   const cam = {...FRAME_ON, ...sizeProps(getSize('webcam-16x9'))};
   refusal(borderLoopSchema, {...cam, radius: 48, titleButtonInset: 0}, 'titleButtonInset', message, 'border');
   accepted(borderLoopSchema, cam, 'border');
+  // The frame measures from the inner face of its main line (radius 15): 4 px from it the row is over the line, yet
+  // inside the line's middle (radius 18) and the band (radius 24), which would both take it; 6 px is the first inset that fits.
+  refusal(borderLoopSchema, {...cam, titleButtonInset: 4}, 'titleButtonInset', message, 'border: inner face of the line');
+  accepted(borderLoopSchema, {...cam, titleButtonInset: 6}, 'border: inset 6');
+  const camGeometry = getBorderGeometry(borderLoopSchema.parse(cam));
+  const camRow = titleButtonRowBox(camGeometry.titleBar!.buttons.map((button) => ({...button, x: button.x + 10})));
+  assert.deepEqual(
+    [offsetRoundRect(camGeometry.tracks[0], -3), camGeometry.tracks[0], camGeometry.band].map((inside) => titleButtonsFit(camRow, inside)),
+    [false, true, true],
+  );
 });
 
 test('title markup: three rounded squares with rx 5.28 at 24 px and 3.96 at 18 px, glyphs drawn as lines', () => {
@@ -140,6 +170,16 @@ test('title markup: three rounded squares with rx 5.28 at 24 px and 3.96 at 18 p
     + '<rect x="42" y="39" width="652" height="6" fill="#4A3A69" data-title="title-line"></rect>'), 'bar and line');
   assert.ok(markup.includes('<clipPath id="border-title-clip" clipPathUnits="userSpaceOnUse">'
     + '<path d="M60 12H676A18 18 0 0 1 694 30V396A18 18 0 0 1 676 414H60A18 18 0 0 1 42 396V30A18 18 0 0 1 60 12Z"></path></clipPath>'), 'clip');
+  // Every layer draws inside the clip it declares: the frame's is the middle of its main line.
+  assert.ok(markup.includes(titleLayer('border', 'M60 12H676A18 18 0 0 1 694 30V396A18 18 0 0 1 676 414H60A18 18 0 0 1 42 396V30A18 18 0 0 1 60 12Z')), 'border layer');
+  // card: the inside of the 6 px line, (38, 38) to (666, 386) with radius 6; the box's outline would be (32, 32) with radius 12.
+  assert.ok(blockMarkup(BLOCK_ON).includes(
+    titleLayer('block', 'M44 38H660A6 6 0 0 1 666 44V380A6 6 0 0 1 660 386H44A6 6 0 0 1 38 380V44A6 6 0 0 1 44 38Z')), 'block layer');
+  // chat-standard: the inside of the line too, and with open sides the header's band, which reaches the panel's sides (x 32 to 432).
+  assert.ok(chatMarkup(CHAT_ON).includes(
+    titleLayer('chat', 'M44 38H420A6 6 0 0 1 426 44V620A6 6 0 0 1 420 626H44A6 6 0 0 1 38 620V44A6 6 0 0 1 44 38Z')), 'chat layer');
+  assert.ok(chatMarkup({...CHAT_ON, strokeSides: 'top-bottom', titleButtonInset: 0}).includes(
+    titleLayer('chat', 'M38 38H426A6 6 0 0 1 432 44V620A6 6 0 0 1 426 626H38A6 6 0 0 1 32 620V44A6 6 0 0 1 38 38Z')), 'chat layer, open sides');
 });
 
 test('title chat layout: the title ends one gap before the buttons, 227 px wide in chat-compact', () => {
@@ -178,6 +218,21 @@ test('title chat line: headerLineOpacity is the opacity the header line is drawn
   assert.equal(getChatLayers(chat({headerLineOpacity: 1}), 0, 480).divider[0]!.opacity, 1);
 });
 
+test('title chat glow: the header line counts in the glow at headerLineOpacity, not at a fixed 0.9', () => {
+  // chat-standard, a 12 px line under a 42 px header, glow 26: over the title the glow reaches 19% with the line
+  // at 0.9 and 21% with it at 1, on either side of the 20% limit.
+  const input = {...INK, headerHeight: 42, headerLineWidth: 12, glow: 26, ...sizeProps(getSize('chat-standard'))};
+  accepted(chatLoopSchema, input, 'the default, 0.9');
+  accepted(chatLoopSchema, {...input, headerLineOpacity: 0.9}, 'line at 0.9');
+  refusal(chatLoopSchema, {...input, headerLineOpacity: 1}, 'glow',
+    /^The glow would reach 21% opacity over the title area \(the limit is 20%\): increase headerHeight and padding, or reduce glow or headerLineWidth\.$/,
+    'line at 1');
+  const layout = getChatLayout(chatLoopSchema.parse(input));
+  assert.deepEqual(chatGlowSources(layout).map((source) => source.opacity), [undefined, 0.9]);
+  assert.deepEqual(chatGlowSources(layout, 0.9, 1).map((source) => source.opacity), [undefined, 1]);
+  assert.deepEqual(chatGlowSources(layout, 0.9, 0.5).map((source) => source.opacity), [undefined, 0.5]);
+});
+
 test('title block line: accentLineWidth draws a line under a top bar and moves the content down by it', () => {
   // card: the inside of the 6 px line starts at (38, 38); the 24 px bar ends at y 62.
   const off = getBlockLayout(block({...BLOCK_ON, accentLineWidth: 0}));
@@ -188,6 +243,18 @@ test('title block line: accentLineWidth draws a line under a top bar and moves t
   assert.deepEqual(on.content, {x: 62, y: 84, width: 580, height: 286});
   assert.deepEqual(on.titleButtons.map((button) => [button.x, button.y, button.width]), [[588, 41, 18], [611, 41, 18], [634, 41, 18]]);
   assert.ok(blockMarkup(BLOCK_ON).includes('<rect x="38" y="62" width="628" height="6" fill="#4A3A69" data-title="title-line"></rect>'));
+  // Under a thin bar on a round card the line's ends lie outside the outline (10 px past the inside of the line, 4 px
+  // past the box): the layer's clip, the inside of the line, is what cuts them.
+  const round = {...BLOCK_ON, radius: 40, accentSize: 6, titleButtonSize: 0};
+  const roundLayout = getBlockLayout(block(round));
+  assert.deepEqual(roundLayout.accentLine, {x: 38, y: 44, width: 628, height: 6});
+  for (const [x, y] of [[38, 44], [666, 44]] as const) {
+    assert.ok(roundRectSdf(roundLayout.inner, x, y) > 10, `(${x}, ${y}) outside the inside of the line`);
+    assert.ok(roundRectSdf(roundLayout.shape, x, y) > 4, `(${x}, ${y}) outside the box`);
+  }
+  assert.ok(blockMarkup(round).includes(
+    titleLayer('block', 'M72 38H632A34 34 0 0 1 666 72V352A34 34 0 0 1 632 386H72A34 34 0 0 1 38 352V72A34 34 0 0 1 72 38Z')
+    + '<rect x="38" y="44" width="628" height="6" fill="#4A3A69" data-title="title-line"></rect>'), 'round card: the line inside its clip');
   // A left bar has no line under it: the width is ignored, the layout is the one without it.
   const left = {...INK, accent: 'left', accentSize: 24};
   assert.deepEqual(getBlockLayout(block({...left, accentLineWidth: 6})), getBlockLayout(block(left)));
@@ -291,9 +358,18 @@ test('title refusal: buttons taller than their bar, in the three kinds', () => {
     refusal(schema, {...base, titleButtonSize: height + 1}, 'titleButtonSize', message, bar);
     accepted(schema, {...base, titleButtonSize: height, titleButtonGap: 2, titleButtonInset: 24}, `${bar}: as tall as the bar`);
   }
-  // A frame with buttons and no bar: the same refusal, the bar being 0 px tall.
-  refusal(borderLoopSchema, {...FRAME_ON, ...sizeProps(getSize('webcam-16x9')), titleBarHeight: 0}, 'titleButtonSize',
-    /^The title buttons are taller than their bar: use titleButtonSize ≤ 0, or a taller bar \(titleBarHeight\)\.$/, 'no bar');
+});
+
+test('title refusal: frame buttons need a title bar', () => {
+  const base = {...FRAME_ON, ...sizeProps(getSize('webcam-16x9'))};
+  refusal(borderLoopSchema, {...base, titleBarHeight: 0}, 'titleButtonSize',
+    /^The title buttons need a title bar: use titleBarHeight ≥ 18, or titleButtonSize 0\.$/, 'no bar');
+  // A bar as tall as the buttons puts their top on the line's inner face: 24 px in, the row is clear of its corner.
+  accepted(borderLoopSchema, {...base, titleBarHeight: 18, titleButtonInset: 24}, 'titleBarHeight 18');
+  accepted(borderLoopSchema, {...base, titleBarHeight: 0, titleButtonSize: 0}, 'titleButtonSize 0');
+  // A round window and a screen border ignore the bar, so buttons without one are ignored there too.
+  accepted(borderLoopSchema, {...FRAME_ON, titleBarHeight: 0, ...sizeProps(getSize('webcam-round'))}, 'round');
+  accepted(borderLoopSchema, {...FRAME_ON, titleBarHeight: 0, ...sizeProps(getSize('fullscreen'))}, 'screen');
 });
 
 test('title refusal: chat title with no room beside the buttons', () => {

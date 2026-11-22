@@ -491,10 +491,18 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
   if (props.fit === 'screen') refineHole(geometry.layout, context);
   refineReach(props, geometry, context);
   if (props.titleButtonSize > 0 && titleBarApplies(props)) {
-    refineTitleButtons({
-      size: props.titleButtonSize, bar: props.titleBarHeight, barName: 'titleBarHeight', row: geometry.titleBar?.buttons ?? [],
-      inside: offsetRoundRect(geometry.tracks[TRACK_MAIN], -props.strokeWidth / 2),
-    }, context);
+    if (!(props.titleBarHeight > 0)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['titleButtonSize'],
+        message: `The title buttons need a title bar: use titleBarHeight ≥ ${props.titleButtonSize}, or titleButtonSize 0.`,
+      });
+    } else {
+      refineTitleButtons({
+        size: props.titleButtonSize, bar: props.titleBarHeight, barName: 'titleBarHeight', row: geometry.titleBar?.buttons ?? [],
+        inside: offsetRoundRect(geometry.tracks[TRACK_MAIN], -props.strokeWidth / 2),
+      }, context);
+    }
   }
   // Only the main line is checked: the second line is an outward offset of it, so it is longer,
   // travels no more colour periods per cycle and covers no larger share of one per frame. Checking
