@@ -1,6 +1,6 @@
 import type {z} from 'zod';
 import {offsetRoundRect, type RoundRect} from './geometry';
-import {minBleedFor} from './layout';
+import {growTop, minBleedFor} from './layout';
 
 /**
  * The side of a piece with thickness (`depth`): a flat copy of its outer outline, moved down and
@@ -46,6 +46,69 @@ export const sideBackOutset = (depth: number): number => (depth > 0 ? Math.max(0
  * and never along the window's own edge, where it would show as a thread of its colour.
  */
 export const sideHole = (window: RoundRect): RoundRect => offsetRoundRect(window, SIDE_HOLE_GROW);
+
+/**
+ * Whether the rounded rect `inner` lies wholly inside `outer`. Each is its core (the rect pulled in
+ * by its radius) grown by a disc of that radius, and taking the same disc off two convex shapes
+ * keeps one inside the other or not. So with the smaller radius taken off both: a rounder outer
+ * holds the inner one when the four corners of the inner core lie within the difference of the
+ * outer core, and a rounder inner fits when its core, grown by the difference, lies in the outer core.
+ */
+export const roundRectWithin = (inner: RoundRect, outer: RoundRect): boolean => {
+  const core = (shape: RoundRect) => ({
+    left: shape.x + shape.radius, top: shape.y + shape.radius,
+    right: shape.x + shape.width - shape.radius, bottom: shape.y + shape.height - shape.radius,
+  });
+  const a = core(inner);
+  const b = core(outer);
+  const spare = outer.radius - inner.radius;
+  if (spare < 0) {
+    return a.left + spare >= b.left - 1e-9 && a.top + spare >= b.top - 1e-9
+      && a.right - spare <= b.right + 1e-9 && a.bottom - spare <= b.bottom + 1e-9;
+  }
+  const corners = [[a.left, a.top], [a.right, a.top], [a.left, a.bottom], [a.right, a.bottom]] as const;
+  return corners.every(([x, y]) => Math.hypot(Math.max(b.left - x, 0, x - b.right), Math.max(b.top - y, 0, y - b.bottom)) <= spare + 1e-9);
+};
+
+/**
+ * Whether a frame's side keeps its own hole inside it: the copy moves down and to the right while
+ * the hole stays on the window, so a side deeper than the band lets the hole out of the copy's top
+ * left, where the even-odd fill turns inside out and the line crosses the window. On a straight
+ * side the band holds a depth up to its thickness + SIDE_GROW − SIDE_HOLE_GROW; a round corner
+ * moves along the diagonal, √2 times further. Inside the copy, the hole keeps the line
+ * SIDE_HOLE_GROW − SIDE_LINE_WIDTH / 2 px clear of the window, so the line needs nothing of its own.
+ */
+export const sideHoleFits = (outline: RoundRect, window: RoundRect, depth: number): boolean =>
+  roundRectWithin(sideHole(window), sideShape(outline, depth));
+
+/**
+ * Refuses a frame's side that lets its own hole out (sideHoleFits), naming the thickness that holds
+ * it and the deepest side that does, within the bleed too. `top` is how much taller the band's top
+ * side is (a title bar), as in refineSideOutset: the outline is the window grown by the band, then raised.
+ * Returns whether the side may stay.
+ */
+export const refineSideHole = (
+  props: {depth: number; thickness: number; bleed: number}, context: z.RefinementCtx, window: RoundRect, top = 0,
+): boolean => {
+  if (!(props.depth > 0)) return true;
+  const holds = (band: number, depth: number) => {
+    const outline = offsetRoundRect(window, band);
+    return sideHoleFits(top > 0 ? growTop(outline, top) : outline, window, depth);
+  };
+  if (holds(props.thickness, props.depth)) return true;
+  const inBleed = (band: number, depth: number) => band + sideOutset(depth) <= props.bleed + 1e-9
+    && band + top + sideBackOutset(depth) <= props.bleed + 1e-9;
+  let deepest = Math.ceil(props.depth) - 1;
+  while (deepest > 0 && !(holds(props.thickness, deepest) && inBleed(props.thickness, deepest))) deepest--;
+  let needed = Math.floor(props.thickness) + 1;
+  while (!holds(needed, props.depth)) needed++;
+  context.addIssue({
+    code: 'custom',
+    path: ['depth'],
+    message: `The side goes past the band into the window: use ${inBleed(needed, props.depth) ? `thickness ≥ ${needed}, or ` : ''}depth ≤ ${Math.max(0, deepest)}.`,
+  });
+  return false;
+};
 
 /** The side as one still element of the scene: its depth, its flat colour and the colour of its line. */
 export type SideElement = {type: 'side'; depth: number; color: string; line: string};

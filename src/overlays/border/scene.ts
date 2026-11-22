@@ -14,7 +14,7 @@ import {
   buildFlashScene, buildOrnamentScene, frameOrnamentFrame, layoutOrnaments, layoutOutset, ornamentFields, refineLightning, refineOrnaments,
   type FlashElement, type OrnamentElement, type OrnamentLayout,
   buildTitleButtonScene, growTop, refineTitleButtons, titleBarElement, titleButtonFields, titleButtonRow, type TitleBarElement, type TitleButtonElement,
-  buildSideScene, depthFields, refineSideFill, refineSideOutset, sideBackOutset, sideOutset, type SideElement,
+  buildSideScene, depthFields, refineSideFill, refineSideHole, refineSideOutset, sideBackOutset, sideOutset, type SideElement,
 } from '../shared';
 
 /**
@@ -517,6 +517,8 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
   }
   const geometry = getBorderGeometry(props);
   if (props.fit === 'screen') refineHole(geometry.layout, context);
+  // The side's own hole stays inside its moved copy (side.ts), before the copy is measured against the bleed.
+  if (!refineSideHole({depth, thickness: props.thickness, bleed: props.bleed}, context, geometry.layout.window, titleBarExtra(props))) return;
   // Before the frame's own reach, whose messages speak of the glow and the corners.
   if (!refineSideOutset({depth, bleed: props.bleed}, context, geometry.totalThickness, titleBarExtra(props))) return;
   refineReach(props, geometry, context);

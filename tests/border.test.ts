@@ -234,15 +234,13 @@ type Painted = {x: number; y: number; reach: number; what: string};
 const paintedPoints = (props: BorderLoopProps, frame: number): Painted[] => {
   const {geometry, stroke, corners, titleBar, titleButtons, side} = getBorderSceneParts(props, frame, 480);
   const points: Painted[] = [];
-  // The side of a frame with depth: the edge of its own hole, where its flat copy ends, and its line
-  // wherever it shows, beyond the frame's outer edge (under the band and in the window the frame hides it).
+  // The side of a frame with depth: the edge of its own hole, where its flat copy ends, and its whole
+  // line, under the band too (the mask would hide it in the window, all but its antialiased edge).
   for (const element of side) {
     const hole = sideHole(geometry.layout.window);
     for (const point of samplePerimeter(hole, 0, perimeterLength(hole), 4)) points.push({...point, reach: 0, what: 'side-hole'});
     const shape = sideShape(geometry.layout.outer, element.depth);
-    for (const point of samplePerimeter(shape, 0, perimeterLength(shape), 4)) {
-      if (roundRectSdf(geometry.layout.outer, point.x, point.y) >= 0) points.push({...point, reach: SIDE_LINE_WIDTH / 2, what: 'side-line'});
-    }
+    for (const point of samplePerimeter(shape, 0, perimeterLength(shape), 4)) points.push({...point, reach: SIDE_LINE_WIDTH / 2, what: 'side-line'});
   }
   // The title bar, its line and its buttons are flat rects: their four corners, with no reach of their own.
   const flat = [...titleBar, ...titleButtons.map((button) => ({...button, width: button.size, height: button.size}))];
@@ -269,6 +267,29 @@ const paintedPoints = (props: BorderLoopProps, frame: number): Painted[] => {
   return points;
 };
 
+/** Asserts that nothing a frame paints enters its hole or leaves its file (the side, which has no glow, without the glow). */
+const assertHoleAndBleed = (props: BorderLoopProps, frame: number, label: string) => {
+  const {layout} = getBorderGeometry(props);
+  for (const point of paintedPoints(props, frame)) {
+    const where = `${label} ${point.what} (${point.x}, ${point.y})`;
+    const clearance = roundRectSdf(layout.holeShape, point.x, point.y);
+    assert.ok(clearance >= point.reach - 1e-6, `${where}: a ${clearance} px do buraco`);
+    if (layout.fit === 'window') {
+      // The glow spreads `glow` px beyond the paint; all of it must stay in the file.
+      const margin = point.reach + (point.what.startsWith('side') ? 0 : props.glow) - 1e-6;
+      assert.ok(point.x - margin >= 0 && point.y - margin >= 0
+        && point.x + margin <= layout.canvas.width && point.y + margin <= layout.canvas.height, `${where}: dentro do arquivo`);
+    } else {
+      const box = layout.box;
+      assert.ok(point.x - point.reach >= box.x - 1e-6 && point.y - point.reach >= box.y - 1e-6
+        && point.x + point.reach <= box.x + box.width + 1e-6
+        && point.y + point.reach <= box.y + box.height + 1e-6, `${where}: dentro da tela`);
+    }
+  }
+};
+
+// Mutations that fail it with the side on (mutations-b.json, test tests/border.test.ts): dropping
+// refineSideHole from the frame's refine, the side moved 3·depth down, the side's hole shrunk into the window.
 test('Borda: nada entra no buraco e nada sai do bleed, em todo tamanho nomeado e todo movimento', () => {
   for (const size of BORDER_SIZES) {
     for (const radius of [0, 24, 200]) {
@@ -276,26 +297,35 @@ test('Borda: nada entra no buraco e nada sai do bleed, em todo tamanho nomeado e
         for (const strokeMotion of STROKE_MOTIONS) {
           const corners = CORNER_STYLES[(STROKE_MOTIONS.indexOf(strokeMotion) + lines) % CORNER_STYLES.length]!;
           const props = parse({...sizeProps(size), radius, lines, strokeMotion, corners, strokePulses: 2, cornerPulses: 2});
-          const {layout} = getBorderGeometry(props);
-          for (const frame of [0, 173]) {
-            for (const point of paintedPoints(props, frame)) {
-              const label = `${size.id} r${radius} ${lines} linha(s) ${strokeMotion} ${point.what} (${point.x}, ${point.y})`;
-              const clearance = roundRectSdf(layout.holeShape, point.x, point.y);
-              assert.ok(clearance >= point.reach - 1e-6, `${label}: a ${clearance} px do buraco`);
-              if (layout.fit === 'window') {
-                // The glow spreads `glow` px beyond the paint; all of it must stay in the file.
-                const margin = point.reach + props.glow - 1e-6;
-                assert.ok(point.x - margin >= 0 && point.y - margin >= 0
-                  && point.x + margin <= layout.canvas.width && point.y + margin <= layout.canvas.height, `${label}: dentro do arquivo`);
-              } else {
-                const box = layout.box;
-                assert.ok(point.x - point.reach >= box.x - 1e-6 && point.y - point.reach >= box.y - 1e-6
-                  && point.x + point.reach <= box.x + box.width + 1e-6
-                  && point.y + point.reach <= box.y + box.height + 1e-6, `${label}: dentro da tela`);
-              }
-            }
+          for (const frame of [0, 173]) assertHoleAndBleed(props, frame, `${size.id} r${radius} ${lines} linha(s) ${strokeMotion}`);
+        }
+      }
+    }
+  }
+  // The side of a frame, at every whole depth the schema lets through, around every window: its line
+  // stays out of the window and in the file, and its own hole inside the moved copy, where the
+  // even-odd fill keeps it a hole (outside the copy the fill would turn inside out).
+  for (const size of BORDER_SIZES) {
+    if (getBorderGeometry(parse(sizeProps(size))).layout.fit !== 'window') continue;
+    for (const radius of [0, 24, 200]) {
+      for (const thickness of [12, 28]) {
+        let deepest = 0;
+        for (let depth = 1; depth <= 64; depth++) {
+          const result = borderLoopSchema.safeParse({...sizeProps(size), radius, thickness, depth, lines: 1, corners: 'none', fillOpacity: 1, strokeMotion: 'still'});
+          if (!result.success) continue;
+          deepest = depth;
+          const props = result.data;
+          const label = `${size.id} r${radius} faixa ${thickness} lateral ${depth}`;
+          const {geometry, side} = getBorderSceneParts(props, 0, 480);
+          assert.equal(side.length, 1, label);
+          assertHoleAndBleed(props, 0, label);
+          const shape = sideShape(geometry.layout.outer, depth);
+          const hole = sideHole(geometry.layout.window);
+          for (const point of samplePerimeter(hole, 0, perimeterLength(hole), 4)) {
+            assert.ok(roundRectSdf(shape, point.x, point.y) <= 1e-6, `${label}: o furo (${point.x}, ${point.y}) dentro da cópia`);
           }
         }
+        assert.ok(deepest >= 3, `${size.id} r${radius} faixa ${thickness}: lateral ${deepest}`);
       }
     }
   }

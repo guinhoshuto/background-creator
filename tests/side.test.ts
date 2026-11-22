@@ -8,7 +8,9 @@ import {borderLoopSchema, getBorderGeometry, getBorderScene, getBorderSceneParts
 import {ChatFrame, chatLoopSchema, getChatLayers, getChatLayout, getChatScene} from '../src/overlays/chat/ChatLoop';
 import {roundRectPath, roundRectSdf} from '../src/overlays/shared/geometry';
 import {perimeterLength, samplePerimeter} from '../src/overlays/shared/perimeter';
-import {buildSideScene, sideBackOutset, sideHole, sideOutset, sideShape} from '../src/overlays/shared/side';
+import {
+  buildSideScene, roundRectWithin, sideBackOutset, sideHole, sideHoleFits, sideOutset, sideShape,
+} from '../src/overlays/shared/side';
 import {getSize, sizeProps, sizesForKind} from '../src/sizes';
 
 /**
@@ -245,7 +247,8 @@ test('side refusal: a translucent fill, in the three kinds', () => {
   refusal(chatLoopSchema, {depth: 8, fillOpacity: 0.99}, message, 'chat at 0.99');
   accepted(chatLoopSchema, {depth: 8, fillOpacity: 1}, 'chat, opaque');
   accepted(blockLoopSchema, {depth: 8, fillOpacity: 1}, 'block, opaque');
-  accepted(borderLoopSchema, {depth: 8, fillOpacity: 1, lines: 1}, 'border, opaque');
+  // The default 10 px band around 16 px corners holds a side of 6 (6·√2 ≤ 9.5), not one of 8.
+  accepted(borderLoopSchema, {depth: 6, fillOpacity: 1, lines: 1}, 'border, opaque');
   // A screen frame ignores the side, so its translucent band is no reason to refuse.
   accepted(borderLoopSchema, {depth: 8, ...sizeProps(getSize('fullscreen'))}, 'screen');
 });
@@ -259,14 +262,17 @@ test('side refusal: a side past the bleed names the bleed that holds it and the 
   const labelSize = sizeProps(getSize('label'));
   accepted(blockLoopSchema, {...BLOCK_ON, depth: 21, ...labelSize}, 'label 21');
   refusal(blockLoopSchema, {...BLOCK_ON, depth: 22, ...labelSize}, 'The side goes past the margin: use bleed ≥ 26, or depth ≤ 21.', 'label 22');
-  // A frame's outline is the outer edge of its band, 12 px beyond the box: 12 + 33 + 3 fills 48.
-  // Measured from the window, 34 would pass; measured with the title bar's height, 8 would not.
+  // A frame's outline is the outer edge of its band, beyond the box: 28 + 17 + 3 fills 48. Measured
+  // from the window, 18 would pass. The bands are thick enough for the side's own hole (side refusal:
+  // a frame side deeper), so the bleed is what refuses here.
   const camSize = sizeProps(getSize('webcam-16x9'));
-  accepted(borderLoopSchema, {...FRAME_ON, depth: 33, ...camSize}, 'webcam 33');
-  refusal(borderLoopSchema, {...FRAME_ON, depth: 34, ...camSize}, 'The side goes past the margin: use bleed ≥ 50, or depth ≤ 33.', 'webcam 34');
-  accepted(borderLoopSchema, {...FRAME_ON, ...BAR, depth: 33, ...camSize}, 'webcam with a bar 33');
-  refusal(borderLoopSchema, {...FRAME_ON, ...BAR, depth: 34, ...camSize}, 'The side goes past the margin: use bleed ≥ 50, or depth ≤ 33.', 'webcam with a bar 34');
-  refusal(borderLoopSchema, {...FRAME_ON, thickness: 20, depth: 26, ...camSize}, 'The side goes past the margin: use bleed ≥ 50, or depth ≤ 25.', 'thick webcam 26');
+  accepted(borderLoopSchema, {...FRAME_ON, thickness: 28, depth: 17, ...camSize}, 'webcam 17');
+  refusal(borderLoopSchema, {...FRAME_ON, thickness: 28, depth: 18, ...camSize}, 'The side goes past the margin: use bleed ≥ 50, or depth ≤ 17.', 'webcam 18');
+  // With a title bar, on a 64 px bleed: 32 + 29 + 3 fills it; measured with the bar's height, no side would.
+  const barCam = {...FRAME_ON, ...BAR, thickness: 32, width: 640, height: 360, bleed: 64};
+  accepted(borderLoopSchema, {...barCam, depth: 29}, 'webcam with a bar 29');
+  refusal(borderLoopSchema, {...barCam, depth: 30}, 'The side goes past the margin: use bleed ≥ 66, or depth ≤ 29.', 'webcam with a bar 30');
+  refusal(borderLoopSchema, {...FRAME_ON, thickness: 32, depth: 14, ...camSize}, 'The side goes past the margin: use bleed ≥ 50, or depth ≤ 13.', 'thick webcam 14');
 });
 
 test('side refusal: a shallow side above a title bar that fills the bleed', () => {
@@ -275,8 +281,8 @@ test('side refusal: a shallow side above a title bar that fills the bleed', () =
   refusal(borderLoopSchema, {...full, depth: 1}, 'The side goes past the margin: use bleed ≥ 50, or depth ≤ 0.', 'depth 1');
   refusal(borderLoopSchema, {...full, depth: 2.5}, 'The side goes past the margin: use bleed ≥ 50, or depth ≤ 0.', 'depth 2.5');
   accepted(borderLoopSchema, {...full, depth: 3}, 'depth 3');
-  accepted(borderLoopSchema, {...full, depth: 33}, 'depth 33');
-  refusal(borderLoopSchema, {...full, depth: 40}, 'The side goes past the margin: use bleed ≥ 56, or depth ≤ 33.', 'depth 40');
+  // The deepest side this band holds (side refusal: a frame side deeper) fits the bleed too.
+  accepted(borderLoopSchema, {...full, depth: 11}, 'depth 11');
   // Without the bar the same shallow side has the whole bleed above it.
   accepted(borderLoopSchema, {...full, titleBarHeight: 0, depth: 1}, 'depth 1, no bar');
 });
@@ -287,8 +293,86 @@ test('side refusal: a frame with a side is one band of 3 px or more', () => {
   refusal(borderLoopSchema, {...FRAME_ON, lines: 2, ...camSize}, message, 'two lines');
   refusal(borderLoopSchema, {...FRAME_ON, thickness: 2, strokeWidth: 2, ...camSize}, message, 'a 2 px band');
   refusal(borderLoopSchema, {...FRAME_ON, thickness: 2.5, strokeWidth: 2, ...camSize}, message, 'a 2.5 px band');
-  accepted(borderLoopSchema, {...FRAME_ON, thickness: 3, strokeWidth: 2, ...camSize}, 'a 3 px band');
+  // A 3 px band holds a side of 1 px around the 12 px corners (1·√2 ≤ 3 − 0.5), not one of 8.
+  accepted(borderLoopSchema, {...FRAME_ON, thickness: 3, strokeWidth: 2, depth: 1, ...camSize}, 'a 3 px band');
   accepted(borderLoopSchema, {...FRAME, lines: 2, ...camSize}, 'two lines, flat');
   // A screen frame ignores the side, so its second line stays.
   accepted(borderLoopSchema, {...FRAME_ON, lines: 2, ...sizeProps(getSize('fullscreen'))}, 'screen, two lines');
+});
+
+// Mutations that fail it (mutations-b.json): `Math.hypot(` → `Math.max(` and `if (spare < 0)` → `if (spare < -1e9)`
+// in roundRectWithin, `sideHole(window)` → `window` in sideHoleFits.
+test('side hole fits: a rounded rect inside another, by the corners of its core or by its grown core', () => {
+  const square = {x: 0, y: 0, width: 10, height: 10, radius: 0};
+  // A rounder outer: the inner square's corner (0, 0) lies hypot(r − 2, r − 2) from the core of a 14 px square of radius r.
+  for (const [radius, inside] of [[4, true], [6, true], [7, false]] as const) {
+    assert.equal(roundRectWithin(square, {x: -2, y: -2, width: 14, height: 14, radius}), inside, `square in radius ${radius}`);
+  }
+  // A rounder inner: a circle fits the square it is inscribed in, and a square of radius 1, and not 0.1 px off.
+  const circle = {...square, radius: 5};
+  assert.equal(roundRectWithin(circle, square), true);
+  assert.equal(roundRectWithin(circle, {...square, radius: 1}), true);
+  assert.equal(roundRectWithin({...circle, x: 0.1}, square), false);
+  // A frame's side holds its own hole while the copy has room for the window grown by 2 px.
+  const window = {x: 100, y: 100, width: 400, height: 300, radius: 12};
+  const outline = {x: 88, y: 88, width: 424, height: 324, radius: 24};
+  assert.equal(sideHoleFits(outline, window, 8), true);
+  assert.equal(sideHoleFits(outline, window, 8.14), false);
+  assert.equal(sideHoleFits({...outline, radius: 0}, {...window, radius: 0}, 11.5), true);
+  assert.equal(sideHoleFits({...outline, radius: 0}, {...window, radius: 0}, 11.6), false);
+});
+
+// Mutations that fail it (mutations-b.json): the refineSideHole line dropped from the frame's refine,
+// the title bar's height left out of it, `Math.floor(props.thickness) + 1` → `+ 2`, the bleed left out of
+// the deepest side, its back half (behind a title bar) left out, and the thickness way out kept when that
+// band no longer fits the bleed.
+test('side refusal: a frame side deeper than its band lets its own hole out, straight, round and circle', () => {
+  const message = (way: string) => `The side goes past the band into the window: use ${way}.`;
+  const cam = sizeProps(getSize('webcam-16x9'));
+  const round = sizeProps(getSize('webcam-round'));
+  // The side's own hole (the window + 2) stays inside the copy (the outline + 1.5, moved `depth` down and
+  // right) while depth ≤ thickness + 1.5 − 2 on a straight side, and depth·√2 ≤ 11.5 around a round corner.
+  const cases = [
+    ['straight sides', {...FRAME_ON, radius: 0, ...cam}, 11.5, 11.6, 'thickness ≥ 13, or depth ≤ 11'],
+    ['round corners', {...FRAME_ON, ...cam}, 8.13, 8.14, 'thickness ≥ 13, or depth ≤ 8'],
+    ['round corners, 9', {...FRAME_ON, ...cam}, 8, 9, 'thickness ≥ 14, or depth ≤ 8'],
+    // The bar raises the copy's top: only the straight left side is left to hold the hole.
+    ['round corners under a bar', {...FRAME_ON, ...BAR, ...cam}, 11.5, 11.6, 'thickness ≥ 13, or depth ≤ 11'],
+    ['circle', {...FRAME_ON, ...round}, 8.13, 8.14, 'thickness ≥ 13, or depth ≤ 8'],
+    ['circle, which ignores the bar', {...FRAME_ON, ...BAR, ...round}, 8.13, 8.14, 'thickness ≥ 13, or depth ≤ 8'],
+  ] as const;
+  for (const [label, input, deepest, refused, way] of cases) {
+    const props = borderLoopSchema.parse({...input, depth: deepest});
+    refusal(borderLoopSchema, {...input, depth: refused}, message(way), `${label} ${refused}`);
+    // The same line, read on the geometry: every point of the hole inside the copy, and one outside it past the line.
+    const {layout} = getBorderGeometry(props);
+    const hole = sideHole(layout.window);
+    const points = samplePerimeter(hole, 0, perimeterLength(hole), 0.25);
+    const out = (depth: number) => Math.max(...points.map((point) => roundRectSdf(sideShape(layout.outer, depth), point.x, point.y)));
+    assert.ok(out(deepest) <= 1e-6, `${label}: the hole inside the copy at ${deepest}`);
+    assert.ok(out(refused) > 0, `${label}: the hole out of the copy at ${refused}`);
+  }
+  // The D-03 frames: 3.5 px to spare under the bar, 11.5 − 8·√2 ≈ 0.19 px on the circle.
+  const d03 = {...FRAME_ON, ...BAR, depth: 8};
+  accepted(borderLoopSchema, {...d03, ...cam}, 'D-03 webcam-16x9');
+  accepted(borderLoopSchema, {...d03, ...round}, 'D-03 webcam-round');
+  // A band too thick for the bleed to take one more px is no way out; nor a side the bleed does not hold.
+  refusal(borderLoopSchema, {...FRAME_ON, depth: 33, ...cam}, message('depth ≤ 8'), 'no thicker band in the bleed');
+  refusal(borderLoopSchema, {...FRAME_ON, radius: 0, thickness: 40, depth: 40, ...cam}, message('depth ≤ 5'), 'the deepest side the bleed holds');
+  // A 3 px band under a bar in a 32 px bleed: depth 2 holds the hole (≤ 2.5) but shows above the bar
+  // (3 + 30 + 1 = 34 px), and a side deep enough to hide behind it lets the hole out: no depth is offered.
+  refusal(borderLoopSchema, {...FRAME_ON, ...BAR, thickness: 3, strokeWidth: 2, depth: 5, ...cam, bleed: 32}, message('depth ≤ 0'),
+    'no depth the bleed holds behind a bar');
+});
+
+// Mutations that fail it (mutations-b.json): `.max(64)` → `.max(640)` and `.min(0)` → `.min(-10)` on depth.
+test('side range: depth runs from 0 to 64 px; 65 and −1 are refused by the field', () => {
+  const roomy = {...CHAT_ON, ...sizeProps(getSize('chat-standard')), bleed: 70};
+  accepted(chatLoopSchema, {...roomy, depth: 64}, 'depth 64');
+  accepted(chatLoopSchema, {...roomy, depth: 0}, 'depth 0');
+  for (const [depth, code] of [[65, 'too_big'], [-1, 'too_small']] as const) {
+    const result = chatLoopSchema.safeParse({...roomy, depth});
+    assert.equal(result.success, false, `depth ${depth}`);
+    assert.deepEqual(result.error!.issues.map((issue) => [issue.path, issue.code]), [[['depth'], code]], `depth ${depth}`);
+  }
 });
