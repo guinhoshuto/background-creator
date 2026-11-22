@@ -11,6 +11,7 @@
   "fillColors": ["#F74CA9", "#EF6AA0"],
   "fillOpacity": 1,
   "fillSpeed": 16,
+  "fillAngle": 90,
   "fillLight": 0,
   "strokeMotion": "still",
   "strokeColors": ["#4A3A69"],

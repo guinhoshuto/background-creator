@@ -17,7 +17,14 @@
     {
       "composition": "BlockLoop",
       "preset": "block-sticker-pop",
-      "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "sizes": ["label-sm", "label"],
+      "formats": ["webm", "png"],
+      "props": {"ornamentSize": 24}
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop",
+      "sizes": ["lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
       "formats": ["webm", "png"]
     },
     {
