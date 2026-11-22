@@ -178,6 +178,26 @@ export const refineStrokeMargin = (props: {strokeMargin: number; strokeSides: St
   });
 };
 
+/**
+ * The three buttons of a title bar (see title-buttons.ts), at the right end of `where`: a chat's
+ * header, a block's top accent bar, a border's title bar. Off by default: at size 0 there is no row.
+ * Their outline and glyphs wear the first outline color.
+ */
+export const titleButtonFields = (where: string) => ({
+  titleButtonSize: z.number().int().min(0).max(64)
+    .describe(`Size of each of the three title buttons (minimize, maximize, close, drawn as line glyphs) at the right end of ${where}, in px; 0 = no buttons`)
+    .default(0),
+  titleButtonGap: z.number().finite().min(0).max(64)
+    .describe('Space between the title buttons, in px')
+    .default(7),
+  titleButtonInset: z.number().finite().min(0).max(256)
+    .describe('Space between the last title button and the inner edge of the outline on the right, in px')
+    .default(12),
+  titleButtonColors: z.array(zColor()).length(3)
+    .describe('Colors of the three title buttons, left to right')
+    .default(['#22D3EE', '#E879F9', '#A78BFA']),
+});
+
 export const trackOpacityField = (defaultValue = 0.3) => z.number().finite().min(0).max(1)
   .describe('dashes and comets: opacity of the whole dimmed outline underneath them, in the first color; 0 draws nothing')
   .default(defaultValue);

@@ -105,6 +105,8 @@ export type FrameLayoutInput = {
   fit: FrameFit;
   /** Anything else a kind draws beyond the band (outer ornaments), in px; 'window' only. */
   extraOutset?: number;
+  /** Extra height of the band's top side, in px (a title bar): the outer edge and the track rise by it; 'window' only. */
+  extraTop?: number;
 };
 
 /** A border: a band around a transparent window. */
@@ -132,28 +134,35 @@ export type FrameLayout = AssetLayout & {
  * the frame too (`filletPath`) as far as the band reaches: a kind paints them opaque inside the
  * band, so a rectangular camera placed on the box shows round corners while the radius is at most
  * (1 + √2)·thickness, and the frame never pokes out of its own outline. Nothing is drawn inside
- * the window: the glow is masked out of it.
+ * the window: the glow is masked out of it. With `extraTop` the top side of the band is that much
+ * taller (growTop): the window, the hole and the content stay where they are.
  * `content` is the box, where the camera goes; `hole` is the whole-pixel rect inside the window.
  *
  * 'screen' (screen): the box is the whole file (use bleed 0). The band is drawn inwards from the
  * box edge, the glow reaches only inwards, and the hole is the window pulled in by the glow.
  */
+/** A rect whose top edge rises by `extra` px; the other three edges and the radius stay. */
+export const growTop = <T extends Rect>(rect: T, extra: number): T => ({...rect, y: rect.y - extra, height: rect.height + extra});
+
 export const layoutFrame = (input: FrameLayoutInput): FrameLayout => {
   const {canvas, box} = getBoxCanvas(input);
   const glow = Math.max(0, input.glow ?? 0);
   const thickness = input.thickness;
   if (input.fit === 'window') {
     const window = roundRect(box, shapeRadius({shape: input.shape ?? 'rectangle', radius: input.radius, width: box.width, height: box.height}));
+    const extraTop = Math.max(0, input.extraTop ?? 0);
+    // The same offsets as without a taller top, grown afterwards: the corners keep their radius.
+    const raise = (shape: RoundRect) => (extraTop > 0 ? growTop(shape, extraTop) : shape);
     return {
       canvas,
       box,
       content: {...box},
       hole: inscribedRect(window),
-      outset: Math.max(0, thickness + glow, input.extraOutset ?? 0),
+      outset: Math.max(0, thickness + extraTop + glow, input.extraOutset ?? 0),
       fit: 'window',
       window,
-      outer: offsetRoundRect(window, thickness),
-      track: offsetRoundRect(window, thickness / 2),
+      outer: raise(offsetRoundRect(window, thickness)),
+      track: raise(offsetRoundRect(window, thickness / 2)),
       holeShape: window,
       thickness,
     };

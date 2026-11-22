@@ -44,3 +44,4 @@ export * from './perimeter';
 export * from './render';
 export * from './shape';
 export * from './strokes';
+export * from './title-buttons';

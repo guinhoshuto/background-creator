@@ -232,8 +232,15 @@ type Painted = {x: number; y: number; reach: number; what: string};
 
 /** Every painted point of a scene with how far paint reaches around it (half a width, a gem's tip). */
 const paintedPoints = (props: BorderLoopProps, frame: number): Painted[] => {
-  const {geometry, stroke, corners} = getBorderSceneParts(props, frame, 480);
+  const {geometry, stroke, corners, titleBar, titleButtons} = getBorderSceneParts(props, frame, 480);
   const points: Painted[] = [];
+  // The title bar, its line and its buttons are flat rects: their four corners, with no reach of their own.
+  const flat = [...titleBar, ...titleButtons.map((button) => ({...button, width: button.size, height: button.size}))];
+  for (const rect of flat) {
+    for (const [x, y] of [[rect.x, rect.y], [rect.x + rect.width, rect.y], [rect.x, rect.y + rect.height], [rect.x + rect.width, rect.y + rect.height]]) {
+      points.push({x: x!, y: y!, reach: 0, what: rect.type});
+    }
+  }
   for (const element of stroke) {
     for (const point of strokeSamples(element, geometry.tracks[element.track]!)) {
       points.push({...point, reach: element.width / 2, what: `${element.type}@${element.track}`});

@@ -1,3 +1,4 @@
+import {zColor} from '@remotion/zod-types';
 import {z} from 'zod';
 import {createSeededRandom, TAU} from '../../loop';
 import {baseBackgroundSchema} from '../../settings';
@@ -12,13 +13,15 @@ import {
   type StrokeElement, type StrokeMotionName, type StrokeOptions,
   buildFlashScene, buildOrnamentScene, frameOrnamentFrame, layoutOrnaments, layoutOutset, ornamentFields, refineLightning, refineOrnaments,
   type FlashElement, type OrnamentElement, type OrnamentLayout,
+  buildTitleButtonScene, growTop, refineTitleButtons, titleBarElement, titleButtonFields, titleButtonRow, type TitleBarElement, type TitleButtonElement,
 } from '../shared';
 
 /**
  * BorderLoop: a border around a transparent window (a webcam, a game capture) or a frame around
  * the whole screen. The band is painted by the shared fills, the stroke motions run along its
  * centreline, an optional thin second line runs outside it, and the corners may carry brackets
- * or gems. Everything is drawn inside the shared FrameGroup, which masks the hole out of every
+ * or gems. A rectangular window may wear a title bar: a taller top side holding a bar, a line under
+ * it and three buttons. Everything is drawn inside the shared FrameGroup, which masks the hole out of every
  * layer, so the window stays alpha 0 whatever the props.
  */
 
@@ -79,6 +82,14 @@ const borderFields = z.object({
   cornerPulses: z.number().int().min(0).max(16)
     .describe('How many times the corners pulse per cycle, lighting up one after another; 0 keeps them steady')
     .default(1),
+  titleBarHeight: z.number().int().min(0).max(128)
+    .describe('Height of a title bar on top of the frame, between the outline and the window, in px; 0 = no title bar; ignored with shape circle and with fit screen')
+    .default(0),
+  titleBarColor: zColor().default('#E879F9'),
+  titleBarLineWidth: z.number().finite().min(0).max(16)
+    .describe('Thickness of the line under the title bar, in px, in the first outline color; 0 = no line')
+    .default(2),
+  ...titleButtonFields('the title bar'),
   ...ornamentFields(),
 });
 
@@ -112,6 +123,12 @@ export type BorderGeometry = {
   /** How far the corner ornaments reach beyond the box, glow excluded ('window'). */
   cornerOutset: number;
   /**
+   * The title bar on the taller top side: the bar from the main line's middle down to the middle
+   * of the line under it (the layer clips it to the main track), that line, and the buttons. Null
+   * without a bar, and always on a round window and on a screen.
+   */
+  titleBar: {bar: Rect; line: Rect | null; buttons: Rect[]} | null;
+  /**
    * Where the themed ornaments go (none with ornaments 'none'), on the frame's outer edge; around
    * a window their reach beyond the box is folded into the layout's outset (a screen keeps 0).
    */
@@ -139,25 +156,39 @@ const cornerPoint = (track: RoundRect, index: number) => {
 };
 
 /**
+ * A title bar belongs on a rectangular window: a round frame would stop being a circle, and on a
+ * screen the bar would take its height from the game. Elsewhere the bar and its buttons are ignored.
+ */
+const titleBarApplies = (props: Pick<BorderLoopProps, 'fit' | 'shape'>) => props.fit !== 'screen' && props.shape !== 'circle';
+
+/** How much taller the top side of the band is: the bar plus the line under it; 0 without a bar. */
+export const titleBarExtra = (props: Pick<BorderLoopProps, 'fit' | 'shape' | 'titleBarHeight' | 'titleBarLineWidth'>) =>
+  (props.titleBarHeight > 0 && titleBarApplies(props) ? props.titleBarHeight + props.titleBarLineWidth : 0);
+
+/**
  * The single source of truth for a border's geometry. The band hugs the window, the second line
  * lies `lineGap` beyond it, and layoutFrame lays out the three as one band, so a full-screen
  * frame keeps them all inside the file. Brackets are pieces of a rounded rect concentric with the
  * frame, so they follow its corners (an L on a square corner; on a circle, four arcs centred on
  * the diagonals, each 4·cornerSize px long and at most 70% of a quarter so they never close into
  * a ring). Gems sit on the band's corners, moved along the diagonal just enough never to touch the
- * hole (nor, on a screen, to leave the file).
+ * hole (nor, on a screen, to leave the file). With a title bar the band's top side is taller by
+ * the bar and its line: band, lines and outer edge are the same offsets of the window as without
+ * it, grown upwards afterwards, so the window, the hole and the other three sides never move.
  */
 export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
   const second = props.lines === 2 ? props.lineGap + props.outerLineWidth : 0;
   const totalThickness = props.thickness + second;
+  const extraTop = titleBarExtra(props);
   const base = layoutFrame({
     width: props.width, height: props.height, bleed: props.bleed, radius: props.radius, shape: props.shape,
-    thickness: totalThickness, glow: props.glow, fit: props.fit,
+    thickness: totalThickness, glow: props.glow, fit: props.fit, extraTop,
   });
   const window = base.window;
-  const band = offsetRoundRect(window, props.thickness);
-  const main = offsetRoundRect(window, props.thickness / 2);
-  const outerLine = offsetRoundRect(window, props.thickness + props.lineGap + props.outerLineWidth / 2);
+  const raise = (shape: RoundRect) => (extraTop > 0 ? growTop(shape, extraTop) : shape);
+  const band = raise(offsetRoundRect(window, props.thickness));
+  const main = raise(offsetRoundRect(window, props.thickness / 2));
+  const outerLine = raise(offsetRoundRect(window, props.thickness + props.lineGap + props.outerLineWidth / 2));
   const cornerWidth = Math.max(2, props.strokeWidth);
   const bracketOffset = props.cornerGap + cornerWidth / 2;
   // Brackets go out into the bleed around a window, and in from the file's edge on a screen.
@@ -209,7 +240,7 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
     ? {
       ...base,
       outset: Math.max(
-        base.outset, totalThickness + props.halo, props.corners === 'none' ? 0 : cornerOutset + props.glow,
+        base.outset, totalThickness + extraTop + props.halo, props.corners === 'none' ? 0 : cornerOutset + props.glow,
         layoutOutset(ornamentLayout),
       ),
     }
@@ -217,10 +248,26 @@ export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
   const fillArea = props.fit === 'window'
     ? {x: band.x, y: band.y, width: band.width, height: band.height}
     : {...box};
+  // Measured from the main line: its inner face is strokeWidth / 2 below and beside its middle.
+  const face = props.strokeWidth / 2;
+  const titleBar = extraTop > 0
+    ? {
+      bar: {x: main.x, y: main.y, width: main.width, height: face + props.titleBarHeight + props.titleBarLineWidth / 2},
+      line: props.titleBarLineWidth > 0
+        ? {x: main.x, y: main.y + face + props.titleBarHeight, width: main.width, height: props.titleBarLineWidth}
+        : null,
+      buttons: props.titleButtonSize > 0
+        ? titleButtonRow({
+          right: main.x + main.width - face - props.titleButtonInset, cy: main.y + face + props.titleBarHeight / 2,
+          size: props.titleButtonSize, gap: props.titleButtonGap,
+        })
+        : [],
+    }
+    : null;
 
   return {
     layout, totalThickness, band, tracks: [main, outerLine, bracketTrack], fillArea, cornerWidth, brackets, gems, cornerOutset,
-    ornamentLayout,
+    titleBar, ornamentLayout,
   };
 };
 
@@ -328,11 +375,20 @@ export const getBorderLayout = (props: BorderLoopProps): AssetLayout => {
  */
 const refineReach = (props: BorderLoopProps, geometry: BorderGeometry, context: z.RefinementCtx) => {
   if (props.fit === 'window') {
-    const frameOutset = geometry.totalThickness + Math.max(props.glow, props.halo);
+    const extraTop = titleBarExtra(props);
+    const frameOutset = geometry.totalThickness + extraTop + Math.max(props.glow, props.halo);
     // The band and its glow come first, with the shared message; it names the bleed that holds
-    // the corners too, so following it is enough.
+    // the corners too, so following it is enough. A title bar makes the top side the tall one.
     if (frameOutset > props.bleed + 1e-9) {
-      refineOutset(props, geometry.layout.outset, context);
+      if (extraTop > 0) {
+        context.addIssue({
+          code: 'custom',
+          path: ['bleed'],
+          message: `The title bar goes past the margin: use bleed ≥ ${minBleedFor(geometry.layout.outset)} or reduce titleBarHeight or the glow.`,
+        });
+      } else {
+        refineOutset(props, geometry.layout.outset, context);
+      }
       return;
     }
     if (geometry.layout.outset <= props.bleed + 1e-9) return;
@@ -421,9 +477,25 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
     });
     return;
   }
+  // The bar is a plain top side: brackets and gems are laid out for an even band, and a second
+  // line would run through the bar's place.
+  if (titleBarExtra(props) > 0 && (props.corners !== 'none' || props.lines !== 1)) {
+    context.addIssue({
+      code: 'custom',
+      path: ['titleBarHeight'],
+      message: 'The title bar needs a plain frame: use corners none and lines 1, or titleBarHeight 0.',
+    });
+    return;
+  }
   const geometry = getBorderGeometry(props);
   if (props.fit === 'screen') refineHole(geometry.layout, context);
   refineReach(props, geometry, context);
+  if (props.titleButtonSize > 0 && titleBarApplies(props)) {
+    refineTitleButtons({
+      size: props.titleButtonSize, bar: props.titleBarHeight, barName: 'titleBarHeight', row: geometry.titleBar?.buttons ?? [],
+      inside: offsetRoundRect(geometry.tracks[TRACK_MAIN], -props.strokeWidth / 2),
+    }, context);
+  }
   // Only the main line is checked: the second line is an outward offset of it, so it is longer,
   // travels no more colour periods per cycle and covers no larger share of one per frame. Checking
   // it too would only add a second refusal whose suggested speed the main line still refuses.
@@ -475,6 +547,9 @@ export type BorderSceneParts = {
   /** Ornaments tucked under the band (see OrnamentLayer). */
   ornamentBack: OrnamentElement[];
   fill: FillElement[];
+  /** The title bar and the line under it, then its buttons; all empty without a bar. */
+  titleBar: TitleBarElement[];
+  titleButtons: TitleButtonElement[];
   rim: RimElement[];
   stroke: StrokeElement[];
   corners: CornerElement[];
@@ -509,12 +584,20 @@ export const getBorderSceneParts = (props: BorderLoopProps, frame: number, durat
     })
     : [];
   const ornaments = buildOrnamentScene(geometry.ornamentLayout, props, frame, durationInFrames);
+  const bar = geometry.titleBar;
   return {
     geometry,
     // The halo spreads outwards from the frame, into the bleed: a screen frame has none to spread into.
     halo: props.fit === 'window' ? buildHaloScene(props, frame, durationInFrames) : [],
     ornamentBack: ornaments.back,
     fill,
+    titleBar: bar
+      ? [
+        titleBarElement('title-bar', bar.bar, props.titleBarColor),
+        ...(bar.line ? [titleBarElement('title-line', bar.line, props.strokeColors[0]!)] : []),
+      ]
+      : [],
+    titleButtons: bar ? buildTitleButtonScene(bar.buttons, props) : [],
     // Along the band's outer edge, half a pixel in, so the 1 px line stays on the band.
     rim: buildRimScene(props, offsetRoundRect(geometry.band, -0.5)),
     stroke: [...main, ...second],
@@ -527,12 +610,12 @@ export const getBorderSceneParts = (props: BorderLoopProps, frame: number, durat
 
 /**
  * Every animated value of the border as a flat list listed by place: the halo, the back ornaments,
- * the band's fill, the rim light, the lines, the corners, the glow, the front ornaments and the
+ * the band's fill, the title bar with its buttons, the rim light, the lines, the corners, the glow, the front ornaments and the
  * lightning flash. Pure: the frame, the props and the seed decide it all; nothing jumps
  * at the seam, so no field needs an exemption. A mask is its single still window.
  */
 export const getBorderScene = (props: BorderLoopProps, frame: number, durationInFrames: number) => {
   if (props.mask) return [getBorderMaskElement(props)];
-  const {halo, ornamentBack, fill, rim, stroke, corners, glow, ornamentFront, flash} = getBorderSceneParts(props, frame, durationInFrames);
-  return [...halo, ...ornamentBack, ...fill, ...rim, ...stroke, ...corners, ...glow, ...ornamentFront, ...flash];
+  const {halo, ornamentBack, fill, titleBar, titleButtons, rim, stroke, corners, glow, ornamentFront, flash} = getBorderSceneParts(props, frame, durationInFrames);
+  return [...halo, ...ornamentBack, ...fill, ...titleBar, ...titleButtons, ...rim, ...stroke, ...corners, ...glow, ...ornamentFront, ...flash];
 };

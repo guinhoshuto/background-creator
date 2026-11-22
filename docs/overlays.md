@@ -51,6 +51,10 @@ The fog has a legibility cap: the body covers at most 0.30 and the core 0.10, so
 | `headerHeight` | 0–512 px, integer (`48`) | Height of the header at the top, where the title goes ("CHAT"); `0` removes the header |
 | `headerColor`, `headerOpacity` | color; 0–1 (`0.1`) | Color and opacity of the header band; opacity `0` leaves only the line |
 | `headerLineWidth` | 0–16 px (`2`) | Line between the header and the messages, in the stroke colors; `0` removes it |
+| `headerLineOpacity` | 0–1 (`0.9`) | Opacity of that line |
+| `titleButtonSize` | 0–64 px, integer (`0`) | Size of each of the three title buttons (minimize, maximize, close, drawn as line glyphs) at the right end of the header; `0` draws none. They need a header at least as tall, and the title's area ends one `titleButtonGap` before them |
+| `titleButtonGap`, `titleButtonInset` | 0–64 px (`7`); 0–256 px (`12`) | Space between the buttons, and between the last one and the inner edge of the outline on the right; a row that leaves the header (too wide, or through a round corner) is refused |
+| `titleButtonColors` | 3 colors | Fill of the three buttons, left to right; their outline and glyphs take the first stroke color |
 | `footerHeight` | 0–512 px, integer (`0`) | Height of a footer band under the messages (the mirror of the header, where a "type a message" line or a meter goes); `0` removes it. The ornaments may use it |
 | `footerLineWidth`, `footerLineColor`, `footerLineOpacity` | 0–16 px (`1`); color; 0–1 (`0.9`) | The line between the messages and the footer, in its own color (a gradient outline spread across it would light one end); width `0` or opacity `0` removes it |
 
@@ -62,6 +66,8 @@ The fog has a legibility cap: the body covers at most 0.30 and the core 0.10, so
 | `paddingX`, `paddingY` | 0–512 px (`24`, `16`) | Horizontal and vertical space between the stroke (or the accent bar) and the text; on the circle the larger of the two applies, all the way around |
 | `accent` | `none`, `left`, `top` | Accent bar inside the stroke; the text starts after it. On the circle, it is a 120° arc against the inside of the stroke, centered on the left or the top, and the text square shrinks by its thickness all the way around, to stay centered |
 | `accentColor`, `accentSize` | color; 2–64 px (`6`) | Color and thickness of the bar (or the arc) |
+| `accentLineWidth` | 0–16 px (`0`) | Line under a top bar, in the first stroke color; the text moves down by it. Ignored with `accent` `left` or `none` and on the circle |
+| `titleButtonSize`, `titleButtonGap`, `titleButtonInset`, `titleButtonColors` | as in `ChatLoop` | The three title buttons at the right end of a top bar (`accent: top`, `accentSize` at least their size); refused with another `accent`, ignored on the circle |
 | `accentSheen` | 0–4 | How many times a reflection runs along the bar per cycle; `0` turns it off. On the circle, the reflection makes whole laps through the middle of the arc and only shows while it passes over it |
 
 `BorderLoop` (default `webcam-16x9`, 8 s). Here `radius` is the window's radius, the fill paints the frame's band and `strokeWidth` cannot exceed `thickness`:
@@ -77,6 +83,9 @@ The fog has a legibility cap: the body covers at most 0.30 and the core 0.10, so
 | `cornerSize`, `cornerGap` | 4–512 px (`28`); 0–128 px (`6`) | `brackets`: length of each arm after the bend and distance from the frame (in `screen`, inwards). On the circle, which has no corner, each bracket is an arc of 4×`cornerSize` px (112 px by default), the same at every round size and limited to 70% of a quarter turn |
 | `gemSize` | 4–128 px (`14`) | `jewels`: width of each diamond |
 | `cornerPulses` | 0–16 (`1`) | How many times the corners pulse per cycle, lighting up one after another |
+| `titleBarHeight` | 0–128 px, integer (`0`) | Height of a title bar on top of the frame, between the outline and the window: the top side of the band grows by it and by its line, into the bleed (`thickness` + bar + line + glow or halo must fit). It needs `corners: none` and `lines: 1`; ignored with `shape: circle` and with `fit: screen`; `0` draws none |
+| `titleBarColor`, `titleBarLineWidth` | color; 0–16 px (`2`) | Color of the bar, and the line under it, in the first stroke color |
+| `titleButtonSize`, `titleButtonGap`, `titleButtonInset`, `titleButtonColors` | as in `ChatLoop` | The three title buttons at the right end of the title bar (`titleBarHeight` at least their size) |
 | `mask` | `true`/`false` | Exports only the window's mask, as PNG, for OBS (see [Masks](packs.md#masks)) |
 
 The overlays carry no text: text, camera and messages go on top, in the streaming software or the editor, in the areas the [position JSON](export.md#position-json) reports.
