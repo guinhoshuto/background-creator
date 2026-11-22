@@ -227,6 +227,18 @@ export const haloFields = (defaults: HaloDefaults = {}) => ({
 });
 
 /**
+ * The thickness of the piece (see side.ts): a flat copy of its outline behind it, moved down and to
+ * the right, in the bleed. Off by default: at depth 0 the piece is flat, as it always has been.
+ * `note` adds what a kind ignores it with.
+ */
+export const depthFields = (note = '') => ({
+  depth: z.number().finite().min(0).max(64)
+    .describe(`Thickness of the piece: a flat copy of its outline moved down and to the right by this many px, behind it, closed by a 3 px line in the first outline color; it must fit in the bleed; 0 = flat${note}`)
+    .default(0),
+  depthColor: zColor().default('#A855F7'),
+});
+
+/**
  * A 1 px highlight just inside the top edge, fading out down the sides: the bevel a sheet of
  * glass catches from above. It lies between the stroke and the padding, never over the content.
  */

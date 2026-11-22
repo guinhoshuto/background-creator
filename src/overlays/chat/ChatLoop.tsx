@@ -11,6 +11,7 @@ import {
   FLASH_PANEL_PEAK, FlashLayer, OrnamentLayer, buildFlashScene, buildOrnamentScene, layoutOrnaments, layoutOutset, ornamentFields, panelOrnamentFrame,
   refineLightning, refineOrnaments, refineStrokeMargin, strokeMarginFields, type FlashElement, type MarginElement, type OrnamentElement, type OrnamentLayout,
   TitleButtonLayer, buildTitleButtonScene, refineTitleButtons, titleButtonFields, titleButtonRow, titleButtonRowBox, type TitleButtonElement,
+  SideLayer, buildSideScene, depthFields, refineSideFill, refineSideOutset, sideOutset, type SideElement,
 } from '../shared';
 
 /**
@@ -54,6 +55,7 @@ const chatFields = z.object({
   ...strokeMarginFields(),
   ...glowFields({glow: 20, glowPulses: 1, glowStrength: 3}),
   ...haloFields({halo: 24, haloColor: '#A855F7'}),
+  ...depthFields(),
   rimLight: rimLightField(0),
   headerHeight: z.number().int().min(0).max(512)
     .describe('Height of the header at the top of the panel (where the title goes, e.g. "CHAT"), in px; 0 = no header')
@@ -127,7 +129,7 @@ export type ChatLayout = PanelLayout & {
 };
 
 type LayoutProps = Pick<ChatLoopProps,
-  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'strokeSides' | 'strokeMargin' | 'glow' | 'halo' | 'headerHeight' | 'headerLineWidth'
+  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'strokeSides' | 'strokeMargin' | 'glow' | 'halo' | 'depth' | 'headerHeight' | 'headerLineWidth'
   | 'footerHeight' | 'footerLineWidth' | 'titleButtonSize' | 'titleButtonGap' | 'titleButtonInset' | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
 
 /**
@@ -165,7 +167,10 @@ const getPanelLayout = (props: LayoutProps): Omit<ChatLayout, 'ornamentLayout'> 
   const hasFooter = props.footerHeight > 0;
   const footerLine = hasFooter ? props.footerLineWidth : 0;
   const footerSpace = hasFooter ? props.footerHeight + footerLine : 0;
-  const panel = layoutPanel({...props, insets: {top: hasHeader ? props.headerHeight + line : 0, bottom: footerSpace}});
+  const panel = layoutPanel({
+    ...props, insets: {top: hasHeader ? props.headerHeight + line : 0, bottom: footerSpace},
+    extraOutset: sideOutset(props.depth),
+  });
   const {inner} = panel;
   // Open sides draw no stroke there: the bands and lines reach the panel's own sides.
   const bandArea = props.strokeSides === 'top-bottom' ? {...inner, x: panel.shape.x, width: panel.shape.width} : inner;
@@ -302,15 +307,18 @@ const refineLegibility = (props: ChatLoopProps, layout: ChatLayout, context: z.R
 };
 
 /**
- * Every refusal names its way out: a file beyond 4K, a glow or halo the bleed cannot hold, a
+ * Every refusal names its way out: a file beyond 4K, a glow, a halo or a side the bleed cannot hold,
+ * a side under a translucent fill, a
  * panel with no room for the messages or the title, a glow or a bright rim light over them, a
  * stroke or fill too fast for the frame rate.
  */
 export const chatLoopSchema = chatFields.superRefine((props, context) => {
   refineCanvas(props, context);
+  refineSideFill(props, context);
   refineStrokeMargin(props, context);
   const layout = getChatLayout(props);
-  refineOutset(props, layout.outset, context);
+  // A side past the bleed is told as the side: the shared message speaks of the glow.
+  if (refineSideOutset(props, context)) refineOutset(props, layout.outset, context);
   refineChatTitleButtons(props, layout, context);
   refineChatContent(props, layout, context);
   refineLegibility(props, layout, context);
@@ -342,6 +350,8 @@ export type ChatDividerElement = {
 
 export type ChatLayers = {
   halo: HaloElement[];
+  /** The side of a panel with depth, whole behind it; empty while it is flat. */
+  side: SideElement[];
   /** Ornaments under the panel (see OrnamentLayer). */
   ornamentBack: OrnamentElement[];
   fill: FillElement[];
@@ -390,6 +400,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
   const ornaments = buildOrnamentScene(layout.ornamentLayout, props, frame, durationInFrames);
   return {
     halo: buildHaloScene(props, frame, durationInFrames),
+    side: buildSideScene(props),
     ornamentBack: ornaments.back,
     fill: buildFillScene(props, layout.box, frame, durationInFrames, fillOptions(layout)),
     header,
@@ -409,7 +420,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
 
 /**
  * Every animated value of the panel, as a flat list of plain elements listed by place (see the
- * engine's builders): halo, back ornaments, fill, header band, title buttons, margin band, rim light, stroke with its glow, divider,
+ * engine's builders): halo, side, back ornaments, fill, header band, title buttons, margin band, rim light, stroke with its glow, divider,
  * front ornaments, lightning flash. Pure: the frame,
  * the props and the seed decide it all, and nothing here jumps at the seam, so the generic scans
  * need no exemption.
@@ -417,7 +428,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
 export const getChatScene = (props: ChatLoopProps, frame: number, durationInFrames: number) => {
   const layers = getChatLayers(props, frame, durationInFrames);
   return [
-    ...layers.halo, ...layers.ornamentBack, ...layers.fill, ...layers.header, ...layers.titleButtons, ...layers.margin, ...layers.rim, ...layers.stroke, ...layers.divider,
+    ...layers.halo, ...layers.side, ...layers.ornamentBack, ...layers.fill, ...layers.header, ...layers.titleButtons, ...layers.margin, ...layers.rim, ...layers.stroke, ...layers.divider,
     ...layers.ornamentFront, ...layers.flash,
   ];
 };
@@ -484,6 +495,7 @@ export const ChatFrame = ({props, frame, durationInFrames}: {props: ChatLoopProp
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
       guides={props.guides} idPrefix="chat">
       <HaloLayer elements={layers.halo} shape={layout.shape} />
+      <SideLayer elements={layers.side} outline={layout.shape} />
       <OrnamentLayer elements={layers.ornamentBack} layout={layout.ornamentLayout} style={props} layer="back" />
       <FillLayer elements={layers.fill} clip={layout.shape} />
       <HeaderLayer elements={layers.header} layout={layout} />

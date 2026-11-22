@@ -14,6 +14,7 @@ import {
   buildFlashScene, buildOrnamentScene, frameOrnamentFrame, layoutOrnaments, layoutOutset, ornamentFields, refineLightning, refineOrnaments,
   type FlashElement, type OrnamentElement, type OrnamentLayout,
   buildTitleButtonScene, growTop, refineTitleButtons, titleBarElement, titleButtonFields, titleButtonRow, type TitleBarElement, type TitleButtonElement,
+  buildSideScene, depthFields, refineSideFill, refineSideOutset, sideBackOutset, sideOutset, type SideElement,
 } from '../shared';
 
 /**
@@ -57,6 +58,7 @@ const borderFields = z.object({
   trackOpacity: trackOpacityField(0.45),
   ...glowFields({glow: 16, glowPulses: 0, glowStrength: 2.6}),
   ...haloFields({halo: 0, haloColor: '#A78BFA'}),
+  ...depthFields('; ignored with fit screen'),
   rimLight: rimLightField(0),
   lines: z.number().int().min(1).max(2)
     .describe('1: the band only; 2: plus a thin line outside it, separated by lineGap (with dashes and comets it stays still)')
@@ -166,6 +168,12 @@ export const titleBarExtra = (props: Pick<BorderLoopProps, 'fit' | 'shape' | 'ti
   (props.titleBarHeight > 0 && titleBarApplies(props) ? props.titleBarHeight + props.titleBarLineWidth : 0);
 
 /**
+ * The depth of the frame's side: the side goes out into the bleed, down and to the right, and a
+ * screen frame has none to go into, so there it is ignored, like the halo.
+ */
+export const sideDepth = (props: Pick<BorderLoopProps, 'fit' | 'depth'>) => (props.fit === 'screen' ? 0 : props.depth);
+
+/**
  * The single source of truth for a border's geometry. The band hugs the window, the second line
  * lies `lineGap` beyond it, and layoutFrame lays out the three as one band, so a full-screen
  * frame keeps them all inside the file. Brackets are pieces of a rounded rect concentric with the
@@ -175,14 +183,22 @@ export const titleBarExtra = (props: Pick<BorderLoopProps, 'fit' | 'shape' | 'ti
  * hole (nor, on a screen, to leave the file). With a title bar the band's top side is taller by
  * the bar and its line: band, lines and outer edge are the same offsets of the window as without
  * it, grown upwards afterwards, so the window, the hole and the other three sides never move.
+ * The side of a frame with depth copies the finished outer edge, title bar included; its reach,
+ * measured from the box, is folded into the outset.
  */
 export const getBorderGeometry = (props: BorderLoopProps): BorderGeometry => {
   const second = props.lines === 2 ? props.lineGap + props.outerLineWidth : 0;
   const totalThickness = props.thickness + second;
   const extraTop = titleBarExtra(props);
+  const depth = sideDepth(props);
+  // The side leaves the band down and to the right; one shallower than its own growth and line
+  // also peeks out above and on the left, where a title bar has already taken its height.
+  const sideReach = depth > 0
+    ? Math.max(totalThickness + sideOutset(depth), totalThickness + extraTop + sideBackOutset(depth))
+    : 0;
   const base = layoutFrame({
     width: props.width, height: props.height, bleed: props.bleed, radius: props.radius, shape: props.shape,
-    thickness: totalThickness, glow: props.glow, fit: props.fit, extraTop,
+    thickness: totalThickness, glow: props.glow, fit: props.fit, extraTop, extraOutset: sideReach,
   });
   const window = base.window;
   const raise = (shape: RoundRect) => (extraTop > 0 ? growTop(shape, extraTop) : shape);
@@ -487,8 +503,22 @@ export const borderLoopSchema = borderFields.superRefine((props, context) => {
     });
     return;
   }
+  const depth = sideDepth(props);
+  if (!refineSideFill({depth, fillOpacity: props.fillOpacity}, context)) return;
+  // The side is whole behind the frame and ends under its band: a gap before a second line would
+  // show it, and a band thinner than the side's own hole grows would leave that hole's edge bare.
+  if (depth > 0 && (props.lines !== 1 || props.thickness < 3)) {
+    context.addIssue({
+      code: 'custom',
+      path: ['depth'],
+      message: 'The side needs one band of 3 px or more: use lines 1 and thickness ≥ 3, or depth 0.',
+    });
+    return;
+  }
   const geometry = getBorderGeometry(props);
   if (props.fit === 'screen') refineHole(geometry.layout, context);
+  // Before the frame's own reach, whose messages speak of the glow and the corners.
+  if (!refineSideOutset({depth, bleed: props.bleed}, context, geometry.totalThickness, titleBarExtra(props))) return;
   refineReach(props, geometry, context);
   if (props.titleButtonSize > 0 && titleBarApplies(props)) {
     if (!(props.titleBarHeight > 0)) {
@@ -552,6 +582,8 @@ export const buildCornerScene = (
 export type BorderSceneParts = {
   geometry: BorderGeometry;
   halo: HaloElement[];
+  /** The side of a frame with depth, whole behind it; empty while it is flat, and always on a screen. */
+  side: SideElement[];
   /** Ornaments tucked under the band (see OrnamentLayer). */
   ornamentBack: OrnamentElement[];
   fill: FillElement[];
@@ -597,6 +629,7 @@ export const getBorderSceneParts = (props: BorderLoopProps, frame: number, durat
     geometry,
     // The halo spreads outwards from the frame, into the bleed: a screen frame has none to spread into.
     halo: props.fit === 'window' ? buildHaloScene(props, frame, durationInFrames) : [],
+    side: buildSideScene({...props, depth: sideDepth(props)}),
     ornamentBack: ornaments.back,
     fill,
     titleBar: bar
@@ -617,13 +650,13 @@ export const getBorderSceneParts = (props: BorderLoopProps, frame: number, durat
 };
 
 /**
- * Every animated value of the border as a flat list listed by place: the halo, the back ornaments,
+ * Every animated value of the border as a flat list listed by place: the halo, the side, the back ornaments,
  * the band's fill, the title bar with its buttons, the rim light, the lines, the corners, the glow, the front ornaments and the
  * lightning flash. Pure: the frame, the props and the seed decide it all; nothing jumps
  * at the seam, so no field needs an exemption. A mask is its single still window.
  */
 export const getBorderScene = (props: BorderLoopProps, frame: number, durationInFrames: number) => {
   if (props.mask) return [getBorderMaskElement(props)];
-  const {halo, ornamentBack, fill, titleBar, titleButtons, rim, stroke, corners, glow, ornamentFront, flash} = getBorderSceneParts(props, frame, durationInFrames);
-  return [...halo, ...ornamentBack, ...fill, ...titleBar, ...titleButtons, ...rim, ...stroke, ...corners, ...glow, ...ornamentFront, ...flash];
+  const {halo, side, ornamentBack, fill, titleBar, titleButtons, rim, stroke, corners, glow, ornamentFront, flash} = getBorderSceneParts(props, frame, durationInFrames);
+  return [...halo, ...side, ...ornamentBack, ...fill, ...titleBar, ...titleButtons, ...rim, ...stroke, ...corners, ...glow, ...ornamentFront, ...flash];
 };

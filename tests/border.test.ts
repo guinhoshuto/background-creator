@@ -10,7 +10,7 @@ import {
 } from '../src/overlays/border';
 import {
   STROKE_MOTIONS, filletPath, getStrokeMotion, minBleedFor, perimeterLength, rectContains, rectPath as rectPathOf, roundRectPath, roundRectSdf,
-  samplePerimeter,
+  SIDE_LINE_WIDTH, samplePerimeter, sideHole, sideShape,
   type RoundRect, type SegmentElement, type StrokeElement,
 } from '../src/overlays/shared';
 import type {CatalogEntry} from '../src/catalog';
@@ -232,8 +232,18 @@ type Painted = {x: number; y: number; reach: number; what: string};
 
 /** Every painted point of a scene with how far paint reaches around it (half a width, a gem's tip). */
 const paintedPoints = (props: BorderLoopProps, frame: number): Painted[] => {
-  const {geometry, stroke, corners, titleBar, titleButtons} = getBorderSceneParts(props, frame, 480);
+  const {geometry, stroke, corners, titleBar, titleButtons, side} = getBorderSceneParts(props, frame, 480);
   const points: Painted[] = [];
+  // The side of a frame with depth: the edge of its own hole, where its flat copy ends, and its line
+  // wherever it shows, beyond the frame's outer edge (under the band and in the window the frame hides it).
+  for (const element of side) {
+    const hole = sideHole(geometry.layout.window);
+    for (const point of samplePerimeter(hole, 0, perimeterLength(hole), 4)) points.push({...point, reach: 0, what: 'side-hole'});
+    const shape = sideShape(geometry.layout.outer, element.depth);
+    for (const point of samplePerimeter(shape, 0, perimeterLength(shape), 4)) {
+      if (roundRectSdf(geometry.layout.outer, point.x, point.y) >= 0) points.push({...point, reach: SIDE_LINE_WIDTH / 2, what: 'side-line'});
+    }
+  }
   // The title bar, its line and its buttons are flat rects: their four corners, with no reach of their own.
   const flat = [...titleBar, ...titleButtons.map((button) => ({...button, width: button.size, height: button.size}))];
   for (const rect of flat) {

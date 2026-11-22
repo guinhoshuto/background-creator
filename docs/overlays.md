@@ -34,6 +34,8 @@ The three overlays share the vocabulary below, plus `durationSeconds`, `seed`, `
 | `glowPulses` | 0–16 | How many times the glow pulses per cycle; 0 keeps it constant |
 | `glowStrength` | 0.25–3 | Multiplies the glow opacity without changing its reach |
 | `halo`, `haloColor` | 0–128 px | Glow around the whole panel or frame, inside the bleed |
+| `depth` | 0–64 px (0) | Thickness of the piece: a flat copy of its outline moved down and to the right by this many px, behind it, closed by a 3 px line in the first outline color. It reaches `depth` + 3 px into the bleed, beyond the box (chat, block) or beyond the band (border), and is refused when that does not fit. It needs `fillOpacity: 1` (the side is whole behind the piece); a border also needs `lines: 1` and `thickness` of 3 px or more, and ignores it with `fit: screen`. The `twitch-panel` size sets it to 0. 0 = flat |
+| `depthColor` | color (`#A855F7`) | Color of that side |
 | `rimLight` | 0–1 | A 1 px reflection inside the top edge, fading down the sides, as on a glass plate; on the circle, it lights only the top arc, strongest at the top and fading by half height |
 | `ornaments` | `none`, `midnight`, `haunted-mansion`, `haunted-interior`, `cobweb`, `horizon`, `terminal` (`none`) | Themed ornaments around the panel or the frame, taken from the kits' backgrounds (see [Ornaments](#ornaments)); `none` draws nothing |
 | `ornamentColors` | 1 to 3 colors (`#CFC6E4`, `#F6EFD8`, `#E8963C`) | Like `colors` in the backgrounds: the first is the fog or the silk (cold), the second the moonlight (light edges and glints) and the third the warm light (candles, pumpkins, lantern glass, ember); without the third, the warm light uses the first |

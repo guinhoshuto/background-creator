@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 import {useCurrentFrame, useVideoConfig} from 'remotion';
 import {
-  FrameGroup, HaloLayer, OverlayCanvas, RimLayer, StrokeLayer, renderOverlayElement, roundRectPath, svgNumber, useStage,
+  FrameGroup, HaloLayer, OverlayCanvas, RimLayer, SideLayer, StrokeLayer, renderOverlayElement, roundRectPath, svgNumber, useStage,
   filletPath, type FillElement, type FrameLayout, type RoundRect,
   FLASH_BAND_PEAK, FlashLayer, OrnamentLayer, TitleButtonLayer, type FlashClip,
 } from '../shared';
@@ -83,7 +83,7 @@ export const BorderFrame = ({props, frame, durationInFrames}: {
   props: BorderLoopProps; frame: number; durationInFrames: number;
 }) => {
   if (props.mask) return <BorderMaskFrame props={props} />;
-  const {geometry, halo, ornamentBack, fill, titleBar, titleButtons, rim, stroke, corners, glow, ornamentFront, flash}
+  const {geometry, halo, side, ornamentBack, fill, titleBar, titleButtons, rim, stroke, corners, glow, ornamentFront, flash}
     = getBorderSceneParts(props, frame, durationInFrames);
   const layout: FrameLayout = geometry.layout;
   // The flash washes the band (and on a screen the file's corners outside it), like the band's fill.
@@ -96,6 +96,7 @@ export const BorderFrame = ({props, frame, durationInFrames}: {
       guides={props.guides} idPrefix="border">
       <FrameGroup layout={layout}>
         <HaloLayer elements={halo} shape={layout.outer} />
+        <SideLayer elements={side} outline={layout.outer} hole={layout.window} />
         {/* A sibling before the band's fill, never inside its clip (the matte stays the clip's first child). */}
         <OrnamentLayer elements={ornamentBack} layout={geometry.ornamentLayout} style={props} layer="back" />
         <BandFillLayer elements={fill} geometry={geometry} matte={props.fillColors[0]!} />

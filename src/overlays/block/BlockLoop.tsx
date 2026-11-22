@@ -7,7 +7,7 @@ import {getSize} from '../../sizes';
 import {refineCanvas, type Rect} from '../shared/box';
 import type {ArcElement, FillElement, GlowElement, HaloElement, RectElement, RimElement, SheenElement, StrokeElement} from '../shared/elements';
 import {
-  fillFields, glowFields, haloFields, overlayBaseFields, radiusField, refineStrokeMargin, rimLightField, strokeFields, strokeMarginFields, strokeSidesField,
+  depthFields, fillFields, glowFields, haloFields, overlayBaseFields, radiusField, refineStrokeMargin, rimLightField, strokeFields, strokeMarginFields, strokeSidesField,
   titleButtonFields, trackOpacityField,
 } from '../shared/fields';
 import {buildFillScene, getFillMotion, refineFill, type FillOptions} from '../shared/fills';
@@ -16,8 +16,9 @@ import {cycleOf, placeTravel, reportSpeed, type AssetMotion} from '../shared/mot
 import {arcBandPath, offsetRoundRect, roundRectPath} from '../shared/geometry';
 import {refineRim} from '../shared/legibility';
 import {
-  FillLayer, HaloLayer, MarginLayer, OverlayCanvas, RimLayer, StrokeLayer, buildMarginScene, type ClipShape, type MarginElement,
+  FillLayer, HaloLayer, MarginLayer, OverlayCanvas, RimLayer, SideLayer, StrokeLayer, buildMarginScene, type ClipShape, type MarginElement,
 } from '../shared/render';
+import {buildSideScene, refineSideFill, refineSideOutset, sideOutset, type SideElement} from '../shared/side';
 import {buildGlowScene, buildHaloScene, buildRimScene, buildStrokeScene, getStrokeMotion, refineStroke} from '../shared/strokes';
 import {
   TitleButtonLayer, buildTitleButtonScene, refineTitleButtons, titleBarElement, titleButtonRow, titleButtonRowBox, type TitleBarElement,
@@ -86,6 +87,7 @@ const blockFields = z.object({
   ...strokeMarginFields(),
   ...glowFields({glow: 20, glowPulses: 2, glowStrength: 3}),
   ...haloFields({halo: 20, haloColor: '#A855F7'}),
+  ...depthFields(),
   rimLight: rimLightField(0),
   accent: z.enum(BLOCK_ACCENTS)
     .describe('Accent bar inside the outline: none, left or top; the content starts after it. In the circle it is a 120° arc against the outline, centered on the left or the top')
@@ -107,7 +109,7 @@ const blockFields = z.object({
 export type BlockLoopProps = z.infer<typeof blockFields>;
 
 type LayoutProps = Pick<BlockLoopProps,
-  'width' | 'height' | 'bleed' | 'shape' | 'radius' | 'strokeWidth' | 'strokeMargin' | 'paddingX' | 'paddingY' | 'glow' | 'halo' | 'accent' | 'accentSize'
+  'width' | 'height' | 'bleed' | 'shape' | 'radius' | 'strokeWidth' | 'strokeMargin' | 'paddingX' | 'paddingY' | 'glow' | 'halo' | 'depth' | 'accent' | 'accentSize'
   | 'accentLineWidth' | 'titleButtonSize' | 'titleButtonGap' | 'titleButtonInset' | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
 
 /**
@@ -142,7 +144,7 @@ export type BlockLayout = PanelLayout & {
  * area is the centred square whose corners keep the accent's thickness plus the larger padding
  * from the inside of the stroke, all the way round (see fitCircleContent). The accent is then an
  * arc of that thickness along the inside of the stroke, centred on the left or the top, so it
- * stays out of the square wherever it sits. The glow and the halo reach into the bleed.
+ * stays out of the square wherever it sits. The glow, the halo and the side (depth) reach into the bleed.
  *
  * A top bar on a rectangle may be a title bar: a line right under it (accentLineWidth), which moves
  * the content down by its thickness, and the three title buttons at its right end, centred on its
@@ -177,6 +179,7 @@ const getPanelLayout = (props: LayoutProps): Omit<BlockLayout, 'ornamentLayout'>
     padding: {x: props.paddingX, y: props.paddingY},
     glow: props.glow,
     halo: props.halo,
+    extraOutset: sideOutset(props.depth),
   });
   const {inner} = panel;
   if (panel.circle) {
@@ -231,16 +234,18 @@ const refineBlockTitleButtons = (props: BlockLoopProps, layout: BlockLayout, con
 
 /**
  * Refuses what the eye or the file could not take, always with the way out: a file beyond 4K, a
- * circle in a box that is not square, a glow or halo the bleed cannot hold (with bleed 0, as on
- * Twitch panels, both must be 0), no room left for the content, a motion that would alias, and a
+ * circle in a box that is not square, a glow, a halo or a side the bleed cannot hold (with bleed 0, as on
+ * Twitch panels, all three must be 0), a side under a translucent fill, no room left for the content, a motion that would alias, and a
  * glow or a bright rim light over the text.
  */
 export const blockLoopSchema = blockFields.superRefine((props, context) => {
   refineCanvas(props, context);
   if (!refineShape(props, ROUND_SIZES, context)) return;
+  refineSideFill(props, context);
   refineStrokeMargin(props, context);
   const layout = getBlockLayout(props);
-  refineOutset(props, layout.outset, context);
+  // A side past the bleed is told as the side: the shared message speaks of the glow.
+  if (refineSideOutset(props, context)) refineOutset(props, layout.outset, context);
   refineBlockTitleButtons(props, layout, context);
   refineContent(layout, context);
   refineRim(props.rimLight, layout.inner, [[layout.content, 'text', 'use paddingX and paddingY of 1 px or more']], context);
@@ -261,6 +266,8 @@ export const blockLoopSchema = blockFields.superRefine((props, context) => {
 /** The layers of one frame, bottom to top; getBlockScene is their flat concatenation. */
 export type BlockLayers = {
   halo: HaloElement[];
+  /** The side of a block with depth, whole behind it; empty while it is flat. */
+  side: SideElement[];
   /** Ornaments under the panel (see OrnamentLayer). */
   ornamentBack: OrnamentElement[];
   fill: FillElement[];
@@ -368,6 +375,7 @@ export const getBlockLayers = (props: BlockLoopProps, frame: number, durationInF
   const ornaments = buildOrnamentScene(layout.ornamentLayout, props, frame, durationInFrames);
   return {
     halo: buildHaloScene(props, frame, durationInFrames),
+    side: buildSideScene(props),
     ornamentBack: ornaments.back,
     fill: buildFillScene(props, layout.box, frame, durationInFrames, fillOptions(layout)),
     accent: buildAccentScene(props, layout, frame, durationInFrames),
@@ -388,8 +396,8 @@ export const getBlockLayers = (props: BlockLoopProps, frame: number, durationInF
  * that moves. Nothing in it jumps at the seam, so the kind needs no seamExempt.
  */
 export const getBlockScene = (props: BlockLoopProps, frame: number, durationInFrames: number) => {
-  const {halo, ornamentBack, fill, accent, accentLine, titleButtons, margin, rim, stroke, glow, ornamentFront, flash} = getBlockLayers(props, frame, durationInFrames);
-  return [...halo, ...ornamentBack, ...fill, ...accent, ...accentLine, ...titleButtons, ...margin, ...rim, ...stroke, ...glow, ...ornamentFront, ...flash];
+  const {halo, side, ornamentBack, fill, accent, accentLine, titleButtons, margin, rim, stroke, glow, ornamentFront, flash} = getBlockLayers(props, frame, durationInFrames);
+  return [...halo, ...side, ...ornamentBack, ...fill, ...accent, ...accentLine, ...titleButtons, ...margin, ...rim, ...stroke, ...glow, ...ornamentFront, ...flash];
 };
 
 /** The accent's clip: the inside of the stroke for a bar (it follows the round corners), the arc itself on a circle. */
@@ -398,7 +406,7 @@ const accentClip = (layout: BlockLayout): ClipShape =>
 
 /**
  * One frame, without Remotion hooks, so tests can render it. Layers, bottom to top: halo (kept
- * outside the panel), back ornaments (hidden by the panel), fill (clipped to the panel), accent
+ * outside the panel), the side of a block with depth, back ornaments (hidden by the panel), fill (clipped to the panel), accent
  * (see accentClip), the line under a top accent and the title buttons (inside the stroke), margin band, rim light, stroke with its glow, front ornaments, lightning flash, then the
  * Studio guides.
  */
@@ -411,6 +419,7 @@ export const BlockFrame = ({props, frame, durationInFrames}: {
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
       guides={props.guides} idPrefix="block">
       <HaloLayer elements={layers.halo} shape={layout.shape} />
+      <SideLayer elements={layers.side} outline={layout.shape} />
       <OrnamentLayer elements={layers.ornamentBack} layout={layout.ornamentLayout} style={props} layer="back" />
       <FillLayer elements={layers.fill} clip={layout.shape} />
       {layers.accent.length > 0 ? <FillLayer elements={layers.accent} clip={accentClip(layout)} name="accent" /> : null}

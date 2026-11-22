@@ -5,12 +5,14 @@ import type {OutputFormat} from './settings';
 
 /**
  * Extra props a named size sets besides width/height/bleed: what the product itself requires
- * (a border's fit, a block's or a border's shape; no glow or halo on a panel without bleed). They
+ * (a border's fit, a block's or a border's shape; no glow, halo or side, the depth, on a panel
+ * without bleed). They
  * win over a preset or a --props file, as the box does, so the size id alone yields a file that
  * fits: a round size draws a circle, and a rectangular one a rectangle even over a round preset.
  */
 export type SizeProps = {
   readonly fit?: 'window' | 'screen'; readonly shape?: PanelShape; readonly glow?: number; readonly halo?: number;
+  readonly depth?: number;
 };
 
 export type NamedSize = {
@@ -48,8 +50,8 @@ const NAMED_SIZE_TABLE = [
   {id: 'circle-sm', kind: 'block', label: 'Small circle', use: 'small badge: icon, social network, "LIVE"', width: 160, height: 160, bleed: 24, props: {shape: 'circle'}},
   {id: 'circle', kind: 'block', label: 'Circle', use: 'avatar, logo, counter', width: 320, height: 320, bleed: 32, props: {shape: 'circle'}},
   {id: 'circle-lg', kind: 'block', label: 'Large circle', use: 'highlight, giveaway, goal', width: 480, height: 480, bleed: 32, props: {shape: 'circle'}},
-  // No bleed: the panel is the whole file, so nothing may glow outside it.
-  {id: 'twitch-panel', kind: 'block', label: 'Twitch panel', use: 'Twitch profile panels (PNG/GIF, no outer glow)', width: 320, height: 160, bleed: 0, props: {shape: 'rectangle', glow: 0, halo: 0}, folder: 'twitch-panels'},
+  // No bleed: the panel is the whole file, so nothing may glow outside it, and it has no side.
+  {id: 'twitch-panel', kind: 'block', label: 'Twitch panel', use: 'Twitch profile panels (PNG/GIF, no outer glow)', width: 320, height: 160, bleed: 0, props: {shape: 'rectangle', glow: 0, halo: 0, depth: 0}, folder: 'twitch-panels'},
   // border: the box is the transparent window; frame and glow go outward into the bleed.
   // `fit` and `shape` are spelled out so a size id alone fixes the product, whatever a preset says.
   {id: 'webcam-16x9', kind: 'border', label: 'Webcam 16:9', use: 'standard camera', width: 640, height: 360, bleed: 48, props: {fit: 'window', shape: 'rectangle'}},

@@ -13,6 +13,7 @@ import type {StrokeSides} from './fields';
 import {arcBandPath, isCircle, rectPath, roundRectPath, svgNumber, type RoundRect} from './geometry';
 import type {FrameLayout, PanelLayout} from './layout';
 import {perimeterPath, pointAt} from './perimeter';
+import {SIDE_LINE_WIDTH, sideHole, sideShape, type SideElement} from './side';
 
 /**
  * SVG rendering of the engine's scenes. Everything is drawn in canvas pixels on one SVG the size
@@ -21,7 +22,8 @@ import {perimeterPath, pointAt} from './perimeter';
  * transparency it turns into grey haze. Glows are straight-alpha blurs of the stroke colours.
  *
  * Layering, bottom to top (a kind composes these itself):
- *   1. HaloLayer (outer halo, kept outside the panel)
+ *   1. HaloLayer (outer halo, kept outside the panel), then SideLayer (the side of a piece with
+ *      depth, whole behind it)
  *   2. FillLayer (clipped to the panel)
  *   3. kind decorations under the stroke (accent bar, chat header…), then MarginLayer (the band
  *      outside the outline, chat and block) over them and under the rim light
@@ -502,6 +504,27 @@ export const HaloLayer = ({elements, shape, name = 'halo'}: {elements: readonly 
       <g mask={url(`${id}-mask`)}>
         <path d={roundRectPath(shape)} fill={halo.color} filter={url(`${id}-blur`)} opacity={halo.opacity} />
       </g>
+    </g>
+  );
+};
+
+/**
+ * The side of a piece with depth (see side.ts), right over the halo and under everything else: the
+ * copy of `outline` filled flat, then its line on the same path. It is drawn whole, never clipped
+ * to the piece, which covers it. A frame passes its window as `hole`: the side then leaves its own,
+ * slightly larger hole (sideHole) under the band, so it never ends along the window's edge.
+ */
+export const SideLayer = ({elements, outline, hole, name = 'side'}: {
+  elements: readonly SideElement[]; outline: RoundRect; hole?: RoundRect; name?: string;
+}) => {
+  const {idPrefix} = useStage();
+  const side = elements[0];
+  if (!side) return null;
+  const path = roundRectPath(sideShape(outline, side.depth));
+  return (
+    <g>
+      <path id={`${idPrefix}-${name}`} d={hole ? path + roundRectPath(sideHole(hole)) : path} fillRule={hole ? 'evenodd' : undefined} fill={side.color} />
+      <path id={`${idPrefix}-${name}-line`} d={path} fill="none" stroke={side.line} strokeWidth={SIDE_LINE_WIDTH} />
     </g>
   );
 };
