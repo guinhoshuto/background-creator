@@ -6,7 +6,7 @@ import {svgNumber} from '../src/overlays/shared/geometry';
 import {scaleOrnamentFrame} from '../src/overlays/shared/ornaments/frame';
 import {ornamentRandom} from '../src/overlays/shared/ornaments/place';
 import {
-  extentOf, LINE_THICK, LINE_THIN, lineOf, MOTIF_TILT, motifPath, motifPoints, reachOf, shapeHeight, sizeOf, SPAN,
+  BOLT_POINTS, extentOf, LINE_THICK, LINE_THIN, lineOf, MOTIF_TILT, motifPath, motifPoints, reachOf, shapeHeight, sizeOf, SPAN,
 } from '../src/overlays/shared/ornaments/sets/sticker-motifs';
 import {
   minExtentOf, placeSticker, SCREEN_STAR_MIN, STICKER_MIN_EXTENT, STICKER_RIM, STICKER_SIZES, type StickerPlacement,
@@ -320,11 +320,12 @@ test('sticker: o passo k(f) = floor(f·S/n), S = 96 a 12 s; 8 e 7 quadros por pa
 });
 
 // Dies with: the half-frame blend `from.turn + (to.turn - from.turn) * blend` → `from.turn`, `Math.floor(frameIndex)` →
-// `Math.round(frameIndex)` (frame 7.5 then blends from frame 8).
+// `Math.round(frameIndex)` (frame 7.5 then blends from frame 8). Frames 6 and 718 sit just before a step: the blend's `stepAt(whole + 1` →
+// `stepAt(whole + 2` blends toward the step after the next one.
 test('sticker: no meio quadro, cada campo é a média exata dos dois quadros inteiros; nos inteiros, a pose pura', () => {
   const item = caseOf('chat-standard');
   for (const seed of [23, 4, 77]) {
-    for (const whole of [0, 7, 14, 22, 300, 712, 719]) {
+    for (const whole of [0, 6, 7, 14, 22, 300, 712, 718, 719]) {
       const [a, b, mid] = [build(item, whole, {seed}), build(item, whole + 1, {seed}), build(item, whole + 0.5, {seed})];
       mid.forEach((element, index) => {
         for (const field of ['angle', 'scale', 'reach'] as const) {
@@ -471,4 +472,19 @@ test('sticker: o desenho de um elemento, com a linha de tinta por cima e o aro c
   assert.match(paths[1]!, /stroke="#4A3A69" stroke-width="3"/);
   // With a rim the shape shrinks by twice the rim: the size stays the whole height.
   assert.ok(paths[1]!.includes(`d="${motifPath('star', shapeHeight(star!.size, 4) * star!.scale)}"`));
+});
+
+// The drawing constants are the approved mock's (StickerPopMockDraft.tsx: MOTIF_TILT, BOLT_POINTS, WOBBLE and the bolt's
+// two poses), written here as literals so that no snapshot rewritten in the same phase stands in for them.
+// Dies with: `star: -14` → `star: 14` in MOTIF_TILT, `[0.96, 0.4]` → `[0.9, 0.4]` in BOLT_POINTS,
+// `{turn: 6, scale: 0.92}` → `{turn: 6, scale: 0.8}` in the star's poses.
+test('sticker: as constantes de desenho são as do mock aprovado (inclinação, contorno do raio, poses)', () => {
+  assert.deepEqual(MOTIF_TILT, {sparkle: 12, star: -14, bolt: 18});
+  assert.deepEqual(BOLT_POINTS, [[0.48, 0], [1, 0], [0.66, 0.4], [0.96, 0.4], [0.2, 1], [0.4, 0.54], [0.04, 0.54]]);
+  assert.deepEqual(STICKER_POSES.star, [
+    {turn: 0, scale: 1}, {turn: 5, scale: 0.95}, {turn: -3, scale: 1}, {turn: 6, scale: 0.92},
+    {turn: -6, scale: 0.97}, {turn: 2, scale: 1}, {turn: -4, scale: 0.93}, {turn: 3, scale: 0.98},
+  ]);
+  assert.deepEqual(STICKER_POSES.sparkle, [1, 0.8, 1, 1.1].map((scale) => ({turn: 0, scale})));
+  assert.deepEqual(STICKER_POSES.bolt, [{turn: 0, scale: 1}, {turn: -8, scale: 0.96}]);
 });
