@@ -16,6 +16,8 @@ import {STICKER_INK, stickerSet, type StickerOrnamentElement} from '../src/overl
 import type {OrnamentFrame, OrnamentStyle} from '../src/overlays/shared/ornaments/types';
 import {getSize, NAMED_SIZES, sizeProps} from '../src/sizes';
 import {framesOf, ORNAMENT_KINDS, type OrnamentKindName, type OrnamentProps} from './helpers/ornament-kinds';
+import {REFUSAL} from './helpers/ornament-harness';
+import {borderLoopSchema} from '../src/overlays/border';
 
 /**
  * The 'sticker' set (Sticker Pop, D-03) before it is registered: placed and built directly on the
@@ -487,4 +489,18 @@ test('sticker: as constantes de desenho são as do mock aprovado (inclinação, 
   ]);
   assert.deepEqual(STICKER_POSES.sparkle, [1, 0.8, 1, 1.1].map((scale) => ({turn: 0, scale})));
   assert.deepEqual(STICKER_POSES.bolt, [{turn: 0, scale: 1}, {turn: -8, scale: 0.96}]);
+});
+
+// No input of the harness makes this set refuse, so its REFUSAL entry was never read there: a webcam with a 16 px bleed
+// and no title bar has no room for the star (tangent outside a 12 px band), and the schema says so in the harness's words.
+// Dies with: `|terminal|sticker)` → `|terminal)` in the harness's REFUSAL.
+test('sticker: sem lugar para a estrela, a moldura recusa com a frase que o harness documenta', () => {
+  const input = {
+    ...PRESETS.border, ...sizeProps(getSize('webcam-16x9')), ornaments: 'sticker', bleed: 16, depth: 0, titleBarHeight: 0, titleButtonSize: 0,
+  };
+  const result = borderLoopSchema.safeParse(input);
+  assert.equal(result.success, false);
+  const issues = result.error!.issues.map((issue) => [issue.path.join('.'), issue.message]);
+  assert.deepEqual(issues, [['ornaments', 'The "sticker" ornaments do not fit this size: increase bleed or radius or use ornaments none.']]);
+  assert.match(issues[0]![1]!, REFUSAL);
 });
