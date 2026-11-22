@@ -116,6 +116,24 @@ test('sticker loop: the pose changes on the step frames only, eight a second', (
   }
 });
 
+// The pose each step draws, read from the markup against the pose table: the rotate is the motif's tilt plus the
+// step's turn, and the scale goes both into data-scale and into the drawn path (the shape height times the scale).
+// Dies with: F1-13 (`+ pose.turn` → `- pose.turn` in getStickerScene); F1-14 (the pose's turn dropped from the angle).
+test('sticker loop: every step draws its pose from the table, turn and scale', () => {
+  for (const motif of MOTIFS) {
+    const table = STICKER_POSES[motif];
+    const props = propsOf({motif});
+    for (let step = 0; step < STEPS; step += 1) {
+      const pose = table[step % table.length]!;
+      const markup = markupAt(props, frameOfStep(step));
+      const glyph = glyphOf(markup);
+      assert.ok(Math.abs(glyph.angle - (MOTIF_TILT[motif] + pose.turn)) < 1e-3, `${motif} step ${step}: angle ${glyph.angle}`);
+      const scale = Number(/data-scale="([-\d.]+)"/.exec(markup)![1]);
+      assert.ok(Math.abs(scale - pose.scale) < 1e-3, `${motif} step ${step}: scale ${scale}`);
+    }
+  }
+});
+
 // Dies with: F1-6 (stickerLine gives 5 px from 120 px up); F1-8 (the schema's rim defaults to 3 px).
 test('sticker loop: a 6 px ink line inside a 4 px cream rim', () => {
   const markup = markupAt(DEFAULTS, 0);
