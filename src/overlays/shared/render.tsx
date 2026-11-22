@@ -22,8 +22,9 @@ import {perimeterPath, pointAt} from './perimeter';
  *
  * Layering, bottom to top (a kind composes these itself):
  *   1. HaloLayer (outer halo, kept outside the panel)
- *   2. FillLayer (clipped to the panel), then MarginLayer (the band outside the outline, chat and block)
- *   3. kind decorations under the stroke (accent bar, chat header…)
+ *   2. FillLayer (clipped to the panel)
+ *   3. kind decorations under the stroke (accent bar, chat header…), then MarginLayer (the band
+ *      outside the outline, chat and block) over them and under the rim light
  *   4. StrokeLayer: its glow, then the sharp stroke (children render inside both)
  *   5. kind decorations over the stroke (corner brackets, jewels…)
  *   — for a border, 1–5 sit inside a FrameGroup, which keeps the window empty
@@ -455,11 +456,11 @@ const openSidesClip = (track: RoundRect, elements: readonly (StrokeElement | Glo
  * band is on, none while it is off. It never moves, and it is not part of the stroke: the glow
  * blurs the outline alone.
  */
-export type MarginElement = {type: 'margin'; color: string; opacity: number};
+export type MarginElement = {type: 'margin'; color: string};
 
 export const buildMarginScene = (style: {strokeMargin: number; strokeMarginColor: string}): MarginElement[] => {
   if (!(style.strokeMargin > 0)) return [];
-  return [{type: 'margin', color: style.strokeMarginColor, opacity: 1}];
+  return [{type: 'margin', color: style.strokeMarginColor}];
 };
 
 /**

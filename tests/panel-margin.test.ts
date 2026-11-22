@@ -12,8 +12,8 @@ import {chatStrokeWidthFits} from './helpers/themes';
  * The flat band between the edge of a panel and its outline (`strokeMargin`, chat and block), which
  * the sticker-pop kit asked for (2026-11-21): the outline and the content move inwards, the box
  * keeps its size, and at 0 nothing changes. Plus the chat's stroke weight rule with its named
- * exception. Run with `npx tsx --test tests/panel-margin.test.ts`; every test here has its mutations
- * in `.cache/illustration-inspired-overlay/mutations-c.json`.
+ * exception. Run with `npx tsx --test tests/panel-margin.test.ts`; every test here has a mutation
+ * that makes it fail (`npm run mutate`).
  */
 
 /** The margin as the kit wears it: 3 px of cream outside a 6 px line, with a glow faint enough for the title. */
@@ -87,6 +87,22 @@ test('margin kinds: chat and block hand the margin to the layout at every size',
   }
 });
 
+test('margin bounds: 0 to 32 px, refused below and above', () => {
+  // Roomy sizes, so the only thing that can refuse the band is its own range.
+  for (const [kind, schema, size] of [['chat', chatLoopSchema, 'chat-standard'], ['block', blockLoopSchema, 'card']] as const) {
+    const base = {...ON, ...sizeProps(getSize(size))};
+    for (const strokeMargin of [-1, 33]) {
+      const refused = schema.safeParse({...base, strokeMargin});
+      assert.equal(refused.success, false, `${kind}: ${strokeMargin}`);
+      assert.deepEqual(refused.error!.issues.map((issue) => issue.path.join('.')), ['strokeMargin'], `${kind}: ${strokeMargin}`);
+    }
+    for (const strokeMargin of [0, 32]) {
+      const accepted = schema.safeParse({...base, strokeMargin});
+      assert.equal(accepted.success, true, `${kind}: ${strokeMargin}: ${accepted.error?.issues[0]?.message}`);
+    }
+  }
+});
+
 test('margin refusal: open sides are refused with the way out in chat and block', () => {
   const message = /^The margin runs round the whole outline: use strokeSides all, or strokeMargin 0\.$/;
   for (const [kind, schema, size] of [['chat', chatLoopSchema, 'chat-standard'], ['block', blockLoopSchema, 'label']] as const) {
@@ -100,6 +116,12 @@ test('margin refusal: open sides are refused with the way out in chat and block'
     assert.equal(schema.safeParse({...base, strokeSides: 'all'}).success, true, `${kind}: strokeSides all`);
     assert.equal(schema.safeParse({...base, strokeSides: 'top-bottom', strokeMargin: 0}).success, true, `${kind}: strokeMargin 0`);
   }
+  // A round block keeps its whole outline with open sides, and the band is refused there all the same.
+  const round = {...ON, ...sizeProps(getSize('circle'))};
+  const refused = blockLoopSchema.safeParse({...round, strokeSides: 'top-bottom'});
+  assert.equal(refused.success, false, 'circle');
+  assert.match(refused.error!.issues.find((entry) => entry.path.join('.') === 'strokeMargin')?.message ?? '', message);
+  assert.equal(blockLoopSchema.safeParse({...round, strokeSides: 'all'}).success, true, 'circle: strokeSides all');
 });
 
 test('margin off: the default draws no band, no element and no id', () => {
@@ -151,7 +173,7 @@ test('margin order: the band comes after the fill and before the rim light and t
 });
 
 test('margin still: the same band on every frame, outside the stroke elements', () => {
-  const band = [{type: 'margin', color: '#F6E2E4', opacity: 1}];
+  const band = [{type: 'margin', color: '#F6E2E4'}];
   const input = {...ON, rimLight: 0.5};
   for (const frame of [0, 200]) {
     const chatLayers = getChatLayers(chat(input), frame, 480);
