@@ -4,7 +4,7 @@ import {test} from 'node:test';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {
-  getStickerStageScene, paperBurstProps, SCATTER, stageLine, StickerStageSvg, stickerStageLoopSchema,
+  getStickerStageScene, paperBackdrop, paperBurstProps, SCATTER, stageLine, StickerStageSvg, stickerStageLoopSchema,
   type StickerStageElement, type StickerStageEntry, type StickerStageLoopProps, type StickerStageSticker,
 } from '../src/backgrounds/StickerStageLoop';
 import {sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
@@ -222,4 +222,57 @@ test('palco: o preset sticker-pop-paper-stickers é o papel sem aro, com a cor d
   assert.deepEqual([PAPER_STICKERS.durationSeconds, PAPER_STICKERS.seed], [12, 23]);
   assert.deepEqual([PAPER_STICKERS.stickerColors, PAPER_STICKERS.ink], [PINK_STAGE.stickerColors, PINK_STAGE.ink]);
   for (const glyph of glyphsOf(markupAt(PAPER_STICKERS, 0))) assert.equal(glyph.paths.length, 1);
+});
+
+// Dies with: accent-default-on (accent defaults to true, so the pink stage, whose preset leaves it out, paints the
+// three in hot pink); accent-ignores-switch (the fill reads the mark alone, without props.accent).
+test('palco: o preset do palco pinta os 20 adesivos como antes da cor de destaque, em todo frame', () => {
+  // The fills of the stage before the accent existed (46c3ee9), sticker by sticker, in SCATTER order.
+  const [orange, blush, gold, blue, orchid] = PINK_STAGE.stickerColors;
+  const before = [
+    orange, gold, blush, orchid, orchid, blue, blue, orange, gold, orange,
+    blush, gold, blue, orchid, blush, blue, blue, orchid, gold, blue,
+  ];
+  assert.equal(PINK_STAGE.accent, false);
+  for (const frame of [0, 37, N - 1]) assert.deepEqual(stickersAt(PINK_STAGE, frame).map(({fill}) => fill), before, `frame ${frame}`);
+  assert.deepEqual(glyphsOf(markupAt(PINK_STAGE, 0)).map((glyph) => glyph.paths.at(-1)!.fill), before);
+  // Off, the marks change nothing: the scene is the one of the layout without them.
+  const unmarked = SCATTER.map(([motif, size, x, y, color]): StickerStageEntry => [motif, size, x, y, color]);
+  assert.deepEqual(getStickerStageScene(PINK_STAGE, 0, N), getStickerStageScene(PINK_STAGE, 0, N, unmarked));
+});
+
+// Dies with: accent-mark-dropped (the 40 px sparkle at (1480,700) loses its mark); paper-accent-off (the paper preset
+// turns accent off); accent-color-ignored (the marked fill takes the first stickerColors colour instead of accentColor).
+test('palco: no papel, os três adesivos rosa-choque do mock voltam ao #F74CA9 e o resto não muda', () => {
+  const accented = SCATTER.flatMap(([motif, size, x, y,, mark]) => (mark === 'accent' ? [[motif, size, x, y]] : []));
+  assert.deepEqual(accented, [['sparkle', 120, 620, 130], ['star', 44, 560, 640], ['sparkle', 40, 1480, 700]]);
+  assert.deepEqual([PAPER_STICKERS.accent, PAPER_STICKERS.accentColor], [true, '#F74CA9']);
+  const fills = stickersAt(PAPER_STICKERS, 0).map(({fill}) => fill);
+  SCATTER.forEach(([, , , , color, mark], i) => {
+    assert.equal(fills[i], mark === 'accent' ? '#F74CA9' : PAPER_STICKERS.stickerColors[color], `sticker ${i}`);
+  });
+  assert.deepEqual(glyphsOf(markupAt(PAPER_STICKERS, 0)).map((glyph) => glyph.paths.at(-1)!.fill), fills);
+  // The accent is its own colour, not one of the five.
+  const lilac = stickerStageLoopSchema.parse({...PAPER_STICKERS, accentColor: '#C8A2F0'});
+  assert.deepEqual(stickersAt(lilac, 0).filter((_, i) => SCATTER[i]![5] === 'accent').map(({fill}) => fill), ['#C8A2F0', '#C8A2F0', '#C8A2F0']);
+});
+
+// Dies with: f, backdrop-fixed-12s (the paper is drawn with paperBurstProps(12) whatever the loop's length);
+// g, backdrop-in-alpha (the paper is drawn with transparent as well).
+test('palco: paperBackdrop dá o papel do loop pedido, só com backdrop paper e opaco', () => {
+  assert.deepEqual(paperBackdrop(PAPER_STICKERS), paperBurstProps(12));
+  const eight = paperBackdrop(stickerStageLoopSchema.parse({...PAPER_STICKERS, durationSeconds: 8}));
+  assert.deepEqual(eight, paperBurstProps(8));
+  assert.equal(eight!.durationSeconds, 8);
+  assert.equal(paperBackdrop({...PAPER_STICKERS, transparent: true}), null);
+  assert.equal(paperBackdrop(PINK_STAGE), null);
+});
+
+// Dies with: colors-undescribed (colors loses its .describe()); sticker-colors-undescribed (stickerColors loses it).
+// accentColor is a colour: tests/schema-descriptions.test.ts keeps it without a description.
+test('palco: colors, stickerColors e accent têm descrição no Studio', () => {
+  const {colors, stickerColors, accent} = stickerStageLoopSchema.shape;
+  assert.match(colors.unwrap().description ?? '', /gradient/i);
+  assert.match(stickerColors.unwrap().description ?? '', /sticker/i);
+  assert.match(accent.unwrap().description ?? '', /accentColor/);
 });

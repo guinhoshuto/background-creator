@@ -203,7 +203,7 @@ export const RemotionRoot = () => (
         id="StickerStageLoop"
         component={stickerStage.component}
         schema={stickerStage.schema}
-        defaultProps={{"durationSeconds":12,"seed":23,"transparent":false,"backgroundColor":"#F5A09E","colors":["#F74CA9","#EF6AA0","#F5A09E"],"outputFormat":"webm" as const,"stageMid":0.45,"stickerColors":["#F4A66C","#F6E2E4","#E9BA67","#9AC7F2","#EE9DE6"],"ink":"#4A3A69","rim":4,"backdrop":"stage" as const}}
+        defaultProps={{"durationSeconds":12,"seed":23,"transparent":false,"backgroundColor":"#F5A09E","colors":["#F74CA9","#EF6AA0","#F5A09E"],"outputFormat":"webm" as const,"stageMid":0.45,"stickerColors":["#F4A66C","#F6E2E4","#E9BA67","#9AC7F2","#EE9DE6"],"accent":false,"accentColor":"#F74CA9","ink":"#4A3A69","rim":4,"backdrop":"stage" as const}}
         {...getCompositionMetadata(stickerStage.defaultProps)}
         calculateMetadata={({props}: {props: typeof stickerStage.defaultProps}) => metadataFor(stickerStage.id, stickerStage.schema.parse(props))}
       />

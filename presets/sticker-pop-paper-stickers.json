@@ -3,6 +3,8 @@
   "seed": 23,
   "backgroundColor": "#F5DCD1",
   "stickerColors": ["#F4A66C", "#F6E2E4", "#E9BA67", "#9AC7F2", "#EE9DE6"],
+  "accent": true,
+  "accentColor": "#F74CA9",
   "ink": "#4A3A69",
   "rim": 0,
   "backdrop": "paper"
