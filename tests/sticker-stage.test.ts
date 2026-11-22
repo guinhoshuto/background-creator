@@ -9,8 +9,8 @@ import {
 } from '../src/backgrounds/StickerStageLoop';
 import {sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
 import {STICKER_CREAM} from '../src/overlays/shared/ornaments/sets/sticker';
-import {motifPoints} from '../src/overlays/shared/ornaments/sets/sticker-motifs';
-import type {StickerMotif} from '../src/overlays/shared/ornaments/sets/sticker-steps';
+import {MOTIF_TILT, motifPoints} from '../src/overlays/shared/ornaments/sets/sticker-motifs';
+import {stickerPoseAt, type StickerMotif} from '../src/overlays/shared/ornaments/sets/sticker-steps';
 import {getCompositionMetadata} from '../src/settings';
 
 // The Sticker Pop stage (src/backgrounds/StickerStageLoop.tsx): the mock's stickers over the pink
@@ -40,16 +40,16 @@ const shapeOf = (glyph: Glyph, item: StickerStageSticker) => {
   return (Math.max(...ys) - Math.min(...ys)) / tallness(item.motif) / item.scale;
 };
 
-type Glyph = {x: number; y: number; angle: number; paths: {points: [number, number][]; width: number; fill: string}[]};
-/** Every sticker glyph of the markup: its translate, its rotate and each path's points and stroke width. */
+type Glyph = {x: number; y: number; angle: number; paths: {points: [number, number][]; width: number; fill: string; stroke: string}[]};
+/** Every sticker glyph of the markup: its translate, its rotate and each path's points, fill, stroke and stroke width. */
 const glyphsOf = (markup: string): Glyph[] =>
   [...markup.matchAll(/<g transform="translate\(([-\d.]+) ([-\d.]+)\) rotate\(([-\d.]+)\)">(.*?)<\/g>/g)].map((match) => ({
     x: Number(match[1]), y: Number(match[2]), angle: Number(match[3]),
-    paths: [...match[4]!.matchAll(/<path d="([^"]+)" fill="([^"]+)" stroke="[^"]+" stroke-width="([\d.]+)"/g)].map((path) => {
+    paths: [...match[4]!.matchAll(/<path d="([^"]+)" fill="([^"]+)" stroke="([^"]+)" stroke-width="([\d.]+)"/g)].map((path) => {
       const numbers = path[1]!.match(/-?[\d.]+/g)!.map(Number);
       return {
         points: Array.from({length: numbers.length / 2}, (_, i): [number, number] => [numbers[2 * i]!, numbers[2 * i + 1]!]),
-        fill: path[2]!, width: Number(path[3]),
+        fill: path[2]!, stroke: path[3]!, width: Number(path[4]),
       };
     }),
   }));
@@ -73,7 +73,8 @@ test('palco: o frame N desenha o frame 0 e cada adesivo troca de pose 96 vezes e
   }
 });
 
-// Dies with: rim-not-in-extent (the shape's height leaves the 2·rim out, so the rim grows the sticker past its size).
+// Dies with: rim-not-in-extent (the shape's height leaves the 2·rim out, so the rim grows the sticker past its size);
+// glyph-angle-zero (the stage draws every glyph at angle 0, so the markup leaves the scene's tilt and turn out).
 test('palco: todo adesivo tem a altura inteira com o aro e fica a 8 px da borda em todas as poses', () => {
   for (const rim of [0, 4, 8]) {
     const props = stickerStageLoopSchema.parse({...PINK_STAGE, rim});
@@ -83,6 +84,9 @@ test('palco: todo adesivo tem a altura inteira com o aro e fica a 8 px da borda 
       assert.equal(glyphs.length, items.length);
       glyphs.forEach((glyph, i) => {
         const item = items[i]!;
+        // The markup draws the scene's sticker: its centre and its angle.
+        assert.ok(Math.abs(glyph.x - item.x) < 1e-3 && Math.abs(glyph.y - item.y) < 1e-3, `rim ${rim} frame ${frame} sticker ${i}: centre`);
+        assert.ok(Math.abs(glyph.angle - item.angle) < 1e-3, `rim ${rim} frame ${frame} sticker ${i}: ${glyph.angle} vs ${item.angle}`);
         const outer = Math.max(...glyph.paths.map((path) => path.width));
         // The pose scales the shape, never the line or the rim.
         const height = shapeOf(glyph, item) + outer;
@@ -99,8 +103,10 @@ test('palco: todo adesivo tem a altura inteira com o aro e fica a 8 px da borda 
   }
 });
 
-// Dies with: seed-moves-centers (the seed nudges every centre by up to 8 px).
+// Dies with: seed-moves-centers (the seed nudges every centre by up to 8 px); phase-zero (every sticker of a
+// motif starts its table at 0); no-mirror (no star leans the other way).
 test('palco: a disposição não depende do seed, a fase sim', () => {
+  assert.ok(SCATTER.every(([, size]) => size >= 30));
   const at = (seed: number, frame: number) => stickersAt({...PINK_STAGE, seed}, frame);
   const place = (items: StickerStageSticker[]) => items.map(({motif, size, x, y, fill, line, rim}) => ({motif, size, x, y, fill, line, rim}));
   assert.deepEqual(place(at(23, 0)), place(at(24, 0)));
@@ -110,6 +116,24 @@ test('palco: a disposição não depende do seed, a fase sim', () => {
   const phases = (seed: number) => at(seed, 0).map(({phase, mirror}) => [phase, mirror]);
   assert.notDeepEqual(phases(23), phases(24));
   assert.notDeepEqual(at(23, 100).map(({angle, scale}) => [angle, scale]), at(24, 100).map(({angle, scale}) => [angle, scale]));
+  // The phase alone moves with the seed, and no motif walks in step.
+  assert.notDeepEqual(at(23, 0).map(({phase}) => phase), at(24, 0).map(({phase}) => phase));
+  for (const motif of ['star', 'bolt', 'sparkle'] as const) {
+    assert.ok(new Set(at(23, 0).filter((item) => item.motif === motif).map(({phase}) => phase)).size > 1, motif);
+  }
+  // Only stars lean the other way, some of them, and a mirrored star turns against its tilt.
+  const mirrors = (motif: StickerMotif) => new Set(at(23, 0).filter((item) => item.motif === motif).map(({mirror}) => mirror));
+  assert.deepEqual([...mirrors('star')].sort(), [0, 1]);
+  assert.deepEqual([[...mirrors('bolt')], [...mirrors('sparkle')]], [[0], [0]]);
+  let leaned = 0;
+  for (let frame = 0; frame < N; frame += 4) {
+    for (const item of at(23, frame).filter((sticker) => sticker.motif === 'star')) {
+      const {turn} = stickerPoseAt('star', frame, N, PINK_STAGE.durationSeconds, item.phase, false);
+      assert.ok(Math.abs(item.angle - (MOTIF_TILT.star + (item.mirror ? -turn : turn))) < 1e-9, `frame ${frame}`);
+      if (item.mirror && turn !== 0) leaned++;
+    }
+  }
+  assert.ok(leaned > 0);
 });
 
 // Dies with: draw-only-stars (only stars draw the mirror, so a sticker that stops being a star shifts every phase after it).
@@ -136,7 +160,7 @@ test('palco: com rim 0 não há caminho de aro e a forma ocupa a altura inteira;
   });
 });
 
-// Dies with: line-step-64 (64 px takes the 3 px line).
+// Dies with: line-step-64 (64 px takes the 3 px line); ink-ignored (the stage draws the line cream, whatever ink says).
 test('palco: linha de 3 px abaixo de 64, 4 abaixo de 120 e 6 dali para cima', () => {
   assert.deepEqual([40, 63, 64, 119, 120, 200].map(stageLine), [3, 3, 4, 4, 6, 6]);
   const glyphs = glyphsOf(markupAt(PINK_STAGE, 0));
@@ -144,9 +168,17 @@ test('palco: linha de 3 px abaixo de 64, 4 abaixo de 120 e 6 dali para cima', ()
     assert.equal(item.line, stageLine(item.size));
     assert.equal(glyphs[i]!.paths.at(-1)!.width, item.line);
   });
+  // The line takes the ink prop, and the rim under it is cream all through.
+  for (const props of [PINK_STAGE, {...PINK_STAGE, ink: '#112233'}]) {
+    for (const glyph of glyphsOf(markupAt(props, 0))) {
+      assert.equal(glyph.paths.at(-1)!.stroke, props.ink);
+      assert.deepEqual(glyph.paths.slice(0, -1).map(({stroke}) => stroke), [STICKER_CREAM]);
+    }
+  }
 });
 
-// Dies with: stage-drifts (the middle stop slides with the frame); stage-in-alpha (the gradient stays with transparent).
+// Dies with: stage-drifts (the middle stop slides with the frame); stage-in-alpha (the gradient stays with transparent);
+// stops-swapped (the top stop takes the bottom colour).
 test('palco: o degradê não lê o frame e só existe no palco opaco', () => {
   const gradient = (props: StickerStageLoopProps, frame: number) =>
     getStickerStageScene(props, frame, N).filter((element) => element.kind === 'stage');
@@ -155,6 +187,10 @@ test('palco: o degradê não lê o frame e só existe no palco opaco', () => {
   assert.deepEqual(gradient({...PINK_STAGE, transparent: true}, 0), []);
   const stops = (frame: number) => markupAt(PINK_STAGE, frame).match(/<linearGradient.*?<\/linearGradient>/)![0];
   assert.equal(stops(359), stops(0));
+  // Top to bottom, the strong pink first, in the stops' order.
+  assert.match(stops(0), /^<linearGradient id="sticker-stage-gradient" x1="0" y1="0" x2="0" y2="1">/);
+  assert.deepEqual([...stops(0).matchAll(/<stop offset="([^"]+)" stop-color="([^"]+)"/g)].map(([, offset, color]) => [offset, color]),
+    [['0', '#F74CA9'], ['0.45', '#EF6AA0'], ['1', '#F5A09E']]);
 });
 
 // Dies with: preset-seed (the pink stage preset takes seed 24).
