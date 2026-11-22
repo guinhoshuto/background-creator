@@ -7,14 +7,17 @@ import {getSize} from '../../sizes';
 import {refineCanvas, type Rect} from '../shared/box';
 import type {ArcElement, FillElement, GlowElement, HaloElement, RectElement, RimElement, SheenElement, StrokeElement} from '../shared/elements';
 import {
-  fillFields, glowFields, haloFields, overlayBaseFields, radiusField, rimLightField, strokeFields, strokeSidesField, trackOpacityField,
+  fillFields, glowFields, haloFields, overlayBaseFields, radiusField, refineStrokeMargin, rimLightField, strokeFields, strokeMarginFields, strokeSidesField,
+  trackOpacityField,
 } from '../shared/fields';
 import {buildFillScene, getFillMotion, refineFill, type FillOptions} from '../shared/fills';
 import {layoutPanel, refineContent, refineOutset, type PanelLayout} from '../shared/layout';
 import {cycleOf, placeTravel, reportSpeed, type AssetMotion} from '../shared/motion';
 import {arcBandPath, offsetRoundRect, roundRectPath} from '../shared/geometry';
 import {refineRim} from '../shared/legibility';
-import {FillLayer, HaloLayer, OverlayCanvas, RimLayer, StrokeLayer, type ClipShape} from '../shared/render';
+import {
+  FillLayer, HaloLayer, MarginLayer, OverlayCanvas, RimLayer, StrokeLayer, buildMarginScene, type ClipShape, type MarginElement,
+} from '../shared/render';
 import {buildGlowScene, buildHaloScene, buildRimScene, buildStrokeScene, getStrokeMotion, refineStroke} from '../shared/strokes';
 import {fitCircleContent, fitClearContent} from '../shared/content';
 import {refineShape, shapeField} from '../shared/shape';
@@ -76,6 +79,7 @@ const blockFields = z.object({
   }),
   trackOpacity: trackOpacityField(0.45),
   strokeSides: strokeSidesField(),
+  ...strokeMarginFields(),
   ...glowFields({glow: 20, glowPulses: 2, glowStrength: 3}),
   ...haloFields({halo: 20, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
@@ -95,7 +99,7 @@ const blockFields = z.object({
 export type BlockLoopProps = z.infer<typeof blockFields>;
 
 type LayoutProps = Pick<BlockLoopProps,
-  'width' | 'height' | 'bleed' | 'shape' | 'radius' | 'strokeWidth' | 'paddingX' | 'paddingY' | 'glow' | 'halo' | 'accent' | 'accentSize'
+  'width' | 'height' | 'bleed' | 'shape' | 'radius' | 'strokeWidth' | 'strokeMargin' | 'paddingX' | 'paddingY' | 'glow' | 'halo' | 'accent' | 'accentSize'
   | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
 
 /**
@@ -151,6 +155,7 @@ const getPanelLayout = (props: LayoutProps): Omit<BlockLayout, 'ornamentLayout'>
     radius: props.radius,
     shape: props.shape,
     strokeWidth: props.strokeWidth,
+    strokeMargin: props.strokeMargin,
     padding: {x: props.paddingX, y: props.paddingY},
     glow: props.glow,
     halo: props.halo,
@@ -188,6 +193,7 @@ const getPanelLayout = (props: LayoutProps): Omit<BlockLayout, 'ornamentLayout'>
 export const blockLoopSchema = blockFields.superRefine((props, context) => {
   refineCanvas(props, context);
   if (!refineShape(props, ROUND_SIZES, context)) return;
+  refineStrokeMargin(props, context);
   const layout = getBlockLayout(props);
   refineOutset(props, layout.outset, context);
   refineContent(layout, context);
@@ -213,6 +219,8 @@ export type BlockLayers = {
   ornamentBack: OrnamentElement[];
   fill: FillElement[];
   accent: (RectElement | ArcElement | SheenElement)[];
+  /** The flat band outside the outline (strokeMargin); empty while it is off. */
+  margin: MarginElement[];
   rim: RimElement[];
   stroke: StrokeElement[];
   glow: GlowElement[];
@@ -314,6 +322,7 @@ export const getBlockLayers = (props: BlockLoopProps, frame: number, durationInF
     ornamentBack: ornaments.back,
     fill: buildFillScene(props, layout.box, frame, durationInFrames, fillOptions(layout)),
     accent: buildAccentScene(props, layout, frame, durationInFrames),
+    margin: buildMarginScene(props),
     // Half a pixel inside the stroke, so the 1 px line sits right against its inner edge.
     rim: buildRimScene(props, offsetRoundRect(layout.inner, -0.5)),
     stroke: buildStrokeScene(props, layout.track, frame, durationInFrames, {trackOpacity: props.trackOpacity}),
@@ -328,8 +337,8 @@ export const getBlockLayers = (props: BlockLoopProps, frame: number, durationInF
  * that moves. Nothing in it jumps at the seam, so the kind needs no seamExempt.
  */
 export const getBlockScene = (props: BlockLoopProps, frame: number, durationInFrames: number) => {
-  const {halo, ornamentBack, fill, accent, rim, stroke, glow, ornamentFront, flash} = getBlockLayers(props, frame, durationInFrames);
-  return [...halo, ...ornamentBack, ...fill, ...accent, ...rim, ...stroke, ...glow, ...ornamentFront, ...flash];
+  const {halo, ornamentBack, fill, accent, margin, rim, stroke, glow, ornamentFront, flash} = getBlockLayers(props, frame, durationInFrames);
+  return [...halo, ...ornamentBack, ...fill, ...accent, ...margin, ...rim, ...stroke, ...glow, ...ornamentFront, ...flash];
 };
 
 /** The accent's clip: the inside of the stroke for a bar (it follows the round corners), the arc itself on a circle. */
@@ -339,7 +348,7 @@ const accentClip = (layout: BlockLayout): ClipShape =>
 /**
  * One frame, without Remotion hooks, so tests can render it. Layers, bottom to top: halo (kept
  * outside the panel), back ornaments (hidden by the panel), fill (clipped to the panel), accent
- * (see accentClip), rim light, stroke with its glow, front ornaments, lightning flash, then the
+ * (see accentClip), margin band, rim light, stroke with its glow, front ornaments, lightning flash, then the
  * Studio guides.
  */
 export const BlockFrame = ({props, frame, durationInFrames}: {
@@ -354,6 +363,7 @@ export const BlockFrame = ({props, frame, durationInFrames}: {
       <OrnamentLayer elements={layers.ornamentBack} layout={layout.ornamentLayout} style={props} layer="back" />
       <FillLayer elements={layers.fill} clip={layout.shape} />
       {layers.accent.length > 0 ? <FillLayer elements={layers.accent} clip={accentClip(layout)} name="accent" /> : null}
+      <MarginLayer elements={layers.margin} layout={layout} />
       <RimLayer elements={layers.rim} />
       <StrokeLayer elements={[...layers.stroke, ...layers.glow]} tracks={[layout.track]} core={props.strokeCore} sides={props.strokeSides} />
       <OrnamentLayer elements={layers.ornamentFront} layout={layout.ornamentLayout} style={props} layer="front" />

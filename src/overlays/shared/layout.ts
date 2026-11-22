@@ -21,6 +21,8 @@ export type PanelLayoutInput = {
   shape?: PanelShape;
   /** The stroke sits inside the box edge: its outer edge is the box edge. 0 = no stroke. */
   strokeWidth: number;
+  /** A band left between the box edge and the stroke, in px: stroke and content move inwards by it (strokeMargin). */
+  strokeMargin?: number;
   /** Space between the inside of the stroke and the content, in px (one value or per axis). */
   padding: number | {x: number; y: number};
   /** Reach of the stroke's glow, outwards from the box edge (and inwards over the fill). */
@@ -53,14 +55,16 @@ export type PanelLayout = AssetLayout & {
  * The single source of truth for a panel's geometry, in canvas pixels. The stroke is drawn inside
  * the box, so a 2 px stroke on a 640 px card leaves the card 640 px wide; its glow and the halo
  * are what reach into the bleed. The content keeps clear of the stroke, the padding, the kind's
- * insets and the round corners, and is whole pixels.
+ * insets and the round corners, and is whole pixels. A `strokeMargin` moves the stroke and all
+ * that is inside it inwards by that much; the shape and the outset stay those of the box.
  */
 export const layoutPanel = (input: PanelLayoutInput): PanelLayout => {
   const {canvas, box} = getBoxCanvas(input);
   const shape = roundRect(box, shapeRadius({shape: input.shape ?? 'rectangle', radius: input.radius, width: box.width, height: box.height}));
   const strokeWidth = Math.min(input.strokeWidth, Math.min(box.width, box.height) / 2);
-  const track = offsetRoundRect(shape, -strokeWidth / 2);
-  const inner = offsetRoundRect(shape, -strokeWidth);
+  const margin = input.strokeMargin ?? 0;
+  const track = offsetRoundRect(shape, -(margin + strokeWidth / 2));
+  const inner = offsetRoundRect(shape, -(margin + strokeWidth));
   const padding = typeof input.padding === 'number' ? {x: input.padding, y: input.padding} : input.padding;
   const extra = input.insets ?? {};
   const content = fitContent(inner, {

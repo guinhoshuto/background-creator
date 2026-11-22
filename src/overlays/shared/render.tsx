@@ -11,7 +11,7 @@ import type {
 import {FOG_SHAPE} from './fills';
 import type {StrokeSides} from './fields';
 import {arcBandPath, isCircle, rectPath, roundRectPath, svgNumber, type RoundRect} from './geometry';
-import type {FrameLayout} from './layout';
+import type {FrameLayout, PanelLayout} from './layout';
 import {perimeterPath, pointAt} from './perimeter';
 
 /**
@@ -22,7 +22,7 @@ import {perimeterPath, pointAt} from './perimeter';
  *
  * Layering, bottom to top (a kind composes these itself):
  *   1. HaloLayer (outer halo, kept outside the panel)
- *   2. FillLayer (clipped to the panel)
+ *   2. FillLayer (clipped to the panel), then MarginLayer (the band outside the outline, chat and block)
  *   3. kind decorations under the stroke (accent bar, chat header…)
  *   4. StrokeLayer: its glow, then the sharp stroke (children render inside both)
  *   5. kind decorations over the stroke (corner brackets, jewels…)
@@ -448,6 +448,34 @@ const openSidesClip = (track: RoundRect, elements: readonly (StrokeElement | Glo
   const half = widest / 2 + 1;
   const reach = {x: track.x - widest - 2, width: track.width + 2 * widest + 4};
   return rectPath({...reach, y: track.y - half, height: 2 * half}) + rectPath({...reach, y: track.y + track.height - half, height: 2 * half});
+};
+
+/**
+ * The flat band between the edge of a panel and its outline (strokeMargin): one element while the
+ * band is on, none while it is off. It never moves, and it is not part of the stroke: the glow
+ * blurs the outline alone.
+ */
+export type MarginElement = {type: 'margin'; color: string; opacity: number};
+
+export const buildMarginScene = (style: {strokeMargin: number; strokeMarginColor: string}): MarginElement[] => {
+  if (!(style.strokeMargin > 0)) return [];
+  return [{type: 'margin', color: style.strokeMarginColor, opacity: 1}];
+};
+
+/**
+ * The margin band, over the fill and under the rim light and the stroke: a flat ring from the
+ * panel's edge to the middle of the stroke (the layout's track), so the stroke's own antialiased
+ * outer edge lies over the band and no fill shows between the two.
+ */
+export const MarginLayer = ({elements, layout, name = 'margin'}: {elements: readonly MarginElement[]; layout: PanelLayout; name?: string}) => {
+  const {idPrefix} = useStage();
+  const band = elements[0];
+  if (!band) return null;
+  return (
+    <g>
+      <path id={`${idPrefix}-${name}`} d={roundRectPath(layout.shape) + roundRectPath(layout.track)} fillRule="evenodd" fill={band.color} />
+    </g>
+  );
 };
 
 /** The rim light (see buildRimScene), drawn over the fill and under the stroke. */

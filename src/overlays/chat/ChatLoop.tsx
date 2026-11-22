@@ -3,13 +3,13 @@ import {useCurrentFrame, useVideoConfig} from 'remotion';
 import {z} from 'zod';
 import {getSize} from '../../sizes';
 import {
-  FillLayer, HaloLayer, MAX_CONTENT_OPACITY, OverlayCanvas, RimLayer, StrokeLayer, buildFillScene, buildGlowScene, buildHaloScene,
-  buildRimScene, buildStrokeScene, fillFields, fitClearContent, glowFields, glowOverArea, haloFields, layoutPanel, offsetRoundRect,
+  FillLayer, HaloLayer, MAX_CONTENT_OPACITY, MarginLayer, OverlayCanvas, RimLayer, StrokeLayer, buildFillScene, buildGlowScene, buildHaloScene,
+  buildMarginScene, buildRimScene, buildStrokeScene, fillFields, fitClearContent, glowFields, glowOverArea, haloFields, layoutPanel, offsetRoundRect,
   overlayBaseFields, paddingField, radiusField, rimLightField, rectPath, refineCanvas, refineContent, refineFill, refineOutset, refineRim, refineStroke, reportSpeed, roundRectPath,
   strokeFields, strokeSidesField, trackOpacityField, useStage, getFillMotion, getStrokeMotion, type AssetMotion, type FillElement, type FillOptions, type GlowElement, type GlowSource, type HaloElement,
   type PanelLayout, type Rect, type RimElement, type RoundRect, type StrokeElement, type StrokeOptions,
   FLASH_PANEL_PEAK, FlashLayer, OrnamentLayer, buildFlashScene, buildOrnamentScene, layoutOrnaments, layoutOutset, ornamentFields, panelOrnamentFrame,
-  refineLightning, refineOrnaments, type FlashElement, type OrnamentElement, type OrnamentLayout,
+  refineLightning, refineOrnaments, refineStrokeMargin, strokeMarginFields, type FlashElement, type MarginElement, type OrnamentElement, type OrnamentLayout,
 } from '../shared';
 
 /**
@@ -50,6 +50,7 @@ const chatFields = z.object({
   // The same prop as block and border, so a theme's outline reads as one family across its kinds.
   trackOpacity: trackOpacityField(0.45),
   strokeSides: strokeSidesField(),
+  ...strokeMarginFields(),
   ...glowFields({glow: 20, glowPulses: 1, glowStrength: 3}),
   ...haloFields({halo: 24, haloColor: '#A855F7'}),
   rimLight: rimLightField(0),
@@ -116,7 +117,7 @@ export type ChatLayout = PanelLayout & {
 };
 
 type LayoutProps = Pick<ChatLoopProps,
-  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'strokeSides' | 'glow' | 'halo' | 'headerHeight' | 'headerLineWidth'
+  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'strokeSides' | 'strokeMargin' | 'glow' | 'halo' | 'headerHeight' | 'headerLineWidth'
   | 'footerHeight' | 'footerLineWidth' | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
 
 /**
@@ -255,6 +256,7 @@ const refineLegibility = (props: ChatLoopProps, layout: ChatLayout, context: z.R
  */
 export const chatLoopSchema = chatFields.superRefine((props, context) => {
   refineCanvas(props, context);
+  refineStrokeMargin(props, context);
   const layout = getChatLayout(props);
   refineOutset(props, layout.outset, context);
   refineChatContent(props, layout, context);
@@ -291,6 +293,8 @@ export type ChatLayers = {
   ornamentBack: OrnamentElement[];
   fill: FillElement[];
   header: ChatHeaderElement[];
+  /** The flat band outside the outline (strokeMargin); empty while it is off. */
+  margin: MarginElement[];
   rim: RimElement[];
   stroke: (StrokeElement | GlowElement)[];
   divider: ChatDividerElement[];
@@ -334,6 +338,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
     ornamentBack: ornaments.back,
     fill: buildFillScene(props, layout.box, frame, durationInFrames, fillOptions(layout)),
     header,
+    margin: buildMarginScene(props),
     // Half a pixel inside the stroke, so the 1 px line sits right against its inner edge.
     rim: buildRimScene(props, offsetRoundRect(layout.inner, -0.5)),
     stroke: [
@@ -348,7 +353,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
 
 /**
  * Every animated value of the panel, as a flat list of plain elements listed by place (see the
- * engine's builders): halo, back ornaments, fill, header band, rim light, stroke with its glow, divider,
+ * engine's builders): halo, back ornaments, fill, header band, margin band, rim light, stroke with its glow, divider,
  * front ornaments, lightning flash. Pure: the frame,
  * the props and the seed decide it all, and nothing here jumps at the seam, so the generic scans
  * need no exemption.
@@ -356,7 +361,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
 export const getChatScene = (props: ChatLoopProps, frame: number, durationInFrames: number) => {
   const layers = getChatLayers(props, frame, durationInFrames);
   return [
-    ...layers.halo, ...layers.ornamentBack, ...layers.fill, ...layers.header, ...layers.rim, ...layers.stroke, ...layers.divider,
+    ...layers.halo, ...layers.ornamentBack, ...layers.fill, ...layers.header, ...layers.margin, ...layers.rim, ...layers.stroke, ...layers.divider,
     ...layers.ornamentFront, ...layers.flash,
   ];
 };
@@ -426,6 +431,7 @@ export const ChatFrame = ({props, frame, durationInFrames}: {props: ChatLoopProp
       <OrnamentLayer elements={layers.ornamentBack} layout={layout.ornamentLayout} style={props} layer="back" />
       <FillLayer elements={layers.fill} clip={layout.shape} />
       <HeaderLayer elements={layers.header} layout={layout} />
+      <MarginLayer elements={layers.margin} layout={layout} />
       <RimLayer elements={layers.rim} />
       <StrokeLayer elements={layers.stroke} tracks={[layout.track]} core={props.strokeCore} sides={props.strokeSides}>
         <Dividers elements={layers.divider} layout={layout} />

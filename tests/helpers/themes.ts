@@ -53,6 +53,16 @@ export const STATIC_ONLY: Readonly<Partial<Record<KitTheme, readonly string[]>>>
 export const isStaticOnly = (pack: string, composition: string): boolean =>
   (STATIC_ONLY[pack as KitTheme] ?? []).includes(composition);
 
+/**
+ * Chat presets whose outline is not the kind's 2–3 px: the exact weight, per theme, each with its
+ * owner and date. Empty until a theme asks for one; a new line needs the owner's yes.
+ */
+export const CHAT_STROKE_WIDTHS: Readonly<Partial<Record<KitTheme, number>>> = {};
+
+/** The kind's stroke weight: 2–3 px, or exactly the weight the theme's exception names. */
+export const chatStrokeWidthFits = (width: number, exact?: number): boolean =>
+  (exact === undefined ? width >= 2 && width <= 3 : width === exact);
+
 /** WebMs a kit drops for its static-only compositions: chat 5 + 5 sizes, borders 9 + 11 (with and without ornaments). */
 export const droppedWebms = (pack: string): number =>
   (STATIC_ONLY[pack as KitTheme] ?? []).reduce((sum, composition) => sum + ({ChatLoop: 5 + 5, BorderLoop: 9 + 11}[composition] ?? 0), 0);

@@ -16,7 +16,7 @@ import {bruteGlowAt, cornersOf} from './helpers/glow-brute';
 import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './helpers/scene-scans';
-import {OVERLAY_THEMES} from './helpers/themes';
+import {CHAT_STROKE_WIDTHS, OVERLAY_THEMES, chatStrokeWidthFits, type KitTheme} from './helpers/themes';
 import {rootDefaultProps} from './helpers/find-composition';
 import {RemotionRoot} from '../src/Root';
 
@@ -381,10 +381,10 @@ test('Presets: cada tema passa no schema estrito, sem tamanho, e o padrão é o 
   const neon = parse(PRESETS.neon);
   const defaults = parse({});
   assert.deepEqual({...neon, seed: defaults.seed}, defaults);
-  // One family: the kind's stroke weight (2–3 px) and the theme palettes.
+  // One family: the kind's stroke weight (2–3 px, or the exact weight a theme's named exception gives) and the theme palettes.
   for (const theme of THEMES) {
     const props = parse(PRESETS[theme]);
-    assert.ok(props.strokeWidth >= 2 && props.strokeWidth <= 3, theme);
+    assert.ok(chatStrokeWidthFits(props.strokeWidth, CHAT_STROKE_WIDTHS[theme as KitTheme]), theme);
   }
   assert.deepEqual(parse(PRESETS.halloween).strokeColors.slice(0, 2), ['#F97316', '#A855F7']);
   assert.deepEqual(parse(PRESETS.pastel).strokeColors, ['#F48FB8', '#6FCDB8', '#FFBA70']);

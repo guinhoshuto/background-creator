@@ -28,6 +28,8 @@ The three overlays share the vocabulary below, plus `durationSeconds`, `seed`, `
 | `strokeCore` | 0–1 | Bright core in the middle of the stroke, as in a neon tube (strokes of 2.5 px or more) |
 | `trackOpacity` | 0–1 | `dashes` and `comets`: the whole stroke, dimmed, under them, in the first color |
 | `strokeSides` | `all`, `top-bottom` (`all`) | Chat and block: draw the outline on all four sides, or only its top and bottom lines (the sides stay open, as a terminal's rules above and below the text). The motion along the outline is the same; a circle keeps its whole outline |
+| `strokeMargin` | 0–32 px (0) | Chat and block: width of a flat band between the edge of the box and the outline; the outline and the content move inwards by it and the box keeps its size. Refused with `strokeSides: top-bottom` |
+| `strokeMarginColor` | color (`#FFFFFF`) | Chat and block: color of that band |
 | `glow` | 0–128 px | Reach of the stroke glow; outside the box, it must fit in the bleed; at 0, the ornaments (`ornaments`) are unlit and `cobweb` loses the moonlight, the ember and the spider |
 | `glowPulses` | 0–16 | How many times the glow pulses per cycle; 0 keeps it constant |
 | `glowStrength` | 0.25–3 | Multiplies the glow opacity without changing its reach |

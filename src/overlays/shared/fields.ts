@@ -152,6 +152,32 @@ export const strokeSidesField = () => z.enum(STROKE_SIDES)
   .describe('Outline sides: all, or top-bottom (only the lines above and below; the sides stay open; a circle keeps its whole outline)')
   .default('all');
 
+/**
+ * A flat band between the edge of the panel and its outline (chat, block): the outline and
+ * everything inside it move inwards by `strokeMargin`, the box keeps its size, so nothing new
+ * reaches the bleed. Off by default: at 0 the outline sits on the edge, as it always has. Borders
+ * have no such field: their band already holds a line in its middle (thickness, strokeWidth).
+ */
+export const strokeMarginFields = () => ({
+  strokeMargin: z.number().finite().min(0).max(32)
+    .describe('Width of a flat band between the edge of the box and the outline, in px: the outline and the content move inwards by it; 0 = the outline sits on the edge')
+    .default(0),
+  strokeMarginColor: zColor().default('#FFFFFF'),
+});
+
+/**
+ * Refuses the band with open sides: it runs round the whole edge, and with only the top and bottom
+ * lines drawn it would stand alone down the sides, a frame of its own colour around nothing.
+ */
+export const refineStrokeMargin = (props: {strokeMargin: number; strokeSides: StrokeSides}, context: z.RefinementCtx) => {
+  if (!(props.strokeMargin > 0) || props.strokeSides === 'all') return;
+  context.addIssue({
+    code: 'custom',
+    path: ['strokeMargin'],
+    message: 'The margin runs round the whole outline: use strokeSides all, or strokeMargin 0.',
+  });
+};
+
 export const trackOpacityField = (defaultValue = 0.3) => z.number().finite().min(0).max(1)
   .describe('dashes and comets: opacity of the whole dimmed outline underneath them, in the first color; 0 draws nothing')
   .default(defaultValue);
