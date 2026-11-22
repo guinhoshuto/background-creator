@@ -2,6 +2,8 @@
 
 Controls shared by the three overlays, the controls of each one, the themed ornaments and the themes. Sizes and the box model are in [Asset kinds and sizes](asset-kinds-and-sizes.md).
 
+The loose stickers (`StickerLoop`, the `sticker` kind) draw the Sticker Pop ornament glyph alone on a fixed 304×304 square, with `motif` (`star`, `sparkle`, `bolt`), `fill`, `ink`, `rimColor` and `rim` (0–8 px, inside the 256 px); they have no box, no seed and none of the controls below.
+
 ## Controls
 
 The three overlays share the vocabulary below, plus `durationSeconds`, `seed`, `transparent`, `backgroundColor`, `outputFormat`, `width`, `height`, `bleed`, `guides` and `radius` (0–1920 px). Every measure is in fixed pixels. Each composition's initial values make up the neon look; the [themes](#themes) bring the others.

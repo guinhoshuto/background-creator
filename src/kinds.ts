@@ -1,10 +1,11 @@
 import type {OutputFormat} from './settings';
 
 /**
- * Every asset kind the studio produces; backgrounds are the original 1920×1080 loops, and
- * vertical overlays fill a whole 1080×1920 portrait screen (mobile live streams) around windows.
+ * Every asset kind the studio produces; backgrounds are the original 1920×1080 loops, vertical
+ * overlays fill a whole 1080×1920 portrait screen (mobile live streams) around windows, and
+ * stickers are one loose animated sticker centred on a 304×304 transparent square.
  */
-export const ASSET_KINDS = ['background', 'chat', 'block', 'border', 'vertical'] as const;
+export const ASSET_KINDS = ['background', 'chat', 'block', 'border', 'vertical', 'sticker'] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 
 /** Kinds whose box size comes from props (named sizes or free even sizes). */
@@ -47,6 +48,12 @@ export const kindPolicies: Record<AssetKind, KindPolicy> = {
   vertical: {
     kind: 'vertical', folder: 'vertical', label: 'Vertical overlays',
     fixedSize: {width: 1080, height: 1920}, defaultSizeId: 'live-frame', transparent: true, format: 'webm',
+  },
+  // One sticker, 256 px tall at rest, on a square that holds its largest pose at any turn
+  // (src/overlays/stickers/StickerLoop.tsx); like the vertical kind, its one size only names the file.
+  sticker: {
+    kind: 'sticker', folder: 'stickers', label: 'Stickers',
+    fixedSize: {width: 304, height: 304}, defaultSizeId: 'sticker', transparent: true, format: 'webm',
   },
 };
 

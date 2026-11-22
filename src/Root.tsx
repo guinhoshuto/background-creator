@@ -4,6 +4,7 @@ import {kindPolicies} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
 import {getCompositionMetadata, getExportPreset, type BaseBackgroundProps} from './settings';
 import {assetFileStem} from './sizes';
+import {STICKER_CANVAS} from './overlays/stickers/StickerLoop';
 import {VERTICAL_CANVAS} from './overlays/vertical/zones';
 
 const gradient = backgroundCatalog.GradientLoop;
@@ -35,6 +36,8 @@ const safeZoneGuide = overlayCatalog.SafeZoneGuide;
 const liveUiMock = overlayCatalog.LiveUiMock;
 const feedUiMock = overlayCatalog.FeedUiMock;
 const vertical = {...VERTICAL_CANVAS};
+const stickerLoop = overlayCatalog.StickerLoop;
+const stickerCanvas = {...STICKER_CANVAS};
 
 type MetadataProps = Pick<BaseBackgroundProps, 'durationSeconds' | 'outputFormat' | 'transparent'>
   & {width?: number; height?: number; bleed?: number};
@@ -45,7 +48,7 @@ const metadataFor = <Props extends MetadataProps>(id: string, props: Props) => {
   const preset = getExportPreset(props);
   // The layout is the single source of truth for the file size, so its sidecar can never disagree.
   // Without one, sized kinds fall back to the box plus the bleed on every side. A kind of fixed size
-  // gets the 1920×1080 default here: the vertical Folder spreads its own canvas over the result.
+  // gets the 1920×1080 default here: the vertical and sticker Folders spread their own canvas over the result.
   const canvas = getLayoutOf(asset)?.(props).canvas ?? (props.width === undefined || props.height === undefined
     ? undefined
     : getBoxCanvas({width: props.width, height: props.height, bleed: props.bleed ?? 0}).canvas);
@@ -347,6 +350,17 @@ export const RemotionRoot = () => (
         defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"captionLines":2}}
         {...getCompositionMetadata(feedUiMock.defaultProps, vertical)}
         calculateMetadata={({props}: {props: typeof feedUiMock.defaultProps}) => ({...metadataFor(feedUiMock.id, feedUiMock.schema.parse(props)), ...vertical})}
+      />
+    </Folder>
+    {/* Loose stickers: the kind's fixed 304×304 square, passed explicitly like the vertical canvas. */}
+    <Folder name={kindPolicies.sticker.folder}>
+      <Composition
+        id="StickerLoop"
+        component={stickerLoop.component}
+        schema={stickerLoop.schema}
+        defaultProps={{"durationSeconds":12,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"motif":"star" as const,"fill":"#F4A66C","ink":"#4A3A69","rimColor":"#F6E2E4","rim":4}}
+        {...getCompositionMetadata(stickerLoop.defaultProps, stickerCanvas)}
+        calculateMetadata={({props}: {props: typeof stickerLoop.defaultProps}) => ({...metadataFor(stickerLoop.id, stickerLoop.schema.parse(props)), ...stickerCanvas})}
       />
     </Folder>
   </>

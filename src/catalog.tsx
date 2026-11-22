@@ -25,6 +25,7 @@ import {borderCatalogEntry} from './overlays/border';
 import {chatCatalogEntry} from './overlays/chat';
 import type {AssetLayout} from './overlays/shared/box';
 import type {AssetMotion} from './overlays/shared/motion';
+import {stickerCatalogEntry} from './overlays/stickers';
 import {
   feedUiMockCatalogEntry, liveFrameCatalogEntry, liveUiMockCatalogEntry, safeZoneGuideCatalogEntry,
 } from './overlays/vertical';
@@ -216,7 +217,8 @@ export type Background = (typeof backgroundCatalog)[BackgroundId];
 
 /**
  * The overlay kinds: one parametric composition per sized kind; the vertical kind (fixed
- * 1080×1920) has its frame, its safe-zone guide and two QA-only interface mocks.
+ * 1080×1920) has its frame, its safe-zone guide and two QA-only interface mocks; the sticker kind
+ * (fixed 304×304) has one loose sticker.
  */
 export const overlayCatalog = {
   ChatLoop: chatCatalogEntry,
@@ -226,6 +228,7 @@ export const overlayCatalog = {
   SafeZoneGuide: safeZoneGuideCatalogEntry,
   LiveUiMock: liveUiMockCatalogEntry,
   FeedUiMock: feedUiMockCatalogEntry,
+  StickerLoop: stickerCatalogEntry,
 } as const satisfies Record<string, CatalogEntry>;
 
 /** Every composition of every kind: the backgrounds, then the overlays. */

@@ -70,6 +70,8 @@ const NAMED_SIZE_TABLE = [
   // vertical: the kind's fixed canvas, so the size only tags the file. Provisional id: it reaches
   // buyers, so it goes on the direction sheet for the owner's yes before any pack ships it.
   {id: 'live-frame', kind: 'vertical', label: 'Live frame', use: 'full 1080×1920 frame for mobile live streams, with transparent windows', width: 1080, height: 1920, bleed: 0},
+  // sticker: the kind's fixed canvas, so the size only tags the file, like live-frame.
+  {id: 'sticker', kind: 'sticker', label: 'Sticker', use: 'loose animated sticker, 256 px tall at rest, centred on a transparent square', width: 304, height: 304, bleed: 0},
 ] as const satisfies readonly NamedSize[];
 
 export const NAMED_SIZES: readonly NamedSize[] = NAMED_SIZE_TABLE;

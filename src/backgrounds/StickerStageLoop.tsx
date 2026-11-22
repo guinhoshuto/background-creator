@@ -14,7 +14,7 @@ import {z} from 'zod';
 import {createSeededRandom} from '../loop';
 import {svgNumber} from '../overlays/shared/geometry';
 import {STICKER_CREAM, StickerGlyph} from '../overlays/shared/ornaments/sets/sticker';
-import {MOTIF_TILT} from '../overlays/shared/ornaments/sets/sticker-motifs';
+import {MOTIF_TILT, stickerLine} from '../overlays/shared/ornaments/sets/sticker-motifs';
 import {STICKER_POSES, stickerPoseAt, type StickerMotif} from '../overlays/shared/ornaments/sets/sticker-steps';
 import {baseBackgroundSchema, hasTransparentBackground} from '../settings';
 import {Canvas} from './Canvas';
@@ -71,8 +71,8 @@ export const SCATTER: readonly StickerStageEntry[] = [
   ['bolt', 52, 60, 1000, 2], ['sparkle', 56, 90, 80, 3],
 ];
 
-/** The mock's line: 3 px below 64 px, 4 below 120, 6 from there (a background constant, not the kit's lineOf). */
-export const stageLine = (size: number) => (size < 64 ? 3 : size < 120 ? 4 : 6);
+/** The mock's line: 3 px below 64 px, 4 below 120, 6 from there (stickerLine, shared with the sticker kind; not the kit's lineOf). */
+export const stageLine = stickerLine;
 
 /** The Sticker Pop paper sunburst (presets/sticker-pop.json, the kit's background), under the stickers with backdrop paper. */
 export const PAPER_BURST = {

@@ -40,6 +40,12 @@ export const LINE_THICK = 3;
 /** The line of a motif of `size` px. */
 export const lineOf = (size: number) => (size < LINE_STEP ? LINE_THIN : LINE_THICK);
 
+/**
+ * The approved mock's line for a loose sticker or a background one: 3 px below 64 px, 4 below 120,
+ * 6 from there (the stage's and the sticker kind's, not the kit's lineOf).
+ */
+export const stickerLine = (size: number) => (size < 64 ? 3 : size < 120 ? 4 : 6);
+
 /** The shape's vertices round its centre before the tilt; `h` is the height of the line's path. */
 export const motifPoints = (motif: StickerMotif, h: number): [number, number][] => {
   const r = h / 2;
@@ -64,9 +70,13 @@ export const SPAN: Record<StickerMotif, number> = {
 /** The height of the line's path of a motif of `size` px at rest. */
 export const shapeHeight = (size: number, rim: number) => size - lineOf(size) - 2 * rim;
 
-/** How far a motif of `size` reaches from its centre at a pose `scale` (any turn). */
+/** How far a motif of `size` drawn with a `line` px line reaches from its centre at a pose `scale` (any turn). */
+export const reachWithLine = (motif: StickerMotif, size: number, line: number, rim: number, scale: number) =>
+  SPAN[motif] * scale * (size - line - 2 * rim) + line / 2 + rim;
+
+/** How far a motif of `size` reaches from its centre at a pose `scale` (any turn), with the kit's line. */
 export const reachOf = (motif: StickerMotif, size: number, rim: number, scale: number) =>
-  SPAN[motif] * scale * shapeHeight(size, rim) + lineOf(size) / 2 + rim;
+  reachWithLine(motif, size, lineOf(size), rim, scale);
 
 /** The extent of a motif of `size`: its reach at the table's largest scale. */
 export const extentOf = (motif: StickerMotif, size: number, rim: number) => reachOf(motif, size, rim, maxPoseScale(motif));

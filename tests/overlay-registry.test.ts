@@ -21,6 +21,7 @@ const overlays = Object.values(overlayCatalog);
 /** The kinds whose box comes from props; the vertical kind (fixed 1080×1920) has its own test below. */
 const sized = overlays.filter((entry) => kindPolicies[entry.kind].fixedSize === null);
 const verticals = overlays.filter((entry) => entry.kind === 'vertical');
+const stickers = overlays.filter((entry) => entry.kind === 'sticker');
 const THEMES = OVERLAY_THEMES;
 const PRESET_PREFIX = {chat: 'chat', block: 'block', border: 'border'} as const;
 
@@ -40,6 +41,7 @@ test('overlays: o catálogo registra chat, bloco e borda com layout e o tipo de 
   assert.deepEqual(overlays.map((entry) => [entry.id, entry.kind]), [
     ['ChatLoop', 'chat'], ['BlockLoop', 'block'], ['BorderLoop', 'border'],
     ['LiveFrameLoop', 'vertical'], ['SafeZoneGuide', 'vertical'], ['LiveUiMock', 'vertical'], ['FeedUiMock', 'vertical'],
+    ['StickerLoop', 'sticker'],
   ]);
   for (const entry of sized) {
     assert.ok(getLayoutOf(entry), `${entry.id}: sem getLayout o export não publica o JSON de posição`);
@@ -131,6 +133,36 @@ test('overlays: o tipo vertical abre em 1080×1920, sem layout de caixa, nomeado
     assert.equal(path.basename(resolved.output), `${entry.id}-live-frame.png`);
     assert.equal(resolved.sidecar, null, `${entry.id}: no box layout, no position JSON`);
     assert.throws(() => expandSize(entry.kind, 'live-frame'), /Vertical overlays have a fixed size \(1080×1920\): --size, --width, --height and --bleed only apply to chat backgrounds, text boxes and borders\./);
+  }
+});
+
+// Dies with: F1-11 (the StickerLoop entry claims the vertical kind, so it opens at 1080×1920).
+test('overlays: o tipo sticker abre em 304×304, sem layout de caixa, nomeado sticker, e recusa --size e --seed', () => {
+  const root = RemotionRoot();
+  assert.deepEqual(stickers.map((entry) => entry.id), ['StickerLoop']);
+  for (const entry of stickers) {
+    assert.equal(getLayoutOf(entry), null, `${entry.id}: the canvas is the kind's, not a box's`);
+    assert.deepEqual(entry.schema.parse({}), entry.defaultProps, entry.id);
+    assert.deepEqual(entry.schema.strict().parse(entry.defaultProps), entry.defaultProps, entry.id);
+    assert.equal(entry.defaultProps.transparent, true, entry.id);
+    assert.equal(entry.defaultProps.outputFormat, 'webm', entry.id);
+    for (const key of ['width', 'height', 'bleed', 'seed']) assert.equal(key in entry.defaultProps, false, `${entry.id}: no ${key}`);
+    const composition = findComposition<Registered>(root, entry.id)!;
+    assert.equal(folderOf(root, entry.id), 'stickers');
+    assert.deepEqual([composition.props.width, composition.props.height], [304, 304], `${entry.id}: Studio size`);
+    for (const outputFormat of ['webm', 'png', 'mp4'] as const) {
+      const metadata = composition.props.calculateMetadata({props: {...entry.defaultProps, outputFormat}});
+      assert.deepEqual([metadata.width, metadata.height], [304, 304], `${entry.id} ${outputFormat}`);
+      assert.equal(metadata.fps, 60, `${entry.id}: the repo's 60 fps`);
+      assert.equal(metadata.durationInFrames, 720, `${entry.id}: 12 s at 60 fps`);
+      assert.equal(metadata.defaultOutName, `${entry.id}-sticker`, 'Remotion appends the extension itself');
+    }
+    const resolved = resolveExport({compositionId: entry.id, format: 'png'});
+    assert.equal(path.basename(resolved.output), `${entry.id}-sticker.png`);
+    assert.equal(resolved.sidecar, null, `${entry.id}: no box layout, no position JSON`);
+    assert.throws(() => expandSize(entry.kind, 'sticker'), /Stickers have a fixed size \(304×304\): --size, --width, --height and --bleed only apply to chat backgrounds, text boxes and borders\./);
+    // Nothing is drawn at random: a seed from the command line is refused, never swallowed.
+    assert.throws(() => entry.schema.strict().parse({...entry.defaultProps, seed: 3}), /seed/);
   }
 });
 
