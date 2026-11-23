@@ -45,6 +45,7 @@ One string is the theme, the pack, the preset suffix and the `KIT_THEMES` entry:
 
 - The overlay presets take the background's `durationSeconds` and `seed`, so they loop in step (`tests/pack.test.ts` pins them).
 - A preset holds no `width`, `height`, `bleed`, `fit` or `guides`, and parses strictly at every size of its kind, alone and merged with each pack item's props.
+- A `stills` job that shows kit pieces outside `qa:kit` (a style sheet, a before/after) passes each piece's pack item props too (`ornamentSize` on the labels, `bleed` and `ornamentScale` on the large frames), as `qa:kit` does: the preset alone draws a piece the pack does not ship. On 2026-11-23 the final page of the Sticker Pop box styles showed 36 px ornaments on the labels, against the 24 the pack ships, until the art review diffed it against the approved sheet.
 - Every kind × size has a travelling stroke or a moving fill within ±35 % of the preset's speed (`tests/speed-consistency.test.ts`); `DOCUMENTED_MINIMUMS` stays empty.
 - Decorative measures are fixed px; ornaments live in the bleed, never over the text area or the window; a motif that does not fit is left out, a hero that fits nowhere refuses the combination with the way out.
 - `place()` is pure and returns fresh arrays; `build()` is cheap per frame (the harness runs every frame and half frame).
