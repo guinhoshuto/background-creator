@@ -39,8 +39,28 @@ export type PresetKind = (typeof PRESET_KINDS)[number];
 /** The themes every overlay, preset and pack test covers. */
 export const OVERLAY_THEMES: readonly OverlayTheme[] = [...CLASSIC_THEMES, ...KIT_THEMES];
 
-/** presets/{chat,block,border}-*.json the file list must hold, sorted: every theme's three presets, exactly. */
-export const expectedPresetFiles = (): string[] => PRESET_KINDS.flatMap((kind) => OVERLAY_THEMES.map((theme) => `${kind}-${theme}.json`)).sort();
+/**
+ * Kits that ship more than their one box style: the extra styles, in pack order, each shipping the kit's
+ * boxes again (chat, block and border, with and without ornaments) from presets/<kind>-<theme>-<style>.json
+ * under the variants `<style>` and `<style>-plain`; the kit's own presets stay the main style, without a
+ * suffix. Each list has its owner and date; a new line needs the owner's yes. A kit outside this list
+ * ships one style.
+ */
+export const KIT_BOX_STYLES: Readonly<Partial<Record<KitTheme, readonly string[]>>> = {
+  // Sticker Pop's Cream Soda (D-04), Fine Line (D-01) and Indigo Pop (D-02), next to Paper Window (owner, 2026-11-22).
+  'sticker-pop': ['cream-soda', 'fine-line', 'indigo-pop'],
+};
+
+/** The box styles a theme ships past its main one (KIT_BOX_STYLES), in pack order; none for the others. */
+export const boxStylesOf = (theme: string): readonly string[] => KIT_BOX_STYLES[theme as KitTheme] ?? [];
+
+/** Every preset name (without `.json`) of one kind and theme: the main `<kind>-<theme>`, then one per box style. */
+export const themePresetNames = (kind: PresetKind, theme: string): string[] =>
+  [`${kind}-${theme}`, ...boxStylesOf(theme).map((style) => `${kind}-${theme}-${style}`)];
+
+/** presets/{chat,block,border}-*.json the file list must hold, sorted: every theme's three presets and its box styles', exactly. */
+export const expectedPresetFiles = (): string[] =>
+  PRESET_KINDS.flatMap((kind) => OVERLAY_THEMES.flatMap((theme) => themePresetNames(kind, theme).map((name) => `${name}.json`))).sort();
 
 /**
  * Overlay compositions a kit ships as a still PNG only, with no WebM: in Haunted Interior the

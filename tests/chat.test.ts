@@ -16,7 +16,7 @@ import {bruteGlowAt, cornersOf} from './helpers/glow-brute';
 import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './helpers/scene-scans';
-import {CHAT_STROKE_WIDTHS, OVERLAY_THEMES, chatStrokeWidthFits, type KitTheme} from './helpers/themes';
+import {CHAT_STROKE_WIDTHS, OVERLAY_THEMES, boxStylesOf, chatStrokeWidthFits, type KitTheme} from './helpers/themes';
 import {rootDefaultProps} from './helpers/find-composition';
 import {RemotionRoot} from '../src/Root';
 
@@ -26,6 +26,10 @@ const readPreset = (theme: string): Record<string, unknown> =>
   JSON.parse(readFileSync(new URL(`../presets/chat-${theme}.json`, import.meta.url), 'utf8')) as Record<string, unknown>;
 
 const PRESETS = Object.fromEntries(THEMES.map((theme) => [theme, readPreset(theme)])) as Record<(typeof THEMES)[number], Record<string, unknown>>;
+
+/** The kits' box styles (KIT_BOX_STYLES), by `<theme>-<style>`: presets/chat-<theme>-<style>.json, shipped beside the theme's own. */
+const STYLE_PRESETS: Record<string, Record<string, unknown>> = Object.fromEntries(THEMES.flatMap((theme) =>
+  boxStylesOf(theme).map((style) => [`${theme}-${style}`, readPreset(`${theme}-${style}`)])));
 
 const CHAT_SIZES = sizesForKind('chat');
 
@@ -44,6 +48,7 @@ const issuesOf = (input: object) => {
 const CASES: {id: string; input: object}[] = [
   {id: 'padrão (neon)', input: {}},
   ...THEMES.map((theme) => ({id: `preset ${theme}`, input: PRESETS[theme]})),
+  ...Object.entries(STYLE_PRESETS).map(([style, input]) => ({id: `preset ${style}`, input})),
   ...CHAT_SIZES.map((size) => ({id: `tamanho ${size.id}`, input: sizeProps(size)})),
   {id: 'sem cabeçalho, formigas', input: {headerHeight: 0, strokeMotion: 'dashes', strokeColors: ['#FFFFFF', '#22D3EE']}},
   {id: 'pílula com cabeçalho, gradiente no contorno', input: {radius: 999, strokeMotion: 'gradient', padding: 24, headerHeight: 64}},
@@ -319,8 +324,9 @@ const render = (input: object, frame = 123) => {
   return renderToStaticMarkup(createElement(ChatFrame, {props, frame, durationInFrames: 480}));
 };
 
+// Dies with (.cache/illustration-inspired-overlay/mutations-boxes-f2.json): F2-2, glow 2 → 0 in chat-sticker-pop-indigo-pop.json.
 test('Render: SVG do tamanho do arquivo, sem blend mode, alpha só nos formatos com alpha', () => {
-  for (const input of [{}, ...Object.values(PRESETS), {headerHeight: 0}, {fill: 'stripes', strokeMotion: 'dashes'}]) {
+  for (const input of [{}, ...Object.values(PRESETS), ...Object.values(STYLE_PRESETS), {headerHeight: 0}, {fill: 'stripes', strokeMotion: 'dashes'}]) {
     const markup = render(input);
     assert.match(markup, /<svg width="464" height="664" viewBox="0 0 464 664"/);
     assert.match(markup, /<filter id="chat-stroke-glow" filterUnits="userSpaceOnUse" x="0" y="0" width="464" height="664"/);
@@ -372,9 +378,9 @@ test('Catálogo: entrada do chat, defaults do schema e o literal do Root', () =>
   assert.equal(chatCatalogEntry.defaultProps.outputFormat, 'webm');
 });
 
+// Dies with (.cache/illustration-inspired-overlay/mutations-boxes-f2.json): F2-1, strokeWidth 3 → 4 in chat-sticker-pop-cream-soda.json.
 test('Presets: cada tema passa no schema estrito, sem tamanho, e o padrão é o neon', () => {
-  for (const theme of THEMES) {
-    const preset = PRESETS[theme];
+  for (const [theme, preset] of [...Object.entries(PRESETS), ...Object.entries(STYLE_PRESETS)]) {
     assert.equal(chatLoopSchema.strict().safeParse(preset).success, true, theme);
     for (const key of ['width', 'height', 'bleed', 'guides']) assert.ok(!(key in preset), `${theme}: sem ${key}`);
   }
@@ -386,6 +392,8 @@ test('Presets: cada tema passa no schema estrito, sem tamanho, e o padrão é o 
     const props = parse(PRESETS[theme]);
     assert.ok(chatStrokeWidthFits(props.strokeWidth, CHAT_STROKE_WIDTHS[theme as KitTheme]), theme);
   }
+  // A box style keeps the kind's 2–3 px: the theme's exception names its main preset only (owner, 2026-11-22: 3 px in each).
+  for (const [style, preset] of Object.entries(STYLE_PRESETS)) assert.ok(chatStrokeWidthFits(parse(preset).strokeWidth), style);
   assert.deepEqual(parse(PRESETS.halloween).strokeColors.slice(0, 2), ['#F97316', '#A855F7']);
   assert.deepEqual(parse(PRESETS.pastel).strokeColors, ['#F48FB8', '#6FCDB8', '#FFBA70']);
   assert.equal(parse(PRESETS.glass).fill, 'glass');

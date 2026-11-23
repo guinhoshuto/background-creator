@@ -14,7 +14,7 @@ import {
 import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './scene-scans';
-import {kitThemeOf} from './themes';
+import {boxStylesOf, kitThemeOf} from './themes';
 
 /**
  * The ornament harness: a set on every kind and named size (plus border radii, small round screen
@@ -490,38 +490,47 @@ export const registerOrnamentHarness = (
     }
   });
 
-  // Kit presets: the theme that wears the set.
+  // Kit presets: the theme that wears the set, then each of its box styles (KIT_BOX_STYLES), whose presets
+  // presets/<kind>-<theme>-<style>.json ship in the same pack items as the theme's own (the same item props).
   const theme = kitThemeOf(set);
   for (const kindName of kinds) {
     const adapter = ORNAMENT_KINDS[kindName];
-    test(`ornaments kit [${theme}] [${set}] ${kindName}: o preset põe o motivo principal em todo tamanho, com os mesmos limites`, () => {
-      const preset = adapter.preset(theme);
-      const props = adapter.parse(preset);
-      assert.equal(props.ornaments, set, `${theme}: ornaments ${set}`);
-      if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'none', `${theme}: com enfeites, corners none`);
-      for (const size of adapter.sizes) {
-        checkCase(adapter, set, `[${theme}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
-        // And as the pack renders it, where its item adds props (the screens' band, the Twitch panel's padding).
-        if (Object.keys(packItemProps(theme, size.id)).length > 0) {
-          checkCase(adapter, set, `[${theme}] ${kindName} ${size.id} pack`, kitProps(theme, size), {mustFit: true});
+    for (const look of [theme, ...boxStylesOf(theme).map((style) => `${theme}-${style}`)]) {
+      // A style at a named size as the pack renders it: kitProps with the style's preset, since its items
+      // repeat the theme's item props (tests/pack.test.ts, the KIT_BOX_STYLES test).
+      const styleProps = (size: (typeof adapter.sizes)[number]) => {
+        const item = packItemProps(theme, size.id);
+        return {...adapter.preset(look), ...item, ...sizeProps(size), ...(item.bleed === undefined ? {} : {bleed: item.bleed})};
+      };
+      test(`ornaments kit [${look}] [${set}] ${kindName}: o preset põe o motivo principal em todo tamanho, com os mesmos limites`, () => {
+        const preset = adapter.preset(look);
+        const props = adapter.parse(preset);
+        assert.equal(props.ornaments, set, `${look}: ornaments ${set}`);
+        if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'none', `${look}: com enfeites, corners none`);
+        for (const size of adapter.sizes) {
+          checkCase(adapter, set, `[${look}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
+          // And as the pack renders it, where its item adds props (the screens' band, the Twitch panel's padding).
+          if (Object.keys(packItemProps(theme, size.id)).length > 0) {
+            checkCase(adapter, set, `[${look}] ${kindName} ${size.id} pack`, look === theme ? kitProps(theme, size) : styleProps(size), {mustFit: true});
+          }
         }
-      }
-    });
+      });
 
-    test(`ornaments kit [${theme}] [${set}] ${kindName}: varreduras genéricas e markup do preset`, () => {
-      const preset = adapter.preset(theme);
-      for (const input of [{}, sizeProps(roundSize(adapter))]) {
-        const base = {...preset, ...input};
-        const id = `[${theme}] ${kindName} ${JSON.stringify(input)}`;
-        const sample = scanSampler(adapter, base);
-        assertDeterministic(id, sample);
-        assertPeriodic(id, sample);
-        assertSeamVelocity(id, sample);
-        assertValidElements(id, sample);
-        const props = adapter.parse(base);
-        for (const at of [0, 123]) checkMarkup(`${id} frame ${at}`, adapter, props, adapter.render(props, at));
-        if (props.lightning > 0) checkFlashAlpha(id, adapter, props);
-      }
-    });
+      test(`ornaments kit [${look}] [${set}] ${kindName}: varreduras genéricas e markup do preset`, () => {
+        const preset = adapter.preset(look);
+        for (const input of [{}, sizeProps(roundSize(adapter))]) {
+          const base = {...preset, ...input};
+          const id = `[${look}] ${kindName} ${JSON.stringify(input)}`;
+          const sample = scanSampler(adapter, base);
+          assertDeterministic(id, sample);
+          assertPeriodic(id, sample);
+          assertSeamVelocity(id, sample);
+          assertValidElements(id, sample);
+          const props = adapter.parse(base);
+          for (const at of [0, 123]) checkMarkup(`${id} frame ${at}`, adapter, props, adapter.render(props, at));
+          if (props.lightning > 0) checkFlashAlpha(id, adapter, props);
+        }
+      });
+    }
   }
 };

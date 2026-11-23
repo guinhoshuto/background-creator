@@ -16,7 +16,7 @@ import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {maskGroupsOf} from './helpers/masks';
-import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, droppedWebms, expectedPackFiles, isStaticOnly, type KitTheme} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_BOX_STYLES, KIT_SETS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, boxStylesOf, droppedWebms, expectedPackFiles, isStaticOnly, themePresetNames, type KitTheme} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -715,6 +715,7 @@ const isSticker = (item: {composition: string}) => getAsset(item.composition).ki
 // → cream, its first two backgrounds swapped, its paper-stickers item left out, seed 23 → 24 in
 // sticker-pop-cream-grid.json (the last background), and "variant": "night" on halloween-cobweb's background.
 // Dies with (mutations-stickers-f2.json): F2-6, durationSeconds 12 → 10 in sticker-pop-sticker.json.
+// Dies with (mutations-boxes-f2.json): F2-10, durationSeconds 12 → 10 in chat-sticker-pop-fine-line.json.
 test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed dele', () => {
   for (const theme of KIT_THEMES) {
     const pack = parsePackManifest(readPack(theme));
@@ -729,9 +730,12 @@ test('packs: cada kit traz o seu fundo e os presets seguem a duração e a seed 
       assert.equal(getAsset(composition).kind, 'background', label);
       assert.ok(preset, label);
       const background = getAsset(composition).schema.parse(presetJson(preset)) as {durationSeconds: number; seed: number};
+      // The theme's own presets and its box styles' (KIT_BOX_STYLES), which the buyer lays on the same backgrounds.
       for (const kind of ['chat', 'block', 'border'] as const satisfies readonly AssetKind[]) {
-        const overlay = presetJson(`${kind}-${theme}`);
-        assert.deepEqual([overlay.durationSeconds, overlay.seed], [background.durationSeconds, background.seed], `${label}: ${kind}-${theme}`);
+        for (const name of themePresetNames(kind, theme)) {
+          const overlay = presetJson(name);
+          assert.deepEqual([overlay.durationSeconds, overlay.seed], [background.durationSeconds, background.seed], `${label}: ${name}`);
+        }
       }
     }
     // A sticker has no seed (frame 0 is its rest pose), but it loops with the kit's overlays too.
@@ -793,14 +797,18 @@ test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', 
       for (const key of Object.keys(twitch.props ?? {})) assert.ok(TWITCH_PANEL_KEYS.has(key), `${name}: ${key}`);
       assert.notEqual(twitch.props?.transparent, true, name);
     }
+    // The kit's box styles (KIT_BOX_STYLES) ship as `<style>` and `<style>-plain`, copies of the kit's boxes
+    // that their own test checks below; this one reads the kit's boxes.
+    const styleVariants = new Set(boxStylesOf(name).flatMap((style) => [style, `${style}-plain`]));
+    const ownItems = pack.items.filter((item) => item.variant === undefined || !styleVariants.has(item.variant));
     // The kits' large frames scale their ornaments on a wider bleed (webcam-16x9-lg ×1.5, gameplay ×2);
     // the classic themes have no such items.
-    const scaled = pack.items.filter((item) => item.props?.ornamentScale !== undefined);
+    const scaled = ownItems.filter((item) => item.props?.ornamentScale !== undefined);
     assert.deepEqual(scaled.map((item) => [item.sizes, item.props]), kit ? [
       [['webcam-16x9-lg'], {bleed: 72, ornamentScale: 1.5}], [['gameplay'], {bleed: 96, ornamentScale: 2}],
     ] : [], name);
     // Every size of the kit also ships without ornaments: the preset alone, only ornaments off.
-    const plain = pack.items.filter((item) => item.sizes !== undefined && item.variant !== undefined);
+    const plain = ownItems.filter((item) => item.sizes !== undefined && item.variant !== undefined);
     assert.ok(plain.every((item) => item.variant === 'plain'), name);
     if (kit) {
       for (const kind of ['chat', 'block', 'border'] as const) {
@@ -828,6 +836,40 @@ test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', 
   }
 });
 
+// Dies with (mutations-boxes-f2.json): F2-5, radius 12 → 16 in border-sticker-pop-cream-soda.json; F2-6, the
+// variant fine-line-plain → plain; F2-9, ornaments sticker → none in block-sticker-pop-cream-soda.json; F2-11,
+// the cream-soda chat item's preset → chat-sticker-pop; F2-12, the indigo-pop block's ornamentSize 24 → 36.
+test('packs: o kit sticker-pop traz os estilos de KIT_BOX_STYLES', () => {
+  const boxes = (item: {sizes?: readonly string[]}) => item.sizes !== undefined;
+  for (const theme of KIT_THEMES) {
+    const pack = parsePackManifest(readPack(theme));
+    const styles = KIT_BOX_STYLES[theme] ?? [];
+    // The kit's own boxes (no variant, and plain) are the mould: each style repeats them, item for item and in
+    // the same order, with its preset and its variant, after the kit's boxes; nothing else carries a style's name.
+    const main = pack.items.filter((item) => boxes(item) && (item.variant === undefined || item.variant === 'plain'));
+    const styled = pack.items.filter((item) => boxes(item) && !main.includes(item));
+    assert.deepEqual(styled, styles.flatMap((style) => main.map((item) => ({
+      ...item, preset: `${item.preset}-${style}`, variant: item.variant === 'plain' ? `${style}-plain` : style,
+    }))), theme);
+    assert.ok(pack.items.indexOf(styled[0] ?? main.at(-1)!) >= pack.items.indexOf(main.at(-1)!), `${theme}: os estilos vêm depois das caixas do kit`);
+    // Each style's presets pass the strict schema and wear the kit's ornament set, as the kit's own do.
+    for (const kind of ['chat', 'block', 'border'] as const) {
+      for (const name of themePresetNames(kind, theme)) {
+        const preset = presetJson(name);
+        assert.equal(getAsset(kind === 'chat' ? 'ChatLoop' : kind === 'block' ? 'BlockLoop' : 'BorderLoop').schema.strict().safeParse(preset).success, true, name);
+        assert.equal(preset.ornaments, KIT_SETS[theme], `${name}: o enfeite do kit`);
+      }
+    }
+    // Each style ships the kit's 48 files with ornaments and 52 without, and shares the kit's masks: with the
+    // window radius of the kit's frames, no mask by radius (-mask-radius-) is ever planned.
+    const plan = planPack(pack, realPackDeps);
+    const count = (variant: string | undefined) => plan.filter((file) => file.role !== 'mask' && file.size !== undefined && file.variant === variant).length;
+    for (const style of styles) assert.deepEqual([count(style), count(`${style}-plain`)], [count(undefined), count('plain')], `${theme}/${style}`);
+    if (styles.length > 0) assert.deepEqual([count(undefined), count('plain')], [48, 52], theme);
+    assert.deepEqual(plan.filter((file) => /-mask-radius-/.test(file.output)).map((file) => file.output), [], theme);
+  }
+});
+
 test('packs: os manifestos reais planejam com o catálogo e os presets reais', () => {
   for (const name of PACKS) {
     const pack = parsePackManifest(readPack(name));
@@ -838,9 +880,10 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     // masks of the nine window sizes, one per shape (maskGroupsOf: seven with rounded corners,
     // since the three round webcams share one disc; the two screen frames have none). The kits
     // hold every size twice (with ornaments, screens excepted, and plain), sharing the masks, and
-    // no Twitch panel.
+    // no Twitch panel; each box style (KIT_BOX_STYLES) holds them twice again, on the same masks.
+    // Dies with (mutations-boxes-f2.json): F2-8, 'indigo-pop' left out of KIT_BOX_STYLES.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
-    const sizes = kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1;
+    const sizes = (kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1) * (1 + boxStylesOf(name).length);
     const stills = droppedWebms(name);
     assert.equal(plan.length, 2 * backgrounds + 2 * stickers + 2 * sizes - stills + maskGroupsOf(name).masks.length, name);
     assert.equal(new Set(plan.map((file) => file.output)).size, plan.length);
