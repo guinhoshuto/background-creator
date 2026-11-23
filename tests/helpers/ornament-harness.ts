@@ -495,13 +495,18 @@ export const registerOrnamentHarness = (
   const theme = kitThemeOf(set);
   for (const kindName of kinds) {
     const adapter = ORNAMENT_KINDS[kindName];
-    for (const look of [theme, ...boxStylesOf(theme).map((style) => `${theme}-${style}`)]) {
-      // A style at a named size as the pack renders it: kitProps with the style's preset, since its items
-      // repeat the theme's item props (tests/pack.test.ts, the KIT_BOX_STYLES test).
+    for (const style of [undefined, ...boxStylesOf(theme)]) {
+      const look = style === undefined ? theme : `${theme}-${style}`;
+      // A style at a named size as the pack renders it: the style's preset under the props of its own item
+      // (variant <style>), in kitProps' order. tests/pack.test.ts (the KIT_BOX_STYLES test) checks that those
+      // repeat the theme's; here they are measured, so a style item that drifts is caught by its fit too.
+      const itemProps = (sizeId: string) => packItemProps(theme, sizeId, style);
       const styleProps = (size: (typeof adapter.sizes)[number]) => {
-        const item = packItemProps(theme, size.id);
+        const item = itemProps(size.id);
         return {...adapter.preset(look), ...item, ...sizeProps(size), ...(item.bleed === undefined ? {} : {bleed: item.bleed})};
       };
+      // Dies with (.cache/illustration-inspired-overlay/mutations-boxes-f2.json): F2-13, the indigo-pop gameplay
+      // item's "bleed": 96 → 40 in packs/sticker-pop.json (refused at ×2; the preset alone fits every size).
       test(`ornaments kit [${look}] [${set}] ${kindName}: o preset põe o motivo principal em todo tamanho, com os mesmos limites`, () => {
         const preset = adapter.preset(look);
         const props = adapter.parse(preset);
@@ -510,8 +515,8 @@ export const registerOrnamentHarness = (
         for (const size of adapter.sizes) {
           checkCase(adapter, set, `[${look}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
           // And as the pack renders it, where its item adds props (the screens' band, the Twitch panel's padding).
-          if (Object.keys(packItemProps(theme, size.id)).length > 0) {
-            checkCase(adapter, set, `[${look}] ${kindName} ${size.id} pack`, look === theme ? kitProps(theme, size) : styleProps(size), {mustFit: true});
+          if (Object.keys(itemProps(size.id)).length > 0) {
+            checkCase(adapter, set, `[${look}] ${kindName} ${size.id} pack`, style === undefined ? kitProps(theme, size) : styleProps(size), {mustFit: true});
           }
         }
       });
