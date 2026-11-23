@@ -105,14 +105,15 @@ const packCache = new Map<string, PackItems>();
 /**
  * The props of the pack item (packs/<theme>.json) that renders a named size with the kit's
  * ornaments (never a variant such as plain); {} when it has none or only a variant has it.
+ * With `variant`, that variant's item instead (a box style's own items, e.g. "indigo-pop").
  */
-export const packItemProps = (theme: string, sizeId: string): Record<string, unknown> => {
+export const packItemProps = (theme: string, sizeId: string, variant?: string): Record<string, unknown> => {
   let pack = packCache.get(theme);
   if (!pack) {
     pack = JSON.parse(readFileSync(new URL(`../../packs/${theme}.json`, import.meta.url), 'utf8')) as PackItems;
     packCache.set(theme, pack);
   }
-  return pack.items.find((item) => item.variant === undefined && item.sizes?.includes(sizeId))?.props ?? {};
+  return pack.items.find((item) => item.variant === variant && item.sizes?.includes(sizeId))?.props ?? {};
 };
 
 /**

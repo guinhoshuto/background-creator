@@ -6,9 +6,10 @@ import {RemotionRoot} from '../src/Root';
 import {getCompositionMetadata} from '../src/settings';
 import {findComposition, folderOf} from './helpers/find-composition';
 
-test('tipos: os cinco tipos e a política de cada um', () => {
-  assert.deepEqual(ASSET_KINDS, ['background', 'chat', 'block', 'border', 'vertical']);
-  assert.deepEqual(OVERLAY_KINDS, ['chat', 'block', 'border', 'vertical']);
+// Dies with: F1-1 (the sticker kind's canvas is 300×300, too tight for the bolt's corner).
+test('tipos: os seis tipos e a política de cada um', () => {
+  assert.deepEqual(ASSET_KINDS, ['background', 'chat', 'block', 'border', 'vertical', 'sticker']);
+  assert.deepEqual(OVERLAY_KINDS, ['chat', 'block', 'border', 'vertical', 'sticker']);
   assert.deepEqual(sizedKinds(), ['chat', 'block', 'border']);
   assert.deepEqual(
     ASSET_KINDS.map((kind) => {
@@ -21,6 +22,7 @@ test('tipos: os cinco tipos e a política de cada um', () => {
       ['block', 'text-boxes', null, 'card', true, 'webm'],
       ['border', 'borders', null, 'webcam-16x9', true, 'webm'],
       ['vertical', 'vertical', {width: 1080, height: 1920}, 'live-frame', true, 'webm'],
+      ['sticker', 'stickers', {width: 304, height: 304}, 'sticker', true, 'webm'],
     ],
   );
   for (const kind of ASSET_KINDS) {
@@ -33,7 +35,7 @@ test('tipos: os cinco tipos e a política de cada um', () => {
     assert.equal(getKindPolicy(kind), policy);
   }
   assert.equal(new Set(ASSET_KINDS.map((kind) => kindPolicies[kind].folder)).size, ASSET_KINDS.length);
-  assert.throws(() => getKindPolicy('panel'), /Unknown kind: panel\. Options: background, chat, block, border, vertical\./);
+  assert.throws(() => getKindPolicy('panel'), /Unknown kind: panel\. Options: background, chat, block, border, vertical, sticker\./);
   assert.throws(() => getKindPolicy('__proto__'), /Unknown kind/);
 });
 

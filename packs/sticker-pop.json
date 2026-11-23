@@ -1,0 +1,433 @@
+{
+  "name": "sticker-pop",
+  "version": 1,
+  "profile": "delivery",
+  "items": [
+    {
+      "composition": "SunburstLoop",
+      "preset": "sticker-pop",
+      "formats": ["webm", "png"],
+      "variant": "paper-burst"
+    },
+    {
+      "composition": "SunburstLoop",
+      "preset": "sticker-pop-pink-burst",
+      "formats": ["webm", "png"],
+      "variant": "pink-burst"
+    },
+    {
+      "composition": "StickerStageLoop",
+      "preset": "sticker-pop-pink-stage",
+      "formats": ["webm", "png"],
+      "variant": "pink-stage"
+    },
+    {
+      "composition": "StickerStageLoop",
+      "preset": "sticker-pop-paper-stickers",
+      "formats": ["webm", "png"],
+      "variant": "paper-stickers"
+    },
+    {
+      "composition": "CheckerboardLoop",
+      "preset": "sticker-pop-cream-grid",
+      "formats": ["webm", "png"],
+      "variant": "cream-grid"
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop",
+      "sizes": ["label-sm", "label"],
+      "formats": ["webm", "png"],
+      "props": {"ornamentSize": 24}
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop",
+      "sizes": ["lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop",
+      "sizes": ["webcam-16x9", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical"],
+      "formats": ["webm", "png"]
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop",
+      "sizes": ["webcam-16x9-lg"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 72, "ornamentScale": 1.5}
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop",
+      "sizes": ["gameplay"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 96, "ornamentScale": 2}
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "plain"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop",
+      "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "plain"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop",
+      "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "plain"
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop-cream-soda",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "variant": "cream-soda"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-cream-soda",
+      "sizes": ["label-sm", "label"],
+      "formats": ["webm", "png"],
+      "props": {"ornamentSize": 24},
+      "variant": "cream-soda"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-cream-soda",
+      "sizes": ["lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"],
+      "variant": "cream-soda"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-cream-soda",
+      "sizes": ["webcam-16x9", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical"],
+      "formats": ["webm", "png"],
+      "variant": "cream-soda"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-cream-soda",
+      "sizes": ["webcam-16x9-lg"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 72, "ornamentScale": 1.5},
+      "variant": "cream-soda"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-cream-soda",
+      "sizes": ["gameplay"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 96, "ornamentScale": 2},
+      "variant": "cream-soda"
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop-cream-soda",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "cream-soda-plain"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-cream-soda",
+      "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "cream-soda-plain"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-cream-soda",
+      "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "cream-soda-plain"
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop-fine-line",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "variant": "fine-line"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-fine-line",
+      "sizes": ["label-sm", "label"],
+      "formats": ["webm", "png"],
+      "props": {"ornamentSize": 24},
+      "variant": "fine-line"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-fine-line",
+      "sizes": ["lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"],
+      "variant": "fine-line"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-fine-line",
+      "sizes": ["webcam-16x9", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical"],
+      "formats": ["webm", "png"],
+      "variant": "fine-line"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-fine-line",
+      "sizes": ["webcam-16x9-lg"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 72, "ornamentScale": 1.5},
+      "variant": "fine-line"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-fine-line",
+      "sizes": ["gameplay"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 96, "ornamentScale": 2},
+      "variant": "fine-line"
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop-fine-line",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "fine-line-plain"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-fine-line",
+      "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "fine-line-plain"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-fine-line",
+      "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "fine-line-plain"
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop-indigo-pop",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "variant": "indigo-pop"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-indigo-pop",
+      "sizes": ["label-sm", "label"],
+      "formats": ["webm", "png"],
+      "props": {"ornamentSize": 24},
+      "variant": "indigo-pop"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-indigo-pop",
+      "sizes": ["lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"],
+      "variant": "indigo-pop"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-indigo-pop",
+      "sizes": ["webcam-16x9", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical"],
+      "formats": ["webm", "png"],
+      "variant": "indigo-pop"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-indigo-pop",
+      "sizes": ["webcam-16x9-lg"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 72, "ornamentScale": 1.5},
+      "variant": "indigo-pop"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-indigo-pop",
+      "sizes": ["gameplay"],
+      "formats": ["webm", "png"],
+      "props": {"bleed": 96, "ornamentScale": 2},
+      "variant": "indigo-pop"
+    },
+    {
+      "composition": "ChatLoop",
+      "preset": "chat-sticker-pop-indigo-pop",
+      "sizes": ["chat-compact", "chat-standard", "chat-tall", "chat-column", "chat-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "indigo-pop-plain"
+    },
+    {
+      "composition": "BlockLoop",
+      "preset": "block-sticker-pop-indigo-pop",
+      "sizes": ["label-sm", "label", "lower-third", "title", "card", "square", "list", "circle-sm", "circle", "circle-lg"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "indigo-pop-plain"
+    },
+    {
+      "composition": "BorderLoop",
+      "preset": "border-sticker-pop-indigo-pop",
+      "sizes": ["webcam-16x9", "webcam-16x9-lg", "webcam-4x3", "webcam-square", "webcam-round-sm", "webcam-round", "webcam-round-lg", "webcam-vertical", "gameplay", "fullscreen", "fullscreen-vertical"],
+      "formats": ["webm", "png"],
+      "props": {"ornaments": "none"},
+      "variant": "indigo-pop-plain"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#F4A66C"},
+      "formats": ["webm", "png"],
+      "variant": "star-orange"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#F6E2E4"},
+      "formats": ["webm", "png"],
+      "variant": "star-cream"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#E9BA67"},
+      "formats": ["webm", "png"],
+      "variant": "star-yellow"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#9AC7F2"},
+      "formats": ["webm", "png"],
+      "variant": "star-blue"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#EE9DE6"},
+      "formats": ["webm", "png"],
+      "variant": "star-lilac"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "star", "fill": "#F74CA9"},
+      "formats": ["webm", "png"],
+      "variant": "star-pink"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#F4A66C"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-orange"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#F6E2E4"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-cream"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#E9BA67"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-yellow"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#9AC7F2"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-blue"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#EE9DE6"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-lilac"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "sparkle", "fill": "#F74CA9"},
+      "formats": ["webm", "png"],
+      "variant": "sparkle-pink"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#F4A66C"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-orange"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#F6E2E4"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-cream"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#E9BA67"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-yellow"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#9AC7F2"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-blue"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#EE9DE6"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-lilac"
+    },
+    {
+      "composition": "StickerLoop",
+      "preset": "sticker-pop-sticker",
+      "props": {"motif": "bolt", "fill": "#F74CA9"},
+      "formats": ["webm", "png"],
+      "variant": "bolt-pink"
+    }
+  ]
+}

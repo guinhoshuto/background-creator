@@ -1,0 +1,12 @@
+{
+  "durationSeconds": 12,
+  "seed": 23,
+  "backgroundColor": "#F5A09E",
+  "colors": ["#F74CA9", "#EF6AA0"],
+  "rayCount": 16,
+  "rayWidth": 0.5,
+  "swirl": 0,
+  "spin": 2,
+  "coreFade": 0,
+  "coreShade": 0
+}

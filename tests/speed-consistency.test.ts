@@ -3,6 +3,7 @@ import {test} from 'node:test';
 import {reportSpeed} from '../src/overlays/shared';
 import {sizesForKind} from '../src/sizes';
 import {SPEED_KINDS, SPEED_THEMES, SPEED_TOLERANCE, speedError, speedTable, type SpeedRow} from './helpers/speed-table';
+import {themePresetNames} from './helpers/themes';
 
 /**
  * A pack sells one theme in every size, so the sizes must move as one family: every moving layer
@@ -28,12 +29,15 @@ test('Velocidade: cada camada que anda fica a ±35% da velocidade pedida, em tod
   assert.deepEqual(outside.map(rowId).sort(), [...DOCUMENTED_MINIMUMS].sort());
 });
 
+// Dies with (.cache/illustration-inspired-overlay/mutations-boxes-f2.json): F2-3, fillSpeed 16 → 0 in
+// block-sticker-pop-indigo-pop.json; F2-4, strokeSpeed 48 → 0 in border-sticker-pop-fine-line.json.
 test('Velocidade: a tabela cobre todos os temas, tipos e tamanhos, e bate com o que o arquivo informa', () => {
   for (const kind of SPEED_KINDS) {
-    for (const theme of SPEED_THEMES) {
-      const rows = ROWS.filter((row) => row.preset === `${kind}-${theme}`);
+    // A kit's box styles (KIT_BOX_STYLES) move too, each in every size, like the theme's main preset.
+    for (const preset of SPEED_THEMES.flatMap((theme) => themePresetNames(kind, theme))) {
+      const rows = ROWS.filter((row) => row.preset === preset);
       // Every theme moves something in every kind: a still preset would not need this test.
-      assert.deepEqual([...new Set(rows.map((row) => row.size))], sizesForKind(kind).map((size) => size.id), `${kind}-${theme}`);
+      assert.deepEqual([...new Set(rows.map((row) => row.size))], sizesForKind(kind).map((size) => size.id), preset);
     }
   }
   // The sidecar, the export log and the pack manifest report the same speeds (one decimal).

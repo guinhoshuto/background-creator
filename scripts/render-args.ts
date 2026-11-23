@@ -107,6 +107,10 @@ export const buildExportOptions = (
   const policy = getKindPolicy(asset.kind);
   const sizeFlags = [values.size, values.width, values.height, values.bleed].some((value) => value !== undefined);
   if (policy.fixedSize && sizeFlags) expandSize(asset.kind, values.size ?? '');
+  // A composition without a seed draws nothing at random; refused here, with the way out, before the schema's raw dump.
+  if (values.seed !== undefined && !('seed' in asset.schema.shape)) {
+    throw new Error(`${asset.id} has no seed${asset.kind === 'sticker' ? ': frame 0 is the rest pose' : ''}; drop --seed.`);
+  }
   return {
     compositionId: asset.id,
     format: outputFormatSchema.parse(values.format),

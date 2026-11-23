@@ -8,7 +8,7 @@ import {
   colorRepeatsOf, getFillMotion, getStrokeMotion, type AssetMotion, type FillOptions, type Rect, type RoundRect,
 } from '../../src/overlays/shared';
 import {sizeProps, sizesForKind} from '../../src/sizes';
-import {OVERLAY_THEMES} from './themes';
+import {OVERLAY_THEMES, themePresetNames} from './themes';
 
 /**
  * The speeds every theme preset actually shows on every named size of its kind, layer by layer,
@@ -85,13 +85,13 @@ const travelsAlongStroke = (props: Parsed) => props.strokeSpeed > 0
 const fillMoves = (props: Parsed) => props.fillSpeed > 0 && props.fill !== 'solid'
   && !(props.fill === 'gradient' && props.fillColors.length < 2);
 
-/** Every moving layer of every theme preset on every named size of its kind, at the preset's duration. */
+/** Every moving layer of every theme preset (box styles included) on every named size of its kind, at the preset's duration. */
 export const speedTable = (): SpeedRow[] => {
   const rows: SpeedRow[] = [];
   for (const kind of SPEED_KINDS) {
     const adapter = ADAPTERS[kind];
-    for (const theme of SPEED_THEMES) {
-      const preset = `${kind}-${theme}`;
+    // Each theme's main preset and its box styles' (KIT_BOX_STYLES): a style ships the same sizes.
+    for (const preset of SPEED_THEMES.flatMap((theme) => themePresetNames(kind, theme))) {
       const input = readPreset(preset);
       for (const size of sizesForKind(kind)) {
         const props = adapter.parse({...input, ...sizeProps(size)});

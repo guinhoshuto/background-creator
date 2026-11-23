@@ -14,7 +14,7 @@ import {
 import {
   assertDeterministic, assertPeriodic, assertSeamVelocity, assertValidElements, type Sampler, type Scene, type SceneInput,
 } from './scene-scans';
-import {kitThemeOf} from './themes';
+import {boxStylesOf, kitThemeOf} from './themes';
 
 /**
  * The ornament harness: a set on every kind and named size (plus border radii, small round screen
@@ -97,7 +97,7 @@ const variants = (adapter: OrnamentKindAdapter, radii: readonly number[] = SCOPE
 const sampleFrames = (n: number) => [0, 1, 37, n * 0.137, n * 0.391, n * 0.618, n * 0.853, n - 1, 0.5, -1];
 
 /** The documented refusal; its way out depends on the kind (and on a border's fit): see ornamentWayOut. */
-export const REFUSAL = new RegExp(`^The "(midnight|haunted-mansion|haunted-interior|cobweb|horizon|terminal)" ornaments do not fit this size: (${[
+export const REFUSAL = new RegExp(`^The "(midnight|haunted-mansion|haunted-interior|cobweb|horizon|terminal|sticker)" ornaments do not fit this size: (${[
   'increase bleed, padding or radius or use ornaments none.',
   'increase bleed or padding or use ornaments none.',
   'increase bleed, paddingX, paddingY or radius or use ornaments none.',
@@ -490,38 +490,52 @@ export const registerOrnamentHarness = (
     }
   });
 
-  // Kit presets: the theme that wears the set.
+  // Kit presets: the theme that wears the set, then each of its box styles (KIT_BOX_STYLES), whose presets
+  // presets/<kind>-<theme>-<style>.json ship in the same pack items as the theme's own (the same item props).
   const theme = kitThemeOf(set);
   for (const kindName of kinds) {
     const adapter = ORNAMENT_KINDS[kindName];
-    test(`ornaments kit [${theme}] [${set}] ${kindName}: o preset põe o motivo principal em todo tamanho, com os mesmos limites`, () => {
-      const preset = adapter.preset(theme);
-      const props = adapter.parse(preset);
-      assert.equal(props.ornaments, set, `${theme}: ornaments ${set}`);
-      if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'none', `${theme}: com enfeites, corners none`);
-      for (const size of adapter.sizes) {
-        checkCase(adapter, set, `[${theme}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
-        // And as the pack renders it, where its item adds props (the screens' band, the Twitch panel's padding).
-        if (Object.keys(packItemProps(theme, size.id)).length > 0) {
-          checkCase(adapter, set, `[${theme}] ${kindName} ${size.id} pack`, kitProps(theme, size), {mustFit: true});
+    for (const style of [undefined, ...boxStylesOf(theme)]) {
+      const look = style === undefined ? theme : `${theme}-${style}`;
+      // A style at a named size as the pack renders it: the style's preset under the props of its own item
+      // (variant <style>), in kitProps' order. tests/pack.test.ts (the KIT_BOX_STYLES test) checks that those
+      // repeat the theme's; here they are measured, so a style item that drifts is caught by its fit too.
+      const itemProps = (sizeId: string) => packItemProps(theme, sizeId, style);
+      const styleProps = (size: (typeof adapter.sizes)[number]) => {
+        const item = itemProps(size.id);
+        return {...adapter.preset(look), ...item, ...sizeProps(size), ...(item.bleed === undefined ? {} : {bleed: item.bleed})};
+      };
+      // Dies with (.cache/illustration-inspired-overlay/mutations-boxes-f2.json): F2-13, the indigo-pop gameplay
+      // item's "bleed": 96 → 40 in packs/sticker-pop.json (refused at ×2; the preset alone fits every size).
+      test(`ornaments kit [${look}] [${set}] ${kindName}: o preset põe o motivo principal em todo tamanho, com os mesmos limites`, () => {
+        const preset = adapter.preset(look);
+        const props = adapter.parse(preset);
+        assert.equal(props.ornaments, set, `${look}: ornaments ${set}`);
+        if (kindName === 'border') assert.equal((props as Record<string, unknown>).corners, 'none', `${look}: com enfeites, corners none`);
+        for (const size of adapter.sizes) {
+          checkCase(adapter, set, `[${look}] ${kindName} ${size.id}`, {...preset, ...sizeProps(size)}, {mustFit: true});
+          // And as the pack renders it, where its item adds props (the screens' band, the Twitch panel's padding).
+          if (Object.keys(itemProps(size.id)).length > 0) {
+            checkCase(adapter, set, `[${look}] ${kindName} ${size.id} pack`, style === undefined ? kitProps(theme, size) : styleProps(size), {mustFit: true});
+          }
         }
-      }
-    });
+      });
 
-    test(`ornaments kit [${theme}] [${set}] ${kindName}: varreduras genéricas e markup do preset`, () => {
-      const preset = adapter.preset(theme);
-      for (const input of [{}, sizeProps(roundSize(adapter))]) {
-        const base = {...preset, ...input};
-        const id = `[${theme}] ${kindName} ${JSON.stringify(input)}`;
-        const sample = scanSampler(adapter, base);
-        assertDeterministic(id, sample);
-        assertPeriodic(id, sample);
-        assertSeamVelocity(id, sample);
-        assertValidElements(id, sample);
-        const props = adapter.parse(base);
-        for (const at of [0, 123]) checkMarkup(`${id} frame ${at}`, adapter, props, adapter.render(props, at));
-        if (props.lightning > 0) checkFlashAlpha(id, adapter, props);
-      }
-    });
+      test(`ornaments kit [${look}] [${set}] ${kindName}: varreduras genéricas e markup do preset`, () => {
+        const preset = adapter.preset(look);
+        for (const input of [{}, sizeProps(roundSize(adapter))]) {
+          const base = {...preset, ...input};
+          const id = `[${look}] ${kindName} ${JSON.stringify(input)}`;
+          const sample = scanSampler(adapter, base);
+          assertDeterministic(id, sample);
+          assertPeriodic(id, sample);
+          assertSeamVelocity(id, sample);
+          assertValidElements(id, sample);
+          const props = adapter.parse(base);
+          for (const at of [0, 123]) checkMarkup(`${id} frame ${at}`, adapter, props, adapter.render(props, at));
+          if (props.lightning > 0) checkFlashAlpha(id, adapter, props);
+        }
+      });
+    }
   }
 };

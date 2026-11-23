@@ -43,4 +43,6 @@ export * from './ornaments';
 export * from './perimeter';
 export * from './render';
 export * from './shape';
+export * from './side';
 export * from './strokes';
+export * from './title-buttons';

@@ -14,6 +14,7 @@ import {getHauntedInteriorScene, hauntedInteriorLoopSchema} from '../src/backgro
 import {getHauntedMansionScene, hauntedMansionLoopSchema} from '../src/backgrounds/HauntedMansionLoop';
 import {getKawaiiScene, kawaiiLoopSchema} from '../src/backgrounds/KawaiiLoop';
 import {getParticleScene, particleLoopSchema} from '../src/backgrounds/ParticleLoop';
+import {getStickerStageScene, stickerStageLoopSchema} from '../src/backgrounds/StickerStageLoop';
 import {getSunburstScene, sunburstLoopSchema} from '../src/backgrounds/SunburstLoop';
 import {getVaporwaveScene, vaporwaveLoopSchema} from '../src/backgrounds/VaporwaveLoop';
 import {WATERCOLOR_SCENES, getWatercolorScene, watercolorLoopSchema} from '../src/backgrounds/WatercolorLoop';
@@ -108,6 +109,16 @@ const scenes: {id: string; sample: (input: unknown, frame: number, length: numbe
     // The picture is continuous, the ray is not; tests/sunburst.test.ts checks the rotation
     // and the field that gives every place its shape. The layers that stay put keep the scan.
     seamExempt: (element, key) => element.kind === 'ray' && ['angle', 'halfWidth', 'opacity'].includes(key),
+  },
+  {
+    id: 'StickerStageLoop',
+    sample: (input: unknown, frame: number, length: number): Scene =>
+      getStickerStageScene(stickerStageLoopSchema.parse(input), frame, length),
+    // The stickers move on steps, eight poses a second: the pose changes between two whole frames at
+    // every step, the seam's as well, so a millionth of the loop on each side of frame 0 measures a
+    // step's smoothstep, not a drift. tests/sticker-stage.test.ts checks that the seam is a step like
+    // any other (96 changes in 12 s, frame N = frame 0, the half frame the exact mean).
+    seamExempt: (element, key) => element.kind === 'sticker' && ['angle', 'scale'].includes(key),
   },
   {
     id: 'KawaiiLoop',
@@ -556,6 +567,11 @@ test('catalog defaults and shipped presets pass the same schemas used by Studio 
     ['SunburstLoop', 'burst-16-custard-yellow.json'],
     ['SunburstLoop', 'burst-17-leaf-green.json'],
     ['SunburstLoop', 'burst-18-red-on-blush.json'],
+    ['SunburstLoop', 'sticker-pop.json'],
+    ['SunburstLoop', 'sticker-pop-pink-burst.json'],
+    ['CheckerboardLoop', 'sticker-pop-cream-grid.json'],
+    ['StickerStageLoop', 'sticker-pop-pink-stage.json'],
+    ['StickerStageLoop', 'sticker-pop-paper-stickers.json'],
     ['WildfireSmokeLoop', 'wildfire-smoke.json'],
     ['WildfireSmokeLoop', 'wildfire-smoke-sparks-corner.json'],
     ['WildfireSmokeLoop', 'wildfire-smoke-sparks-bottom.json'],

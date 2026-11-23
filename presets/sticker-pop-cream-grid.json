@@ -1,0 +1,12 @@
+{
+  "durationSeconds": 12,
+  "seed": 23,
+  "backgroundColor": "#F5DCD1",
+  "squareColor": "#9AC7F2",
+  "style": "outline",
+  "lineWidth": 4,
+  "squareSize": 96,
+  "speed": 24,
+  "direction": "up-right",
+  "angle": 0
+}

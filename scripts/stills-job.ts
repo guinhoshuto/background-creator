@@ -335,6 +335,7 @@ const SHEETS: {out: string; kind: string; cols: number; width: number; bg: strin
   {out: 'sheet-chat', kind: 'chat', cols: 5, width: 320, bg: 'dark'},
   {out: 'sheet-block', kind: 'block', cols: 3, width: 520, bg: 'dark'},
   {out: 'sheet-border', kind: 'border', cols: 4, width: 390, bg: 'checker'},
+  {out: 'sheet-sticker', kind: 'sticker', cols: 6, width: 200, bg: 'checker'},
 ];
 
 /**

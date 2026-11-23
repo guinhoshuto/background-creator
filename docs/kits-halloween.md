@@ -159,7 +159,7 @@ Background refactors made for the sets are export- or parameter-only: the backgr
 Common rules:
 
 - No `width`, `height`, `bleed`, `fit` or `guides` keys; each preset parses strictly alone and merged with every size's props and its pack item props.
-- Chat: `strokeWidth` 2–3, `headerHeight` > 0, `glow` > 0. Block: frame 0 ≠ frame 200 and frame N−1 ≠ frame 0.
+- Chat: `strokeWidth` 2–3, or exactly the weight the theme has in `CHAT_STROKE_WIDTHS` (`tests/helpers/themes.ts`, a named exception with the owner's yes; the only one is `sticker-pop`, at 6 px), `headerHeight` > 0, `glow` > 0. Block: frame 0 ≠ frame 200 and frame N−1 ≠ frame 0.
 - Border: sets `thickness` and `corners: "none"`, and still fits the round sizes.
 - Every kind × size has a travelling stroke (`dashes`, `comets` or a multicolour `gradient`, speed > 0) or a moving fill, within ±35 % of the preset's speed; `DOCUMENTED_MINIMUMS` in the speed table stays empty.
 - `ornamentSize` is chosen so the hero reads well on chat and webcams; room clamps it on labels, the Twitch panel and the screen frames.

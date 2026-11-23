@@ -4,6 +4,7 @@ import {kindPolicies} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
 import {getCompositionMetadata, getExportPreset, type BaseBackgroundProps} from './settings';
 import {assetFileStem} from './sizes';
+import {STICKER_CANVAS} from './overlays/stickers/StickerLoop';
 import {VERTICAL_CANVAS} from './overlays/vertical/zones';
 
 const gradient = backgroundCatalog.GradientLoop;
@@ -16,6 +17,7 @@ const kawaii = backgroundCatalog.KawaiiLoop;
 const cobweb = backgroundCatalog.CobwebLoop;
 const christmas = backgroundCatalog.ChristmasLoop;
 const sunburst = backgroundCatalog.SunburstLoop;
+const stickerStage = backgroundCatalog.StickerStageLoop;
 const vaporwave = backgroundCatalog.VaporwaveLoop;
 const dotGrid = backgroundCatalog.DotGridLoop;
 const checkerboard = backgroundCatalog.CheckerboardLoop;
@@ -34,6 +36,8 @@ const safeZoneGuide = overlayCatalog.SafeZoneGuide;
 const liveUiMock = overlayCatalog.LiveUiMock;
 const feedUiMock = overlayCatalog.FeedUiMock;
 const vertical = {...VERTICAL_CANVAS};
+const stickerLoop = overlayCatalog.StickerLoop;
+const stickerCanvas = {...STICKER_CANVAS};
 
 type MetadataProps = Pick<BaseBackgroundProps, 'durationSeconds' | 'outputFormat' | 'transparent'>
   & {width?: number; height?: number; bleed?: number};
@@ -44,7 +48,7 @@ const metadataFor = <Props extends MetadataProps>(id: string, props: Props) => {
   const preset = getExportPreset(props);
   // The layout is the single source of truth for the file size, so its sidecar can never disagree.
   // Without one, sized kinds fall back to the box plus the bleed on every side. A kind of fixed size
-  // gets the 1920×1080 default here: the vertical Folder spreads its own canvas over the result.
+  // gets the 1920×1080 default here: the vertical and sticker Folders spread their own canvas over the result.
   const canvas = getLayoutOf(asset)?.(props).canvas ?? (props.width === undefined || props.height === undefined
     ? undefined
     : getBoxCanvas({width: props.width, height: props.height, bleed: props.bleed ?? 0}).canvas);
@@ -199,6 +203,14 @@ export const RemotionRoot = () => (
         calculateMetadata={({props}: {props: typeof sunburst.defaultProps}) => metadataFor(sunburst.id, sunburst.schema.parse(props))}
       />
       <Composition
+        id="StickerStageLoop"
+        component={stickerStage.component}
+        schema={stickerStage.schema}
+        defaultProps={{"durationSeconds":12,"seed":23,"transparent":false,"backgroundColor":"#F5A09E","colors":["#F74CA9","#EF6AA0","#F5A09E"],"outputFormat":"webm" as const,"stageMid":0.45,"stickerColors":["#F4A66C","#F6E2E4","#E9BA67","#9AC7F2","#EE9DE6"],"accent":false,"accentColor":"#F74CA9","ink":"#4A3A69","rim":4,"backdrop":"stage" as const}}
+        {...getCompositionMetadata(stickerStage.defaultProps)}
+        calculateMetadata={({props}: {props: typeof stickerStage.defaultProps}) => metadataFor(stickerStage.id, stickerStage.schema.parse(props))}
+      />
+      <Composition
         id="VaporwaveLoop"
         component={vaporwave.component}
         schema={vaporwave.schema}
@@ -280,7 +292,7 @@ export const RemotionRoot = () => (
         id="ChatLoop"
         component={chat.component}
         schema={chat.schema}
-        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":400,"height":600,"bleed":32,"guides":false,"radius":16,"padding":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":3,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"strokeSides":"all" as const,"glow":20,"glowPulses":1,"glowStrength":3,"halo":24,"haloColor":"#A855F7","rimLight":0,"headerHeight":48,"headerColor":"#E879F9","headerOpacity":0.1,"headerLineWidth":2,"footerHeight":0,"footerLineWidth":1,"footerLineColor":"#E879F9","footerLineOpacity":0.9,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":400,"height":600,"bleed":32,"guides":false,"radius":16,"padding":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":3,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"strokeSides":"all" as const,"strokeMargin":0,"strokeMarginColor":"#FFFFFF","glow":20,"glowPulses":1,"glowStrength":3,"halo":24,"haloColor":"#A855F7","depth":0,"depthColor":"#A855F7","rimLight":0,"headerHeight":48,"headerColor":"#E879F9","headerOpacity":0.1,"headerLineWidth":2,"headerLineOpacity":0.9,"titleButtonSize":0,"titleButtonGap":7,"titleButtonInset":12,"titleButtonColors":["#22D3EE","#E879F9","#A78BFA"],"footerHeight":0,"footerLineWidth":1,"footerLineColor":"#E879F9","footerLineOpacity":0.9,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
         {...getCompositionMetadata(chat.defaultProps, chat.getLayout(chat.defaultProps).canvas)}
         calculateMetadata={({props}: {props: typeof chat.defaultProps}) => metadataFor(chat.id, chat.schema.parse(props))}
       />
@@ -290,7 +302,7 @@ export const RemotionRoot = () => (
         id="BlockLoop"
         component={block.component}
         schema={block.schema}
-        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"width":640,"height":360,"bleed":32,"guides":false,"shape":"rectangle" as const,"radius":16,"paddingX":24,"paddingY":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9"],"strokeWidth":4,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"strokeSides":"all" as const,"glow":20,"glowPulses":2,"glowStrength":3,"halo":20,"haloColor":"#A855F7","rimLight":0,"accent":"none" as const,"accentColor":"#E879F9","accentSize":6,"accentSheen":0,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"width":640,"height":360,"bleed":32,"guides":false,"shape":"rectangle" as const,"radius":16,"paddingX":24,"paddingY":16,"fill":"gradient" as const,"fillColors":["#120A38","#26105C","#0A1C4E"],"fillOpacity":0.9,"fillScale":32,"fillSpeed":16,"fillAngle":60,"fillRise":false,"fillLight":0.05,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9"],"strokeWidth":4,"dashLength":16,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"strokeSides":"all" as const,"strokeMargin":0,"strokeMarginColor":"#FFFFFF","glow":20,"glowPulses":2,"glowStrength":3,"halo":20,"haloColor":"#A855F7","depth":0,"depthColor":"#A855F7","rimLight":0,"accent":"none" as const,"accentColor":"#E879F9","accentSize":6,"accentSheen":0,"accentLineWidth":0,"titleButtonSize":0,"titleButtonGap":7,"titleButtonInset":12,"titleButtonColors":["#22D3EE","#E879F9","#A78BFA"],"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
         {...getCompositionMetadata(block.defaultProps, block.getLayout(block.defaultProps).canvas)}
         calculateMetadata={({props}: {props: typeof block.defaultProps}) => metadataFor(block.id, block.schema.parse(props))}
       />
@@ -300,7 +312,7 @@ export const RemotionRoot = () => (
         id="BorderLoop"
         component={border.component}
         schema={border.schema}
-        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":640,"height":360,"bleed":48,"guides":false,"fit":"window" as const,"shape":"rectangle" as const,"mask":false,"radius":16,"thickness":10,"fill":"solid" as const,"fillColors":["#120A38"],"fillOpacity":0.9,"fillScale":12,"fillSpeed":24,"fillAngle":45,"fillRise":false,"fillLight":0,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":4,"dashLength":18,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"glow":16,"glowPulses":0,"glowStrength":2.6,"halo":0,"haloColor":"#A78BFA","rimLight":0,"lines":2,"lineGap":4,"outerLineWidth":2,"corners":"brackets" as const,"cornerSize":28,"cornerGap":6,"gemSize":14,"cornerPulses":1,"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
+        defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0620","outputFormat":"webm" as const,"width":640,"height":360,"bleed":48,"guides":false,"fit":"window" as const,"shape":"rectangle" as const,"mask":false,"radius":16,"thickness":10,"fill":"solid" as const,"fillColors":["#120A38"],"fillOpacity":0.9,"fillScale":12,"fillSpeed":24,"fillAngle":45,"fillRise":false,"fillLight":0,"strokeMotion":"comets" as const,"strokeColors":["#22D3EE","#E879F9","#A78BFA"],"strokeWidth":4,"dashLength":18,"gapLength":12,"cometSpacing":640,"cometTail":320,"gradientLength":480,"strokeSpeed":160,"strokePulses":1,"strokeCore":0.9,"trackOpacity":0.45,"glow":16,"glowPulses":0,"glowStrength":2.6,"halo":0,"haloColor":"#A78BFA","depth":0,"depthColor":"#A855F7","rimLight":0,"lines":2,"lineGap":4,"outerLineWidth":2,"corners":"brackets" as const,"cornerSize":28,"cornerGap":6,"gemSize":14,"cornerPulses":1,"titleBarHeight":0,"titleBarColor":"#E879F9","titleBarLineWidth":2,"titleButtonSize":0,"titleButtonGap":7,"titleButtonInset":12,"titleButtonColors":["#22D3EE","#E879F9","#A78BFA"],"ornaments":"none" as const,"ornamentColors":["#CFC6E4","#F6EFD8","#E8963C"],"ornamentSize":48,"ornamentScale":1,"lightning":0}}
         {...getCompositionMetadata(border.defaultProps, border.getLayout(border.defaultProps).canvas)}
         calculateMetadata={({props}: {props: typeof border.defaultProps}) => metadataFor(border.id, border.schema.parse(props))}
       />
@@ -338,6 +350,17 @@ export const RemotionRoot = () => (
         defaultProps={{"durationSeconds":8,"seed":1,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"captionLines":2}}
         {...getCompositionMetadata(feedUiMock.defaultProps, vertical)}
         calculateMetadata={({props}: {props: typeof feedUiMock.defaultProps}) => ({...metadataFor(feedUiMock.id, feedUiMock.schema.parse(props)), ...vertical})}
+      />
+    </Folder>
+    {/* Loose stickers: the kind's fixed 304×304 square, passed explicitly like the vertical canvas. */}
+    <Folder name={kindPolicies.sticker.folder}>
+      <Composition
+        id="StickerLoop"
+        component={stickerLoop.component}
+        schema={stickerLoop.schema}
+        defaultProps={{"durationSeconds":12,"transparent":true,"backgroundColor":"#0B0F19","outputFormat":"webm" as const,"motif":"star" as const,"fill":"#F4A66C","ink":"#4A3A69","rimColor":"#F6E2E4","rim":4}}
+        {...getCompositionMetadata(stickerLoop.defaultProps, stickerCanvas)}
+        calculateMetadata={({props}: {props: typeof stickerLoop.defaultProps}) => ({...metadataFor(stickerLoop.id, stickerLoop.schema.parse(props)), ...stickerCanvas})}
       />
     </Folder>
   </>

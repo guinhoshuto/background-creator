@@ -11,8 +11,9 @@ import type {
 import {FOG_SHAPE} from './fills';
 import type {StrokeSides} from './fields';
 import {arcBandPath, isCircle, rectPath, roundRectPath, svgNumber, type RoundRect} from './geometry';
-import type {FrameLayout} from './layout';
+import type {FrameLayout, PanelLayout} from './layout';
 import {perimeterPath, pointAt} from './perimeter';
+import {SIDE_LINE_WIDTH, sideHole, sideShape, type SideElement} from './side';
 
 /**
  * SVG rendering of the engine's scenes. Everything is drawn in canvas pixels on one SVG the size
@@ -21,9 +22,11 @@ import {perimeterPath, pointAt} from './perimeter';
  * transparency it turns into grey haze. Glows are straight-alpha blurs of the stroke colours.
  *
  * Layering, bottom to top (a kind composes these itself):
- *   1. HaloLayer (outer halo, kept outside the panel)
+ *   1. HaloLayer (outer halo, kept outside the panel), then SideLayer (the side of a piece with
+ *      depth, whole behind it)
  *   2. FillLayer (clipped to the panel)
- *   3. kind decorations under the stroke (accent bar, chat header…)
+ *   3. kind decorations under the stroke (accent bar, chat header…), then MarginLayer (the band
+ *      outside the outline, chat and block) over them and under the rim light
  *   4. StrokeLayer: its glow, then the sharp stroke (children render inside both)
  *   5. kind decorations over the stroke (corner brackets, jewels…)
  *   — for a border, 1–5 sit inside a FrameGroup, which keeps the window empty
@@ -450,6 +453,35 @@ const openSidesClip = (track: RoundRect, elements: readonly (StrokeElement | Glo
   return rectPath({...reach, y: track.y - half, height: 2 * half}) + rectPath({...reach, y: track.y + track.height - half, height: 2 * half});
 };
 
+/**
+ * The flat band between the edge of a panel and its outline (strokeMargin): one element while the
+ * band is on, none while it is off. It never moves, and it is not part of the stroke: the glow
+ * blurs the outline alone.
+ */
+/** `opacity` is always 1: no layer reads it; the scene scans require it of every element. */
+export type MarginElement = {type: 'margin'; color: string; opacity: number};
+
+export const buildMarginScene = (style: {strokeMargin: number; strokeMarginColor: string}): MarginElement[] => {
+  if (!(style.strokeMargin > 0)) return [];
+  return [{type: 'margin', color: style.strokeMarginColor, opacity: 1}];
+};
+
+/**
+ * The margin band, over the fill and under the rim light and the stroke: a flat ring from the
+ * panel's edge to the middle of the stroke (the layout's track), so the stroke's own antialiased
+ * outer edge lies over the band and no fill shows between the two.
+ */
+export const MarginLayer = ({elements, layout, name = 'margin'}: {elements: readonly MarginElement[]; layout: PanelLayout; name?: string}) => {
+  const {idPrefix} = useStage();
+  const band = elements[0];
+  if (!band) return null;
+  return (
+    <g>
+      <path id={`${idPrefix}-${name}`} d={roundRectPath(layout.shape) + roundRectPath(layout.track)} fillRule="evenodd" fill={band.color} />
+    </g>
+  );
+};
+
 /** The rim light (see buildRimScene), drawn over the fill and under the stroke. */
 export const RimLayer = ({elements, name = 'rim'}: {elements: readonly RimElement[]; name?: string}) => {
   const {idPrefix} = useStage();
@@ -473,6 +505,27 @@ export const HaloLayer = ({elements, shape, name = 'halo'}: {elements: readonly 
       <g mask={url(`${id}-mask`)}>
         <path d={roundRectPath(shape)} fill={halo.color} filter={url(`${id}-blur`)} opacity={halo.opacity} />
       </g>
+    </g>
+  );
+};
+
+/**
+ * The side of a piece with depth (see side.ts), right over the halo and under everything else: the
+ * copy of `outline` filled flat, then its line on the same path. It is drawn whole, never clipped
+ * to the piece, which covers it. A frame passes its window as `hole`: the side then leaves its own,
+ * slightly larger hole (sideHole) under the band, so it never ends along the window's edge.
+ */
+export const SideLayer = ({elements, outline, hole, name = 'side'}: {
+  elements: readonly SideElement[]; outline: RoundRect; hole?: RoundRect; name?: string;
+}) => {
+  const {idPrefix} = useStage();
+  const side = elements[0];
+  if (!side) return null;
+  const path = roundRectPath(sideShape(outline, side.depth));
+  return (
+    <g>
+      <path id={`${idPrefix}-${name}`} d={hole ? path + roundRectPath(sideHole(hole)) : path} fillRule={hole ? 'evenodd' : undefined} fill={side.color} />
+      <path id={`${idPrefix}-${name}-line`} d={path} fill="none" stroke={side.line} strokeWidth={SIDE_LINE_WIDTH} />
     </g>
   );
 };

@@ -3,13 +3,15 @@ import {useCurrentFrame, useVideoConfig} from 'remotion';
 import {z} from 'zod';
 import {getSize} from '../../sizes';
 import {
-  FillLayer, HaloLayer, MAX_CONTENT_OPACITY, OverlayCanvas, RimLayer, StrokeLayer, buildFillScene, buildGlowScene, buildHaloScene,
-  buildRimScene, buildStrokeScene, fillFields, fitClearContent, glowFields, glowOverArea, haloFields, layoutPanel, offsetRoundRect,
+  FillLayer, HaloLayer, MAX_CONTENT_OPACITY, MarginLayer, OverlayCanvas, RimLayer, StrokeLayer, buildFillScene, buildGlowScene, buildHaloScene,
+  buildMarginScene, buildRimScene, buildStrokeScene, fillFields, fitClearContent, glowFields, glowOverArea, haloFields, layoutPanel, offsetRoundRect,
   overlayBaseFields, paddingField, radiusField, rimLightField, rectPath, refineCanvas, refineContent, refineFill, refineOutset, refineRim, refineStroke, reportSpeed, roundRectPath,
   strokeFields, strokeSidesField, trackOpacityField, useStage, getFillMotion, getStrokeMotion, type AssetMotion, type FillElement, type FillOptions, type GlowElement, type GlowSource, type HaloElement,
   type PanelLayout, type Rect, type RimElement, type RoundRect, type StrokeElement, type StrokeOptions,
   FLASH_PANEL_PEAK, FlashLayer, OrnamentLayer, buildFlashScene, buildOrnamentScene, layoutOrnaments, layoutOutset, ornamentFields, panelOrnamentFrame,
-  refineLightning, refineOrnaments, type FlashElement, type OrnamentElement, type OrnamentLayout,
+  refineLightning, refineOrnaments, refineStrokeMargin, strokeMarginFields, type FlashElement, type MarginElement, type OrnamentElement, type OrnamentLayout,
+  TitleButtonLayer, buildTitleButtonScene, refineTitleButtons, titleButtonFields, titleButtonRow, titleButtonRowBox, type TitleButtonElement,
+  SideLayer, buildSideScene, depthFields, refineSideFill, refineSideOutset, sideOutset, type SideElement,
 } from '../shared';
 
 /**
@@ -50,8 +52,10 @@ const chatFields = z.object({
   // The same prop as block and border, so a theme's outline reads as one family across its kinds.
   trackOpacity: trackOpacityField(0.45),
   strokeSides: strokeSidesField(),
+  ...strokeMarginFields(),
   ...glowFields({glow: 20, glowPulses: 1, glowStrength: 3}),
   ...haloFields({halo: 24, haloColor: '#A855F7'}),
+  ...depthFields(),
   rimLight: rimLightField(0),
   headerHeight: z.number().int().min(0).max(512)
     .describe('Height of the header at the top of the panel (where the title goes, e.g. "CHAT"), in px; 0 = no header')
@@ -63,6 +67,10 @@ const chatFields = z.object({
   headerLineWidth: z.number().finite().min(0).max(16)
     .describe('Thickness of the line between the header and the messages, in px, in the outline colors; 0 = no line')
     .default(2),
+  headerLineOpacity: z.number().finite().min(0).max(1)
+    .describe('Opacity of the line between the header and the messages, from 0 to 1')
+    .default(0.9),
+  ...titleButtonFields('the header'),
   footerHeight: z.number().int().min(0).max(512)
     .describe('Height of the footer at the bottom of the panel, below the messages, in px; 0 = no footer')
     .default(0),
@@ -83,7 +91,10 @@ export type ChatLoopProps = z.infer<typeof chatFields>;
 const CHAT_MAX_SPARKS = 160;
 /** The glass sheen passes over the messages: dimmer than the engine's default keeps them legible. */
 const CHAT_SHEEN_OPACITY = 0.2;
-/** The line between header and messages: bright, but a step below the edge itself. */
+/**
+ * The line between header and messages as the glow's legibility check counts it: bright, but a
+ * step below the edge itself (the default of headerLineOpacity, which is what the line is drawn at).
+ */
 const DIVIDER_OPACITY = 0.9;
 
 const fillOptions = (layout: PanelLayout): FillOptions => ({
@@ -111,13 +122,15 @@ export type ChatLayout = PanelLayout & {
    * sides when they are open (strokeSides 'top-bottom'), so the header runs edge to edge.
    */
   bandArea: RoundRect;
+  /** The title buttons at the right end of the header, left to right; empty while they are off or without a header. */
+  titleButtons: Rect[];
   /** Where the ornaments go (none with ornaments 'none'); their reach beyond the box is folded into outset. */
   ornamentLayout: OrnamentLayout;
 };
 
 type LayoutProps = Pick<ChatLoopProps,
-  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'strokeSides' | 'glow' | 'halo' | 'headerHeight' | 'headerLineWidth'
-  | 'footerHeight' | 'footerLineWidth' | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
+  'width' | 'height' | 'bleed' | 'radius' | 'padding' | 'strokeWidth' | 'strokeSides' | 'strokeMargin' | 'glow' | 'halo' | 'depth' | 'headerHeight' | 'headerLineWidth'
+  | 'footerHeight' | 'footerLineWidth' | 'titleButtonSize' | 'titleButtonGap' | 'titleButtonInset' | 'ornaments' | 'ornamentSize' | 'ornamentScale'>;
 
 /**
  * The single source of truth for a chat panel's geometry, in canvas pixels. The header takes
@@ -126,21 +139,27 @@ type LayoutProps = Pick<ChatLoopProps,
  * `footerHeight` px with its line right above, and the messages end one padding above that line. The title's area keeps the side padding and a
  * quarter of the band (at most one padding) above and below. Near round corners both keep that
  * space from the curve too (fitClearContent), as a block's text does: in a pill, a corner of the
- * messages would otherwise touch the stroke, right in its glow.
+ * messages would otherwise touch the stroke, right in its glow. The title buttons, when on, sit at
+ * the right end of the header, centred on its height, and the title stops one button gap short of them.
  */
 export const getChatLayout = (props: LayoutProps): ChatLayout => withOrnaments(getPanelLayout(props), props);
 
 /**
  * The ornaments hang on the finished panel: they keep clear of its text areas and never feed back
  * into them; only the outset grows by how far they reach into the bleed (seed- and frame-free).
+ * The row of title buttons is one more area they keep out of, only while it is on.
  */
 const withOrnaments = (base: Omit<ChatLayout, 'ornamentLayout'>, props: LayoutProps): ChatLayout => {
   const frame = panelOrnamentFrame({
-    kind: 'chat', layout: base, keepOut: [base.content, base.header], glow: props.glow, bands: {header: base.headerBand, footer: base.footer},
+    kind: 'chat', layout: base, keepOut: [base.content, base.header, ...chatButtonKeepOut(base)], glow: props.glow,
+    bands: {header: base.headerBand, footer: base.footer},
   });
   const ornamentLayout = layoutOrnaments(frame, props);
   return {...base, outset: Math.max(base.outset, layoutOutset(ornamentLayout)), ornamentLayout};
 };
+
+const chatButtonKeepOut = (base: Pick<ChatLayout, 'titleButtons'>): Rect[] =>
+  (base.titleButtons.length > 0 ? [titleButtonRowBox(base.titleButtons)] : []);
 
 const getPanelLayout = (props: LayoutProps): Omit<ChatLayout, 'ornamentLayout'> => {
   const hasHeader = props.headerHeight > 0;
@@ -148,7 +167,10 @@ const getPanelLayout = (props: LayoutProps): Omit<ChatLayout, 'ornamentLayout'> 
   const hasFooter = props.footerHeight > 0;
   const footerLine = hasFooter ? props.footerLineWidth : 0;
   const footerSpace = hasFooter ? props.footerHeight + footerLine : 0;
-  const panel = layoutPanel({...props, insets: {top: hasHeader ? props.headerHeight + line : 0, bottom: footerSpace}});
+  const panel = layoutPanel({
+    ...props, insets: {top: hasHeader ? props.headerHeight + line : 0, bottom: footerSpace},
+    extraOutset: sideOutset(props.depth),
+  });
   const {inner} = panel;
   // Open sides draw no stroke there: the bands and lines reach the panel's own sides.
   const bandArea = props.strokeSides === 'top-bottom' ? {...inner, x: panel.shape.x, width: panel.shape.width} : inner;
@@ -160,14 +182,24 @@ const getPanelLayout = (props: LayoutProps): Omit<ChatLayout, 'ornamentLayout'> 
   }, props.padding);
   const footer = hasFooter ? {x: bandArea.x, y: inner.y + inner.height - props.footerHeight, width: bandArea.width, height: props.footerHeight} : null;
   const footerDivider = footerLine > 0 ? {x: bandArea.x, y: inner.y + inner.height - footerSpace, width: bandArea.width, height: footerLine} : null;
-  if (!hasHeader) return {...panel, content, header: null, headerBand: null, divider: null, footer, footerDivider, bandArea};
+  if (!hasHeader) return {...panel, content, header: null, headerBand: null, divider: null, footer, footerDivider, bandArea, titleButtons: []};
   const band = {x: bandArea.x, y: inner.y, width: bandArea.width, height: props.headerHeight};
   const vertical = Math.min(props.padding, props.headerHeight / 4);
+  const titleButtons = props.titleButtonSize > 0
+    ? titleButtonRow({
+      right: bandArea.x + bandArea.width - props.titleButtonInset, cy: inner.y + props.headerHeight / 2,
+      size: props.titleButtonSize, gap: props.titleButtonGap,
+    })
+    : [];
+  // Without buttons the title keeps the side padding; with them it ends one button gap before the row.
+  const titleRight = titleButtons.length > 0
+    ? Math.max(props.padding, inner.x + inner.width - titleButtonRowBox(titleButtons).x + props.titleButtonGap)
+    : props.padding;
   const header = fitClearContent(inner, {
     top: vertical,
     bottom: inner.height - props.headerHeight + vertical,
     left: props.padding,
-    right: props.padding,
+    right: titleRight,
   }, vertical);
   return {
     ...panel,
@@ -178,6 +210,7 @@ const getPanelLayout = (props: LayoutProps): Omit<ChatLayout, 'ornamentLayout'> 
     footer,
     footerDivider,
     bandArea,
+    titleButtons,
   };
 };
 
@@ -206,22 +239,47 @@ const refineChatContent = (props: ChatLoopProps, layout: ChatLayout, context: z.
     });
   }
   if (layout.header.width < 1 || layout.header.height < 1) {
+    // Tall enough but with no width left: it is the row of buttons that took the title's place.
+    const beside = layout.titleButtons.length > 0 && layout.header.height >= 1;
     context.addIssue({
       code: 'custom',
       path: ['headerHeight'],
-      message: `A header of ${props.headerHeight} px leaves no room for the title: increase headerHeight or reduce padding.`,
+      message: beside
+        ? `A header of ${props.headerHeight} px leaves no room for the title beside the buttons: reduce titleButtonSize or padding, or enlarge the box.`
+        : `A header of ${props.headerHeight} px leaves no room for the title: increase headerHeight or reduce padding.`,
     });
   }
 };
 
 /**
+ * The title buttons live on the header: refused without one, taller than it, or leaving the inside
+ * of the outline (bandArea: the panel's own sides when they are open), each with the way out.
+ */
+const refineChatTitleButtons = (props: ChatLoopProps, layout: ChatLayout, context: z.RefinementCtx) => {
+  if (!(props.titleButtonSize > 0)) return;
+  if (!layout.headerBand) {
+    context.addIssue({
+      code: 'custom',
+      path: ['titleButtonSize'],
+      message: `The title buttons need a header: use headerHeight ≥ ${props.titleButtonSize}, or titleButtonSize 0.`,
+    });
+    return;
+  }
+  refineTitleButtons({
+    size: props.titleButtonSize, bar: props.headerHeight, barName: 'headerHeight', row: layout.titleButtons, inside: layout.bandArea,
+  }, context);
+};
+
+/**
  * What the stroke layer's glow blurs: the stroke band and the divider, which is drawn inside that
- * layer (see Dividers) at DIVIDER_OPACITY. The divider's clip to the rounded inside is ignored:
+ * layer (see Dividers) at headerLineOpacity. The divider's clip to the rounded inside is ignored:
  * a little more light, never less.
  */
-export const chatGlowSources = (layout: ChatLayout, footerLineOpacity = DIVIDER_OPACITY): GlowSource[] => [
+export const chatGlowSources = (
+  layout: ChatLayout, footerLineOpacity = DIVIDER_OPACITY, headerLineOpacity = DIVIDER_OPACITY,
+): GlowSource[] => [
   {outer: layout.shape, inner: layout.inner},
-  ...(layout.divider ? [{outer: {...layout.divider, radius: 0}, opacity: DIVIDER_OPACITY}] : []),
+  ...(layout.divider ? [{outer: {...layout.divider, radius: 0}, opacity: headerLineOpacity}] : []),
   ...(layout.footerDivider ? [{outer: {...layout.footerDivider, radius: 0}, opacity: footerLineOpacity}] : []),
 ];
 
@@ -231,7 +289,7 @@ export const chatGlowSources = (layout: ChatLayout, footerLineOpacity = DIVIDER_
  */
 const refineLegibility = (props: ChatLoopProps, layout: ChatLayout, context: z.RefinementCtx) => {
   if (!(props.glow > 0)) return;
-  const sources = chatGlowSources(layout, props.footerLineOpacity);
+  const sources = chatGlowSources(layout, props.footerLineOpacity, props.headerLineOpacity);
   const areas: [Rect | null, string, string][] = [
     [layout.content, 'messages', layout.divider ? 'increase padding, or reduce glow or headerLineWidth' : 'increase padding or reduce glow'],
     [layout.header, 'title', layout.divider ? 'increase headerHeight and padding, or reduce glow or headerLineWidth' : 'increase headerHeight and padding, or reduce glow'],
@@ -249,14 +307,19 @@ const refineLegibility = (props: ChatLoopProps, layout: ChatLayout, context: z.R
 };
 
 /**
- * Every refusal names its way out: a file beyond 4K, a glow or halo the bleed cannot hold, a
+ * Every refusal names its way out: a file beyond 4K, a glow, a halo or a side the bleed cannot hold,
+ * a side under a translucent fill, a
  * panel with no room for the messages or the title, a glow or a bright rim light over them, a
  * stroke or fill too fast for the frame rate.
  */
 export const chatLoopSchema = chatFields.superRefine((props, context) => {
   refineCanvas(props, context);
+  refineSideFill(props, context);
+  refineStrokeMargin(props, context);
   const layout = getChatLayout(props);
-  refineOutset(props, layout.outset, context);
+  // A side past the bleed is told as the side: the shared message speaks of the glow.
+  if (refineSideOutset(props, context)) refineOutset(props, layout.outset, context);
+  refineChatTitleButtons(props, layout, context);
   refineChatContent(props, layout, context);
   refineLegibility(props, layout, context);
   refineRim(props.rimLight, layout.inner, [
@@ -287,10 +350,16 @@ export type ChatDividerElement = {
 
 export type ChatLayers = {
   halo: HaloElement[];
+  /** The side of a panel with depth, whole behind it; empty while it is flat. */
+  side: SideElement[];
   /** Ornaments under the panel (see OrnamentLayer). */
   ornamentBack: OrnamentElement[];
   fill: FillElement[];
   header: ChatHeaderElement[];
+  /** The title buttons on the header; empty while they are off. */
+  titleButtons: TitleButtonElement[];
+  /** The flat band outside the outline (strokeMargin); empty while it is off. */
+  margin: MarginElement[];
   rim: RimElement[];
   stroke: (StrokeElement | GlowElement)[];
   divider: ChatDividerElement[];
@@ -325,15 +394,18 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
     opacity,
   });
   const divider: ChatDividerElement[] = [
-    ...(layout.divider ? [line(layout.divider, DIVIDER_OPACITY, props.strokeColors)] : []),
+    ...(layout.divider ? [line(layout.divider, props.headerLineOpacity, props.strokeColors)] : []),
     ...(layout.footerDivider && props.footerLineOpacity > 0 ? [line(layout.footerDivider, props.footerLineOpacity, [props.footerLineColor])] : []),
   ];
   const ornaments = buildOrnamentScene(layout.ornamentLayout, props, frame, durationInFrames);
   return {
     halo: buildHaloScene(props, frame, durationInFrames),
+    side: buildSideScene(props),
     ornamentBack: ornaments.back,
     fill: buildFillScene(props, layout.box, frame, durationInFrames, fillOptions(layout)),
     header,
+    titleButtons: buildTitleButtonScene(layout.titleButtons, props),
+    margin: buildMarginScene(props),
     // Half a pixel inside the stroke, so the 1 px line sits right against its inner edge.
     rim: buildRimScene(props, offsetRoundRect(layout.inner, -0.5)),
     stroke: [
@@ -348,7 +420,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
 
 /**
  * Every animated value of the panel, as a flat list of plain elements listed by place (see the
- * engine's builders): halo, back ornaments, fill, header band, rim light, stroke with its glow, divider,
+ * engine's builders): halo, side, back ornaments, fill, header band, title buttons, margin band, rim light, stroke with its glow, divider,
  * front ornaments, lightning flash. Pure: the frame,
  * the props and the seed decide it all, and nothing here jumps at the seam, so the generic scans
  * need no exemption.
@@ -356,7 +428,7 @@ export const getChatLayers = (props: ChatLoopProps, frame: number, durationInFra
 export const getChatScene = (props: ChatLoopProps, frame: number, durationInFrames: number) => {
   const layers = getChatLayers(props, frame, durationInFrames);
   return [
-    ...layers.halo, ...layers.ornamentBack, ...layers.fill, ...layers.header, ...layers.rim, ...layers.stroke, ...layers.divider,
+    ...layers.halo, ...layers.side, ...layers.ornamentBack, ...layers.fill, ...layers.header, ...layers.titleButtons, ...layers.margin, ...layers.rim, ...layers.stroke, ...layers.divider,
     ...layers.ornamentFront, ...layers.flash,
   ];
 };
@@ -423,9 +495,12 @@ export const ChatFrame = ({props, frame, durationInFrames}: {props: ChatLoopProp
     <OverlayCanvas props={props} width={layout.canvas.width} height={layout.canvas.height} layout={layout}
       guides={props.guides} idPrefix="chat">
       <HaloLayer elements={layers.halo} shape={layout.shape} />
+      <SideLayer elements={layers.side} outline={layout.shape} />
       <OrnamentLayer elements={layers.ornamentBack} layout={layout.ornamentLayout} style={props} layer="back" />
       <FillLayer elements={layers.fill} clip={layout.shape} />
       <HeaderLayer elements={layers.header} layout={layout} />
+      <TitleButtonLayer buttons={layers.titleButtons} clip={roundRectPath(layout.bandArea)} />
+      <MarginLayer elements={layers.margin} layout={layout} />
       <RimLayer elements={layers.rim} />
       <StrokeLayer elements={layers.stroke} tracks={[layout.track]} core={props.strokeCore} sides={props.strokeSides}>
         <Dividers elements={layers.divider} layout={layout} />

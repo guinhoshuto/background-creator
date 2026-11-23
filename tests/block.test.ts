@@ -193,7 +193,7 @@ test('Bloco: brilho ou halo que não cabem no bleed são recusados com o bleed q
   assert.match(issuesOf({...twitch, glow: 0, halo: 16}).join(), /use bleed ≥ 16/);
   assert.equal(blockLoopSchema.safeParse({...twitch, glow: 0, halo: 0}).success, true);
   // The twitch-panel size carries that itself, and wins over a preset's glow, as the CLI does.
-  assert.deepEqual(sizeProps(getSize('twitch-panel')), {...twitch, shape: 'rectangle', glow: 0, halo: 0});
+  assert.deepEqual(sizeProps(getSize('twitch-panel')), {...twitch, shape: 'rectangle', glow: 0, halo: 0, depth: 0});
   for (const theme of THEMES) {
     const options = buildExportOptions(parseRenderArgs(['BlockLoop', '--size', 'twitch-panel', '--format', 'gif']), preset(theme));
     const {props, output} = resolveExport(options);

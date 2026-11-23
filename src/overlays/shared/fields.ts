@@ -152,6 +152,52 @@ export const strokeSidesField = () => z.enum(STROKE_SIDES)
   .describe('Outline sides: all, or top-bottom (only the lines above and below; the sides stay open; a circle keeps its whole outline)')
   .default('all');
 
+/**
+ * A flat band between the edge of the panel and its outline (chat, block): the outline and
+ * everything inside it move inwards by `strokeMargin`, the box keeps its size, so nothing new
+ * reaches the bleed. Off by default: at 0 the outline sits on the edge, as it always has. Borders
+ * have no such field: their band already holds a line in its middle (thickness, strokeWidth).
+ */
+export const strokeMarginFields = () => ({
+  strokeMargin: z.number().finite().min(0).max(32)
+    .describe('Width of a flat band between the edge of the box and the outline, in px: the outline and the content move inwards by it; 0 = the outline sits on the edge')
+    .default(0),
+  strokeMarginColor: zColor().default('#FFFFFF'),
+});
+
+/**
+ * Refuses the band with open sides: it runs round the whole edge, and with only the top and bottom
+ * lines drawn it would stand alone down the sides, a frame of its own colour around nothing.
+ */
+export const refineStrokeMargin = (props: {strokeMargin: number; strokeSides: StrokeSides}, context: z.RefinementCtx) => {
+  if (!(props.strokeMargin > 0) || props.strokeSides === 'all') return;
+  context.addIssue({
+    code: 'custom',
+    path: ['strokeMargin'],
+    message: 'The margin runs round the whole outline: use strokeSides all, or strokeMargin 0.',
+  });
+};
+
+/**
+ * The three buttons of a title bar (see title-buttons.ts), at the right end of `where`: a chat's
+ * header, a block's top accent bar, a border's title bar. Off by default: at size 0 there is no row.
+ * Their outline and glyphs wear the first outline color.
+ */
+export const titleButtonFields = (where: string) => ({
+  titleButtonSize: z.number().int().min(0).max(64)
+    .describe(`Size of each of the three title buttons (minimize, maximize, close, drawn as line glyphs) at the right end of ${where}, in px; 0 = no buttons`)
+    .default(0),
+  titleButtonGap: z.number().finite().min(0).max(64)
+    .describe('Space between the title buttons, in px')
+    .default(7),
+  titleButtonInset: z.number().finite().min(0).max(256)
+    .describe('Space between the last title button and the inner edge of the outline on the right, in px')
+    .default(12),
+  titleButtonColors: z.array(zColor()).length(3)
+    .describe('Colors of the three title buttons, left to right')
+    .default(['#22D3EE', '#E879F9', '#A78BFA']),
+});
+
 export const trackOpacityField = (defaultValue = 0.3) => z.number().finite().min(0).max(1)
   .describe('dashes and comets: opacity of the whole dimmed outline underneath them, in the first color; 0 draws nothing')
   .default(defaultValue);
@@ -178,6 +224,18 @@ export const haloFields = (defaults: HaloDefaults = {}) => ({
     .describe('Reach of the halo around the panel, in px; it must fit in the bleed')
     .default(defaults.halo ?? 0),
   haloColor: zColor().default(defaults.haloColor ?? '#67E8F9'),
+});
+
+/**
+ * The thickness of the piece (see side.ts): a flat copy of its outline behind it, moved down and to
+ * the right, in the bleed. Off by default: at depth 0 the piece is flat, as it always has been.
+ * `note` adds what a kind ignores it with.
+ */
+export const depthFields = (note = '') => ({
+  depth: z.number().finite().min(0).max(64)
+    .describe(`Thickness of the piece: a flat copy of its outline moved down and to the right by this many px, behind it, closed by a 3 px line in the first outline color; it must fit in the bleed; 0 = flat${note}`)
+    .default(0),
+  depthColor: zColor().default('#A855F7'),
 });
 
 /**

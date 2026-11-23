@@ -11,6 +11,7 @@ import {DotGridLoop, dotGridLoopSchema} from './backgrounds/DotGridLoop';
 import {CheckerboardLoop, checkerboardLoopSchema} from './backgrounds/CheckerboardLoop';
 import {TerminalGridLoop, terminalGridLoopSchema} from './backgrounds/TerminalGridLoop';
 import {SunburstLoop, sunburstLoopSchema} from './backgrounds/SunburstLoop';
+import {StickerStageLoop, stickerStageLoopSchema} from './backgrounds/StickerStageLoop';
 import {VaporwaveLoop, vaporwaveLoopSchema} from './backgrounds/VaporwaveLoop';
 import {WebGLLoop, webglLoopSchema} from './backgrounds/WebGLLoop';
 import {WatercolorLoop, watercolorLoopSchema} from './backgrounds/WatercolorLoop';
@@ -24,6 +25,7 @@ import {borderCatalogEntry} from './overlays/border';
 import {chatCatalogEntry} from './overlays/chat';
 import type {AssetLayout} from './overlays/shared/box';
 import type {AssetMotion} from './overlays/shared/motion';
+import {stickerCatalogEntry} from './overlays/stickers';
 import {
   feedUiMockCatalogEntry, liveFrameCatalogEntry, liveUiMockCatalogEntry, safeZoneGuideCatalogEntry,
 } from './overlays/vertical';
@@ -86,6 +88,13 @@ export const backgroundCatalog = {
     component: SunburstLoop,
     schema: sunburstLoopSchema,
     defaultProps: sunburstLoopSchema.parse({}),
+  },
+  StickerStageLoop: {
+    id: 'StickerStageLoop',
+    kind: 'background',
+    component: StickerStageLoop,
+    schema: stickerStageLoopSchema,
+    defaultProps: stickerStageLoopSchema.parse({}),
   },
   VaporwaveLoop: {
     id: 'VaporwaveLoop',
@@ -208,7 +217,8 @@ export type Background = (typeof backgroundCatalog)[BackgroundId];
 
 /**
  * The overlay kinds: one parametric composition per sized kind; the vertical kind (fixed
- * 1080×1920) has its frame, its safe-zone guide and two QA-only interface mocks.
+ * 1080×1920) has its frame, its safe-zone guide and two QA-only interface mocks; the sticker kind
+ * (fixed 304×304) has one loose sticker.
  */
 export const overlayCatalog = {
   ChatLoop: chatCatalogEntry,
@@ -218,6 +228,7 @@ export const overlayCatalog = {
   SafeZoneGuide: safeZoneGuideCatalogEntry,
   LiveUiMock: liveUiMockCatalogEntry,
   FeedUiMock: feedUiMockCatalogEntry,
+  StickerLoop: stickerCatalogEntry,
 } as const satisfies Record<string, CatalogEntry>;
 
 /** Every composition of every kind: the backgrounds, then the overlays. */

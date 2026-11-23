@@ -17,7 +17,7 @@ import type {RoundRect} from '../geometry';
  * dropped, and a set whose hero fits nowhere places nothing, which the schema refuses.
  */
 
-export const ORNAMENT_CHOICES = ['none', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb', 'horizon', 'terminal'] as const;
+export const ORNAMENT_CHOICES = ['none', 'midnight', 'haunted-mansion', 'haunted-interior', 'cobweb', 'horizon', 'terminal', 'sticker'] as const;
 export type OrnamentChoice = (typeof ORNAMENT_CHOICES)[number];
 export type OrnamentSetId = Exclude<OrnamentChoice, 'none'>;
 export const ORNAMENT_SET_IDS = ORNAMENT_CHOICES.filter((choice): choice is OrnamentSetId => choice !== 'none');

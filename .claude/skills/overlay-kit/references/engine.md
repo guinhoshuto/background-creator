@@ -108,10 +108,11 @@ A new set adds an enum value, not a field: the `Root.tsx` literals and `ROOT_DEF
 
 The contract is in `docs/kits-halloween.md` §2.4 and `types.ts:OrnamentBase`; checked by the harness. Easy to miss:
 
-- `set.seedOffset`: taken 0, 20, 40, 60, 80 (`types.ts:OrnamentSet`); the stream is seed + `ORNAMENT_SEED` (503) + offset (`place.ts:ornamentRandom`). Other streams: fill +101, stroke +211, glow/halo +307, corners/accent +401, lightning +509.
+- `set.seedOffset`: taken 0, 20, 40, 60, 80, 100, 120 (`types.ts:OrnamentSet`; 100 is `sticker`, 120 is `terminal`); the stream is seed + `ORNAMENT_SEED` (503) + offset (`place.ts:ornamentRandom`). Other streams: fill +101, stroke +211, glow/halo +307, corners/accent +401, lightning +509.
 - Draw every element's random values whether used or not, so one motif never shifts another (`sets/midnight.tsx`, `build`).
 - Rhythms in Hz from the background, turned into whole cycles with `harmonics(hz, durationSeconds)`; time from `motion.ts:cycleOf`. `build` must accept fractional frames; a field may not jump between neighbouring half frames by more than 0.02 + 0.25·|Δ| (`ornament-harness.ts`).
 - Frame 0 is the hero pose: the pack PNGs are frame 0.
+- Every scene element carries `opacity` in [0, 1] (`tests/helpers/scene-scans.ts:assertValidElements`, run on every theme preset), so a new element type in the engine sets `opacity: 1` even when no layer reads it: the side, the title bar, its buttons and the margin band lacked it until `sticker-pop`, the first preset to draw them, failed the scans (2026-11-22).
 - Element types are declared with `type`, never `interface`, and `type` starts with `<set>-`.
 - Colours through `ornamentPalette` (cool, light, warm; the last two fall back to cool), so 1- and 2-colour palettes work (the harness runs both).
 - Def ids through `ornamentPartId(context, key, part)` = `${idBase}-${key}-${part}`; numbers in paths through `geometry.ts:svgNumber`.
@@ -132,7 +133,10 @@ The harness requires a kit preset to place its hero at every named size of every
 
 - All kinds: strict parse alone and merged with every size's props; no `width`, `height`, `bleed`, `fit` or `guides` (`overlay-registry.test.ts`, "cada preset de tema…"). The preset never fixes a size.
 - Duration and seed come from the background: each overlay preset's `durationSeconds` and `seed` equal the pack background's parsed values (`pack.test.ts`, "cada kit traz o seu fundo…").
-- Chat: `strokeWidth` 2–3; a header (`layout.header` non-null, so `headerHeight` > 0); `glow` > 0, since the render test expects `<filter id="chat-stroke-glow"` for every preset (`tests/chat.test.ts`).
+- Chat: `strokeWidth` 2–3, or exactly the weight the theme has in `CHAT_STROKE_WIDTHS` (`tests/helpers/themes.ts`: a named exception per theme, added only with the owner's yes; `sticker-pop` takes 6, its block's and frames' ink line); a header (`layout.header` non-null, so `headerHeight` > 0); `glow` > 0, since the render test expects `<filter id="chat-stroke-glow"` for every preset (`tests/chat.test.ts`; `sticker-pop`, a flat look, keeps `glow: 2`, `glowStrength: 0.25`). The header keep-out spans the band's whole width minus `padding` (`ChatLoop.tsx:getChatLayout`), so a row of motifs beside the title is not a set's job: the window buttons are kind fields (below).
+- Paper pieces (`sticker-pop`, 2026-11-21) use three engine fields no other kit sets: `strokeMargin` and `strokeMarginColor` (chat and block: a flat band outside the outline, refused with `strokeSides: top-bottom`); `depth` and `depthColor` (all kinds: a flat side down and to the right, which needs `fillOpacity: 1`, and on a border `lines: 1`; a set must keep its motifs off the right, the bottom and the BR corner, where it shows); and the title buttons, `titleButtonSize`, `titleButtonGap`, `titleButtonInset`, `titleButtonColors`, on the chat's header, a block's top bar (`accent: top`) and a border's `titleBarHeight` (rectangular windows only; it needs `corners: none` and `lines: 1`). On a border with a title bar, nothing goes on the top or its corners. Field tables: `docs/overlays.md`, Controls.
+- A flat ink line zeroes what the kind lights by default: `strokeCore: 0` (the block's default 0.9 draws the 6 px line indigo, lavender, indigo) and, on the chat, `headerLineOpacity: 1` (default 0.9, a paler header divider). The `sticker-pop` art review caught both against the mock (2026-11-22).
+- A moving gradient fill shows a different end of `fillColors` on each frame, and the pack's PNG is frame 0, so the colour order sets the still's look: check frame 0 against the mock (the `sticker-pop` block needed salmon first to show its strong pink on top, 2026-11-22).
 - Block: frame 0 ≠ frame 200 (`block.test.ts`, "presets dos oito temas…") and frame N−1 ≠ frame 0 at every size ("o ciclo fecha em todos os tamanhos…"); legibility ≤ 0.2 over the text at every size.
 - Border: sets `thickness` (read as a number in `border.test.ts`, "a moldura nunca passa do próprio contorno…"); kit presets use `corners: "none"` (harness).
 - Kit presets set `ornaments` to their set (harness).
@@ -160,7 +164,7 @@ The harness requires a kit preset to place its hero at every named size of every
 
 ## 13. Kit pack rules (`tests/pack.test.ts`)
 
-- Exactly one background item (no `sizes`), of kind background, with an existing preset.
+- Exactly one background item (no `sizes`, no `variant`), of kind background, with an existing preset, save the named exception: a kit in `KIT_BACKGROUND_VARIANTS` (`tests/helpers/themes.ts`, with owner and date) ships exactly those variants, in that order. Every background matches the overlay presets' `durationSeconds` and `seed`.
 - With ornaments: `chat-<theme>` on every chat size (in table order), `block-<theme>` on every block size but `twitch-panel`, `border-<theme>` on every border size but the two screens.
 - `plain` twins of every size (screens included, `twitch-panel` excluded), props exactly `{"ornaments": "none"}`.
 - Formats `["webm", "png"]`, or `["png"]` for compositions in `STATIC_ONLY`; `version` an integer ≥ 1.

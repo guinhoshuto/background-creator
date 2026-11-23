@@ -36,6 +36,7 @@ const PRODUCT_TABLE = [
   ['fullscreen', 'border', 1920, 1080, 0, 1920, 1080],
   ['fullscreen-vertical', 'border', 1080, 1920, 0, 1080, 1920],
   ['live-frame', 'vertical', 1080, 1920, 0, 1080, 1920],
+  ['sticker', 'sticker', 304, 304, 0, 304, 304],
 ] as const;
 
 test('tamanhos: a tabela bate exatamente com a linha de produtos, na mesma ordem', () => {
@@ -93,7 +94,7 @@ test('tamanhos: só as molduras de tela inteira usam fit tela, sempre sem bleed'
 });
 
 test('tamanhos: getSize lista as opções em inglês; sizesForKind separa por tipo', () => {
-  assert.throws(() => getSize('gigante'), /Unknown size: gigante\. Options: chat-compact, .*fullscreen-vertical, live-frame\./);
+  assert.throws(() => getSize('gigante'), /Unknown size: gigante\. Options: chat-compact, .*fullscreen-vertical, live-frame, sticker\./);
   assert.throws(() => getSize('__proto__'), /Unknown size/);
   for (const kind of ASSET_KINDS) {
     for (const size of sizesForKind(kind)) assert.equal(size.kind, kind);
@@ -117,6 +118,20 @@ test('tamanhos: o tipo vertical tem canvas fixo, e o tamanho só nomeia o arquiv
   assert.equal(assetFileName({id: 'SafeZoneGuide', kind: 'vertical', props: {}, format: 'png'}), 'SafeZoneGuide-live-frame.png');
   // A sized kind still sets its box.
   assert.deepEqual(sizeProps(getSize('fullscreen-vertical')), {width: 1080, height: 1920, bleed: 0, fit: 'screen', shape: 'rectangle'});
+});
+
+// Dies with: F1-10 (the sticker kind's size is named sticker-256, so the default size and the file tag drift).
+test('tamanhos: o tipo sticker tem canvas fixo, e o tamanho só nomeia o arquivo', () => {
+  const size = getSize('sticker');
+  assert.equal(kindPolicies.sticker.defaultSizeId, size.id);
+  assert.deepEqual(canvasOf(size), kindPolicies.sticker.fixedSize);
+  assert.deepEqual(sizesForKind('sticker'), [size]);
+  // No width/height props: the sticker schema has none, and a strict parse would refuse them.
+  assert.deepEqual(sizeProps(size), {});
+  assert.equal(matchNamedSize('sticker', {}), size);
+  assert.equal(sizeTag('sticker', {motif: 'bolt'}), 'sticker');
+  assert.equal(assetFileStem({id: 'StickerLoop', kind: 'sticker', props: {}}), 'StickerLoop-sticker');
+  assert.equal(assetFileName({id: 'StickerLoop', kind: 'sticker', props: {}, format: 'png'}), 'StickerLoop-sticker.png');
 });
 
 test('tamanhos: o tamanho padrão de cada tipo existe e é do próprio tipo', () => {

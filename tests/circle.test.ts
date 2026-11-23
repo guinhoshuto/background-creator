@@ -27,7 +27,7 @@ import {
 import {cornersOf} from './helpers/glow-brute';
 import {maskGroupsOf} from './helpers/masks';
 import {assertSeamVelocity, type Sampler} from './helpers/scene-scans';
-import {KIT_THEMES, OVERLAY_THEMES, droppedWebms, isStaticOnly} from './helpers/themes';
+import {KIT_BACKGROUND_VARIANTS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, boxStylesOf, droppedWebms, isStaticOnly} from './helpers/themes';
 
 /**
  * Round blocks and round webcam borders: the shape prop, the round named sizes, the text area in
@@ -130,8 +130,9 @@ test('Tamanhos redondos: caixa quadrada, bleed, arquivo = caixa + 2·bleed e for
   }
   // Every block and border size spells its shape out, so a size id alone fixes the product; the chat has none.
   for (const size of NAMED_SIZES) {
-    // The chat and the vertical kind (fixed 1080×1920 screen, windows set by the layout) have none.
-    if (size.kind === 'chat' || size.kind === 'vertical') {
+    // The chat, the vertical kind (fixed 1080×1920 screen, windows set by the layout) and the sticker kind
+    // (one loose motif on a fixed 304×304 square) have none.
+    if (size.kind === 'chat' || size.kind === 'vertical' || size.kind === 'sticker') {
       assert.equal(size.props?.shape, undefined, size.id);
       continue;
     }
@@ -551,10 +552,17 @@ test('Packs: os tamanhos redondos entram em webm e png (bordas estáticas só em
     const square = plan.find((file) => file.output.endsWith(`masks/${name}-webcam-square-mask.png`));
     assert.equal(square?.exportProps.shape, maskGroupsOf(name).of('webcam-square') ? 'rectangle' : undefined, name);
     assert.ok(!plan.some((file) => /round-(sm|lg)-mask/.test(file.output)), `${name}: um disco só`);
-    // Kits: the background, 24 sizes with ornaments (no screens, no Twitch panel) and 26 without, in two formats, plus one mask
-    // per window shape, shared by both (seven with rounded corners: maskGroupsOf).
+    // Kits: the background (one per variant where KIT_BACKGROUND_VARIANTS names some), 24 sizes with ornaments (no screens, no
+    // Twitch panel) and 26 without, in two formats, plus one mask per window shape, shared by both (seven with rounded corners:
+    // maskGroupsOf), and each loose sticker KIT_STICKERS names, in two formats. Dies with: a variant dropped from
+    // KIT_BACKGROUND_VARIANTS['sticker-pop']; F2-4 (mutations-stickers-f2.json), the sparkle-cream item left out.
+    // Each box style (KIT_BOX_STYLES) ships the 24 + 26 again, on the same masks. Dies with (mutations-boxes-f2.json):
+    // F2-7, webcam-vertical left out of the indigo-pop frames with ornaments.
+    const styles = boxStylesOf(name).length;
+    const backgrounds = KIT_BACKGROUND_VARIANTS[name as keyof typeof KIT_BACKGROUND_VARIANTS]?.length ?? 1;
+    const stickers = KIT_STICKERS[name as keyof typeof KIT_STICKERS]?.length ?? 0;
     const stills = droppedWebms(name);
-    assert.equal(plan.length, (name === 'halloween' ? 67 : kit ? 2 + 2 * 24 + 2 * 26 + maskGroupsOf(name).masks.length : 63) - stills, name);
+    assert.equal(plan.length, (name === 'halloween' ? 67 : kit ? 2 * backgrounds + 2 * stickers + (1 + styles) * (2 * 24 + 2 * 26) + maskGroupsOf(name).masks.length : 63) - stills, name);
   }
 });
 
