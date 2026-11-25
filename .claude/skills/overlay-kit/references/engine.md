@@ -17,7 +17,7 @@ Already documented elsewhere, not repeated here:
 | What | Where |
 | --- | --- |
 | Set ids, the `none` choice | `src/overlays/shared/ornaments/types.ts:ORNAMENT_CHOICES`, `ORNAMENT_SET_IDS` |
-| Field group (`ornaments`, `ornamentColors`, `ornamentSize`, `ornamentScale`, `ornamentReach`, `lightning`) | `ornaments/fields.ts:ornamentFields`, `ORNAMENT_SIZE_RANGE` (12–256, 48), `ORNAMENT_SCALE_RANGE` (1–4, 1); `ornamentReach` (0 = the whole bleed) pulls the frame's paint limit in to that many px past the outline (`frame.ts:reachOrnamentFrame`, applied in `layoutOrnaments`) |
+| Field group (`ornaments`, `ornamentColors`, `ornamentSize`, `ornamentScale`, `ornamentReach`, `lightning`) | `ornaments/fields.ts:ornamentFields`, `ORNAMENT_SIZE_RANGE` (12–256, 48), `ORNAMENT_SCALE_RANGE` (1–4, 1); `ornamentReach` (0 = the whole bleed) pulls the frame's paint limit in to that many px past the outline and keeps a band clear inside it, on every side but `ornamentOpenSides` (`frame.ts:reachOrnamentFrame`, applied in `layoutOrnaments`) |
 | Set by name | `ornaments/registry.ts:ORNAMENT_REGISTRY` |
 | Frame a set may read | `ornaments/types.ts:OrnamentFrame`; built by `ornaments/frame.ts:panelOrnamentFrame`, `frameOrnamentFrame` |
 | Placement helpers | `ornaments/place.ts` |

@@ -74,18 +74,36 @@ export const frameOrnamentFrame = (input: {layout: FrameLayout; track: RoundRect
 
 /**
  * The frame with its paint limit pulled in to `reach` px past the outline (and never past the old
- * limit), so every motif placed on it keeps within that distance of the piece: the stream layout
- * grid gives half its gutter, and two pieces side by side never touch. A motif short of room there
- * slides in over the line or shrinks, as anywhere else. 0 leaves the frame as it is.
+ * limit) on every side but the `open` ones, so every motif placed on it keeps within that distance
+ * of the piece there: the stream layout grid gives half its gutter on the sides that face another
+ * piece, and two pieces side by side never touch; the sides on the scene's margin stay open. On a
+ * closed side a front motif may not slide in either: a band from `reach` inside the outline to the
+ * piece's middle is kept clear, so a motif there stays small (about 2·reach, straddling the line,
+ * or left out below its floor) instead of growing over the panel (owner, 2026-11-25: full size on
+ * the margin only). 0 leaves the frame as it is.
  */
-export const reachOrnamentFrame = (frame: OrnamentFrame, reach: number): OrnamentFrame => {
+export const reachOrnamentFrame = (
+  frame: OrnamentFrame, reach: number, open: readonly ('left' | 'top' | 'right' | 'bottom')[] = [],
+): OrnamentFrame => {
   if (!(reach > 0)) return frame;
   const {outline, paintLimit: limit} = frame;
-  const x0 = Math.max(limit.x, outline.x - reach);
-  const y0 = Math.max(limit.y, outline.y - reach);
-  const x1 = Math.min(limit.x + limit.width, outline.x + outline.width + reach);
-  const y1 = Math.min(limit.y + limit.height, outline.y + outline.height + reach);
-  return {...frame, paintLimit: {x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0)}};
+  const x0 = open.includes('left') ? limit.x : Math.max(limit.x, outline.x - reach);
+  const y0 = open.includes('top') ? limit.y : Math.max(limit.y, outline.y - reach);
+  const x1 = open.includes('right') ? limit.x + limit.width : Math.min(limit.x + limit.width, outline.x + outline.width + reach);
+  const y1 = open.includes('bottom') ? limit.y + limit.height : Math.min(limit.y + limit.height, outline.y + outline.height + reach);
+  const halfW = Math.max(0, outline.width / 2 - reach);
+  const halfH = Math.max(0, outline.height / 2 - reach);
+  const bands: Rect[] = [
+    ...(open.includes('left') ? [] : [{x: outline.x + reach, y: outline.y, width: halfW, height: outline.height}]),
+    ...(open.includes('top') ? [] : [{x: outline.x, y: outline.y + reach, width: outline.width, height: halfH}]),
+    ...(open.includes('right') ? [] : [{x: outline.x + outline.width / 2, y: outline.y, width: halfW, height: outline.height}]),
+    ...(open.includes('bottom') ? [] : [{x: outline.x, y: outline.y + outline.height / 2, width: outline.width, height: halfH}]),
+  ].filter((band) => band.width > 0 && band.height > 0);
+  return {
+    ...frame,
+    paintLimit: {x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0)},
+    keepOut: [...frame.keepOut, ...bands],
+  };
 };
 
 const scaleRect = <T extends Rect>(rect: T, k: number): T => {

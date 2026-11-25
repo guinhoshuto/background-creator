@@ -123,10 +123,37 @@ export const LAYOUT_SIZES = {
 } as const;
 
 /**
- * How far a layout piece's ornaments may reach past its outline (`ornamentReach`): half the
- * gutter, so two pieces side by side never touch, whichever of them carries ornaments.
+ * How far a layout piece's ornaments may reach past its outline (`ornamentReach`) on the sides that
+ * face another piece across a gutter: half the gutter, so two pieces side by side never touch,
+ * whichever of them carries ornaments.
  */
 export const LAYOUT_ORNAMENT_REACH = STREAM_GRID.gutter / 2;
+
+export type GridSide = 'left' | 'top' | 'right' | 'bottom';
+const SIDES: readonly GridSide[] = ['left', 'top', 'right', 'bottom'];
+
+/** Whether the slot's frame sits on the scene's margin on that side. */
+const onMargin = (slot: GridSlot, side: GridSide, tokens: GridTokens = STREAM_GRID) => {
+  const {frame} = slot;
+  if (side === 'left') return frame.x === tokens.margin;
+  if (side === 'top') return frame.y === tokens.margin;
+  if (side === 'right') return frame.x + frame.width === tokens.width - tokens.margin;
+  return frame.y + frame.height === tokens.height - tokens.margin;
+};
+
+const LAYOUT_SLOTS: Record<keyof typeof LAYOUT_SIZES, GridSlot[]> = {
+  'layout-game': [STREAM_LAYOUT.game], 'layout-cam': [STREAM_LAYOUT.cam], 'layout-chat': [STREAM_LAYOUT.chat],
+  'layout-chat-tall': [STREAM_LAYOUT.chatTall], 'layout-bar': STREAM_LAYOUT.bars,
+};
+
+/**
+ * The sides of each layout size that face the scene's outer margin in every slot it takes
+ * (`ornamentOpenSides`, set by the size itself): there its ornaments keep their full size, in the
+ * bleed and the margin (owner, 2026-11-25); the other sides face a neighbour across a gutter and
+ * take LAYOUT_ORNAMENT_REACH. The bar serves three slots, so only the bottom is open to all of them.
+ */
+export const LAYOUT_OPEN_SIDES = Object.fromEntries(Object.entries(LAYOUT_SLOTS).map(([id, slots]) =>
+  [id, SIDES.filter((side) => slots.every((slot) => onMargin(slot, side)))])) as Record<keyof typeof LAYOUT_SIZES, GridSide[]>;
 
 /** One overlay of a scene: a named size (and the pack variant, when not the ornamented piece) at its box's top-left corner. */
 export type SceneLayer = {size: string; variant?: string; x: number; y: number};
@@ -136,8 +163,8 @@ const at = (size: keyof typeof LAYOUT_SIZES, slot: GridSlot, variant?: string): 
   ({size, ...(variant === undefined ? {} : {variant}), x: slot.box.x, y: slot.box.y});
 
 /**
- * The qa:kit scenes on the grid. One piece keeps its ornaments (the cam in the gameplay scene,
- * the big window, the camera of a Just Chatting stream, in the chatting one) and the others are
+ * The qa:kit scenes on the grid. One piece keeps its ornaments, the big window (the game, or the
+ * camera of a Just Chatting stream), whose star faces the margin at full size, and the others are
  * plain, so a scene never stacks ornaments on every frame.
  */
 export const GRID_SCENES: StreamScene[] = [
@@ -146,7 +173,7 @@ export const GRID_SCENES: StreamScene[] = [
     ...STREAM_LAYOUT.bars.map((bar) => at('layout-bar', bar, 'plain')),
   ]},
   {out: 'mock-gameplay', layers: [
-    at('layout-game', STREAM_LAYOUT.game, 'plain'), at('layout-cam', STREAM_LAYOUT.cam), at('layout-chat', STREAM_LAYOUT.chat, 'plain'),
+    at('layout-game', STREAM_LAYOUT.game), at('layout-cam', STREAM_LAYOUT.cam, 'plain'), at('layout-chat', STREAM_LAYOUT.chat, 'plain'),
     ...STREAM_LAYOUT.bars.map((bar) => at('layout-bar', bar, 'plain')),
   ]},
 ];

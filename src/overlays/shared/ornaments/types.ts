@@ -126,6 +126,8 @@ export type OrnamentStyle = {
   ornamentScale: number;
   /** How far motifs may reach past the outline, in px; 0 or absent: the whole bleed (see reachOrnamentFrame). */
   ornamentReach?: number;
+  /** Sides where ornamentReach does not apply (the whole bleed); absent: none. */
+  ornamentOpenSides?: readonly ('left' | 'top' | 'right' | 'bottom')[];
   lightning: number;
   seed: number;
   durationSeconds: number;

@@ -178,7 +178,7 @@ test('qa:kit: a pack with the layout grid sizes gets the grid scenes; a pack wit
   assert.deepEqual(scene('mock-chatting-0.png'), [
     {name: 'layout-game-0', x: game.box.x, y: game.box.y}, {name: 'layout-chat-tall-plain-0', x: chatTall.box.x, y: chatTall.box.y}, ...barLayers]);
   assert.deepEqual(scene('mock-gameplay-0.png'), [
-    {name: 'layout-game-plain-0', x: game.box.x, y: game.box.y}, {name: 'layout-cam-0', x: cam.box.x, y: cam.box.y},
+    {name: 'layout-game-0', x: game.box.x, y: game.box.y}, {name: 'layout-cam-plain-0', x: cam.box.x, y: cam.box.y},
     {name: 'layout-chat-plain-0', x: chat.box.x, y: chat.box.y}, ...barLayers]);
   assert.deepEqual(scene('mock-screen-0.png').map((layer) => layer.name), ['fullscreen-plain-0', 'label-sm-0']);
   // The choice is per scene: every piece present gives the grid's, any missing gives the legacy one.

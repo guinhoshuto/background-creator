@@ -55,15 +55,15 @@ export const placeOrnaments = (
 
 /**
  * The kind's ornament layout: the style's set placed on its frame. With an ornamentReach r above 0
- * the frame's paint limit first comes in to r px past the outline (reachOrnamentFrame), so no motif
- * reaches further. With an ornamentScale s other than 1 the set is placed on the frame shrunk by 1/s
+ * the frame's paint limit first comes in to r px past the outline on every side but the
+ * ornamentOpenSides (reachOrnamentFrame), so no motif reaches further there. With an ornamentScale s other than 1 the set is placed on the frame shrunk by 1/s
  * and the layout stays in that space (see OrnamentLayout), so the room of every slot, the caps and
  * the strokes all grow by s together.
  */
 export const layoutOrnaments = (
-  whole: OrnamentFrame, style: Pick<OrnamentStyle, 'ornaments' | 'ornamentSize' | 'ornamentScale' | 'ornamentReach'>,
+  whole: OrnamentFrame, style: Pick<OrnamentStyle, 'ornaments' | 'ornamentSize' | 'ornamentScale' | 'ornamentReach' | 'ornamentOpenSides'>,
 ): OrnamentLayout => {
-  const frame = reachOrnamentFrame(whole, style.ornamentReach ?? 0);
+  const frame = reachOrnamentFrame(whole, style.ornamentReach ?? 0, style.ornamentOpenSides ?? []);
   const scale = style.ornamentScale;
   if (scale === 1 || style.ornaments === 'none') return {frame, placements: placeOrnaments(frame, style)};
   const scaled = scaleOrnamentFrame(frame, 1 / scale);

@@ -5,7 +5,7 @@ import {reachOrnamentFrame} from '../src/overlays/shared/ornaments/frame';
 import type {OrnamentFrame} from '../src/overlays/shared/ornaments/types';
 import {getSize, sizeProps} from '../src/sizes';
 import {
-  GRID_REACH, GRID_SCENES, LAYOUT_ORNAMENT_REACH, LAYOUT_SIZES, STREAM_GRID, STREAM_LAYOUT, streamGrid,
+  GRID_REACH, GRID_SCENES, LAYOUT_OPEN_SIDES, LAYOUT_ORNAMENT_REACH, LAYOUT_SIZES, STREAM_GRID, STREAM_LAYOUT, streamGrid,
   type GridRect, type GridSlot,
 } from '../src/stream-grid';
 import {ORNAMENT_KINDS, type OrnamentKindName} from './helpers/ornament-kinds';
@@ -32,6 +32,12 @@ test('stream grid: the sizes the owner approved on 2026-11-25 (they reach buyers
     assert.deepEqual([named.kind, named.width, named.height], [size.kind, size.width, size.height], id);
   }
   assert.deepEqual(STREAM_GRID, {width: 1920, height: 1080, margin: 40, gutter: 24, barHeight: 120, barCount: 3});
+  // The sides on the scene's margin, where the stickers keep their full size; each size sets its own.
+  assert.deepEqual(LAYOUT_OPEN_SIDES, {
+    'layout-game': ['left', 'top'], 'layout-cam': ['top', 'right'], 'layout-chat': ['right', 'bottom'],
+    'layout-chat-tall': ['top', 'right', 'bottom'], 'layout-bar': ['bottom'],
+  });
+  for (const [id, sides] of Object.entries(LAYOUT_OPEN_SIDES)) assert.deepEqual(getSize(id).props?.ornamentOpenSides, sides, id);
 });
 
 // Dies with: G-3 the game window's 16:9 width, G-4 the bar gap, G-5 the cam's 4:3 height.
@@ -89,16 +95,25 @@ test('stream grid: the qa:kit scenes put each piece on its slot, one ornamented 
   }
 });
 
-// Dies with: G-12 the limit's left side moved out by the reach instead of in.
+// Dies with: G-12 the limit's left side moved out by the reach instead of in, G-15 the top band starting at the outline,
+// G-16 the left band starting further in.
 test('ornamentReach: the paint limit comes in to the reach past the outline, never past the old limit', () => {
   const frame = {
     outline: {x: 48, y: 48, width: 200, height: 100, radius: 8},
     paintLimit: {x: 0, y: 0, width: 296, height: 156},
+    keepOut: [],
   } as unknown as OrnamentFrame;
   assert.equal(reachOrnamentFrame(frame, 0), frame);
   assert.deepEqual(reachOrnamentFrame(frame, 12).paintLimit, {x: 36, y: 36, width: 224, height: 120});
   // A reach wider than the bleed keeps the canvas.
   assert.deepEqual(reachOrnamentFrame(frame, 100).paintLimit, {x: 0, y: 0, width: 296, height: 156});
+  // Open sides keep the old limit: left and bottom here.
+  assert.deepEqual(reachOrnamentFrame(frame, 12, ['left', 'bottom']).paintLimit, {x: 0, y: 36, width: 260, height: 120});
+  // A closed side keeps a band clear inside the outline, from the reach to the middle: motifs there stay small.
+  assert.deepEqual(reachOrnamentFrame(frame, 12, ['top', 'right', 'bottom']).keepOut, [{x: 60, y: 48, width: 88, height: 100}]);
+  assert.deepEqual(reachOrnamentFrame(frame, 12, ['left', 'bottom']).keepOut, [
+    {x: 48, y: 60, width: 200, height: 38}, {x: 148, y: 48, width: 88, height: 100},
+  ]);
 });
 
 const STYLES = [undefined, 'cream-soda', 'fine-line', 'indigo-pop'] as const;
@@ -109,8 +124,9 @@ const slotsBySize: Record<keyof typeof LAYOUT_SIZES, GridSlot[]> = {
   'layout-chat-tall': [STREAM_LAYOUT.chatTall], 'layout-bar': STREAM_LAYOUT.bars,
 };
 
-// Dies with: G-7 the registry ignoring ornamentReach, G-8 the pack's reach 12 → 24.
-test('sticker-pop: every ornamented layout piece keeps its stickers within half the gutter, so no neighbour is ever touched', () => {
+// Dies with: G-7 the registry ignoring ornamentReach, G-8 the pack's reach 12 → 24, G-13 the registry ignoring
+// ornamentOpenSides (the game's star shrinks), G-16 the left band starting further in (the cam's star grows).
+test('sticker-pop: every ornamented layout piece keeps its stickers within half the gutter on the sides that face a neighbour, full size on the margin, so no neighbour is ever touched', () => {
   const others = (slot: GridSlot, all: GridSlot[]) => all.filter((other) => other !== slot);
   for (const style of STYLES) {
     for (const [id, slots] of Object.entries(slotsBySize)) {
@@ -123,6 +139,11 @@ test('sticker-pop: every ornamented layout piece keeps its stickers within half 
       const props = adapter.parse({...preset, ...item.props, ...sizeProps(size)});
       const layout = adapter.ornamentLayout(props);
       assert.ok(layout.placements.length > 0, `${style ?? 'base'} ${id}: the star is placed`);
+      // The game's star sits on its left side, on the margin: it keeps the kit's full size (owner, 2026-11-25).
+      if (id === 'layout-game') {
+        const star = (layout.placements[0] as {size?: number}).size ?? 0;
+        assert.ok(Math.abs(star - props.ornamentSize) < 1e-6, `${style ?? 'base'} game star ${star}`);
+      }
       const scale = layout.scale ?? 1;
       for (const slot of slots) {
         const fileX = slot.box.x - props.bleed;
@@ -137,13 +158,21 @@ test('sticker-pop: every ornamented layout piece keeps its stickers within half 
           const cy = fileY + placement.y * scale;
           const r = placement.extent * scale;
           const label = `${style ?? 'base'} ${id} ${String((placement as {motif?: string}).motif ?? '')} at ${cx.toFixed(1)},${cy.toFixed(1)} r ${r}`;
-          // Within half the gutter of the piece's own outline (its drawn edge in this box style), and inside the scene.
+          // Within half the gutter of the piece's own outline (its drawn edge in this box style) on the sides
+          // that face a neighbour; the sides on the scene's margin are open. Inside the scene either way.
           const outline = layout.frame.outline;
           const ox = fileX + outline.x * scale;
           const oy = fileY + outline.y * scale;
-          assert.ok(cx - r >= ox - LAYOUT_ORNAMENT_REACH - 1e-6 && cy - r >= oy - LAYOUT_ORNAMENT_REACH - 1e-6
-            && cx + r <= ox + outline.width * scale + LAYOUT_ORNAMENT_REACH + 1e-6
-            && cy + r <= oy + outline.height * scale + LAYOUT_ORNAMENT_REACH + 1e-6, label);
+          const open = LAYOUT_OPEN_SIDES[id as keyof typeof LAYOUT_SIZES];
+          const reach = LAYOUT_ORNAMENT_REACH + 1e-6;
+          if (!open.includes('left')) assert.ok(cx - r >= ox - reach, `${label}: past the left side`);
+          if (!open.includes('top')) assert.ok(cy - r >= oy - reach, `${label}: past the top side`);
+          if (!open.includes('right')) assert.ok(cx + r <= ox + outline.width * scale + reach, `${label}: past the right side`);
+          if (!open.includes('bottom')) assert.ok(cy + r <= oy + outline.height * scale + reach, `${label}: past the bottom side`);
+          // A sticker on a side that faces a neighbour (its circle crosses that side's line) stays small.
+          const crosses = (!open.includes('left') && cx - r < ox) || (!open.includes('top') && cy - r < oy)
+            || (!open.includes('right') && cx + r > ox + outline.width * scale) || (!open.includes('bottom') && cy + r > oy + outline.height * scale);
+          if (crosses) assert.ok(2 * r <= 2 * LAYOUT_ORNAMENT_REACH + 1e-6, `${label}: a big sticker on a side that faces a neighbour`);
           assert.ok(cx - r >= 0 && cy - r >= 0 && cx + r <= STREAM_GRID.width && cy + r <= STREAM_GRID.height, `${label} leaves the scene`);
           for (const other of neighbours) {
             const inside = cx + r > other.frame.x && cx - r < right(other.frame) && cy + r > other.frame.y && cy - r < bottom(other.frame);

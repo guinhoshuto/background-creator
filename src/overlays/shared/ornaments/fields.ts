@@ -31,6 +31,9 @@ export const ornamentFields = () => ({
   ornamentReach: z.number().int().min(0).max(ORNAMENT_SIZE_RANGE.max)
     .describe('How far ornaments may reach past the outline (the panel\'s edge, a border\'s outer edge), in px; 0 lets them use the whole bleed. The stream layout grid sets half its gutter, so pieces side by side never touch; a motif short of room slides in over the line or shrinks to its floor')
     .default(0),
+  ornamentOpenSides: z.array(z.enum(['left', 'top', 'right', 'bottom'])).max(4)
+    .describe('Sides where ornamentReach does not apply and ornaments use the whole bleed: a layout size sets the sides that face the scene\'s outer margin, so its stickers keep their full size there')
+    .default([]),
   lightning: z.number().finite().min(0).max(1)
     .describe('Lightning flash over the panel or the border, from 0 to 1, at the same moments as the HauntedInteriorLoop background with the same seed and duration; 0 turns it off')
     .default(0),
