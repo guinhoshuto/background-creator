@@ -43,6 +43,26 @@ export type PresetKind = (typeof PRESET_KINDS)[number];
 export const OVERLAY_THEMES: readonly OverlayTheme[] = [...CLASSIC_THEMES, ...KIT_THEMES];
 
 /**
+ * Packs shipped before the stream layout grid (owner, 2026-11-25): they keep the sizes they were sold
+ * with, without the grid's layout-* sizes (src/stream-grid.ts). Every other theme pack, and every new
+ * kit, ships them.
+ */
+export const PRE_GRID_PACKS: readonly string[] = [
+  'neon', 'pastel', 'glass', 'halloween', 'halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior',
+  'halloween-cobweb', 'vaporwave-horizon', 'sand-terminal',
+];
+
+/** A size the layout grid added (layout-*). */
+export const isLayoutSize = (id: string) => Object.hasOwn(LAYOUT_SIZES, id);
+
+/** The named sizes of a kind that the theme's pack covers: all of them, less the layout sizes in a pack sold before the grid. */
+export const packSizesForKind = (kind: AssetKind, pack: string): readonly NamedSize[] =>
+  sizesForKind(kind).filter((size) => !(PRE_GRID_PACKS.includes(pack) && isLayoutSize(size.id)));
+
+/** How many layout sizes of a kind the theme's pack carries (0 in a pack sold before the grid). */
+export const layoutSizeCount = (kind: AssetKind, pack: string) => packSizesForKind(kind, pack).filter((size) => isLayoutSize(size.id)).length;
+
+/**
  * Kits that ship more than their one box style: the extra styles, in pack order, each shipping the kit's
  * boxes again (chat, block and border, with and without ornaments) from presets/<kind>-<theme>-<style>.json
  * under the variants `<style>` and `<style>-plain`; the kit's own presets stay the main style, without a
@@ -142,22 +162,3 @@ export const BACKGROUND_PACK_KITS: Readonly<Record<string, readonly KitTheme[]>>
 export const expectedPackFiles = (files: readonly string[]): string[] =>
   [...new Set([...OVERLAY_THEMES.map((name) => `${name}.json`), ...files.filter((file) => BACKGROUND_PACK_FILE.test(file))])].sort();
 
-/**
- * Packs shipped before the stream layout grid (owner, 2026-11-25): they keep the sizes they were sold
- * with, without the grid's layout-* sizes (src/stream-grid.ts). Every other theme pack, and every new
- * kit, ships them.
- */
-export const PRE_GRID_PACKS: readonly string[] = [
-  'neon', 'pastel', 'glass', 'halloween', 'halloween-midnight', 'halloween-haunted-mansion', 'halloween-haunted-interior',
-  'halloween-cobweb', 'vaporwave-horizon', 'sand-terminal',
-];
-
-/** A size the layout grid added (layout-*). */
-export const isLayoutSize = (id: string) => Object.hasOwn(LAYOUT_SIZES, id);
-
-/** The named sizes of a kind that the theme's pack covers: all of them, less the layout sizes in a pack sold before the grid. */
-export const packSizesForKind = (kind: AssetKind, pack: string): readonly NamedSize[] =>
-  sizesForKind(kind).filter((size) => !(PRE_GRID_PACKS.includes(pack) && isLayoutSize(size.id)));
-
-/** How many layout sizes of a kind the theme's pack carries (0 in a pack sold before the grid). */
-export const layoutSizeCount = (kind: AssetKind, pack: string) => packSizesForKind(kind, pack).filter((size) => isLayoutSize(size.id)).length;

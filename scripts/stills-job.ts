@@ -4,9 +4,9 @@
 import path from 'node:path';
 import {PNG} from 'pngjs';
 import {z} from 'zod';
-import {GRID_SCENES, type StreamScene} from '../src/stream-grid';
 import type {PlannedFile} from './pack-plan';
 import {MAX_CROP, backdropColor, boxProblem, cropImage, regionStats, type RegionStats} from './pixel-stats';
+import {GRID_SCENES, type StreamScene} from '../src/stream-grid';
 
 /** Sheets and mockups are for people and for agents that read images: never wider than this. */
 export const MAX_SHEET_WIDTH = 1600;
