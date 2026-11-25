@@ -44,16 +44,16 @@ Feed view (For You):
 
 ## Layouts
 
-The spec's §4.2 layouts as data in `src/overlays/vertical/layouts.ts`: each window is a rect with one radius per corner, `[tl, tr, br, bl]`. Margins (§4.1): 110 px at the sides, 210 px on top for one window and 260 px for the LIVE layouts (below the host card), 56 px between blocks, radius 56 for blocks and 200 for the arcs that echo the oval window.
+The spec's §4.2 layouts as data in `src/overlays/vertical/layouts.ts`: each window is a rect with one radius per corner, `[tl, tr, br, bl]`. Margins (§4.1): 110 px at the sides and 210 px on top for one window; radius 56 for blocks and 200 for the arcs that echo the oval window. The stacked LIVE layouts follow the 16:9 kits' grid instead (owner, 2026-11-25; [Stacked grid](#stacked-grid) below): 40 px at the sides, 260 px on top (below the host card) and 24 px between the drawn frames.
 
 | Id | Use | Windows (x, y, width×height, radii) | Chat modes |
 | --- | --- | --- | --- |
 | `single-stadium` | Chatting and IRL, feed videos | `camera` (110, 210) 860×1310, radius 430: a pill, half circles top and bottom | `open` |
 | `single-rect` | Chatting and IRL, feed videos | `camera` (100, 250) 880×1230, radius 0 | `open` |
-| `three-blocks` (default) | PC gameplay | `camera` (110, 260) 860×484 `[200, 200, 56, 56]`; `game` (110, 800) 860×484, 56; `chat` (110, 1340) 860×420 `[56, 56, 200, 200]` | `window`, `panel`, `open` |
-| `three-blocks-compact` | PC gameplay, compact gap | Same camera/chat; game at (110, 784), unchanged size/radii | `window`, `panel`, `open` |
+| `three-blocks` (default) | PC gameplay | `camera` (40, 260) 1000×400 `[200, 200, 56, 56]`; `game` (40, 722) 1000×562, 56; `chat` (40, 1346) 1000×414 `[56, 56, 200, 200]` | `window`, `panel`, `open` |
+| `three-blocks-compact` | PC gameplay, compact gap | Same camera/chat; game at (40, 684), unchanged size/radii | `window`, `panel`, `open` |
 | `three-blocks-rect` | PC gameplay, rectangular windows | Same positions/sizes as `three-blocks`; camera corners all 56 | `window`, `panel`, `open` |
-| `three-blocks-rect-compact` | PC gameplay, rectangular windows and compact gap | Camera corners all 56; game at (110, 784); chat unchanged | `window`, `panel`, `open` |
+| `three-blocks-rect-compact` | PC gameplay, rectangular windows and compact gap | Camera corners all 56; game at (40, 684); chat unchanged | `window`, `panel`, `open` |
 | `phone-game-bubble` | Mobile gameplay | `game` (160, 260) 760×1352, 56; `camera` (60, 1360) 300×300, 150: a round bubble over the game | `open` |
 
 **Discarded: `single-rect` and `phone-game-bubble`** (owner, 2026-11-13, for every theme). They go into no new proposal, direction sheet or pack unless the owner asks for one by name. Their code stays, so they still render, and the tables in this file keep describing them. The planner refuses a pack item on either one (from its props or its preset), with the reason and the way out, unless the manifest names it: `"discardedLayouts": ["single-rect"]`, only after the owner's request for that layout; a name there that no item uses is refused too. The list is `DISCARDED_LAYOUT_IDS` in `layouts.ts`, pinned in `tests/vertical-layouts.test.ts`.
@@ -72,12 +72,26 @@ Owner decision, 2026-11-03: every new stacked vertical look ships **all four** c
 
 | Variant suffix | Layout id | Upper corners | Camera–game window gap |
 | --- | --- | --- | --- |
-| `arched` | `three-blocks` | 200 px top, 56 px bottom | 56 px |
-| `arched-compact` | `three-blocks-compact` | 200 px top, 56 px bottom | 40 px |
-| `rect` | `three-blocks-rect` | Uniform 56 px | 56 px |
-| `rect-compact` | `three-blocks-rect-compact` | Uniform 56 px | 40 px |
+| `arched` | `three-blocks` | 200 px top, 56 px bottom | 62 px: 24 px between the inks |
+| `arched-compact` | `three-blocks-compact` | 200 px top, 56 px bottom | 24 px: the frames fuse |
+| `rect` | `three-blocks-rect` | Uniform 56 px | 62 px: 24 px between the inks |
+| `rect-compact` | `three-blocks-rect-compact` | Uniform 56 px | 24 px: the frames fuse |
 
-The lower window always has uniform 56 px corners. Both source windows stay 860×484, at x110; the camera stays at y260. Compact variants move only the game up by 16 px, from y800 to y784. Chat stays at y1340. The raw gap is measured between the transparent windows: subtract both outer decorative extents for visible clearance. Prismatic Pop's 19 px ink outline leaves 18 px normally and 2 px in compact mode; a future theme must keep positive clearance. Do not shrink the sources to create a gap or let the rings overlap.
+The lower window always has uniform 56 px corners. The camera stays 1000×400 at (40, 260) and the game 1000×562 in every variant; compact variants move only the game up by 38 px, from y722 to y684. Chat stays at y1346. The raw gap is measured between the transparent windows: subtract both outer decorative extents for visible clearance.
+
+#### Stacked grid
+
+Owner decision, 2026-11-25: the stacked LIVE layouts take the spacing of the 16:9 kits' stream grid (`src/stream-grid.ts`), which spaces the drawn frames, not the windows. The constants are in `layouts.ts` (`STACKED_SIDE`, `STACKED_TOP`, `STACKED_GUTTER`, `STACKED_FRAME_REACH`, `STACKED_GAME_HEIGHT`):
+
+- **Sides 40 px** (was 110): every stacked window spans x 40–1040, 1000 px wide. The shared 13 px ring ends at x 27 and Prismatic Pop's 19 px ink at x 21, inside the screen.
+- **24 px between the drawn frames** (was 56 px between the windows), on the frame the grid was set on, Prismatic Pop's 19 px ink (`STACKED_FRAME_REACH` = `PRISMATIC_RING_EXTENT`): 62 px between the windows, camera to game and game to chat. The shared 13 px ring, thinner, shows 36 px, as a thinner kit shows more gutter on the 16:9 grid.
+- **Compact: the frames fuse.** 24 px between the windows: two 13 px rings overlap by 2 px, two 19 px inks by 14 px, and the bridge reads as one frame. Prismatic Pop draws every ink, then every edge, then every line, so the fused bridge is line, one edge band, line, not one ring over the other. A future theme draws its fused bridge on purpose too.
+- **The game keeps 16:9 and its bottom.** 1000×562.5, even: 562, ending at y 1284 as before, so the comments keep-clear zone sees exactly what it saw. 16:9 windows 1000 wide do not fit twice between y 260 and that line: the camera is the wide strip the height leaves, 1000×400 (2.5:1), for a centred crop of the webcam.
+- **Top 260 and the bottom rules unchanged**: `LIVE_COMMENTS_CLEAR`, `LIVE_BAR` and the chat's bottom at y 1760.
+- **Known trade-off, feed view**: the windows reach x 1040, 100 px into the feed's `RIGHT_COLUMN` (x 940–1080; the 110 px sides reached 30 px), and past `SAFE_FEED`'s x 60–940. A LIVE frame is seen in the LIVE view, where no action column sits there; pinned in `FEED_RIGHT_COLUMN_REACH` (`tests/vertical-layouts.test.ts`).
+- **Zone checks**: `FACE_BAND` (the camera, y 260–660, inside) and `COMMENTS_CLEAR_CROSSINGS` keep their tables: the regular game's ring still reaches 7 px into the zone, and the compact game, ending at y 1246, none. The ring check and the even-size check pass unchanged; the new pin is the feed column above.
+
+Do not shrink the sources to create a gap, and keep the regular variants' rings apart; only the compact variants fuse them.
 
 Shapes should stay restrained and thick decorative ribbons must continue beyond the canvas or meet their support cleanly; no unexplained cut ends. Review every sibling variant and enlarge the window corners and bridge between blocks.
 
@@ -94,7 +108,7 @@ Shapes should stay restrained and thick decorative ribbons must continue beyond 
 
 The spec's own layouts break two of its rules in places. Both tables are compared exactly in `tests/vertical-layouts.test.ts` (`FACE_BAND_EXCEPTIONS`, `COMMENTS_CLEAR_CROSSINGS`), so a new layout or a moved window fails until the owner approves the change there.
 
-`FACE_BAND` (y 230–1250): the `three-blocks` camera lies wholly inside it (y 260–744); the `single-stadium` and `single-rect` windows are taller than the band, so their centre (y 865) is what sits inside. The one exception is `phone-game-bubble/camera`: the bubble is at y 1360–1660 (centre 1510), under the game, as the spec's layout C draws it.
+`FACE_BAND` (y 230–1250): the `three-blocks` camera lies wholly inside it (y 260–660); the `single-stadium` and `single-rect` windows are taller than the band, so their centre (y 865) is what sits inside. The one exception is `phone-game-bubble/camera`: the bubble is at y 1360–1660 (centre 1510), under the game, as the spec's layout C draws it.
 
 `LIVE_COMMENTS_CLEAR` (x 0–780, y 1290–1775), measured with the ring: `window` when the window itself enters, `ring` when only its 13 px ring does.
 
@@ -109,7 +123,7 @@ The spec's own layouts break two of its rules in places. Both tables are compare
 
 In `three-blocks` the game block ends at y 1284, so its ring band (to y 1297) reaches 7 px into the zone in every mode; in `phone-game-bubble` the 9:16 game (to y 1612) enters too, not only the bubble.
 
-`three-blocks-rect` has the same crossings as `three-blocks`. Both compact layouts end the game at y1268: the neutral 13 px ring ends at y1281, outside the comments zone; the themed 19 px ink ends at y1287. Their `open`/`panel` modes have no crossing, and `window` mode has only the intended chat window. These cases are pinned in `tests/vertical-layouts.test.ts`.
+`three-blocks-rect` has the same crossings as `three-blocks`. Both compact layouts end the game at y1246: the neutral 13 px ring ends at y1259 and the themed 19 px ink at y1265, outside the comments zone. Their `open`/`panel` modes have no crossing, and `window` mode has only the intended chat window. These cases are pinned in `tests/vertical-layouts.test.ts`.
 
 ## Deviation from the spec: 1351 → 1352
 

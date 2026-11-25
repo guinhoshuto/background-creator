@@ -200,11 +200,13 @@ export const PrismaticPopFrame = ({props, frame, durationInFrames}: {props: Pris
         <Cutouts holes={scene.holes} prefix={`${prefix}-windows`}>
           <rect width={1080} height={1920} fill={`url(#${prefix}-ground)`} />
           {props.ornaments ? <Motion.Provider value={motion}>{art}</Motion.Provider> : null}
+          {/* Layer by layer, every window's ink, then edge, then line: where the compact layouts fuse
+              two frames, the bridge reads as one frame (line, one edge band, line), not one ring over the other. */}
           <g data-layer="window-rings">
+            {scene.windows.map((window) => <path key={`${window.id}-ink`} d={bandPath(window, 0, PRISMATIC_RING_EXTENT)} fill={INK} fillRule="evenodd" />)}
+            {scene.windows.map((window) => <path key={`${window.id}-edge`} d={bandPath(window, 3, 13)} fill={palette.edge} fillRule="evenodd" />)}
             {scene.windows.map((window) => (
-              <g key={window.id}>
-                <path d={bandPath(window, 0, PRISMATIC_RING_EXTENT)} fill={INK} fillRule="evenodd" />
-                <path d={bandPath(window, 3, 13)} fill={palette.edge} fillRule="evenodd" />
+              <g key={`${window.id}-line`}>
                 <path d={bandPath(window, 0, 3)} fill={palette.line} fillRule="evenodd" />
                 <path d={cornerRectPath(window)} fill="none" stroke={palette.line} strokeWidth={1} />
               </g>

@@ -8,7 +8,7 @@ import {buildKitJob, mergeStillProps, parseJob} from '../scripts/stills-job';
 import {getAsset} from '../src/catalog';
 import {hasAlpha} from '../src/settings';
 import {
-  PRISMATIC_POP_LOOKS, PRISMATIC_RING_EXTENT, PrismaticPopFrame, STACKED_LAYOUT_VARIANTS, VERTICAL_LAYOUTS,
+  PRISMATIC_POP_LOOKS, PRISMATIC_RING_EXTENT, PrismaticPopFrame, STACKED_FRAME_REACH, STACKED_LAYOUT_VARIANTS, VERTICAL_LAYOUTS,
   getPrismaticPopMotion, prismaticPopSchema, type PrismaticPopProps,
 } from '../src/overlays/vertical';
 
@@ -18,23 +18,44 @@ const markup = (props: PrismaticPopProps, frame: number, durationInFrames = 480)
   renderToStaticMarkup(createElement(PrismaticPopFrame, {props, frame, durationInFrames}));
 const rings = (html: string) => html.slice(html.indexOf('<g data-layer="window-rings">'));
 
-test('stacked standard: four combinations preserve source sizes and leave ink outlines apart', () => {
+test('stacked standard: the grid spacing, 24 px between the inks, fused in the compact variants', () => {
   assert.equal(STACKED_LAYOUT_VARIANTS.length, 4);
+  // The grid was set on this kit's ink: the layouts' frame reach is Prismatic Pop's.
+  assert.equal(STACKED_FRAME_REACH, PRISMATIC_RING_EXTENT);
   const pairs: string[] = [];
   for (const variant of STACKED_LAYOUT_VARIANTS) {
     const [camera, game, chat] = VERTICAL_LAYOUTS[variant.layout].windows;
     assert.ok(camera && game && chat);
-    for (const window of [camera, game]) assert.deepEqual([window.x, window.width, window.height], [110, 860, 484]);
-    assert.equal(camera.y, 260);
-    assert.equal(chat.y, 1340);
+    // Owner, 2026-11-25: 40 px sides, a 1000×400 camera strip over a 16:9 1000×562 game.
+    for (const window of [camera, game, chat]) assert.deepEqual([window.x, window.x + window.width], [40, 1040], `${variant.id}/${window.id}`);
+    assert.deepEqual([camera.y, camera.height, game.height], [260, 400, 562]);
+    assert.deepEqual([chat.y, chat.y + chat.height], [1346, 1760]);
+    // The ink outside the screen's side keeps the grid's 40 px minus its reach.
+    assert.equal(camera.x - PRISMATIC_RING_EXTENT, 21);
     const gap = game.y - camera.y - camera.height;
-    assert.ok(gap - 2 * PRISMATIC_RING_EXTENT >= 2, `${variant.id}: decorated rings must not touch`);
-    assert.equal(gap, variant.id.includes('compact') ? 40 : 56);
+    const between = gap - 2 * PRISMATIC_RING_EXTENT;
+    if (variant.id.includes('compact')) {
+      assert.equal(gap, 24, `${variant.id}: 24 px between the windows`);
+      assert.ok(between < 0, `${variant.id}: the two inks fuse`);
+      assert.equal(game.y + game.height, 1246);
+    } else {
+      assert.equal(between, 24, `${variant.id}: 24 px between the inks`);
+      assert.equal(game.y + game.height, 1284, `${variant.id}: the game ends where it ended`);
+      assert.equal(chat.y - game.y - game.height - 2 * PRISMATIC_RING_EXTENT, 24, `${variant.id}: 24 px from the game's ink to the chat's`);
+    }
     assert.deepEqual(game.radii, [56, 56, 56, 56]);
     assert.deepEqual(camera.radii, variant.id.startsWith('rect') ? game.radii : [200, 200, 56, 56]);
     pairs.push(`${camera.radii[0]}/${gap}`);
   }
   assert.equal(new Set(pairs).size, 4, 'shape and gap must vary independently');
+});
+
+test('Prismatic Pop: the rings draw every ink, then every edge, then every line, so a fused bridge is one frame', () => {
+  const props = prismaticPopSchema.parse({layout: 'three-blocks-compact'});
+  const layers = [...rings(markup(props, 0)).matchAll(/<path d="[^"]+" fill="([^"]+)" fill-rule="evenodd"/g)].map((match) => match[1]);
+  const {edge, line} = {edge: '#FFE745', line: '#FFF8E9'};
+  // Two windows in open mode: both inks, both edges, both lines.
+  assert.deepEqual(layers, ['#121021', '#121021', edge, edge, line, line]);
 });
 
 test('Prismatic Pop: motion closes in phase and velocity and is independent of render order', () => {

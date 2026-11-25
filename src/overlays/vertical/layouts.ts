@@ -2,9 +2,10 @@ import {allCorners, type CornerRect, type Corners} from './geometry';
 
 /**
  * The vertical kind's layouts (owner's spec §4.2) as data: transparent windows on the
- * 1080×1920 screen, each a rect with a radius per corner. Margins (§4.1): 110 px at the sides,
- * 210 px on top for one window and 260 px for the LIVE layouts (below the host card), 56 px
- * between blocks, radius 56 for blocks and 200 for the arcs that echo the oval window.
+ * 1080×1920 screen, each a rect with a radius per corner. Margins (§4.1): 110 px at the sides
+ * and 210 px on top for one window; the stacked LIVE layouts take the 16:9 kits' grid spacing
+ * (owner, 2026-11-25): 40 px at the sides, 260 px on top (below the host card) and 24 px between
+ * the drawn frames. Radius 56 for blocks and 200 for the arcs that echo the oval window.
  */
 
 /** What goes behind a window: the camera, the game capture or a chat widget. */
@@ -47,15 +48,36 @@ export const STACKED_LAYOUT_IDS = STACKED_LAYOUT_VARIANTS.map(({layout}) => layo
 export const VERTICAL_LAYOUT_IDS = ['single-stadium', 'single-rect', 'three-blocks', 'phone-game-bubble',
   'three-blocks-compact', 'three-blocks-rect', 'three-blocks-rect-compact'] as const;
 
+/**
+ * The stacked LIVE layouts' grid (owner, 2026-11-25), spaced like the 16:9 kits' stream grid
+ * (src/stream-grid.ts): 40 px from the screen's sides and 24 px between the drawn frames, not the
+ * windows. The frame it was set on is Prismatic Pop's 19 px ink (`PRISMATIC_RING_EXTENT`), the
+ * thickest vertical frame; the shared 13 px ring shows a few px more gutter, as a thinner kit does
+ * on the grid. The game is the biggest 16:9 at that width (1000×562.5, even: 562) and ends at
+ * y 1284 as before, so the native comments' keep-clear zone sees what it saw before; the camera is
+ * the wide strip the height leaves above it. The compact variants fuse the two frames: 24 px
+ * between the windows, the camera and game unchanged and the game moved up.
+ */
+export const STACKED_SIDE = 40;
+export const STACKED_TOP = 260;
+export const STACKED_GUTTER = 24;
+export const STACKED_FRAME_REACH = 19;
+export const STACKED_WIDTH = 1080 - 2 * STACKED_SIDE;
+export const STACKED_GAME_HEIGHT = 562;
+const STACKED_GAME_BOTTOM = 1284;
+const STACKED_CHAT_BOTTOM = 1760;
 /** Camera/game sizes and chat position stay fixed; only upper radii and raw gap vary. */
-export const STACKED_REGULAR_GAP = 56;
-export const STACKED_COMPACT_GAP = 40;
+export const STACKED_REGULAR_GAP = STACKED_GUTTER + 2 * STACKED_FRAME_REACH;
+export const STACKED_COMPACT_GAP = STACKED_GUTTER;
+export const STACKED_CAMERA_HEIGHT = STACKED_GAME_BOTTOM - STACKED_GAME_HEIGHT - STACKED_REGULAR_GAP - STACKED_TOP;
+const STACKED_CHAT_TOP = STACKED_GAME_BOTTOM + STACKED_REGULAR_GAP;
 const stackedLayout = (id: string, label: string, rectangular: boolean, compact: boolean): VerticalLayout => ({
   id, label, use: 'PC gameplay',
   windows: [
-    block('camera', 'camera', 110, 260, 860, 484, rectangular ? 56 : [200, 200, 56, 56]),
-    block('game', 'game', 110, 260 + 484 + (compact ? STACKED_COMPACT_GAP : STACKED_REGULAR_GAP), 860, 484, 56),
-    block('chat', 'chat', 110, 1340, 860, 420, [56, 56, 200, 200]),
+    block('camera', 'camera', STACKED_SIDE, STACKED_TOP, STACKED_WIDTH, STACKED_CAMERA_HEIGHT, rectangular ? 56 : [200, 200, 56, 56]),
+    block('game', 'game', STACKED_SIDE, STACKED_TOP + STACKED_CAMERA_HEIGHT + (compact ? STACKED_COMPACT_GAP : STACKED_REGULAR_GAP),
+      STACKED_WIDTH, STACKED_GAME_HEIGHT, 56),
+    block('chat', 'chat', STACKED_SIDE, STACKED_CHAT_TOP, STACKED_WIDTH, STACKED_CHAT_BOTTOM - STACKED_CHAT_TOP, [56, 56, 200, 200]),
   ],
   chatModes: ['window', 'panel', 'open'],
 });
@@ -77,7 +99,7 @@ export const VERTICAL_LAYOUTS: Record<VerticalLayoutId, VerticalLayout> = {
     windows: [block('camera', 'camera', 100, 250, 880, 1230, 0)],
     chatModes: ['open'],
   },
-  // B: camera, game and chat stacked, 16:9 blocks 860×484 with 56 px between them.
+  // B: camera, game and chat stacked, 1000 px wide: a 1000×400 camera strip over a 1000×562 game.
   'three-blocks': stackedLayout('three-blocks', 'Three blocks: camera, game, chat', false, false),
   // C: a 9:16 phone game and the camera in a round bubble.
   // Deviation from the spec: its game is 760×1351, an odd height; every pixel size here is even
