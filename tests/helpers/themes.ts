@@ -161,4 +161,3 @@ export const BACKGROUND_PACK_KITS: Readonly<Record<string, readonly KitTheme[]>>
  */
 export const expectedPackFiles = (files: readonly string[]): string[] =>
   [...new Set([...OVERLAY_THEMES.map((name) => `${name}.json`), ...files.filter((file) => BACKGROUND_PACK_FILE.test(file))])].sort();
-
