@@ -17,7 +17,7 @@ Already documented elsewhere, not repeated here:
 | What | Where |
 | --- | --- |
 | Set ids, the `none` choice | `src/overlays/shared/ornaments/types.ts:ORNAMENT_CHOICES`, `ORNAMENT_SET_IDS` |
-| Field group (`ornaments`, `ornamentColors`, `ornamentSize`, `ornamentScale`, `lightning`) | `ornaments/fields.ts:ornamentFields`, `ORNAMENT_SIZE_RANGE` (12–256, 48), `ORNAMENT_SCALE_RANGE` (1–4, 1) |
+| Field group (`ornaments`, `ornamentColors`, `ornamentSize`, `ornamentScale`, `ornamentReach`, `lightning`) | `ornaments/fields.ts:ornamentFields`, `ORNAMENT_SIZE_RANGE` (12–256, 48), `ORNAMENT_SCALE_RANGE` (1–4, 1); `ornamentReach` (0 = the whole bleed) pulls the frame's paint limit in to that many px past the outline and keeps a band clear inside it, on every side but `ornamentOpenSides` (`frame.ts:reachOrnamentFrame`, applied in `layoutOrnaments`) |
 | Set by name | `ornaments/registry.ts:ORNAMENT_REGISTRY` |
 | Frame a set may read | `ornaments/types.ts:OrnamentFrame`; built by `ornaments/frame.ts:panelOrnamentFrame`, `frameOrnamentFrame` |
 | Placement helpers | `ornaments/place.ts` |
@@ -103,6 +103,7 @@ A new set adds an enum value, not a field: the `Root.tsx` literals and `ROOT_DEF
 - Room clamps it per slot; it never follows the box.
 - `ornamentScale` grows sizes, caps, strokes and spacing together and measures room at that scale: s = 2 needs about twice the bleed for the same motifs. At 1 the layout has no `scale` key and no transform (`tests/ornaments-scale.test.ts`).
 - The kit packs fix the two scaled items exactly: `webcam-16x9-lg` `{bleed: 72, ornamentScale: 1.5}`, `gameplay` `{bleed: 96, ornamentScale: 2}` (`tests/pack.test.ts`, "os manifestos seguem o schema…").
+- The stream layout grid's pieces (`layout-game`, `layout-cam`, `layout-chat`, `layout-chat-tall`, `layout-bar`) ship with ornaments as one item per kind and style with `{ornamentReach: 12}`, half the gutter (`LAYOUT_ORNAMENT_REACH`): `tests/stream-grid.test.ts` places every one at its slot and fails when a motif enters a neighbour's frame.
 
 ## 8. Build and render: what a new set gets wrong first
 

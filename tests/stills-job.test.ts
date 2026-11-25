@@ -4,8 +4,9 @@ import path from 'node:path';
 import {test} from 'node:test';
 import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
 import {getAsset, getOpenGlRenderer} from '../src/catalog';
+import {STREAM_LAYOUT} from '../src/stream-grid';
 import {
-  MAX_SHEET_WIDTH, buildKitJob, contactSheet, diffImages, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
+  LEGACY_MOCK_LAYOUTS, MAX_SHEET_WIDTH, MOCK_LAYOUTS, buildKitJob, mockLayoutsFor, contactSheet, diffImages, mergeStillProps, parseJob, regionProblems, regionReport, resolveOutDir,
   seamVerdict, sequenceVerdict, sheetGeometry, streamMockup, wrapFrame, type Rgba,
 } from '../scripts/stills-job';
 
@@ -165,6 +166,25 @@ test('qa:kit: the sticker-pop stickers get their own sheet, six a row on the che
   assert.deepEqual([sheet.cols, sheet.width, sheet.bg], [6, 200, 'checker']);
   // The mockups still sit on the first background, not on a sticker.
   assert.ok(job.mockups!.every((mockup) => mockup.base.startsWith('bg-SunburstLoop')), 'mockup base');
+});
+
+// Dies with (.cache/twitch-layout/mutations.json): G-10 mockLayoutsFor's every → some, G-11 its legacy fallback dropped.
+test('qa:kit: a pack with the layout grid sizes gets the grid scenes; a pack without them keeps the legacy scenes', () => {
+  const manifest = parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs/sticker-pop.json'), 'utf8')));
+  const job = parseJob(buildKitJob(planPack(manifest, realPackDeps), {frames: [0]}));
+  const scene = (out: string) => job.mockups!.find((mockup) => mockup.out === out)!.layers;
+  const {game, cam, chat, chatTall, bars} = STREAM_LAYOUT;
+  const barLayers = bars.map((bar) => ({name: 'layout-bar-plain-0', x: bar.box.x, y: bar.box.y}));
+  assert.deepEqual(scene('mock-chatting-0.png'), [
+    {name: 'layout-game-0', x: game.box.x, y: game.box.y}, {name: 'layout-chat-tall-plain-0', x: chatTall.box.x, y: chatTall.box.y}, ...barLayers]);
+  assert.deepEqual(scene('mock-gameplay-0.png'), [
+    {name: 'layout-game-0', x: game.box.x, y: game.box.y}, {name: 'layout-cam-plain-0', x: cam.box.x, y: cam.box.y},
+    {name: 'layout-chat-plain-0', x: chat.box.x, y: chat.box.y}, ...barLayers]);
+  assert.deepEqual(scene('mock-screen-0.png').map((layer) => layer.name), ['fullscreen-plain-0', 'label-sm-0']);
+  // The choice is per scene: every piece present gives the grid's, any missing gives the legacy one.
+  assert.deepEqual(mockLayoutsFor(() => true), MOCK_LAYOUTS);
+  assert.deepEqual(mockLayoutsFor(() => false), LEGACY_MOCK_LAYOUTS);
+  assert.deepEqual(mockLayoutsFor((size) => size !== 'layout-cam').map((layout) => layout.layers[0]!.size), ['layout-game', 'gameplay', 'fullscreen']);
 });
 
 test('a sequence passes only while every frame stays within its tolerance', () => {

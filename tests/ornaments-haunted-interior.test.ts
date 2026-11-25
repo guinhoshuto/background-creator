@@ -59,8 +59,8 @@ const neutralLayout = (size: NamedSize, extra: Record<string, unknown> = {}) => 
 const motifs = (placements: readonly OrnamentPlacement[]) => placements.map((placement) => `${placement.motif}@${placement.slot}`);
 const HEROES = ['candelabra-3', 'candelabra-2', 'candelabra-3-foot', 'candle-tall'];
 
-test('ornaments haunted-interior: o herói está em todos os 27 tamanhos, com o kit, sem ele e nos ornamentSize extremos', () => {
-  assert.equal(ORNAMENT_SIZES.length, 27);
+test('ornaments haunted-interior: o herói está em todos os 32 tamanhos, com o kit, sem ele e nos ornamentSize extremos', () => {
+  assert.equal(ORNAMENT_SIZES.length, 32);
   for (const size of ORNAMENT_SIZES) {
     for (const layout of [kitLayout(size), kitLayout(size, {ornamentSize: 12}), kitLayout(size, {ornamentSize: 256}), neutralLayout(size), neutralLayout(size, {ornamentSize: 12})]) {
       const hero = layout.placements[0];

@@ -109,10 +109,10 @@ test('Bloco: arquivo acima de 4K é recusado com a saída', () => {
 
 // ── Geometry across the named sizes ─────────────────────────────────────────────────────────
 
-test('Bloco: os 11 tamanhos nomeados, inclusive as proporções extremas e os círculos, têm geometria coerente', () => {
+test('Bloco: os 12 tamanhos nomeados, inclusive as proporções extremas e os círculos, têm geometria coerente', () => {
   const sizes = sizesForKind('block');
   assert.deepEqual(sizes.map((size) => size.id).sort(),
-    ['card', 'circle', 'circle-lg', 'circle-sm', 'label', 'label-sm', 'list', 'lower-third', 'square', 'title', 'twitch-panel']);
+    ['card', 'circle', 'circle-lg', 'circle-sm', 'label', 'label-sm', 'layout-bar', 'list', 'lower-third', 'square', 'title', 'twitch-panel']);
   for (const size of sizes) {
     for (const accent of BLOCK_ACCENTS) {
       for (const radius of [0, 16, 999]) {

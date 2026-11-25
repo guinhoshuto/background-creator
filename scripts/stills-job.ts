@@ -6,6 +6,7 @@ import {PNG} from 'pngjs';
 import {z} from 'zod';
 import type {PlannedFile} from './pack-plan';
 import {MAX_CROP, backdropColor, boxProblem, cropImage, regionStats, type RegionStats} from './pixel-stats';
+import {GRID_SCENES, type StreamScene} from '../src/stream-grid';
 
 /** Sheets and mockups are for people and for agents that read images: never wider than this. */
 export const MAX_SHEET_WIDTH = 1600;
@@ -317,11 +318,14 @@ export const streamMockup = (
 // The kit job (`npm run qa:kit`)
 
 /**
- * The default stream layouts, in 1920×1080 box coordinates, from the Halloween kits' art direction. One piece per
- * scene keeps its ornaments as the focus and the rest use the plain variant, so a scene never stacks ornaments on
- * every border. Every scene sits on the kit's own background, as the buyer sees it behind the overlays.
+ * The stream scenes before the layout grid, in 1920×1080 box coordinates, from the Halloween kits'
+ * art direction: they stay for the packs that ship none of the grid's sizes (every pack sold before
+ * 2026-11-25), so a qa:kit or a listing video of those packs comes out as it always did. One piece
+ * per scene keeps its ornaments as the focus and the rest use the plain variant, so a scene never
+ * stacks ornaments on every border. Every scene sits on the kit's own background, as the buyer
+ * sees it behind the overlays.
  */
-export const MOCK_LAYOUTS: {out: string; layers: {size: string; variant?: string; x: number; y: number}[]}[] = [
+export const LEGACY_MOCK_LAYOUTS: StreamScene[] = [
   {out: 'mock-chatting', layers: [
     {size: 'webcam-16x9-lg', x: 80, y: 100}, {size: 'chat-standard', variant: 'plain', x: 1440, y: 100},
     {size: 'lower-third', variant: 'plain', x: 80, y: 820}]},
@@ -330,6 +334,23 @@ export const MOCK_LAYOUTS: {out: string; layers: {size: string; variant?: string
     {size: 'webcam-round-sm', x: 1556, y: 700}, {size: 'label', variant: 'plain', x: 40, y: 910}]},
   {out: 'mock-screen', layers: [{size: 'fullscreen', variant: 'plain', x: 0, y: 0}, {size: 'label-sm', x: 80, y: 960}]},
 ];
+
+/**
+ * The default stream scenes: chatting and gameplay on the layout grid (src/stream-grid.ts,
+ * GRID_SCENES), the screen as before. Same names as the legacy scenes, which mockLayoutsFor falls
+ * back to for a pack without the grid's sizes.
+ */
+export const MOCK_LAYOUTS: StreamScene[] = [...GRID_SCENES, LEGACY_MOCK_LAYOUTS.find((layout) => layout.out === 'mock-screen')!];
+
+/**
+ * The scenes for a pack: each default scene whose every piece the pack has (`has`: size and
+ * variant), else the legacy scene of the same name, so a pack sold before the grid keeps its
+ * scenes and a grid kit gets the new ones.
+ */
+export const mockLayoutsFor = (has: (size: string, variant: string | undefined) => boolean): StreamScene[] =>
+  MOCK_LAYOUTS.map((layout) => (layout.layers.every((layer) => has(layer.size, layer.variant))
+    ? layout
+    : LEGACY_MOCK_LAYOUTS.find((legacy) => legacy.out === layout.out) ?? layout));
 
 const SHEETS: {out: string; kind: string; cols: number; width: number; bg: string}[] = [
   {out: 'sheet-chat', kind: 'chat', cols: 5, width: 320, bg: 'dark'},
@@ -383,7 +404,7 @@ export const buildKitJob = (plan: readonly PlannedFile[], {frames}: {frames?: re
     const light = ['chat-standard', 'card', 'webcam-16x9', 'webcam-round-sm'].flatMap((size) => bySize.get(size) ?? []);
     if (light.length > 0) sheets.push({out: `sheet-light-${frame}.png`, names: light, cols: light.length, width: 390, bg: 'light'});
     const backgroundStill = background ? `${background.stem}-${frame}` : null;
-    for (const layout of MOCK_LAYOUTS) {
+    for (const layout of mockLayoutsFor((size, variant) => bySize.has(variant === undefined ? size : `${size}:${variant}`))) {
       const layers = layout.layers.flatMap(({size, variant, x, y}) => {
         const name = bySize.get(variant === undefined ? size : `${size}:${variant}`);
         return name === undefined ? [] : [{name, x, y}];

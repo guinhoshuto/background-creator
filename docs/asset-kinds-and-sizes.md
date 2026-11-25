@@ -39,6 +39,8 @@ Chat backgrounds (the box is the panel):
 | `chat-tall` | 400×800 | 32 | 464×864 | Tall side column next to the game |
 | `chat-column` | 448×1016 | 32 | 512×1080 | Full-height column; the file is exactly the screen's height |
 | `chat-vertical` | 960×640 | 32 | 1024×704 | Vertical streams (1080×1920 screen), bottom half |
+| `layout-chat` | 364×646 | 32 | 428×710 | Chat under the camera in the right column of the stream layout grid |
+| `layout-chat-tall` | 364×990 | 32 | 428×1054 | Chat alone in the right column of the stream layout grid |
 
 Text boxes (the box is the panel):
 
@@ -51,6 +53,7 @@ Text boxes (the box is the panel):
 | `card` | 640×360 | 32 | 704×424 | 16:9 card: schedule, rules, sponsor |
 | `square` | 480×480 | 32 | 544×544 | QR code, avatar, highlight |
 | `list` | 480×720 | 32 | 544×784 | Vertical list: weekly schedule, top supporters |
+| `layout-bar` | 456×112 | 32 | 520×176 | Alert or goal bar, three in a row under the game window of the stream layout grid |
 | `circle-sm` | 160×160 | 24 | 208×208 | Small round badge: icon, social network, "LIVE" |
 | `circle` | 320×320 | 32 | 384×384 | Round: avatar, logo, counter |
 | `circle-lg` | 480×480 | 32 | 544×544 | Large round: highlight, giveaway, goal |
@@ -69,8 +72,12 @@ Borders and frames (the box is the transparent window):
 | `webcam-round-lg` | 560×560 | 48 | 656×656 | Large round camera for Just Chatting |
 | `webcam-vertical` | 360×640 | 48 | 456×736 | 9:16 camera in vertical streams |
 | `gameplay` | 1440×810 | 48 | 1536×906 | Game capture in layouts with a side column |
+| `layout-game` | 1408×792 | 48 | 1504×888 | Game capture in the stream layout grid (camera and chat column on the right, alert bars below) |
+| `layout-cam` | 340×256 | 48 | 436×352 | 4:3 camera at the top of the right column of the stream layout grid |
 | `fullscreen` | 1920×1080 | 0 | 1920×1080 | Whole-screen frame (`fit: "screen"`) |
 | `fullscreen-vertical` | 1080×1920 | 0 | 1080×1920 | Vertical whole-screen frame (`fit: "screen"`) |
+
+The five `layout-*` sizes come from the stream layout grid (`src/stream-grid.ts`, the owner's pick of 2026-11-25): on a 1920×1080 scene, a 40 px margin and 24 px gutters between the drawn frames, the biggest 16:9 game window at the top left, a right column with the 4:3 camera over the chat (or the tall chat alone) and three alert bars of 120 px under the game, as wide as it. The grid spaces the drawn frames, as the two reference layouts did, so its boxes depend on how far a frame reaches past its box (`GRID_REACH`, a window with a 24 px title bar); a thinner frame shows a few px more gutter. Box positions, as OBS takes them: game window at (52, 82); camera at (1518, 82); chat under it at (1506, 384), or the tall chat at (1506, 40); bars at x 40, 529 and 1018, y 920. Each layout size also sets `ornamentOpenSides`, its sides on the scene's margin (the game left and top, the cam top and right, the chat right and bottom, the tall chat top, right and bottom, the bar bottom): ornaments keep their full size only there. A token change resizes files buyers have: `tests/stream-grid.test.ts` pins the sizes. The packs sold before the grid keep their sizes (`PRE_GRID_PACKS` in `tests/helpers/themes.ts`); a new kit ships the five.
 
 Vertical overlays (the canvas is the kind's fixed screen, so the size sets no props and only names the file: `LiveFrameLoop-live-frame.webm`):
 

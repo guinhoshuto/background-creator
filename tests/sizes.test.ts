@@ -13,6 +13,8 @@ const PRODUCT_TABLE = [
   ['chat-tall', 'chat', 400, 800, 32, 464, 864],
   ['chat-column', 'chat', 448, 1016, 32, 512, 1080],
   ['chat-vertical', 'chat', 960, 640, 32, 1024, 704],
+  ['layout-chat', 'chat', 364, 646, 32, 428, 710],
+  ['layout-chat-tall', 'chat', 364, 990, 32, 428, 1054],
   ['label-sm', 'block', 320, 64, 24, 368, 112],
   ['label', 'block', 480, 96, 24, 528, 144],
   ['lower-third', 'block', 1200, 160, 32, 1264, 224],
@@ -20,6 +22,7 @@ const PRODUCT_TABLE = [
   ['card', 'block', 640, 360, 32, 704, 424],
   ['square', 'block', 480, 480, 32, 544, 544],
   ['list', 'block', 480, 720, 32, 544, 784],
+  ['layout-bar', 'block', 456, 112, 32, 520, 176],
   ['circle-sm', 'block', 160, 160, 24, 208, 208],
   ['circle', 'block', 320, 320, 32, 384, 384],
   ['circle-lg', 'block', 480, 480, 32, 544, 544],
@@ -33,6 +36,8 @@ const PRODUCT_TABLE = [
   ['webcam-round-lg', 'border', 560, 560, 48, 656, 656],
   ['webcam-vertical', 'border', 360, 640, 48, 456, 736],
   ['gameplay', 'border', 1440, 810, 48, 1536, 906],
+  ['layout-game', 'border', 1408, 792, 48, 1504, 888],
+  ['layout-cam', 'border', 340, 256, 48, 436, 352],
   ['fullscreen', 'border', 1920, 1080, 0, 1920, 1080],
   ['fullscreen-vertical', 'border', 1080, 1920, 0, 1080, 1920],
   ['live-frame', 'vertical', 1080, 1920, 0, 1080, 1920],
@@ -104,7 +109,7 @@ test('tamanhos: getSize lista as opções em inglês; sizesForKind separa por ti
     OVERLAY_KINDS.reduce((count, kind) => count + sizesForKind(kind).length, 0),
     NAMED_SIZES.length,
   );
-  assert.deepEqual(sizesForKind('chat').map((size) => size.id), ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical']);
+  assert.deepEqual(sizesForKind('chat').map((size) => size.id), ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical', 'layout-chat', 'layout-chat-tall']);
 });
 
 test('tamanhos: o tipo vertical tem canvas fixo, e o tamanho só nomeia o arquivo', () => {
