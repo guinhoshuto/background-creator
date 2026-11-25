@@ -64,7 +64,7 @@ npm run test:kit -- <set> --sparse          # seconds; narrow with --kind, --rad
 npx tsx --test tests/ornaments-<set>.test.ts tests/pack.test.ts tests/speed-consistency.test.ts
 ```
 
-At the end of each phase, its mutation plan follows AGENTS.md, Test (a phase's mutation plan): one mutation that flips or drops each drawing constant or visual parameter the set creates or ports (motif points, tilts, poses, phases, colours, signs), listed in the phase SPEC before the implementer starts, run with `npm run mutate -- --plan .cache/<task>/mutations.json`. On 2026-11-22 the Sticker Pop plans were killed in full and the review still blocked three times on an untested tilt, point or sign.
+At the end of each phase, its mutation plan follows AGENTS.md, Test (a phase's mutation plan): one mutation that flips or drops each drawing constant or visual parameter the set creates or ports (motif points, tilts, poses, phases, colours, gradient order, signs), listed in the phase SPEC before the implementer starts, run with `npm run mutate -- --plan .cache/<task>/mutations.json`. On 2026-11-22 the Sticker Pop plans were killed in full and the review still blocked three times on an untested tilt, point or sign.
 
 Before showing the owner:
 
