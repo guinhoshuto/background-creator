@@ -1,6 +1,6 @@
 ---
 pack: prismatic-pop-vertical
-price: pending
+price: US$ 5.00
 caption: PP
 ---
 
@@ -63,9 +63,9 @@ Feel free to send me a message if you have any questions!
 
 ## Before publishing
 
-- Copy is complete; the price is awaiting the owner's choice. This draft stays in listings/drafts/ so it does not become an invalid priced listing. After the price is set, replace `pending` with `US$ N.NN` and move this file to listings/prismatic-pop-vertical.md.
+- Price US$ 5.00, the owner's choice on 2026-11-25, when he also chose the v2 motion for sale. The rigid-step direction on `wip/prismatic-pop-shake` (its local v3 zip) is not this product.
 - The product is one pack containing all three looks and all four layouts. The 76 files are 24 WebM, 24 MP4 and 28 PNG; this is 12 decorated designs and 12 plain versions, not 76 different designs. Only the decorated video versions animate.
-- Copy now describes the v2 motion revision. Regenerate and validate the v2 pack before publishing; the earlier v1 ZIP does not contain these ribbon and orbit animations. Facts are recorded in docs/themes/prismatic-pop.md and the output manifest; confirm the final ZIP size after the v2 render.
+- Copy describes the v2 motion (`e4ab37d`); the earlier v1 ZIP does not contain these ribbon and orbit animations. Facts are recorded in docs/themes/prismatic-pop.md and the output manifest. The v2 ZIP rendered from `e4ab37d` on 2026-11-04 holds 76 files, 380 MiB; rebuild and validate the pack from the branch that ships, and confirm its ZIP size, before uploading.
 - Upload the validated ZIP and prepare the buyer's PDF download guide before publishing, following the store's delivery workflow. The guide, public download link and listing photos/video are separate publication steps, not files promised inside this 76-file ZIP.
 - Direct media import into TikTok LIVE Studio and mobile-only setup have not been verified. Keep the compatibility wording tied to vertical LIVE layouts and the chosen streaming software; do not add automatic setup, account integration or editable-source claims.
 - Title: 74 characters / 13 words. Tags: 13 unique phrases, each at most 20 characters. Checked against [Etsy's title guidance](https://www.etsy.com/seller-handbook/article/1399426136697) and [tag limits](https://help.etsy.com/hc/en-us/articles/360000336307-How-to-Use-Tags-to-Get-Found-in-Search) on 2026-11-04.
