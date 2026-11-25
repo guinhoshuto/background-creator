@@ -188,7 +188,7 @@ const EXPECTED: Record<string, string[]> = {
 // Dies with: the chat's bolt share 0.6 → 0.4 (EDGE_SHARE), the label's sparkle 'TR' → 'BR', the border's star edge
 // 'left' → corner 'TL', the round border's sparkle 'BL' → 'BR', the label threshold 96 → 64, the block's star share 0.86 → 0.5.
 test('sticker: os slots de cada tipo no preset do kit, em todo tamanho e nos dois itens escalados do pack', () => {
-  assert.equal(CASES.length, 29);
+  assert.equal(CASES.length, 34);
   for (const item of CASES) {
     const placements = place(item) as StickerPlacement[];
     assert.deepEqual(placements.map((placement) => `${placement.motif}@${placement.slot}`), EXPECTED[groupOf(item)], item.label);

@@ -2,6 +2,7 @@ import {kindPolicies, type AssetKind, type OverlayKind} from './kinds';
 import {getBoxCanvas} from './overlays/shared/box';
 import type {PanelShape} from './overlays/shared/shape';
 import type {OutputFormat} from './settings';
+import {LAYOUT_SIZES} from './stream-grid';
 
 /**
  * Extra props a named size sets besides width/height/bleed: what the product itself requires
@@ -30,6 +31,9 @@ export type NamedSize = {
   readonly folder?: string;
 };
 
+/** A layout size's box, as the grid computes it (src/stream-grid.ts). */
+const pick = (id: keyof typeof LAYOUT_SIZES) => ({width: LAYOUT_SIZES[id].width, height: LAYOUT_SIZES[id].height});
+
 /** The product line: every size is sold, so ids are stable file-name tags. */
 const NAMED_SIZE_TABLE = [
   // chat: the box is the chat panel.
@@ -38,6 +42,9 @@ const NAMED_SIZE_TABLE = [
   {id: 'chat-tall', kind: 'chat', label: 'Tall chat', use: 'tall side panel next to the game', width: 400, height: 800, bleed: 32},
   {id: 'chat-column', kind: 'chat', label: 'Column chat', use: 'full-height column; the file is exactly as tall as the screen', width: 448, height: 1016, bleed: 32},
   {id: 'chat-vertical', kind: 'chat', label: 'Vertical chat', use: 'vertical streams (1080×1920 screen), bottom half', width: 960, height: 640, bleed: 32},
+  // Layout grid (src/stream-grid.ts): the right column's chat, under the cam or alone.
+  {id: 'layout-chat', kind: 'chat', label: 'Layout chat', use: 'chat under the camera in the right column of the stream layout grid', ...pick('layout-chat'), bleed: 32},
+  {id: 'layout-chat-tall', kind: 'chat', label: 'Layout tall chat', use: 'chat alone in the right column of the stream layout grid, margin to margin', ...pick('layout-chat-tall'), bleed: 32},
   // block: the box is the text panel. `shape` is spelled out so a size id alone fixes the product.
   {id: 'label-sm', kind: 'block', label: 'Small label', use: 'short badge: "LIVE", @user', width: 320, height: 64, bleed: 24, props: {shape: 'rectangle'}},
   {id: 'label', kind: 'block', label: 'Label', use: 'labels: latest follower, goal, socials', width: 480, height: 96, bleed: 24, props: {shape: 'rectangle'}},
@@ -46,6 +53,7 @@ const NAMED_SIZE_TABLE = [
   {id: 'card', kind: 'block', label: 'Card', use: '16:9 card: schedule, rules, sponsor', width: 640, height: 360, bleed: 32, props: {shape: 'rectangle'}},
   {id: 'square', kind: 'block', label: 'Square', use: 'QR code, avatar, highlight', width: 480, height: 480, bleed: 32, props: {shape: 'rectangle'}},
   {id: 'list', kind: 'block', label: 'List', use: 'vertical list: weekly schedule, top supporters', width: 480, height: 720, bleed: 32, props: {shape: 'rectangle'}},
+  {id: 'layout-bar', kind: 'block', label: 'Layout bar', use: 'alert or goal bar, three in a row under the game window of the stream layout grid', ...pick('layout-bar'), bleed: 32, props: {shape: 'rectangle'}},
   // Round blocks: the text goes in the square centred inside the circle.
   {id: 'circle-sm', kind: 'block', label: 'Small circle', use: 'small badge: icon, social network, "LIVE"', width: 160, height: 160, bleed: 24, props: {shape: 'circle'}},
   {id: 'circle', kind: 'block', label: 'Circle', use: 'avatar, logo, counter', width: 320, height: 320, bleed: 32, props: {shape: 'circle'}},
@@ -64,6 +72,8 @@ const NAMED_SIZE_TABLE = [
   {id: 'webcam-round-lg', kind: 'border', label: 'Large round webcam', use: 'large round camera for Just Chatting', width: 560, height: 560, bleed: 48, props: {fit: 'window', shape: 'circle'}},
   {id: 'webcam-vertical', kind: 'border', label: 'Vertical webcam', use: '9:16 camera in vertical streams', width: 360, height: 640, bleed: 48, props: {fit: 'window', shape: 'rectangle'}},
   {id: 'gameplay', kind: 'border', label: 'Game', use: 'game capture in layouts with a side column', width: 1440, height: 810, bleed: 48, props: {fit: 'window', shape: 'rectangle'}},
+  {id: 'layout-game', kind: 'border', label: 'Layout game', use: 'game capture in the stream layout grid (camera and chat column on the right, alert bars below)', ...pick('layout-game'), bleed: 48, props: {fit: 'window', shape: 'rectangle'}},
+  {id: 'layout-cam', kind: 'border', label: 'Layout cam', use: '4:3 camera at the top of the right column of the stream layout grid', ...pick('layout-cam'), bleed: 48, props: {fit: 'window', shape: 'rectangle'}},
   // Full-screen frames: the box is the whole file, so the frame is drawn inward.
   {id: 'fullscreen', kind: 'border', label: 'Full screen', use: 'border for the whole screen', width: 1920, height: 1080, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},
   {id: 'fullscreen-vertical', kind: 'border', label: 'Vertical screen', use: 'border for the whole vertical screen', width: 1080, height: 1920, bleed: 0, props: {fit: 'screen', shape: 'rectangle'}},

@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
-import {sizesForKind, type NamedSize} from '../../src/sizes';
+import type {NamedSize} from '../../src/sizes';
+import {packSizesForKind} from './themes';
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
 
@@ -14,7 +15,7 @@ export const maskGroupsOf = (theme: string) => {
   const preset = JSON.parse(readFileSync(new URL(`../../presets/border-${theme}.json`, import.meta.url), 'utf8')) as {radius?: number};
   const radius = preset.radius ?? 0;
   const groups = new Map<string, NamedSize[]>();
-  for (const size of sizesForKind('border').filter((entry) => entry.props?.fit !== 'screen')) {
+  for (const size of packSizesForKind('border', theme).filter((entry) => entry.props?.fit !== 'screen')) {
     const corner = size.props?.shape === 'circle' ? size.width / 2 : Math.min(radius, size.width / 2, size.height / 2);
     if (corner === 0) continue;
     const divisor = gcd(size.width, size.height);

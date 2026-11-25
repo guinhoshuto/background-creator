@@ -1,9 +1,9 @@
 // Animated stream mockups (`npm run qa:kit -- <pack> --video`): the same scenes as the still
-// mockups (MOCK_LAYOUTS), built from the pack's own .webm files, one background loop long; a piece
+// mockups (MOCK_LAYOUTS, or the legacy scenes for a pack without the grid's sizes), built from the pack's own .webm files, one background loop long; a piece
 // the pack ships only as .png stays still, as the buyer gets it. A loop longer than a listing video
 // can be also gets a listing cut that cross-fades back into frame 0.
 import type {PlannedFile} from './pack-plan';
-import {MOCK_LAYOUTS} from './stills-job';
+import {MOCK_LAYOUTS, mockLayoutsFor} from './stills-job';
 
 /** The longest listing video the thumbnail generator takes (Etsy allows 15 s). */
 export const LISTING_MAX_SECONDS = 14.5;
@@ -48,8 +48,10 @@ export const planMockVideos = (plan: readonly PlannedFile[], names: readonly str
   const pieces = plan.filter((file) => file.role !== 'mask');
   const background = pieces.find((file) => file.kind === 'background' && file.format === 'webm');
   if (!background) throw new Error('The pack plans no .webm background: the mockup videos need one.');
+  // The grid's scenes when the pack has their pieces, else the legacy ones (mockLayoutsFor).
+  const layouts = mockLayoutsFor((size, variant) => pieces.some((file) => file.size === size && file.variant === variant && (file.format === 'webm' || file.format === 'png')));
   return names.map((name) => {
-    const layout = MOCK_LAYOUTS.find((entry) => entry.out === name);
+    const layout = layouts.find((entry) => entry.out === name);
     if (!layout) throw new Error(`Unknown mockup "${name}". Use one of: ${MOCK_NAMES.join(', ')}.`);
     const layers = layout.layers.map(({size, variant, x, y}) => {
       const planned = (format: string) => pieces.find((entry) => entry.format === format && entry.size === size && entry.variant === variant);

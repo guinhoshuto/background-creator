@@ -72,6 +72,22 @@ export const frameOrnamentFrame = (input: {layout: FrameLayout; track: RoundRect
   };
 };
 
+/**
+ * The frame with its paint limit pulled in to `reach` px past the outline (and never past the old
+ * limit), so every motif placed on it keeps within that distance of the piece: the stream layout
+ * grid gives half its gutter, and two pieces side by side never touch. A motif short of room there
+ * slides in over the line or shrinks, as anywhere else. 0 leaves the frame as it is.
+ */
+export const reachOrnamentFrame = (frame: OrnamentFrame, reach: number): OrnamentFrame => {
+  if (!(reach > 0)) return frame;
+  const {outline, paintLimit: limit} = frame;
+  const x0 = Math.max(limit.x, outline.x - reach);
+  const y0 = Math.max(limit.y, outline.y - reach);
+  const x1 = Math.min(limit.x + limit.width, outline.x + outline.width + reach);
+  const y1 = Math.min(limit.y + limit.height, outline.y + outline.height + reach);
+  return {...frame, paintLimit: {x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0)}};
+};
+
 const scaleRect = <T extends Rect>(rect: T, k: number): T => {
   const scaled = {...rect, x: rect.x * k, y: rect.y * k, width: rect.width * k, height: rect.height * k};
   return 'radius' in rect ? {...scaled, radius: (rect as T & {radius: number}).radius * k} : scaled;

@@ -4,10 +4,25 @@ import path from 'node:path';
 import {test} from 'node:test';
 import {MOCK_NAMES, listingCutArgs, mockVideoArgs, parseMockNames, planMockVideos} from '../scripts/mock-video';
 import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
+import {STREAM_LAYOUT} from '../src/stream-grid';
 
 const plan = (pack: string) => planPack(
   parsePackManifest(JSON.parse(readFileSync(path.join(import.meta.dirname, '../packs', `${pack}.json`), 'utf8'))), realPackDeps,
 );
+
+// Dies with (.cache/twitch-layout/mutations.json): G-9 planMockVideos reading MOCK_LAYOUTS instead of the pack's scenes.
+test('mock video: a pack with the layout grid sizes gets the grid scene, each file at its slot minus its bleed', () => {
+  const [video] = planMockVideos(plan('sticker-pop'), ['mock-chatting']);
+  const {game, chatTall, bars} = STREAM_LAYOUT;
+  assert.deepEqual(video!.layers, [
+    {file: 'out/packs/sticker-pop/borders/sticker-pop-layout-game.webm', x: game.box.x - 48, y: game.box.y - 48},
+    {file: 'out/packs/sticker-pop/chat/sticker-pop-layout-chat-tall-plain.webm', x: chatTall.box.x - 32, y: chatTall.box.y - 32},
+    ...bars.map((bar) => ({file: 'out/packs/sticker-pop/text-boxes/sticker-pop-layout-bar-plain.webm', x: bar.box.x - 32, y: bar.box.y - 32})),
+  ]);
+  // A pack sold before the grid keeps its scene.
+  assert.equal(planMockVideos(plan('halloween-midnight'), ['mock-chatting'])[0]!.layers[0]!.file,
+    'out/packs/halloween-midnight/borders/halloween-midnight-webcam-16x9-lg.webm');
+});
 
 test('mock video: names are "all" or known mockups', () => {
   assert.deepEqual(parseMockNames('all'), MOCK_NAMES);

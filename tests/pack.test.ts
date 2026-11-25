@@ -16,7 +16,7 @@ import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {maskGroupsOf} from './helpers/masks';
-import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_BOX_STYLES, KIT_SETS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, boxStylesOf, droppedWebms, expectedPackFiles, isStaticOnly, themePresetNames, type KitTheme} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_BOX_STYLES, KIT_SETS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, boxStylesOf, droppedWebms, expectedPackFiles, isStaticOnly, layoutSizeCount, packSizesForKind, themePresetNames, type KitTheme} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -774,12 +774,13 @@ test('packs: o kit sticker-pop traz os adesivos de KIT_STICKERS em stickers/', (
 test('packs: os manifestos seguem o schema e cobrem todos os tamanhos do tema', () => {
   // Every theme's pack, exactly, and nothing else but background packs.
   assert.deepEqual(PACK_FILES, expectedPackFiles(PACK_FILES));
-  const ids = (kind: AssetKind) => sizesForKind(kind).map((size) => size.id);
   const screens = new Set(sizesForKind('border').filter((size) => size.props?.fit === 'screen').map((size) => size.id));
   for (const name of PACKS) {
     const pack = packManifestSchema.parse(readPack(name));
     assert.equal(pack.name, name);
     const kit = (KIT_THEMES as readonly string[]).includes(name);
+    // A pack sold before the layout grid keeps its sizes; every other covers the grid's too (PRE_GRID_PACKS).
+    const ids = (kind: AssetKind) => packSizesForKind(kind, name).map((size) => size.id);
     // The kit's items with ornaments (no variant) and, in the kits, their twins without.
     const byPreset = (preset: string, variant?: string) => pack.items.filter((item) => item.preset === preset && item.variant === variant);
     assert.deepEqual(byPreset(`chat-${name}`).flatMap((item) => item.sizes), ids('chat'));
@@ -860,12 +861,13 @@ test('packs: o kit sticker-pop traz os estilos de KIT_BOX_STYLES', () => {
         assert.equal(preset.ornaments, KIT_SETS[theme], `${name}: o enfeite do kit`);
       }
     }
-    // Each style ships the kit's 48 files with ornaments and 52 without, and shares the kit's masks: with the
+    // Each style ships the kit's 58 files with ornaments and 62 without (48 and 52 before the layout grid's five sizes,
+    // owner 2026-11-25), and shares the kit's masks: with the
     // window radius of the kit's frames, no mask by radius (-mask-radius-) is ever planned.
     const plan = planPack(pack, realPackDeps);
     const count = (variant: string | undefined) => plan.filter((file) => file.role !== 'mask' && file.size !== undefined && file.variant === variant).length;
     for (const style of styles) assert.deepEqual([count(style), count(`${style}-plain`)], [count(undefined), count('plain')], `${theme}/${style}`);
-    if (styles.length > 0) assert.deepEqual([count(undefined), count('plain')], [48, 52], theme);
+    if (styles.length > 0) assert.deepEqual([count(undefined), count('plain')], [58, 62], theme);
     assert.deepEqual(plan.filter((file) => /-mask-radius-/.test(file.output)).map((file) => file.output), [], theme);
   }
 });
@@ -883,7 +885,9 @@ test('packs: os manifestos reais planejam com o catálogo e os presets reais', (
     // no Twitch panel; each box style (KIT_BOX_STYLES) holds them twice again, on the same masks.
     // Dies with (mutations-boxes-f2.json): F2-8, 'indigo-pop' left out of KIT_BOX_STYLES.
     const kit = (KIT_THEMES as readonly string[]).includes(name);
-    const sizes = (kit ? (5 + 10 + 9) + (5 + 10 + 11) : 5 + 10 + 11 + 1) * (1 + boxStylesOf(name).length);
+    // A pack after the layout grid adds its five sizes (two chats, a bar and two windows) to each half.
+    const layout = layoutSizeCount('chat', name) + layoutSizeCount('block', name) + layoutSizeCount('border', name);
+    const sizes = (kit ? (5 + 10 + 9) + (5 + 10 + 11) + 2 * layout : 5 + 10 + 11 + 1 + layout) * (1 + boxStylesOf(name).length);
     const stills = droppedWebms(name);
     assert.equal(plan.length, 2 * backgrounds + 2 * stickers + 2 * sizes - stills + maskGroupsOf(name).masks.length, name);
     assert.equal(new Set(plan.map((file) => file.output)).size, plan.length);
@@ -1018,7 +1022,7 @@ test('packs: cada borda de janela aponta a máscara OBS do seu tamanho, planejad
   for (const name of PACKS) {
     const plan = planPack(parsePackManifest(readPack(name)), realPackDeps);
     const masks = plan.filter((file) => file.role === 'mask');
-    const windows = sizesForKind('border').filter((size) => size.props?.fit !== 'screen');
+    const windows = packSizesForKind('border', name).filter((size) => size.props?.fit !== 'screen');
     // One mask per window shape, shared by the kits' two variants and by the sizes of that shape,
     // drawn at the widest of them (OBS stretches it to the camera).
     const groups = maskGroupsOf(name);

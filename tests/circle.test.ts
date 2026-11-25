@@ -27,7 +27,7 @@ import {
 import {cornersOf} from './helpers/glow-brute';
 import {maskGroupsOf} from './helpers/masks';
 import {assertSeamVelocity, type Sampler} from './helpers/scene-scans';
-import {KIT_BACKGROUND_VARIANTS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, boxStylesOf, droppedWebms, isStaticOnly} from './helpers/themes';
+import {KIT_BACKGROUND_VARIANTS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, boxStylesOf, droppedWebms, isStaticOnly, layoutSizeCount} from './helpers/themes';
 
 /**
  * Round blocks and round webcam borders: the shape prop, the round named sizes, the text area in
@@ -562,7 +562,9 @@ test('Packs: os tamanhos redondos entram em webm e png (bordas estáticas só em
     const backgrounds = KIT_BACKGROUND_VARIANTS[name as keyof typeof KIT_BACKGROUND_VARIANTS]?.length ?? 1;
     const stickers = KIT_STICKERS[name as keyof typeof KIT_STICKERS]?.length ?? 0;
     const stills = droppedWebms(name);
-    assert.equal(plan.length, (name === 'halloween' ? 67 : kit ? 2 * backgrounds + 2 * stickers + (1 + styles) * (2 * 24 + 2 * 26) + maskGroupsOf(name).masks.length : 63) - stills, name);
+    // A pack after the layout grid adds its five sizes to each half (layoutSizeCount; PRE_GRID_PACKS keep theirs).
+    const layout = layoutSizeCount('chat', name) + layoutSizeCount('block', name) + layoutSizeCount('border', name);
+    assert.equal(plan.length, (name === 'halloween' ? 67 : kit ? 2 * backgrounds + 2 * stickers + (1 + styles) * (2 * (24 + layout) + 2 * (26 + layout)) + maskGroupsOf(name).masks.length : 63) - stills, name);
   }
 });
 

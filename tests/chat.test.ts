@@ -77,8 +77,8 @@ const inside = (shape: RoundRect, rect: Rect) =>
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-test('Tamanhos: os 5 tamanhos de chat, em todos os temas, dão o arquivo da tabela com o brilho dentro do bleed', () => {
-  assert.deepEqual(CHAT_SIZES.map((size) => size.id), ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical']);
+test('Tamanhos: os 7 tamanhos de chat, em todos os temas, dão o arquivo da tabela com o brilho dentro do bleed', () => {
+  assert.deepEqual(CHAT_SIZES.map((size) => size.id), ['chat-compact', 'chat-standard', 'chat-tall', 'chat-column', 'chat-vertical', 'layout-chat', 'layout-chat-tall']);
   for (const size of CHAT_SIZES) {
     for (const [theme, preset] of [['padrão', {}], ...Object.entries(PRESETS)] as const) {
       const props = parse({...preset, ...sizeProps(size)});
