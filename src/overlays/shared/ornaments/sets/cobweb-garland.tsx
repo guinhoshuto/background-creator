@@ -22,7 +22,8 @@ import {DARK_EDGE, DEW, DewBead, DewGlass, DewHalo} from './cobweb-web';
  * with whole-px boundaries, bisected until every strip's smallest circle (around everything the
  * swag can draw inside it, in any pose) fits; each strip is a placement of its own and draws the
  * swag clipped to itself, so the pieces join seamlessly. A run whose swags do not all fit at a
- * low of at least GARLAND.least px is left out whole (the count stays constant per size).
+ * low of at least GARLAND.least px, or whose swags would span less than 150 or more than 270 px
+ * (GARLAND.span), is left out whole (the count stays constant per size).
  *
  * Motion, whole harmonics of the cycle: the sag breathes at 1× (±1 px on the lowest thread, ±0.6
  * on the others), the low point slides ±2 px sideways at 2×, both with a phase that travels along
@@ -38,6 +39,12 @@ export const GARLAND = {
   spacing: 188,
   /** A run shorter than this is no garland. */
   shortest: 120,
+  /**
+   * Every swag spans between these px, or the run is no garland: a run of 270 to 300 px (the
+   * layout grid's cam, 2026-11-25) holds one swag too long or two too short. No size sold before
+   * the grid has such a run.
+   */
+  span: {least: 150, most: 270},
   /** Inner knots of the top run hang this far under the file's top edge (tied off above it). */
   knotDrop: 6,
   /** The tie runs up to this far under the file's edge, fading in toward the knot. */
@@ -444,6 +451,7 @@ const fitRun = (frame: OrnamentFrame, spec: RunSpec): GarlandRun | null => {
   const run = spec.right.x - spec.left.x;
   if (!(run >= GARLAND.shortest)) return null;
   const count = Math.max(1, Math.round(run / GARLAND.spacing));
+  if (run / count < GARLAND.span.least || run / count > GARLAND.span.most) return null;
   const knots = Array.from({length: count + 1}, (_, index) => ({
     x: spec.left.x + run * index / count,
     y: index === 0 ? spec.left.y : index === count ? spec.right.y : spec.knotY,

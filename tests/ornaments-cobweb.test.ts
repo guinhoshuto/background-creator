@@ -445,6 +445,7 @@ const kitRuns = () => ORNAMENT_KIND_NAMES.flatMap((kind) => ORNAMENT_KINDS[kind]
   return {id: size.id, props, frame, placements, runs: cobwebGarlandsOf(frame, props.ornamentSize)};
 }));
 
+// Dies with (.cache/twitch-layout/mutations-cobweb.json): C-1 the run kept when its swags fall outside GARLAND.span (layout-cam's top run, 146 px swags).
 test('cobweb: guirlandas de seda: nós fixos, vãos inteiros de 150 a 270 px, pontos baixos por encaixe', () => {
   for (const {id, props, frame, placements, runs} of kitRuns()) {
     for (const run of runs) {

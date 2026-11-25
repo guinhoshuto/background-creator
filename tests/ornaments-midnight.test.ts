@@ -38,8 +38,8 @@ const count = (placements: readonly OrnamentPlacement[], motif: string) => place
 const build = (frame: OrnamentFrame, placements: readonly OrnamentPlacement[], props: OrnamentProps, f: number, n: number) =>
   midnight.build(frame, placements, props, f, n);
 
-test('[midnight] a lua (principal) está em todos os 27 tamanhos, atrás, e na frente só em tela e sem sangria', () => {
-  assert.equal(ORNAMENT_SIZES.length, 27);
+test('[midnight] a lua (principal) está em todos os 32 tamanhos, atrás, e na frente só em tela e sem sangria', () => {
+  assert.equal(ORNAMENT_SIZES.length, 32);
   for (const size of ORNAMENT_SIZES) {
     for (const ornamentSize of [12, 44, 256]) {
       const {frame, placements} = layoutAt(size, {ornamentSize});
