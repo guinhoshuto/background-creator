@@ -16,7 +16,7 @@ import {getBoxCanvas} from '../src/overlays/shared/box';
 import type {AssetKind} from '../src/kinds';
 import {sizesForKind} from '../src/sizes';
 import {maskGroupsOf} from './helpers/masks';
-import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_BOX_STYLES, KIT_SETS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, backgroundPacksIn, boxStylesOf, droppedWebms, expectedPackFiles, isStaticOnly, layoutSizeCount, packSizesForKind, themePresetNames, type KitTheme} from './helpers/themes';
+import {BACKGROUND_PACK_KITS, KIT_BACKGROUND_VARIANTS, KIT_BOX_STYLES, KIT_SETS, KIT_STICKERS, KIT_THEMES, OVERLAY_THEMES, VERTICAL_PACKS, backgroundPacksIn, boxStylesOf, droppedWebms, expectedPackFiles, isStaticOnly, layoutSizeCount, packSizesForKind, themePresetNames, type KitTheme} from './helpers/themes';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -958,7 +958,7 @@ test('packs: todo pack só de fundos traz só fundos, em 1920×1080, na pasta ba
 });
 
 test('packs: um pack só de fundos novo (background-*, series-*) passa sem entrar em lista nenhuma', () => {
-  const files = [...OVERLAY_THEMES.map((name) => `${name}.json`), 'background-flow.json', 'series-pastel-webgl.json', 'halloween-backgrounds.json'].sort();
+  const files = [...OVERLAY_THEMES.map((name) => `${name}.json`), ...VERTICAL_PACKS.map((name) => `${name}.json`), 'background-flow.json', 'series-pastel-webgl.json', 'halloween-backgrounds.json'].sort();
   assert.deepEqual(expectedPackFiles(files), files);
   assert.deepEqual(backgroundPacksIn(files), ['background-flow', 'halloween-backgrounds', 'series-pastel-webgl']);
   // Any other name is unexpected, and every theme's pack stays mandatory.

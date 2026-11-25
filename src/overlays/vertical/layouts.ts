@@ -34,10 +34,37 @@ export type VerticalLayout = {
 const block = (id: string, role: WindowRole, x: number, y: number, width: number, height: number, radii: Corners | number): LayoutWindow =>
   ({id, role, x, y, width, height, radii: typeof radii === 'number' ? allCorners(radii) : radii});
 
-export const VERTICAL_LAYOUT_IDS = ['single-stadium', 'single-rect', 'three-blocks', 'phone-game-bubble'] as const;
+/** The four standard stacked variants, shared by presets, packs and review jobs. */
+export const STACKED_LAYOUT_VARIANTS = [
+  {id: 'arched', layout: 'three-blocks', label: 'Arched / regular gap'},
+  {id: 'arched-compact', layout: 'three-blocks-compact', label: 'Arched / compact gap'},
+  {id: 'rect', layout: 'three-blocks-rect', label: 'Rectangular / regular gap'},
+  {id: 'rect-compact', layout: 'three-blocks-rect-compact', label: 'Rectangular / compact gap'},
+] as const;
+export const STACKED_LAYOUT_IDS = STACKED_LAYOUT_VARIANTS.map(({layout}) => layout) as [
+  'three-blocks', 'three-blocks-compact', 'three-blocks-rect', 'three-blocks-rect-compact',
+];
+export const VERTICAL_LAYOUT_IDS = ['single-stadium', 'single-rect', 'three-blocks', 'phone-game-bubble',
+  'three-blocks-compact', 'three-blocks-rect', 'three-blocks-rect-compact'] as const;
+
+/** Camera/game sizes and chat position stay fixed; only upper radii and raw gap vary. */
+export const STACKED_REGULAR_GAP = 56;
+export const STACKED_COMPACT_GAP = 40;
+const stackedLayout = (id: string, label: string, rectangular: boolean, compact: boolean): VerticalLayout => ({
+  id, label, use: 'PC gameplay',
+  windows: [
+    block('camera', 'camera', 110, 260, 860, 484, rectangular ? 56 : [200, 200, 56, 56]),
+    block('game', 'game', 110, 260 + 484 + (compact ? STACKED_COMPACT_GAP : STACKED_REGULAR_GAP), 860, 484, 56),
+    block('chat', 'chat', 110, 1340, 860, 420, [56, 56, 200, 200]),
+  ],
+  chatModes: ['window', 'panel', 'open'],
+});
 export type VerticalLayoutId = (typeof VERTICAL_LAYOUT_IDS)[number];
 
 export const VERTICAL_LAYOUTS: Record<VerticalLayoutId, VerticalLayout> = {
+  'three-blocks-compact': stackedLayout('three-blocks-compact', 'Arched / compact gap', false, true),
+  'three-blocks-rect': stackedLayout('three-blocks-rect', 'Rectangular / regular gap', true, false),
+  'three-blocks-rect-compact': stackedLayout('three-blocks-rect-compact', 'Rectangular / compact gap', true, true),
   // A: one window, a pill whose top and bottom are half circles (radius = half the width).
   'single-stadium': {
     id: 'single-stadium', label: 'Single window, pill', use: 'chatting and IRL, feed videos',
@@ -51,15 +78,7 @@ export const VERTICAL_LAYOUTS: Record<VerticalLayoutId, VerticalLayout> = {
     chatModes: ['open'],
   },
   // B: camera, game and chat stacked, 16:9 blocks 860×484 with 56 px between them.
-  'three-blocks': {
-    id: 'three-blocks', label: 'Three blocks: camera, game, chat', use: 'PC gameplay',
-    windows: [
-      block('camera', 'camera', 110, 260, 860, 484, [200, 200, 56, 56]),
-      block('game', 'game', 110, 800, 860, 484, 56),
-      block('chat', 'chat', 110, 1340, 860, 420, [56, 56, 200, 200]),
-    ],
-    chatModes: ['window', 'panel', 'open'],
-  },
+  'three-blocks': stackedLayout('three-blocks', 'Three blocks: camera, game, chat', false, false),
   // C: a 9:16 phone game and the camera in a round bubble.
   // Deviation from the spec: its game is 760×1351, an odd height; every pixel size here is even
   // (Remotion rounds odd H.264 sizes down), so the window is 1352 tall, ending at y 1612.

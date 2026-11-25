@@ -90,6 +90,15 @@ const COMMENTS_CLEAR_CROSSINGS: Record<string, Record<string, 'window' | 'ring'>
   'three-blocks/panel': {game: 'ring'},
   'three-blocks/open': {game: 'ring'},
   'phone-game-bubble/open': {game: 'window', camera: 'window'},
+  'three-blocks-compact/window': {chat: 'window'},
+  'three-blocks-compact/panel': {},
+  'three-blocks-compact/open': {},
+  'three-blocks-rect/window': {game: 'ring', chat: 'window'},
+  'three-blocks-rect/panel': {game: 'ring'},
+  'three-blocks-rect/open': {game: 'ring'},
+  'three-blocks-rect-compact/window': {chat: 'window'},
+  'three-blocks-rect-compact/panel': {},
+  'three-blocks-rect-compact/open': {},
 };
 
 test('vertical layouts: what reaches into the comments keep-clear zone is exactly the fixed table', () => {
