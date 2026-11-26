@@ -5,7 +5,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
 import {isQaOnly, overlayCatalog} from '../src/catalog';
 import {
-  DISCARDED_LAYOUT_IDS, FACE_BAND, LIVE_COMMENTS_CLEAR, isDiscardedLayout, LiveFrameFrame, RIGHT_COLUMN, RING_WIDTH, VERTICAL_CANVAS, VERTICAL_LAYOUTS, VERTICAL_LAYOUT_IDS,
+  DISCARDED_LAYOUT_IDS, FACE_BAND, LIVE_COMMENTS_CLEAR, LIVE_HOST_CARD, LIVE_TOP_RIGHT, isDiscardedLayout, LiveFrameFrame, RIGHT_COLUMN, RING_WIDTH, VERTICAL_CANVAS, VERTICAL_LAYOUTS, VERTICAL_LAYOUT_IDS,
   centerOf, cornerRectSdf, getLiveFrameScene, holePath, layoutModes, liveFrameLoopSchema, minDistanceOver,
   offsetCornerRect, rectInside, type LiveFrameLoopProps, type LiveFrameScene,
 } from '../src/overlays/vertical';
@@ -22,6 +22,8 @@ const propsOf = (layout: string, chatMode: string, extra: Record<string, unknown
   liveFrameLoopSchema.parse({layout, chatMode, ...extra});
 
 test('vertical layouts: every block inside the screen, ring included, with even position and size', () => {
+  // The whole list: the square camera's left siblings of 2026-11-25 went with the square (owner, 2026-11-26).
+  assert.deepEqual([...VERTICAL_LAYOUT_IDS], ['single-stadium', 'single-rect', 'three-blocks', 'phone-game-bubble', 'three-blocks-compact', 'single-rounded']);
   for (const id of VERTICAL_LAYOUT_IDS) {
     const layout = VERTICAL_LAYOUTS[id];
     assert.equal(layout.id, id);
@@ -38,13 +40,22 @@ test('vertical layouts: every block inside the screen, ring included, with even 
   assert.equal(VERTICAL_LAYOUTS['phone-game-bubble'].windows.find((window) => window.role === 'game')!.height, 1352);
 });
 
-test('vertical layouts: the pill is round top and bottom, its radius half its width', () => {
+test('vertical layouts: the pill is round top and bottom, and its rounded sibling keeps 56 px corners', () => {
   const [pill] = VERTICAL_LAYOUTS['single-stadium'].windows;
   assert.ok(pill);
   assert.deepEqual(pill.radii, [pill.width / 2, pill.width / 2, pill.width / 2, pill.width / 2]);
   // The top of the arc and the side where the half circles meet the straight sides lie on the edge.
   assert.equal(cornerRectSdf(pill, pill.x + pill.width / 2, pill.y), 0);
   assert.equal(cornerRectSdf(pill, pill.x, pill.y + pill.width / 2), 0);
+  // On the grid's 40 px sides (owner, 2026-11-26), so the half circles have a 500 px radius.
+  assert.deepEqual([pill.x, pill.y, pill.width, pill.height, pill.radii[0]], [40, 210, 1000, 1310, 500]);
+  // Its sibling is the same container with the blocks' 56 px corners.
+  const [rounded] = VERTICAL_LAYOUTS['single-rounded'].windows;
+  assert.ok(rounded);
+  assert.deepEqual({...rounded, radii: pill.radii}, pill);
+  assert.deepEqual(rounded.radii, [56, 56, 56, 56]);
+  assert.ok(cornerRectSdf(rounded, rounded.x + 16, rounded.y + 16) > 0, 'the corner is cut');
+  assert.ok(cornerRectSdf(rounded, rounded.x + 17, rounded.y + 17) < 0, 'and only 56 px of it');
   // The bubble is a circle: radius half its side.
   const bubble = VERTICAL_LAYOUTS['phone-game-bubble'].windows.find((window) => window.role === 'camera')!;
   assert.equal(bubble.width, bubble.height);
@@ -60,10 +71,14 @@ const FACE_BAND_EXCEPTIONS: readonly string[] = ['phone-game-bubble/camera'];
 
 test('vertical layouts: the camera sits in the FACE_BAND, with the bubble as the one fixed exception', () => {
   const camera = (id: keyof typeof VERTICAL_LAYOUTS) => VERTICAL_LAYOUTS[id].windows.find((window) => window.role === 'camera')!;
-  // The three-blocks camera block lies wholly inside the band.
-  assert.ok(rectInside(camera('three-blocks'), FACE_BAND), 'three-blocks camera');
+  // The stacked camera, 16:9 and as wide as the game, starts 132 px above the band, under the host card
+  // (owner, 2026-11-26), and ends inside it: its vertical centre, y 379, is what sits inside.
+  for (const id of ['three-blocks', 'three-blocks-compact'] as const) {
+    assert.deepEqual([FACE_BAND.y - camera(id).y, centerOf(camera(id)).y], [132, 379], id);
+    assert.ok(camera(id).y + camera(id).height <= FACE_BAND.y + FACE_BAND.height, `${id}: the camera ends inside the band`);
+  }
   // One window: it is taller than the band, so its vertical centre is what must sit inside.
-  for (const id of ['single-stadium', 'single-rect'] as const) {
+  for (const id of ['single-stadium', 'single-rounded', 'single-rect'] as const) {
     const {y} = centerOf(camera(id));
     assert.ok(y >= FACE_BAND.y && y <= FACE_BAND.y + FACE_BAND.height, `${id}: centre at y ${y}`);
   }
@@ -75,6 +90,38 @@ test('vertical layouts: the camera sits in the FACE_BAND, with the bubble as the
     })
     .map((window) => `${id}/${window.id}`));
   assert.deepEqual(outside, FACE_BAND_EXCEPTIONS);
+});
+
+/**
+ * The windows that lie under the app's top interface in the LIVE view (LIVE_HOST_CARD, x 20–540,
+ * y 80–300; LIVE_TOP_RIGHT, x 700–1060, y 80–190), in `open` mode: how many of the zone's rows the
+ * window covers, counted only when the shape itself enters the zone. The stacked camera starts at
+ * y 98 (owner, 2026-11-26: accepted as the price of a 16:9 camera as wide as the game), under both zones; one
+ * window starts at y 210, under the host card's last 90 px. Fixed by hand, compared exactly, so a
+ * moved top fails until the owner approves it here.
+ */
+const LIVE_TOP_COVER: Record<string, Record<string, number>> = {
+  'single-stadium/camera': {'live-host-card': 90},
+  'single-rect/camera': {'live-host-card': 50},
+  'three-blocks/camera': {'live-host-card': 202, 'live-top-right': 92},
+  'phone-game-bubble/game': {'live-host-card': 40},
+  'three-blocks-compact/camera': {'live-host-card': 202, 'live-top-right': 92},
+  'single-rounded/camera': {'live-host-card': 90},
+};
+
+test('vertical layouts: what lies under the host card and the viewers is exactly the fixed table', () => {
+  const measured: Record<string, Record<string, number>> = {};
+  for (const id of VERTICAL_LAYOUT_IDS) {
+    for (const window of getLiveFrameScene(propsOf(id, 'open'), 0, N).windows) {
+      const cover: Record<string, number> = {};
+      for (const zone of [LIVE_HOST_CARD, LIVE_TOP_RIGHT]) {
+        const rows = Math.min(window.y + window.height, zone.y + zone.height) - Math.max(window.y, zone.y);
+        if (rows > 0 && minDistanceOver(window, zone, 1) < 0) cover[zone.id] = rows;
+      }
+      if (Object.keys(cover).length > 0) measured[`${id}/${window.id}`] = cover;
+    }
+  }
+  assert.deepEqual(measured, LIVE_TOP_COVER);
 });
 
 /**
@@ -93,12 +140,7 @@ const COMMENTS_CLEAR_CROSSINGS: Record<string, Record<string, 'window' | 'ring'>
   'three-blocks-compact/window': {chat: 'window'},
   'three-blocks-compact/panel': {},
   'three-blocks-compact/open': {},
-  'three-blocks-left/window': {game: 'ring', chat: 'window'},
-  'three-blocks-left/panel': {game: 'ring'},
-  'three-blocks-left/open': {game: 'ring'},
-  'three-blocks-left-compact/window': {chat: 'window'},
-  'three-blocks-left-compact/panel': {},
-  'three-blocks-left-compact/open': {},
+  'single-rounded/open': {camera: 'window'},
 };
 
 test('vertical layouts: what reaches into the comments keep-clear zone is exactly the fixed table', () => {
@@ -116,18 +158,24 @@ test('vertical layouts: what reaches into the comments keep-clear zone is exactl
 });
 
 /**
- * The feed view's action column (RIGHT_COLUMN, x 940–1080, y 1050–1550): a LIVE frame's stacked
- * windows reach into it, a known trade-off of the 40 px sides (owner, 2026-11-25), since a viewer
- * sees a LIVE frame in the LIVE view, not the feed. How far each window's side enters, in px, with
- * the chat block in `window` mode; fixed here so a change of the sides shows.
+ * The feed view's action column (RIGHT_COLUMN, x 940–1080, y 1050–1550): the windows on the LIVE
+ * grid reach into it, a known trade-off of the 40 px sides (owner, 2026-11-25; one window too since
+ * 2026-11-26), since a viewer sees a LIVE frame in the LIVE view, not the feed. How far each window's
+ * box enters, in px, with the chat block in `window` mode where the layout has one; fixed here so a
+ * change of the sides shows.
  */
-const FEED_RIGHT_COLUMN_REACH: Record<string, Record<string, number>> = Object.fromEntries(
-  ['three-blocks', 'three-blocks-compact', 'three-blocks-left', 'three-blocks-left-compact'].map((id) => [id, {game: 100, chat: 100}]));
+const FEED_RIGHT_COLUMN_REACH: Record<string, Record<string, number>> = {
+  'three-blocks': {game: 100, chat: 100},
+  'three-blocks-compact': {game: 100, chat: 100},
+  'single-stadium': {camera: 100},
+  'single-rounded': {camera: 100},
+};
 
-test('vertical layouts: the stacked windows reach 100 px into the feed action column, the fixed trade-off', () => {
+test('vertical layouts: the grid windows reach 100 px into the feed action column, the fixed trade-off', () => {
   const measured = Object.fromEntries(Object.keys(FEED_RIGHT_COLUMN_REACH).map((id) => {
     const reach: Record<string, number> = {};
-    for (const window of getLiveFrameScene(propsOf(id, 'window'), 0, N).windows) {
+    const chatMode = VERTICAL_LAYOUTS[id as keyof typeof VERTICAL_LAYOUTS].chatModes.includes('window') ? 'window' : 'open';
+    for (const window of getLiveFrameScene(propsOf(id, chatMode), 0, N).windows) {
       const rows = Math.min(window.y + window.height, RIGHT_COLUMN.y + RIGHT_COLUMN.height) - Math.max(window.y, RIGHT_COLUMN.y);
       const columns = Math.min(window.x + window.width, RIGHT_COLUMN.x + RIGHT_COLUMN.width) - Math.max(window.x, RIGHT_COLUMN.x);
       if (rows > 0 && columns > 0) reach[window.id] = columns;
@@ -204,7 +252,7 @@ test('vertical frame: alpha 0 at the centre of every window, on every layout, mo
 });
 
 test('vertical frame: a chat mode without a chat block is refused with the way out', () => {
-  for (const id of ['single-stadium', 'single-rect', 'phone-game-bubble']) {
+  for (const id of ['single-stadium', 'single-rounded', 'single-rect', 'phone-game-bubble']) {
     for (const chatMode of ['window', 'panel']) {
       const result = liveFrameLoopSchema.safeParse({layout: id, chatMode});
       assert.equal(result.success, false, `${id}/${chatMode}`);
