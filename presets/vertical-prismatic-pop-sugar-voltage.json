@@ -1,0 +1,11 @@
+{
+  "durationSeconds": 8,
+  "seed": 1,
+  "transparent": true,
+  "backgroundColor": "#00FF00",
+  "outputFormat": "webm",
+  "look": "sugar-voltage",
+  "layout": "three-blocks",
+  "chatMode": "open",
+  "ornaments": true
+}

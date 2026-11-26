@@ -16,10 +16,10 @@ export const verticalBaseFields = () => ({
 /** The layout and how its chat block is drawn. */
 export const layoutFields = () => ({
   layout: z.enum(VERTICAL_LAYOUT_IDS)
-    .describe('Windows on the screen: single-stadium (one pill), single-rect (one rectangle), three-blocks (camera, game, chat) or phone-game-bubble (9:16 game and a round camera)')
+    .describe('Windows on the screen: single-stadium (one pill), single-rect (one rectangle), three-blocks and its compact/rect siblings (camera, game, chat) or phone-game-bubble (9:16 game and a round camera)')
     .default('three-blocks'),
   chatMode: z.enum(CHAT_MODES)
-    .describe('The chat block (three-blocks only): window (transparent, for a chat widget behind), panel (opaque, under the app\'s own comments) or open (only the background; the default)')
+    .describe('The chat block (stacked layouts only): window (transparent, for a chat widget behind), panel (opaque, under the app\'s own comments) or open (only the background; the default)')
     .default('open'),
 });
 

@@ -1,0 +1,390 @@
+{
+  "name": "prismatic-pop-vertical",
+  "version": 4,
+  "items": [
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": true
+      },
+      "variant": "electric-candy-center",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": false
+      },
+      "variant": "electric-candy-center-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": true
+      },
+      "variant": "electric-candy-center-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": false
+      },
+      "variant": "electric-candy-center-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-left",
+        "ornaments": true
+      },
+      "variant": "electric-candy-left",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-left",
+        "ornaments": false
+      },
+      "variant": "electric-candy-left-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-left-compact",
+        "ornaments": true
+      },
+      "variant": "electric-candy-left-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-electric-candy",
+      "props": {
+        "layout": "three-blocks-left-compact",
+        "ornaments": false
+      },
+      "variant": "electric-candy-left-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": true
+      },
+      "variant": "night-signal-center",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": false
+      },
+      "variant": "night-signal-center-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": true
+      },
+      "variant": "night-signal-center-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": false
+      },
+      "variant": "night-signal-center-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-left",
+        "ornaments": true
+      },
+      "variant": "night-signal-left",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-left",
+        "ornaments": false
+      },
+      "variant": "night-signal-left-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-left-compact",
+        "ornaments": true
+      },
+      "variant": "night-signal-left-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-night-signal",
+      "props": {
+        "layout": "three-blocks-left-compact",
+        "ornaments": false
+      },
+      "variant": "night-signal-left-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-center",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-center-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-center-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-compact",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-center-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-left",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-left",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-left",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-left-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-left-compact",
+        "ornaments": true
+      },
+      "variant": "sugar-voltage-left-compact",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "PrismaticPopLoop",
+      "preset": "vertical-prismatic-pop-sugar-voltage",
+      "props": {
+        "layout": "three-blocks-left-compact",
+        "ornaments": false
+      },
+      "variant": "sugar-voltage-left-compact-plain",
+      "formats": [
+        "webm",
+        "png",
+        "mp4"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-center",
+      "formats": [
+        "png"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks-compact",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-center-compact",
+      "formats": [
+        "png"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks-left",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-left",
+      "formats": [
+        "png"
+      ]
+    },
+    {
+      "composition": "SafeZoneGuide",
+      "props": {
+        "layout": "three-blocks-left-compact",
+        "chatMode": "open",
+        "view": "live"
+      },
+      "variant": "guide-left-compact",
+      "formats": [
+        "png"
+      ]
+    }
+  ]
+}

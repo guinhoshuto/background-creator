@@ -5,7 +5,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {parsePackManifest, planPack, realPackDeps} from '../scripts/pack-plan';
 import {isQaOnly, overlayCatalog} from '../src/catalog';
 import {
-  DISCARDED_LAYOUT_IDS, FACE_BAND, LIVE_COMMENTS_CLEAR, isDiscardedLayout, LiveFrameFrame, RING_WIDTH, VERTICAL_CANVAS, VERTICAL_LAYOUTS, VERTICAL_LAYOUT_IDS,
+  DISCARDED_LAYOUT_IDS, FACE_BAND, LIVE_COMMENTS_CLEAR, isDiscardedLayout, LiveFrameFrame, RIGHT_COLUMN, RING_WIDTH, VERTICAL_CANVAS, VERTICAL_LAYOUTS, VERTICAL_LAYOUT_IDS,
   centerOf, cornerRectSdf, getLiveFrameScene, holePath, layoutModes, liveFrameLoopSchema, minDistanceOver,
   offsetCornerRect, rectInside, type LiveFrameLoopProps, type LiveFrameScene,
 } from '../src/overlays/vertical';
@@ -90,6 +90,15 @@ const COMMENTS_CLEAR_CROSSINGS: Record<string, Record<string, 'window' | 'ring'>
   'three-blocks/panel': {game: 'ring'},
   'three-blocks/open': {game: 'ring'},
   'phone-game-bubble/open': {game: 'window', camera: 'window'},
+  'three-blocks-compact/window': {chat: 'window'},
+  'three-blocks-compact/panel': {},
+  'three-blocks-compact/open': {},
+  'three-blocks-left/window': {game: 'ring', chat: 'window'},
+  'three-blocks-left/panel': {game: 'ring'},
+  'three-blocks-left/open': {game: 'ring'},
+  'three-blocks-left-compact/window': {chat: 'window'},
+  'three-blocks-left-compact/panel': {},
+  'three-blocks-left-compact/open': {},
 };
 
 test('vertical layouts: what reaches into the comments keep-clear zone is exactly the fixed table', () => {
@@ -104,6 +113,28 @@ test('vertical layouts: what reaches into the comments keep-clear zone is exactl
     measured[`${layout.id}/${chatMode}`] = crossings;
   }
   assert.deepEqual(measured, COMMENTS_CLEAR_CROSSINGS);
+});
+
+/**
+ * The feed view's action column (RIGHT_COLUMN, x 940–1080, y 1050–1550): a LIVE frame's stacked
+ * windows reach into it, a known trade-off of the 40 px sides (owner, 2026-11-25), since a viewer
+ * sees a LIVE frame in the LIVE view, not the feed. How far each window's side enters, in px, with
+ * the chat block in `window` mode; fixed here so a change of the sides shows.
+ */
+const FEED_RIGHT_COLUMN_REACH: Record<string, Record<string, number>> = Object.fromEntries(
+  ['three-blocks', 'three-blocks-compact', 'three-blocks-left', 'three-blocks-left-compact'].map((id) => [id, {game: 100, chat: 100}]));
+
+test('vertical layouts: the stacked windows reach 100 px into the feed action column, the fixed trade-off', () => {
+  const measured = Object.fromEntries(Object.keys(FEED_RIGHT_COLUMN_REACH).map((id) => {
+    const reach: Record<string, number> = {};
+    for (const window of getLiveFrameScene(propsOf(id, 'window'), 0, N).windows) {
+      const rows = Math.min(window.y + window.height, RIGHT_COLUMN.y + RIGHT_COLUMN.height) - Math.max(window.y, RIGHT_COLUMN.y);
+      const columns = Math.min(window.x + window.width, RIGHT_COLUMN.x + RIGHT_COLUMN.width) - Math.max(window.x, RIGHT_COLUMN.x);
+      if (rows > 0 && columns > 0) reach[window.id] = columns;
+    }
+    return [id, reach];
+  }));
+  assert.deepEqual(measured, FEED_RIGHT_COLUMN_REACH);
 });
 
 /** The markup that must never move: every hole's clip and the rings, which come last in the SVG. */
