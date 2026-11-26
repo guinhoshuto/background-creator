@@ -5,8 +5,8 @@ import {allCorners, type CornerRect, type Corners} from './geometry';
  * 1080×1920 screen, each a rect with a radius per corner. The kept layouts sit on the LIVE grid
  * (owner, 2026-11-25 and 2026-11-26), the 16:9 kits' spacing: 40 px at the sides and 24 px between
  * the drawn frames, with the single window's top at y 210 and the stacked camera's at y 98. Radius 56
- * for blocks, half the width for the pill and 200 for the arcs under the chat block. The two
- * discarded layouts keep the spec's own margins (§4.1).
+ * for blocks, half the width for the pill and 200 for the chat block's bottom corners. The two
+ * discarded layouts keep the spec's own positions (§4.2).
  */
 
 /** What goes behind a window: the camera, the game capture or a chat widget. */
@@ -61,9 +61,10 @@ export const VERTICAL_LAYOUT_IDS = ['single-stadium', 'single-rect', 'three-bloc
  * biggest 16:9 at that width (1000×562.5, even: 562) and ends at y 1284 as before, so the native
  * comments' keep-clear zone sees what it saw before. The camera is the game's twin (owner,
  * 2026-11-26): 16:9, as wide and as tall as the game and rounded like it. Two of them and the regular
- * gap above y 1284 put the top at y 98, under the app's host card and viewers: the owner took that
- * for a camera this size, after the 400 px square of 2026-11-25 read too small. The compact variant
- * fuses the two frames: 24 px between the windows, the camera unchanged and the game moved up.
+ * gap above y 1284 put the top at y 98, under the app's host card and viewers: the owner accepted
+ * that as the price of a camera this size, after the 400 px square of 2026-11-25 read too small. The
+ * compact variant fuses the two frames: 24 px between the windows, the camera unchanged and the game
+ * moved up.
  */
 export const STACKED_SIDE = 40;
 export const STACKED_GUTTER = 24;

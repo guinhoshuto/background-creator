@@ -4,7 +4,7 @@ Three owner-approved original vector looks: **Electric Candy**, **Night Signal**
 
 ## Composition and layout contract
 
-`PrismaticPopLoop` uses `STANDARD_LAYOUT_VARIANTS`, the shared [four-variant standard](../vertical-overlays.md#standard-four-variant-delivery-matrix): camera over game with regular or compact spacing, and one window as a pill or rounded. Every look includes all four. Since 2026-11-26 they follow the [LIVE grid](../vertical-overlays.md#live-grid) with a full-width camera: 40 px sides, a 16:9 1000×562 camera at y 98 over its twin, the 1000×562 game, or one 1000×1310 window from y 210, on a 1080×1920 canvas at 60 fps. The chat field is open for native LIVE comments.
+`PrismaticPopLoop` uses `STANDARD_LAYOUT_VARIANTS`, the shared [four-variant standard](../vertical-overlays.md#standard-four-variant-delivery-matrix): camera over game with regular or compact spacing, and one window as a pill or rounded. Every look includes all four. Since 2026-11-26 they follow the [LIVE grid](../vertical-overlays.md#live-grid) with a camera as wide as the game: 40 px sides, a 16:9 1000×562 camera at y 98 over its twin, the 1000×562 game, or one 1000×1310 window from y 210, on a 1080×1920 canvas at 60 fps. The chat field is open for native LIVE comments.
 
 The raw camera/game gap is 62 px or 24 px. The outer ink extends 19 px from each hole, leaving the grid's 24 px between the inks, or, in the compact variant, fusing the two frames into one bridge (line, one edge band, line: the rings draw every ink, then every edge, then every line). The art was placed for the earlier 110 px sides and a top at y 260, and stays as it was: the wider windows hide more of it at the sides, the camera at y 98 leaves a 79 px band of it on top, and a window cuts whatever small motif sits on its edge. Every window but the pill has the uniform 56 px corner radius. Window positions, rings and filled background plates stay fixed. Native comments use the open lower-left space: the full-width background gradually settles into a readable tone from the same palette, without a separate rectangle, outline or clipped edge around the chat. No art enters the transparent windows.
 
@@ -26,7 +26,7 @@ Ribbon endpoints remain fixed outside the canvas; only the internal control poin
 - `presets/vertical-prismatic-pop-electric-candy.json`
 - `presets/vertical-prismatic-pop-night-signal.json`
 - `presets/vertical-prismatic-pop-sugar-voltage.json`
-- `packs/prismatic-pop-vertical.json`, version 5 (the full-width 16:9 camera and the single windows; v4 was the 400 px square camera, uploaded but never listed, and v3 a discarded motion direction, never shipped)
+- `packs/prismatic-pop-vertical.json`, version 5 (the 16:9 camera as wide as the game and the single windows; v4 was the 400 px square camera, uploaded but never listed, and v3 a discarded motion direction, never shipped)
 
 The pack plans **76 files**: 3 looks × 4 layouts × decorated/plain × PNG/WebM/MP4, plus one safe-zone guide PNG per layout. Variants are `<look>-<layout suffix>[-plain]`. PNG and WebM retain alpha; MP4 composites over `#00FF00`, for a chroma-key filter in the streaming application. Place camera/game sources behind the overlay. The green-screen alternative needs a key filter; use WebM where alpha is supported.
 

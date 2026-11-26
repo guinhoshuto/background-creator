@@ -13,7 +13,7 @@ export const PRISMATIC_POP_LOOKS = ['electric-candy', 'night-signal', 'sugar-vol
 export const prismaticPopSchema = z.object({
   ...verticalBaseFields(),
   look: z.enum(PRISMATIC_POP_LOOKS).describe('Prismatic Pop palette and artwork').default('electric-candy'),
-  layout: z.enum(STANDARD_LAYOUT_IDS).describe('Windows: camera over game (three-blocks, regular or compact gap) or one window (single-stadium, a pill; single-rounded)').default('three-blocks'),
+  layout: z.enum(STANDARD_LAYOUT_IDS).describe('Windows: camera over game (three-blocks, or three-blocks-compact with the frames fused) or one window (single-stadium, a pill; single-rounded, 56 px corners)').default('three-blocks'),
   chatMode: z.literal('open').describe('Open field for native LIVE comments').default('open'),
   ornaments: z.boolean().describe('Decorative ribbons, shapes, halftone and glints; off keeps the palette and rings').default(true),
 }).strict();

@@ -172,7 +172,7 @@ test('Prismatic Pop: every look/layout keeps its rings fixed, plain removes art,
     assert.ok(markup({...props, outputFormat: 'mp4'}, 0).includes('background-color:#00FF00'), 'MP4 must composite over the preset green');
     assert.doesNotMatch(start, /<image|<video|mix-blend-mode/);
   }
-  // Only the four standard layouts: the discarded ones stay out.
+  // Only the four standard layouts: the discarded ones and the removed id of pack v4 stay out.
   for (const layout of ['single-rect', 'phone-game-bubble', 'three-blocks-left']) {
     assert.equal(prismaticPopSchema.safeParse({layout}).success, false, layout);
   }

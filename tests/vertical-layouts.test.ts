@@ -40,7 +40,7 @@ test('vertical layouts: every block inside the screen, ring included, with even 
   assert.equal(VERTICAL_LAYOUTS['phone-game-bubble'].windows.find((window) => window.role === 'game')!.height, 1352);
 });
 
-test('vertical layouts: the pill is round top and bottom, its radius half its width', () => {
+test('vertical layouts: the pill is round top and bottom, and its rounded sibling keeps 56 px corners', () => {
   const [pill] = VERTICAL_LAYOUTS['single-stadium'].windows;
   assert.ok(pill);
   assert.deepEqual(pill.radii, [pill.width / 2, pill.width / 2, pill.width / 2, pill.width / 2]);
@@ -49,7 +49,7 @@ test('vertical layouts: the pill is round top and bottom, its radius half its wi
   assert.equal(cornerRectSdf(pill, pill.x, pill.y + pill.width / 2), 0);
   // On the grid's 40 px sides (owner, 2026-11-26), so the half circles have a 500 px radius.
   assert.deepEqual([pill.x, pill.y, pill.width, pill.height, pill.radii[0]], [40, 210, 1000, 1310, 500]);
-  // Its squarer sibling is the same container with the blocks' radius: square to the eye, 56 px corners.
+  // Its sibling is the same container with the blocks' 56 px corners.
   const [rounded] = VERTICAL_LAYOUTS['single-rounded'].windows;
   assert.ok(rounded);
   assert.deepEqual({...rounded, radii: pill.radii}, pill);
@@ -96,7 +96,7 @@ test('vertical layouts: the camera sits in the FACE_BAND, with the bubble as the
  * The windows that lie under the app's top interface in the LIVE view (LIVE_HOST_CARD, x 20–540,
  * y 80–300; LIVE_TOP_RIGHT, x 700–1060, y 80–190), in `open` mode: how many of the zone's rows the
  * window covers, counted only when the shape itself enters the zone. The stacked camera starts at
- * y 98 (owner, 2026-11-26: taken for a 16:9 camera as wide as the game), under both zones; one
+ * y 98 (owner, 2026-11-26: accepted as the price of a 16:9 camera as wide as the game), under both zones; one
  * window starts at y 210, under the host card's last 90 px. Fixed by hand, compared exactly, so a
  * moved top fails until the owner approves it here.
  */
