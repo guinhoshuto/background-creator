@@ -30,7 +30,7 @@ Ribbon endpoints remain fixed outside the canvas; only the internal control poin
 
 The pack plans **76 files**: 3 looks × 4 layouts × decorated/plain × PNG/WebM/MP4, plus one safe-zone guide PNG per layout. Variants are `<look>-<layout suffix>[-plain]`. PNG and WebM retain alpha; MP4 composites over `#00FF00`, for a chroma-key filter in the streaming application. Place camera/game sources behind the overlay. The green-screen alternative needs a key filter; use WebM where alpha is supported.
 
-`npm run render:pack -- prismatic-pop-vertical --dry-run` checks the plan and estimates size/time. `npm run qa:kit -- prismatic-pop-vertical` generates the portrait QA. Pack rendering, readback validation, zip and shipping use the usual official commands after the owner reviews the new layouts. The guide PNG is a placement reference, not a live layer. No final pack has been shipped by this implementation phase.
+`npm run render:pack -- prismatic-pop-vertical --dry-run` checks the plan and estimates size/time. `npm run qa:kit -- prismatic-pop-vertical` generates the portrait QA. The owner approved the v5 layouts on 2026-11-26, with the art as it is; pack v5 was then rendered, read back by `validate:pack` and zipped (76 files, 249.9 MiB), and it ships with `npm run ship:pack -- prismatic-pop-vertical`. The guide PNG is a placement reference, not a live layer.
 
 ## Verification
 
