@@ -93,12 +93,12 @@ const COMMENTS_CLEAR_CROSSINGS: Record<string, Record<string, 'window' | 'ring'>
   'three-blocks-compact/window': {chat: 'window'},
   'three-blocks-compact/panel': {},
   'three-blocks-compact/open': {},
-  'three-blocks-rect/window': {game: 'ring', chat: 'window'},
-  'three-blocks-rect/panel': {game: 'ring'},
-  'three-blocks-rect/open': {game: 'ring'},
-  'three-blocks-rect-compact/window': {chat: 'window'},
-  'three-blocks-rect-compact/panel': {},
-  'three-blocks-rect-compact/open': {},
+  'three-blocks-left/window': {game: 'ring', chat: 'window'},
+  'three-blocks-left/panel': {game: 'ring'},
+  'three-blocks-left/open': {game: 'ring'},
+  'three-blocks-left-compact/window': {chat: 'window'},
+  'three-blocks-left-compact/panel': {},
+  'three-blocks-left-compact/open': {},
 };
 
 test('vertical layouts: what reaches into the comments keep-clear zone is exactly the fixed table', () => {
@@ -122,7 +122,7 @@ test('vertical layouts: what reaches into the comments keep-clear zone is exactl
  * the chat block in `window` mode; fixed here so a change of the sides shows.
  */
 const FEED_RIGHT_COLUMN_REACH: Record<string, Record<string, number>> = Object.fromEntries(
-  ['three-blocks', 'three-blocks-compact', 'three-blocks-rect', 'three-blocks-rect-compact'].map((id) => [id, {game: 100, chat: 100}]));
+  ['three-blocks', 'three-blocks-compact', 'three-blocks-left', 'three-blocks-left-compact'].map((id) => [id, {game: 100, chat: 100}]));
 
 test('vertical layouts: the stacked windows reach 100 px into the feed action column, the fixed trade-off', () => {
   const measured = Object.fromEntries(Object.keys(FEED_RIGHT_COLUMN_REACH).map((id) => {

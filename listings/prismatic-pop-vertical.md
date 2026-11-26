@@ -24,12 +24,12 @@ Choose from three looks, each with four layouts. Animated and still options are 
 - Sugar Voltage: lavender, peach, pink and aqua, with rounded shapes and gently bending ribbon curls.
 
 ✦ FOUR LAYOUTS PER LOOK
-- Arched upper window with regular spacing.
-- Arched upper window with closer spacing.
-- Two rectangular windows with evenly rounded corners and regular spacing.
-- The same rounded rectangular windows with closer spacing.
+- Centered square camera window with regular spacing.
+- Centered square camera window with closer spacing, the two frames joined.
+- Square camera window on the left with regular spacing.
+- Square camera window on the left with closer spacing, the two frames joined.
 
-Every layout has two stacked windows for your camera and gameplay, plus an open lower area for comments. The chat background blends into the artwork without a separate box.
+Every layout has a rounded square window for your camera above a wide 16:9 window for your gameplay, plus an open lower area for comments. The chat background blends into the artwork without a separate box.
 
 ✦ WHAT YOU GET
 - 12 decorated overlays: 3 looks × 4 layouts.

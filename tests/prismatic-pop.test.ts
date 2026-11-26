@@ -18,7 +18,7 @@ const markup = (props: PrismaticPopProps, frame: number, durationInFrames = 480)
   renderToStaticMarkup(createElement(PrismaticPopFrame, {props, frame, durationInFrames}));
 const rings = (html: string) => html.slice(html.indexOf('<g data-layer="window-rings">'));
 
-test('stacked standard: the grid spacing, 24 px between the inks, fused in the compact variants', () => {
+test('stacked standard: the grid spacing, a square camera centred or left, fused in the compact variants', () => {
   assert.equal(STACKED_LAYOUT_VARIANTS.length, 4);
   // The grid was set on this kit's ink: the layouts' frame reach is Prismatic Pop's.
   assert.equal(STACKED_FRAME_REACH, PRISMATIC_RING_EXTENT);
@@ -26,12 +26,15 @@ test('stacked standard: the grid spacing, 24 px between the inks, fused in the c
   for (const variant of STACKED_LAYOUT_VARIANTS) {
     const [camera, game, chat] = VERTICAL_LAYOUTS[variant.layout].windows;
     assert.ok(camera && game && chat);
-    // Owner, 2026-11-25: 40 px sides, a 1000×400 camera strip over a 16:9 1000×562 game.
-    for (const window of [camera, game, chat]) assert.deepEqual([window.x, window.x + window.width], [40, 1040], `${variant.id}/${window.id}`);
-    assert.deepEqual([camera.y, camera.height, game.height], [260, 400, 562]);
+    // Owner, 2026-11-25: 40 px sides, a 400×400 square camera over a 16:9 1000×562 game.
+    for (const window of [game, chat]) assert.deepEqual([window.x, window.x + window.width], [40, 1040], `${variant.id}/${window.id}`);
+    assert.deepEqual([camera.y, camera.width, camera.height, game.height], [260, 400, 400, 562]);
+    // The square is centred in the column, or on its left margin with the art beside it.
+    assert.equal(camera.x, variant.id.startsWith('left') ? 40 : 340, variant.id);
+    assert.deepEqual(camera.radii, [56, 56, 56, 56], `${variant.id}: uniformly rounded, like the game`);
     assert.deepEqual([chat.y, chat.y + chat.height], [1346, 1760]);
     // The ink outside the screen's side keeps the grid's 40 px minus its reach.
-    assert.equal(camera.x - PRISMATIC_RING_EXTENT, 21);
+    assert.equal(game.x - PRISMATIC_RING_EXTENT, 21);
     const gap = game.y - camera.y - camera.height;
     const between = gap - 2 * PRISMATIC_RING_EXTENT;
     if (variant.id.includes('compact')) {
@@ -44,10 +47,9 @@ test('stacked standard: the grid spacing, 24 px between the inks, fused in the c
       assert.equal(chat.y - game.y - game.height - 2 * PRISMATIC_RING_EXTENT, 24, `${variant.id}: 24 px from the game's ink to the chat's`);
     }
     assert.deepEqual(game.radii, [56, 56, 56, 56]);
-    assert.deepEqual(camera.radii, variant.id.startsWith('rect') ? game.radii : [200, 200, 56, 56]);
-    pairs.push(`${camera.radii[0]}/${gap}`);
+    pairs.push(`${camera.x}/${gap}`);
   }
-  assert.equal(new Set(pairs).size, 4, 'shape and gap must vary independently');
+  assert.equal(new Set(pairs).size, 4, 'place and gap must vary independently');
 });
 
 test('Prismatic Pop: the rings draw every ink, then every edge, then every line, so a fused bridge is one frame', () => {
