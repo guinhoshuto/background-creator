@@ -8,8 +8,8 @@ import {buildKitJob, mergeStillProps, parseJob} from '../scripts/stills-job';
 import {getAsset} from '../src/catalog';
 import {hasAlpha} from '../src/settings';
 import {
-  PRISMATIC_POP_LOOKS, PRISMATIC_RING_EXTENT, PrismaticPopFrame, STACKED_FRAME_REACH, STACKED_LAYOUT_VARIANTS, VERTICAL_LAYOUTS,
-  getPrismaticPopMotion, prismaticPopSchema, type PrismaticPopProps,
+  PRISMATIC_POP_LOOKS, PRISMATIC_RING_EXTENT, PrismaticPopFrame, STACKED_FRAME_REACH, STANDARD_LAYOUT_VARIANTS, VERTICAL_LAYOUTS,
+  getLiveFrameScene, getPrismaticPopMotion, liveFrameLoopSchema, prismaticPopSchema, type LayoutWindow, type PrismaticPopProps,
 } from '../src/overlays/vertical';
 
 const json = (file: string) => JSON.parse(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')) as unknown;
@@ -18,38 +18,77 @@ const markup = (props: PrismaticPopProps, frame: number, durationInFrames = 480)
   renderToStaticMarkup(createElement(PrismaticPopFrame, {props, frame, durationInFrames}));
 const rings = (html: string) => html.slice(html.indexOf('<g data-layer="window-rings">'));
 
-test('stacked standard: the grid spacing, a square camera centred or left, fused in the compact variants', () => {
-  assert.equal(STACKED_LAYOUT_VARIANTS.length, 4);
+const boxOf = (window: LayoutWindow) => [window.x, window.y, window.width, window.height];
+const R56 = [56, 56, 56, 56];
+
+test('standard variants: the file suffixes and their layouts, two stacked and two single', () => {
+  assert.deepEqual(STANDARD_LAYOUT_VARIANTS.map(({id, layout}) => [id, layout]), [
+    ['camera-game', 'three-blocks'], ['camera-game-compact', 'three-blocks-compact'],
+    ['single-pill', 'single-stadium'], ['single-rounded', 'single-rounded'],
+  ]);
   // The grid was set on this kit's ink: the layouts' frame reach is Prismatic Pop's.
   assert.equal(STACKED_FRAME_REACH, PRISMATIC_RING_EXTENT);
-  const pairs: string[] = [];
-  for (const variant of STACKED_LAYOUT_VARIANTS) {
+});
+
+test('standard variants, stacked: camera and game are 16:9 twins on the grid, fused in the compact one', () => {
+  for (const variant of STANDARD_LAYOUT_VARIANTS.filter(({id}) => id.startsWith('camera-game'))) {
     const [camera, game, chat] = VERTICAL_LAYOUTS[variant.layout].windows;
     assert.ok(camera && game && chat);
-    // Owner, 2026-11-25: 40 px sides, a 400×400 square camera over a 16:9 1000×562 game.
-    for (const window of [game, chat]) assert.deepEqual([window.x, window.x + window.width], [40, 1040], `${variant.id}/${window.id}`);
-    assert.deepEqual([camera.y, camera.width, camera.height, game.height], [260, 400, 400, 562]);
-    // The square is centred in the column, or on its left margin with the art beside it.
-    assert.equal(camera.x, variant.id.startsWith('left') ? 40 : 340, variant.id);
-    assert.deepEqual(camera.radii, [56, 56, 56, 56], `${variant.id}: uniformly rounded, like the game`);
-    assert.deepEqual([chat.y, chat.y + chat.height], [1346, 1760]);
-    // The ink outside the screen's side keeps the grid's 40 px minus its reach.
+    const compact = variant.id === 'camera-game-compact';
+    // Owner, 2026-11-26: 40 px sides, and a camera as wide and as tall as the game, both 16:9.
+    assert.deepEqual(boxOf(camera), [40, 98, 1000, 562], `${variant.id}: camera`);
+    assert.deepEqual(boxOf(game), [40, compact ? 684 : 722, 1000, 562], `${variant.id}: game`);
+    assert.deepEqual(boxOf(chat), [40, 1346, 1000, 414], `${variant.id}: chat`);
+    // 16:9 at 1000 px is 562.5 tall: the even 562 is the biggest that fits.
+    for (const window of [camera, game]) {
+      assert.ok(window.height <= window.width * 9 / 16 && window.width * 9 / 16 - window.height < 2, `${variant.id}/${window.id}: 16:9`);
+      assert.deepEqual(window.radii, R56, `${variant.id}/${window.id}: uniformly rounded, no arch`);
+    }
+    // The ink keeps the grid's 40 px minus its reach at the sides, and stays on the screen above the camera.
     assert.equal(game.x - PRISMATIC_RING_EXTENT, 21);
+    assert.equal(camera.y - PRISMATIC_RING_EXTENT, 79);
     const gap = game.y - camera.y - camera.height;
     const between = gap - 2 * PRISMATIC_RING_EXTENT;
-    if (variant.id.includes('compact')) {
+    if (compact) {
       assert.equal(gap, 24, `${variant.id}: 24 px between the windows`);
-      assert.ok(between < 0, `${variant.id}: the two inks fuse`);
+      assert.equal(between, -14, `${variant.id}: the two inks fuse, overlapping 14 px`);
       assert.equal(game.y + game.height, 1246);
     } else {
       assert.equal(between, 24, `${variant.id}: 24 px between the inks`);
       assert.equal(game.y + game.height, 1284, `${variant.id}: the game ends where it ended`);
       assert.equal(chat.y - game.y - game.height - 2 * PRISMATIC_RING_EXTENT, 24, `${variant.id}: 24 px from the game's ink to the chat's`);
     }
-    assert.deepEqual(game.radii, [56, 56, 56, 56]);
-    pairs.push(`${camera.x}/${gap}`);
   }
-  assert.equal(new Set(pairs).size, 4, 'place and gap must vary independently');
+});
+
+test('standard variants, single: one 1000×1310 window on the grid, a pill or with the blocks\' radius', () => {
+  const radii: Record<string, number[]> = {'single-pill': [500, 500, 500, 500], 'single-rounded': R56};
+  for (const variant of STANDARD_LAYOUT_VARIANTS.filter(({id}) => id.startsWith('single'))) {
+    const layout = VERTICAL_LAYOUTS[variant.layout];
+    assert.equal(layout.windows.length, 1, variant.id);
+    const [container] = layout.windows;
+    assert.ok(container);
+    // Owner, 2026-11-26: the same 40 px sides as the stacked windows, y 210 to 1520.
+    assert.deepEqual(boxOf(container), [40, 210, 1000, 1310], variant.id);
+    assert.deepEqual(container.radii, radii[variant.id], variant.id);
+    assert.equal(container.role, 'camera');
+    assert.deepEqual(layout.chatModes, ['open']);
+    assert.equal(container.x - PRISMATIC_RING_EXTENT, 21);
+  }
+});
+
+test('Prismatic Pop: the frame cuts exactly the layout\'s windows, with one ring per window', () => {
+  const ringPaths = (html: string) => [...rings(html).matchAll(/<path d="[^"]+" fill="([^"]+)" fill-rule="evenodd"/g)].map((match) => match[1]);
+  const holes = (html: string) => [...html.matchAll(/<clipPath id="prismatic-[a-z-]+-windows-\d+"><path d="([^"]+)" clip-rule="evenodd"/g)].map((match) => match[1]);
+  for (const {id, layout} of STANDARD_LAYOUT_VARIANTS) {
+    const props = prismaticPopSchema.parse({layout});
+    const scene = getLiveFrameScene(liveFrameLoopSchema.parse({layout, chatMode: 'open'}), 0, 480);
+    const html = markup(props, 0);
+    assert.equal(scene.windows.length, id.startsWith('single') ? 1 : 2, id);
+    assert.deepEqual(holes(html), scene.holes, `${id}: every window is a hole of the art`);
+    // Each window gets an ink, an edge and a line.
+    assert.equal(ringPaths(html).length, 3 * scene.windows.length, id);
+  }
 });
 
 test('Prismatic Pop: the rings draw every ink, then every edge, then every line, so a fused bridge is one frame', () => {
@@ -119,7 +158,7 @@ test('Prismatic Pop: visible motifs move, with ribbon ends fixed off canvas and 
 });
 
 test('Prismatic Pop: every look/layout keeps its rings fixed, plain removes art, and MP4 composites green', () => {
-  for (const look of PRISMATIC_POP_LOOKS) for (const {layout} of STACKED_LAYOUT_VARIANTS) {
+  for (const look of PRISMATIC_POP_LOOKS) for (const {layout} of STANDARD_LAYOUT_VARIANTS) {
     const props = prismaticPopSchema.parse({look, layout, backgroundColor: '#00FF00'});
     const start = markup(props, 0);
     assert.equal(markup(props, 480), start);
@@ -133,7 +172,10 @@ test('Prismatic Pop: every look/layout keeps its rings fixed, plain removes art,
     assert.ok(markup({...props, outputFormat: 'mp4'}, 0).includes('background-color:#00FF00'), 'MP4 must composite over the preset green');
     assert.doesNotMatch(start, /<image|<video|mix-blend-mode/);
   }
-  assert.equal(prismaticPopSchema.safeParse({layout: 'single-stadium'}).success, false);
+  // Only the four standard layouts: the discarded ones stay out.
+  for (const layout of ['single-rect', 'phone-game-bubble', 'three-blocks-left']) {
+    assert.equal(prismaticPopSchema.safeParse({layout}).success, false, layout);
+  }
   assert.equal(prismaticPopSchema.safeParse({chatMode: 'panel'}).success, false);
   assert.equal(prismaticPopSchema.safeParse({width: 720}).success, false);
 });
@@ -148,7 +190,7 @@ test('vertical pack: every approved look has all four layouts, plain twins, thre
     const preset = prismaticPopSchema.strict().parse(json(`presets/vertical-prismatic-pop-${look}.json`));
     assert.equal(preset.look, look);
     assert.equal(preset.backgroundColor, '#00FF00');
-    for (const variant of STACKED_LAYOUT_VARIANTS) for (const ornaments of [true, false]) {
+    for (const variant of STANDARD_LAYOUT_VARIANTS) for (const ornaments of [true, false]) {
       const files = frames.filter((file) => file.exportProps.look === look && file.exportProps.layout === variant.layout && file.exportProps.ornaments === ornaments);
       assert.deepEqual(files.map((file) => file.format).sort(), ['mp4', 'png', 'webm']);
       for (const file of files) {
@@ -163,7 +205,8 @@ test('vertical pack: every approved look has all four layouts, plain twins, thre
     }
   }
   const guides = plan.filter((file) => file.composition === 'SafeZoneGuide');
-  assert.deepEqual(guides.map((file) => file.exportProps.layout), STACKED_LAYOUT_VARIANTS.map(({layout}) => layout));
+  assert.deepEqual(guides.map((file) => file.exportProps.layout), STANDARD_LAYOUT_VARIANTS.map(({layout}) => layout));
+  assert.deepEqual(guides.map((file) => file.variant), ['guide-camera-game', 'guide-camera-game-compact', 'guide-single-pill', 'guide-single-rounded']);
   assert.ok(guides.every((file) => file.format === 'png' && file.exportProps.view === 'live'));
 });
 
