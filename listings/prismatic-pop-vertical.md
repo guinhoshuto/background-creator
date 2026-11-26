@@ -14,7 +14,7 @@ tiktok live overlay, vertical overlay, animated overlay, obs overlay, pop art ov
 
 ## Description
 
-Bring bold color to your vertical stream with Prismatic Pop: a pop art overlay pack for TikTok LIVE layouts and OBS scenes. Flowing ribbons, orbiting accents and gently turning sparkles frame your camera and gameplay, with open space below for readable live comments.
+Bring bold color to your vertical stream with Prismatic Pop: a pop art overlay pack for TikTok LIVE layouts and OBS scenes. Flowing ribbons, orbiting accents and gently turning sparkles frame your camera and gameplay, or one tall camera window, with open space below for readable live comments.
 
 Choose from three looks, each with four layouts. Animated and still options are included, along with a simpler version of every combination.
 
@@ -24,12 +24,12 @@ Choose from three looks, each with four layouts. Animated and still options are 
 - Sugar Voltage: lavender, peach, pink and aqua, with rounded shapes and gently bending ribbon curls.
 
 ✦ FOUR LAYOUTS PER LOOK
-- Centered square camera window with regular spacing.
-- Centered square camera window with closer spacing, the two frames joined.
-- Square camera window on the left with regular spacing.
-- Square camera window on the left with closer spacing, the two frames joined.
+- Camera and gameplay: two matching 16:9 windows, the camera above the game, with regular spacing.
+- Camera and gameplay, compact: the same two windows closer together, the two frames joined.
+- Single window, pill: one tall window with fully rounded ends.
+- Single window, rounded: the same tall window with softly rounded corners.
 
-Every layout has a rounded square window for your camera above a wide 16:9 window for your gameplay, plus an open lower area for comments. The chat background blends into the artwork without a separate box.
+In the camera-and-gameplay layouts, your camera is as wide and as tall as your gameplay. The single-window layouts give one large window for a camera or a full vertical scene. Every window but the pill has the same rounded corners, and below the windows the artwork settles into an even tone for comments, without a separate chat box.
 
 ✦ WHAT YOU GET
 - 12 decorated overlays: 3 looks × 4 layouts.
@@ -51,12 +51,12 @@ The animation follows the decorative shapes. Your window positions and the reada
 - Download the files and unzip the pack.
 - Set up a 1080 × 1920 portrait scene in OBS Studio.
 - Add the .webm as a Media Source, enable Loop and place it above your camera and gameplay sources.
-- Fit your camera and gameplay behind the two windows. Use the matching placement guide as a reference.
+- Fit your camera and gameplay behind the two windows, or one source behind the single window. Use the matching placement guide as a reference.
 - For the .mp4 option, apply a green chroma-key filter to the overlay. For a still setup, add the .png as an Image Source.
 
 Use with OBS Studio or other streaming software that supports the chosen format and transparency or chroma key. This pack provides the artwork and space for comments; your live chat comes from your streaming setup. A chat widget and automatic chat connection are not included.
 
-Made for colorful gaming streams, VTuber setups and vertical camera-and-game scenes.
+Made for colorful gaming streams, VTuber setups, just-chatting streams and vertical camera-and-game scenes.
 
 Digital download only: no physical item will be shipped.
 Feel free to send me a message if you have any questions!
