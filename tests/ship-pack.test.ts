@@ -31,7 +31,11 @@ type World = {
   effects: ShipEffects;
 };
 
-/** A fake world. `npmCodes` fails a step by name; `uploadBytes` makes R2 keep another size; `busy` checks say wait first; `linkAnswer` is what the public link answers. */
+/**
+ * A fake world. `npmCodes` fails a step by name, and `'zip:pack --check'` is the check's exit (2, "no zip or a
+ * different one", unless a test says the zip is up to date); `uploadBytes` makes R2 keep another size; `busy` checks
+ * say wait first; `linkAnswer` is what the public link answers.
+ */
 const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}, version = 1, linkAnswer = {redirects: [], status: 200, length: '1000'}}: {
   npmCodes?: Record<string, number>; uploadBytes?: number; busy?: string[][]; state?: ShipState; version?: number; linkAnswer?: LinkAnswer;
 } = {}): World => {
@@ -41,6 +45,8 @@ const world = ({npmCodes = {}, uploadBytes, busy = [], state = {}, version = 1, 
     npm: async (script, args, logName) => {
       w.calls.push(`npm ${script} ${args.join(' ')}`);
       w.trail.push(`log ${logName}`);
+      // The check writes nothing, like the real one.
+      if (script === 'zip:pack' && args.includes('--check')) return npmCodes['zip:pack --check'] ?? 2;
       const code = npmCodes[script] ?? 0;
       // The real zip:pack writes the zip; the fake one only when it succeeds.
       if (script === 'zip:pack' && code === 0) w.local.set(`out/deliveries/${args[0]}-overlay-pack-v${version}.zip`, {bytes: 1000, sha256: SHA});
@@ -160,12 +166,50 @@ test('resume: a local zip this run already shipped skips the build and only chec
   assert(w.calls.includes(`rm ${ZIP}`));
 });
 
-test('a local zip other than the one shipped is built again', async () => {
+test('a local zip other than the one shipped, and not up to date with its pack, is built again', async () => {
   const w = world({state: {kit: {...SHIPPED_V1, sha256: OTHER_SHA}}});
   w.local.set(ZIP, {bytes: 1000, sha256: SHA});
   assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
-  assert(w.calls.includes('npm render:pack kit --wait-disk'));
+  assert.deepEqual(w.calls.slice(0, 2), ['npm zip:pack kit --check', 'npm render:pack kit --wait-disk']);
   assert.equal(w.state.kit?.sha256, SHA);
+});
+
+/** The 2026-11-25 stop: the Prismatic Pop vertical v4 zip was ready, and the upload waited for the render's disk floor. */
+const LOW_DISK = '2.7 GiB free on disk, below the floor of 3.0 GiB';
+
+test('a zip on disk that zip:pack --check finds up to date is validated and uploaded with no machine wait and no render (BGC-46)', async () => {
+  const w = world({busy: [[LOW_DISK], [LOW_DISK]], npmCodes: {'zip:pack --check': 0}});
+  w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  w.local.set('out/packs/kit', {bytes: 0, sha256: ''});
+  const {code, shipped} = await shipPacks([KIT], options, w.effects);
+  assert.equal(code, 0, w.logs.join('\n'));
+  assert.deepEqual(w.calls, ['npm zip:pack kit --check', 'npm validate:pack kit', `upload ${ZIP} ${KEY}`]);
+  assert(!w.logs.some((line) => line.startsWith('waiting before')), w.logs.join('\n'));
+  assert.deepEqual(w.sleeps, []);
+  // The check has its own log: the zip step's log keeps only zip:pack runs.
+  assert(w.trail.includes('log kit-zip-pack-check.log'), w.trail.join(', '));
+  assert(w.logs.includes(`kit: ${ZIP} is up to date with out/packs/kit (zip:pack --check); nothing to render, no wait for the machine`), w.logs.join('\n'));
+  assert.deepEqual(w.heads, [shipped[0]!.url]);
+  assert.deepEqual(w.state.kit, {...SHIPPED_V1, shippedAt: '2026-10-04T12:00:00.000Z'});
+});
+
+test('an up-to-date zip whose pack fails validate:pack stops before the upload', async () => {
+  const w = world({npmCodes: {'zip:pack --check': 0, 'validate:pack': 1}});
+  w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  assert.equal((await shipPacks([KIT, NEXT], options, w.effects)).code, 1);
+  assert.deepEqual(w.calls, ['npm zip:pack kit --check', 'npm validate:pack kit']);
+  assert.equal(w.state.kit, undefined);
+});
+
+test('a zip on disk with files left to render, or a pack that fails the check, still waits for the machine and renders', async () => {
+  // 2: the zip differs from what the pack makes now; 1: a check failed (a planned file missing, other props).
+  for (const check of [2, 1]) {
+    const w = world({busy: [[LOW_DISK]], npmCodes: {'zip:pack --check': check}});
+    w.local.set(ZIP, {bytes: 1000, sha256: SHA});
+    assert.equal((await shipPacks([KIT], options, w.effects)).code, 0);
+    assert.deepEqual(w.calls, ['npm zip:pack kit --check', 'npm render:pack kit --wait-disk', 'npm validate:pack kit', 'npm zip:pack kit', `upload ${ZIP} ${KEY}`], `check exit ${check}`);
+    assert.deepEqual(w.logs.filter((line) => line.startsWith('waiting')), [`waiting before kit: ${LOW_DISK}`], `check exit ${check}`);
+  }
 });
 
 test('a version shipped before with nothing local left is skipped', async () => {
@@ -212,15 +256,26 @@ test('the same version already on R2 with other content is refused: the version 
   assert.equal(w.state.kit, undefined);
 });
 
-test('decideShip: skip, resume and build, the answer the run and --dry-run share', async () => {
+test('decideShip: skip, resume, zipped and build, the answer the run and --dry-run share', async () => {
   const w = world();
   const decide = async (state: ShipState, version = 1) => (await decideShip({name: 'kit', version}, state, w.effects)).action;
   assert.equal(await decide({}), 'build');
   assert.equal(await decide({kit: SHIPPED_V1}), 'skip');
   assert.equal(await decide({kit: SHIPPED_V1}, 2), 'build');
+  // Without the version's zip on disk there is nothing to check: the pack builds.
+  assert.deepEqual(w.calls, []);
   w.local.set(ZIP, {bytes: 1000, sha256: SHA});
   assert.equal(await decide({kit: SHIPPED_V1}), 'resume');
+  assert.deepEqual(w.calls, []);
   assert.equal(await decide({kit: {...SHIPPED_V1, sha256: OTHER_SHA}}), 'build');
+  assert.equal(await decide({}), 'build');
+  assert.deepEqual(w.calls, ['npm zip:pack kit --check', 'npm zip:pack kit --check']);
+  const zipped = world({npmCodes: {'zip:pack --check': 0}});
+  zipped.local.set(ZIP, {bytes: 1000, sha256: SHA});
+  assert.deepEqual(await decideShip(KIT, {}, zipped.effects), {action: 'zipped'});
+  assert.deepEqual(await decideShip(KIT, {kit: {...SHIPPED_V1, sha256: OTHER_SHA}}, zipped.effects), {action: 'zipped', shipped: {...SHIPPED_V1, sha256: OTHER_SHA}});
+  // A raised version checks its own zip, never the one shipped before.
+  assert.equal((await decideShip({name: 'kit', version: 2}, {kit: SHIPPED_V1}, zipped.effects)).action, 'build');
   await assert.rejects(decide({kit: SHIPPED_V1}, 0), /set "version" to 2/);
 });
 
@@ -305,7 +360,10 @@ test('--dry-run says what the run would do: skip a version shipped with nothing 
     if (!existsSync(path.join(root, 'out', 'packs', pack))) {
       assert.match(dry({version}), new RegExp(`^${pack} v${version}: v${version} shipped before \\(u\\); would skip it`, 'm'));
     }
-    assert.match(dry({}), new RegExp(`^${pack} v${version}: v\\? shipped before \\(u\\); would run render:pack, validate:pack and zip:pack, then upload out/deliveries/${pack}-overlay-pack-v${version}\\.zip`, 'm'));
+    // With the version's zip on disk the answer is zip:pack --check's, which this test does not set up.
+    if (!existsSync(path.join(root, 'out', 'deliveries', `${pack}-overlay-pack-v${version}.zip`))) {
+      assert.match(dry({}), new RegExp(`^${pack} v${version}: v\\? shipped before \\(u\\); would run render:pack, validate:pack and zip:pack, then upload out/deliveries/${pack}-overlay-pack-v${version}\\.zip`, 'm'));
+    }
   } finally {
     rmSync(scratch, {recursive: true, force: true});
   }
