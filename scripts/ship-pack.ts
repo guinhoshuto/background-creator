@@ -21,6 +21,9 @@ with rclone, reads it back and compares name and size, then requests the public 
 redirects, 30 s for the whole chain) and records it only when the final answer is 200 with the zip's size.
 The first failure, a failing link included, stops the chain and keeps every local file. Run it again to
 resume: each step skips what is done, and a zip already on R2 with the same bytes is not uploaded twice.
+When the version's zip is already on disk and zip:pack --check finds it up to date with the pack folder,
+nothing is left to render: the machine wait, render:pack and zip:pack are skipped, and only validate:pack
+runs before the upload, so a disk below the render's floor never holds it back.
 
 N is "version" in packs/<name>.json. A version already shipped, with nothing local left, is skipped; to
 ship a changed pack, raise the version. The same version on R2 with other content is refused.
@@ -210,6 +213,7 @@ const main = async () => {
       console.log(`${pack.name} v${pack.version}: ${before}; ${{
         skip: 'would skip it: nothing local is left (raise "version" to ship a changed pack)',
         resume: `would check the local zip on R2 and its public link${then}`,
+        zipped: `${zipPathOf(pack)} is up to date (zip:pack --check): would run validate:pack, then upload it to ${values.remote}/packs/${pack.name}/<sha8>/ and check its public link, with no render and no wait for the machine${then}`,
         build: `would run render:pack, validate:pack and zip:pack, then upload ${zipPathOf(pack)} to ${values.remote}/packs/${pack.name}/<sha8>/ and check its public link${then}`,
       }[action]}`);
     }
