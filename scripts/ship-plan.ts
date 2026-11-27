@@ -61,23 +61,35 @@ export const publicUrlOf = ({name, version}: PackToShip, sha256: string) =>
  * What a run does with one pack, the same answer for the run and for --dry-run:
  * - skip: this version was shipped and nothing local is left;
  * - resume: the local zip is the one this version shipped, so only the R2 check and the cleanup are left;
+ * - zipped: the version's zip is on disk and `zip:pack --check` finds it up to date with the pack folder and the
+ *   plan, so render:pack and zip:pack would only skip: validate:pack, then the upload, with no wait for the machine;
  * - build: anything else, including a version above the one shipped (or a record from before versions).
  * A version below the one shipped is refused: the manifest went back, and its zip name would repeat an old one.
  */
-export type ShipDecision = {action: 'skip' | 'resume' | 'build'; shipped?: ShippedPack};
+export type ShipDecision = {action: 'skip' | 'resume' | 'zipped' | 'build'; shipped?: ShippedPack};
 
-export const decideShip = async (pack: PackToShip, state: ShipState, effects: Pick<ShipEffects, 'localSize' | 'sha256'>): Promise<ShipDecision> => {
+/** The log of the `zip:pack --check` that tells zipped from build, apart from the zip step's own log. */
+export const zipCheckLogName = (pack: string) => `${pack}-zip-pack-check.log`;
+
+export const decideShip = async (pack: PackToShip, state: ShipState, effects: Pick<ShipEffects, 'localSize' | 'sha256' | 'npm'>): Promise<ShipDecision> => {
   const shipped = state[pack.name];
   if (shipped?.version !== undefined && pack.version < shipped.version) {
     throw new ShipError(`${pack.name}: v${shipped.version} was shipped (${shipped.url}) and packs/${pack.name}.json says v${pack.version}; set "version" to ${shipped.version + 1} for a new delivery.`);
   }
-  const sameVersion = shipped !== undefined && shipped.version === pack.version;
-  if (!sameVersion) return {action: 'build', ...(shipped ? {shipped} : {})};
   const zip = zipPathOf(pack);
   const zipBytes = await effects.localSize(zip);
-  if (zipBytes === null && await effects.localSize(packFolderOf(pack.name)) === null) return {action: 'skip', shipped};
-  if (zipBytes !== null && await effects.sha256(zip) === shipped.sha256) return {action: 'resume', shipped};
-  return {action: 'build', shipped};
+  if (shipped !== undefined && shipped.version === pack.version) {
+    if (zipBytes === null && await effects.localSize(packFolderOf(pack.name)) === null) return {action: 'skip', shipped};
+    if (zipBytes !== null && await effects.sha256(zip) === shipped.sha256) return {action: 'resume', shipped};
+  }
+  const record = shipped ? {shipped} : {};
+  // Exit 0 only when every planned file is there with the plan's props hash and the zip holds exactly them. The
+  // check takes neither the render slot nor the disk floor: on 2026-11-25 a zip ready at 22:04 still waited at
+  // 23:19 for the render's floor before an upload that only needs the network (BGC-46).
+  if (zipBytes !== null && await effects.npm('zip:pack', [pack.name, '--check'], zipCheckLogName(pack.name)) === 0) {
+    return {action: 'zipped', ...record};
+  }
+  return {action: 'build', ...record};
 };
 
 /** The files of an `rclone lsjson` answer, folders left out. */
@@ -226,6 +238,11 @@ export const shipPack = async (pack: PackToShip, options: ShipOptions, effects: 
   }
   if (action === 'resume') {
     effects.log(`${pack.name}: the local zip is the one shipped at ${shipped!.url}; checking R2`);
+  } else if (action === 'zipped') {
+    // The machine check guards the render; validate:pack takes no slot and no floor, and the upload needs only the network.
+    effects.log(`${pack.name}: ${zip} is up to date with ${folder} (zip:pack --check); nothing to render, no wait for the machine`);
+    effects.log(`${pack.name}: validate:pack`);
+    await step(effects, pack.name, 'validate:pack');
   } else {
     await waitForMachine(effects, pack.name);
     effects.log(`${pack.name}: render:pack (v${pack.version})`);
