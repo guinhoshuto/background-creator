@@ -1,6 +1,6 @@
 ---
 pack: sticker-pop
-price: US$ 12.99
+price: US$ 9.99
 caption: SP
 ---
 
@@ -43,6 +43,6 @@ Feel free to send me a message if you have any questions!
 
 ## Before publishing
 
-- The price: US$ 12.99, like the other full kits, waits for the owner.
+- The price, US$ 9.99, set by the owner on 2026-11-27.
 - The backgrounds and the motifs named in the title and the first line against the listing images.
 - The counts (535 files, 4 styles, 18 stickers, 9 masks) against the shipped zip.
